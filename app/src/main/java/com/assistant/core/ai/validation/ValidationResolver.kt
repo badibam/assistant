@@ -137,7 +137,7 @@ class ValidationResolver(private val context: Context) {
                         )
                     }
                     else -> {
-                        // UPDATE_TOOL_CONFIG, DELETE_TOOL: Tool exists, check app + tool configs
+                        // UPDATE_TOOL, DELETE_TOOL: Tool exists, check app + tool configs
                         val toolConfig = loadToolSettings(toolInstanceId)
 
                         val toolRequires = toolConfig.boolean("validate_config")
@@ -303,11 +303,10 @@ class ValidationResolver(private val context: Context) {
             action.type in listOf("CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE") ->
                 ParsedActionType(ActionScope.ZONE_CONFIG, extractOperation(action.type))
 
-            action.type in listOf("CREATE_TOOL", "UPDATE_TOOL_CONFIG", "DELETE_TOOL") ->
+            action.type in listOf("CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL") ->
                 ParsedActionType(ActionScope.TOOL_CONFIG, extractOperation(action.type))
 
-            action.type in listOf("CREATE_DATA", "UPDATE_DATA", "DELETE_DATA",
-                                  "BATCH_CREATE_DATA", "BATCH_UPDATE_DATA", "BATCH_DELETE_DATA") ->
+            action.type in listOf("CREATE_DATA", "UPDATE_DATA", "DELETE_DATA") ->
                 ParsedActionType(ActionScope.TOOL_DATA, extractOperation(action.type))
 
             // Starting or stopping a stopwatch writes the entry, as any update of it does
@@ -329,7 +328,6 @@ class ValidationResolver(private val context: Context) {
             type.startsWith("CREATE") -> "create"
             type.startsWith("UPDATE") -> "update"
             type.startsWith("DELETE") -> "delete"
-            type.startsWith("BATCH") -> type.removePrefix("BATCH_").lowercase()
             else -> "unknown"
         }
     }
