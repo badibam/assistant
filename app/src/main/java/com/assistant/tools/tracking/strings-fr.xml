@@ -111,8 +111,8 @@
     <!-- SCHEMAS DATA - Display names for schema identification -->
     <string name="schema_data_display_name">Entrée de suivi</string>
     <string name="schema_data_description">Une entrée d\'un outil de suivi : un nom, un moment, et sa valeur</string>
-    <string name="schema_data_value">La valeur enregistrée ; son type et ses réglages viennent de la config de l\'outil</string>
-    <string name="schema_data_unit">Unité de la valeur, l\'une des unités que déclare la config de l\'outil</string>
+    <string name="schema_data_value">La valeur enregistrée</string>
+    <string name="schema_data_unit">Unité de la valeur</string>
     <string name="field_value">Valeur</string>
     <string name="field_units">Unités</string>
     <string name="field_items">Raccourcis</string>

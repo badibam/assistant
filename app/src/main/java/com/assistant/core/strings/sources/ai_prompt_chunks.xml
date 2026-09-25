@@ -262,7 +262,7 @@ Retrieves the data of one tool (templates and configurations live in tool_data).
 - `page` (number, optional): page number, starting at 1
 - `running` (boolean, optional): `true` for the entries with a DURATION field running now alone, to find a stopwatch to stop
 
-**Automatic config extract**: every TOOL_DATA answer includes a `config_extract` holding the configuration fields that matter for reading the data (type, min/max, options, extra_fields, and so on). Use them to understand the context of the values returned.
+**Reading the values**: the data schema of the tool says what each value means: its label (`title`), and in its description its unit, what the bounds of a scale or the two answers of a boolean mean, the options of a choice and whether others are accepted.
 
 **Optimisation**: include only the fields your task strictly needs. For example: to count entries → `["id"]`, to analyse values → `["id", "timestamp", "data.value"]`, and so on.
 

@@ -111,8 +111,8 @@
     <!-- SCHEMAS DATA - Display names for schema identification -->
     <string name="schema_data_display_name">Tracking entry</string>
     <string name="schema_data_description">An entry of a tracking tool: a name, a moment, and its value</string>
-    <string name="schema_data_value">The value recorded; its type and settings come from the config of the tool</string>
-    <string name="schema_data_unit">Unit of the value, one of the units the config of the tool declares</string>
+    <string name="schema_data_value">The value recorded</string>
+    <string name="schema_data_unit">Unit of the value</string>
     <string name="field_value">Value</string>
     <string name="field_units">Units</string>
     <string name="field_items">Shortcuts</string>

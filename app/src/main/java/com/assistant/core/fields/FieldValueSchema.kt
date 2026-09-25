@@ -25,6 +25,52 @@ object FieldValueSchema {
     const val DURATION_MILLIS = "duration-millis"
 
     /**
+     * What a reader needs besides the value to understand it, from the field's settings: its
+     * unit, what the bounds of a scale or the two answers of a boolean mean, a choice's options
+     * and whether it is open or a ranking. Null when the value says it all.
+     *
+     * A value alone is 3, 5 or true; this is what makes it "3 on a scale where 5 is Very good",
+     * "5 km", "true, meaning Read". The entry schema carries it, so the AI reads an entry with
+     * its schema and nothing else.
+     *
+     * @param text The shared string of a key (s::shared)
+     */
+    fun reading(fieldDef: FieldDefinition, text: (String) -> String): String? {
+        val config = fieldDef.config
+        fun setting(key: String): String? = (config?.get(key) as? String)?.takeIf { it.isNotBlank() }
+        fun bound(key: String, labelKey: String): String? {
+            val number = (config?.get(key) as? Number)?.let { n ->
+                if (n.toDouble() % 1.0 == 0.0) n.toLong().toString() else n.toString()
+            } ?: return null
+            return setting(labelKey)?.let { text("field_reading_bound").format(number, it) } ?: number
+        }
+
+        val parts = when (fieldDef.type) {
+            FieldType.NUMERIC, FieldType.RANGE ->
+                listOfNotNull(setting("unit")?.let { text("field_reading_unit").format(it) })
+            FieldType.SCALE ->
+                if (setting("min_label") == null && setting("max_label") == null) emptyList()
+                else listOf(text("field_reading_scale").format(bound("min", "min_label"), bound("max", "max_label")))
+            FieldType.BOOLEAN ->
+                if (setting("true_label") == null && setting("false_label") == null) emptyList()
+                else listOf(text("field_reading_boolean").format(setting("true_label") ?: "true", setting("false_label") ?: "false"))
+            FieldType.CHOICE -> {
+                val choice = ChoiceSettings.fromConfig(config)
+                val options = choice.options.joinToString(", ") { option ->
+                    choice.labelOf(option).takeIf { it != option }?.let { text("field_reading_bound").format(option, it) } ?: option
+                }
+                listOfNotNull(
+                    options.takeIf { it.isNotEmpty() }?.let { text("field_reading_options").format(it) },
+                    text("field_reading_open").takeIf { choice.open },
+                    text("field_reading_ordered").takeIf { choice.shape == ChoiceShape.ORDERED }
+                )
+            }
+            else -> emptyList()
+        }
+        return parts.joinToString(" ").ifEmpty { null }
+    }
+
+    /**
      * The JSON schema a value of [fieldDef] is held to, from its type and config.
      * The single place a field's value schema is written, whoever declared the field.
      */

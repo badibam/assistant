@@ -298,8 +298,4 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
      */
     override fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =
         TrackingStopwatch.settle(entries, writtenId)
-
-    override fun getRelevantConfigFieldsForData(): List<String> {
-        return listOf("type", "value", "units", "items", "extra_fields")
-    }
 }

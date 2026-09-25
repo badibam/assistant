@@ -35,19 +35,6 @@ fun List<PromptCommandResult>.toPromptSection(): String =
         .joinToString("\n\n") { "# ${it.dataTitle}\n${it.formattedData}" }
 
 /**
- * What a tool's config says about one data result: the fields worth showing beside it, and the
- * schema of its entries, which says what turns into ISO 8601 on the way to the model.
- */
-private data class DataResultContext(
-    val configExtract: Map<String, Any>?,
-    val entrySchema: JSONObject?
-) {
-    companion object {
-        val EMPTY = DataResultContext(configExtract = null, entrySchema = null)
-    }
-}
-
-/**
  * Complete execution result including prompt data and system message
  */
 data class CommandExecutionResult(
@@ -834,11 +821,6 @@ class CommandExecutor(private val context: Context) {
             // Extract metadata keys first based on command type
             when (command.resource) {
                 "tool_data" -> {
-                    // LOGIQUE 2: Build config_extract with relevant config fields
-                    val toolConfig = runBlocking { buildDataResultContext(command) }
-                    if (toolConfig.configExtract != null) {
-                        reordered["config_extract"] = toolConfig.configExtract
-                    }
 
                     // Metadata: toolInstanceName, count
                     // Bulk data: entries (with parsed data JSON)
@@ -848,8 +830,7 @@ class CommandExecutor(private val context: Context) {
                     // The entries' dates and durations in ISO 8601, found by the tool's entry
                     // schema: its fixed fields, the user's and the core's alike
                     data["entries"]?.let { entries ->
-                        val schema = toolConfig.entrySchema
-                            ?: throw IllegalStateException("No entry schema to convert the entries of ${command.params["id"]}")
+                        val schema = runBlocking { loadEntrySchema(command) }
                         reordered["entries"] = (entries as List<*>).map { ModelValues.toModel(it, schema, timezone)!! }
                     }
 
@@ -918,95 +899,23 @@ class CommandExecutor(private val context: Context) {
     }
 
     /**
-     * Build config_extract for TOOL_DATA responses
+     * The entry schema of the tool a tool_data command reads, generated from its current config:
+     * what the result's dates and durations are converted by on the way to the model.
      *
-     * Extracts relevant config fields as defined by ToolType.getRelevantConfigFieldsForData()
-     * to provide AI with context for interpreting data values (scale min/max, choice options, etc.)
-     *
-     * @param command The tool_data command being executed
-     * @return Map with relevant config fields, or null if extraction fails
+     * @throws IllegalStateException when the tool or its fields cannot be read
      */
-    private suspend fun buildDataResultContext(command: ExecutableCommand): DataResultContext {
-        return try {
-            // Extract toolInstanceId from command params
-            val toolInstanceId = command.params["tool_instance_id"] as? String
-                ?: command.params["id"] as? String
-                ?: return DataResultContext.EMPTY
-
-            // Fetch tool instance config
-            val configResult = coordinator.processUserAction("tools.get", mapOf(
-                "tool_instance_id" to toolInstanceId
-            ))
-
-            if (!configResult.isSuccess) {
-                LogManager.aiPrompt("Failed to fetch config for config_extract: ${configResult.error}", "WARN")
-                return DataResultContext.EMPTY
-            }
-
-            // Extract config_json and tooltype
-            val toolInstance = configResult.data?.get("tool_instance") as? Map<*, *>
-            @Suppress("UNCHECKED_CAST")
-            val configMap = toolInstance?.get("config") as? Map<String, Any?>
-            val tooltype = toolInstance?.get("tooltype") as? String
-
-            if (configMap == null || tooltype == null) {
-                LogManager.aiPrompt("Missing config or tooltype for tool instance $toolInstanceId", "WARN")
-                return DataResultContext.EMPTY
-            }
-            val configJsonStr = JsonUtils.toJSONObject(configMap).toString()
-
-            // Get ToolType to determine relevant fields
-            val toolType = com.assistant.core.tools.ToolTypeManager.getToolType(tooltype)
-            if (toolType == null) {
-                LogManager.aiPrompt("ToolType not found for tooltype=$tooltype", "WARN")
-                return DataResultContext.EMPTY
-            }
-
-            // Get list of relevant config fields
-            val relevantFields = toolType.getRelevantConfigFieldsForData()
-
-            // Parse config and extract relevant fields
-            val configJson = org.json.JSONObject(configJsonStr)
-            val configExtract = mutableMapOf<String, Any>()
-
-            for (fieldName in relevantFields) {
-                if (configJson.has(fieldName)) {
-                    val value = configJson.get(fieldName)
-
-                    // Convert JSONArray/JSONObject to native types for better prompt formatting
-                    configExtract[fieldName] = when (value) {
-                        is org.json.JSONArray -> {
-                            // Convert JSONArray to List
-                            val list = mutableListOf<Any>()
-                            for (i in 0 until value.length()) {
-                                list.add(value.get(i))
-                            }
-                            list
-                        }
-                        is org.json.JSONObject -> {
-                            // Keep as JSONObject (will be formatted as nested JSON in prompt)
-                            value
-                        }
-                        else -> value
-                    }
-                }
-            }
-
-            val entrySchema = JSONObject(
-                com.assistant.core.tools.BaseSchemas.getEntrySchemaOrThrow(toolType, configJson, toolInstanceId, context)
-            )
-
-            LogManager.aiPrompt("Built config_extract with ${configExtract.size} fields for tool instance $toolInstanceId", "DEBUG")
-
-            DataResultContext(
-                configExtract = if (configExtract.isEmpty()) null else configExtract,
-                entrySchema = entrySchema
-            )
-
-        } catch (e: Exception) {
-            LogManager.aiPrompt("Error building config_extract: ${e.message}", "ERROR", e)
-            DataResultContext.EMPTY
+    private suspend fun loadEntrySchema(command: ExecutableCommand): JSONObject {
+        val toolInstanceId = command.params["tool_instance_id"] as? String
+            ?: throw IllegalStateException("No tool_instance_id in ${command.resource}.${command.operation}")
+        val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
+        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+        @Suppress("UNCHECKED_CAST")
+        val config = (toolInstance?.get("config") as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
+        val toolType = (toolInstance?.get("tooltype") as? String)?.let { com.assistant.core.tools.ToolTypeManager.getToolType(it) }
+        if (!result.isSuccess || config == null || toolType == null) {
+            throw IllegalStateException("Cannot read the tool $toolInstanceId: ${result.error}")
         }
+        return JSONObject(com.assistant.core.tools.BaseSchemas.getEntrySchemaOrThrow(toolType, config, toolInstanceId, context))
     }
 
     /**

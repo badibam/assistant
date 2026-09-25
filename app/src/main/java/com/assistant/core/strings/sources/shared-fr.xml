@@ -187,6 +187,13 @@
     <string name="ai_error_tool_data_fields_not_array">Le paramètre \'fields\' doit être un tableau non vide. Exemple : \"fields\": [\"id\", \"timestamp\", \"data.value\"]</string>
 
     <!-- AI Errors - Field grammar -->
+    <string name="field_reading_unit">En %1$s.</string>
+    <string name="field_reading_scale">Échelle de %1$s à %2$s.</string>
+    <string name="field_reading_bound">%1$s (%2$s)</string>
+    <string name="field_reading_boolean">true : %1$s ; false : %2$s.</string>
+    <string name="field_reading_options">Options : %1$s.</string>
+    <string name="field_reading_open">D\'autres valeurs sont acceptées et deviennent des options.</string>
+    <string name="field_reading_ordered">Un classement : les options dans l\'ordre choisi, la première classée en tête.</string>
     <string name="ai_error_duration_field_path">Champ DURÉE illisible : %1$s. Il se nomme par son chemin, data.nom_du_champ ou extra.nom_du_champ.</string>
     <string name="ai_error_field_invalid_pattern">Champ illisible : %1$s. Un champ est soit un champ racine sans point (id, timestamp, name), soit data.nom_du_champ, soit extra.nom_du_champ, soit state.clé. \'data\', \'extra\' et \'state\' seuls sont refusés : ce sont des conteneurs, il faut nommer un champ dedans. Un champ qui contient un objet ou une liste se demande en entier : extra.nom_du_champ, pas extra.nom_du_champ.start.</string>
 
