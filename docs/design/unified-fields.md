@@ -30,6 +30,15 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 18. **Un lien vers autre chose de l'app est un type de champ, RÉFÉRENCE.** Sa valeur est un identifiant, jamais un nom : renommer la cible ne casse rien, et l'affichage comme la vue de l'IA montrent le nom actuel de la cible, lu à l'affichage. Cas d'origine : une entrée « Pomme, 150 g » du suivi Alimentation mène à la fiche « Pomme » des Données structurées pour en calculer les calories (le « Suivi alimentaire nourrit des Calculs nutritionnels » du `README.md`). Principe acquis ; le détail est à spécifier à part (voir Ouvert).
 19. **Un type d'outil déclare l'usage de `name` et de `timestamp` : obligatoire, facultatif ou absent.** Absent : ni formulaire, ni vue de l'IA, colonne vide, et le validateur refuse une valeur envoyée. Par défaut, `name` obligatoire et `timestamp` facultatif, comme aujourd'hui. Un questionnaire a `name` absent (un nom inventé serait une dérivation stockée), des Données structurées ont `timestamp` absent (une date remplie d'office serait inventée). Une entrée sans nom s'affiche par sa date, choix de l'écran. Aucune migration : les colonnes restent.
 
+## Mise en œuvre
+
+L'app n'a pas à rester utilisable entre deux blocs ; chaque commit compile et garde la suite verte. L'ancien code d'un outil part dans le commit qui le fait passer au modèle. Recette sur l'appareil une fois, à la fin.
+
+- **A. La couche des champs** (`core/fields`), sans toucher aux outils : types (DURÉE, réglages de CHOICE), déclarations (champs fixes, champs d'état, usage de `name` et `timestamp`), schémas générés depuis les déclarations, composants d'affichage et de saisie et forme texte par type, opérations start/stop du champ en cours.
+- **B. Les outils et le stockage**, en une migration de base (35 → 36) et une transformation des sauvegardes : `custom_fields` → `extra`, colonne `state`, forme du tracking, millisecondes, fin de `raw` et des libellés copiés. Les quatre outils passent sur leurs déclarations et leurs écrans sur les composants ; modes rapides du tracking réécrits, `TimerManager` supprimé.
+- **C. L'IA** : prompt L1, `SchemaModelView` (durées ISO 8601, `state`), grammaire des chemins, modules de communication en listes de champs, valeurs proposées dans la demande de validation, rejeu du prompt.
+- **D. Le pointeur** : choix des champs et filtres par valeur.
+
 ## Écarté
 
 - Fusionner `data` et `custom_fields` en un seul objet : collision permanente entre noms fixes et noms de l'utilisateur, et un outil ne pourrait plus refuser une clé inconnue (`additionalProperties: false`). Les gains attendus venaient de la déclaration unique des champs, pas du stockage.
