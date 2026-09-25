@@ -105,4 +105,13 @@ class SettingsSchemaGeneratorTest {
         assertEquals(3_600_000L, config.getLong("window"))
         assertFalse("no default, no value", config.has("name"))
     }
+
+    /** A secret setting says it is one in the schema, for whoever reads it: never sent, never logged. */
+    @Test
+    fun aSecretSettingIsMarkedAsSuch() {
+        val key = field("api_key", FieldType.TEXT, required = true).copy(secret = true)
+        val generated = SettingsSchemaGenerator.generate(listOf(key), text)
+
+        org.junit.Assert.assertTrue(generated.getJSONObject("properties").getJSONObject("api_key").getBoolean(SettingsSchemaGenerator.SECRET))
+    }
 }

@@ -1,6 +1,6 @@
 # Les configs en champs
 
-Conception en cours, commencée le 2026-09-25. Suite de `unified-fields.md`, dont elle reprend l'item ouvert « la config des outils en champs ». Point de départ : en face de l'IA, une durée ou une date d'une config (la valeur par défaut d'un champ DURÉE ou DATETIME) reste en millisecondes, alors que celles d'une entrée passent en ISO 8601. Le schéma d'une config, écrit à la main, ne dit pas où elles sont.
+Mise en œuvre terminée le 2026-09-25 (blocs A à D) ; la spec s'élague avec `unified-fields.md`, à la fin de son bloc C. Suite de `unified-fields.md`, dont elle reprend l'item ouvert « la config des outils en champs ». Point de départ : en face de l'IA, une durée ou une date d'une config (la valeur par défaut d'un champ DURÉE ou DATETIME) reste en millisecondes, alors que celles d'une entrée passent en ISO 8601. Le schéma d'une config, écrit à la main, ne dit pas où elles sont.
 
 ## Décisions
 
@@ -52,7 +52,13 @@ Même règle que `unified-fields.md` : l'app n'a pas à rester utilisable entre 
   - changer d'option d'une variante garde de la config ce que la nouvelle option déclare, jusque dans les éléments d'une liste (les raccourcis d'un suivi perdent leur unité en passant au compteur) ;
   - une valeur manquante se donne par `fill_values`, `{"data": {"value": 3}}`, vérifiée contre le champ ; faute de défaut porté par `FieldDefinition` (décision 12 de `unified-fields.md`), l'écran ne préremplit rien ;
   - la zone reste hors de la config : l'écran la propose en modification et l'envoie dans le même `tools.update`.
-- **D. Les autres réglages** — prochain : zone, fournisseurs d'IA, automations, réglages de l'app, écran d'accueil.
+- **D. Les autres réglages** — fait : zone (`ZoneSettings`, vérifiée par `ZoneService`), fournisseurs d'IA (`getConfigSettings`, `AIProviderSettings`, `AIProviderConfigScreen`), automations (`AutomationSettings`, migration v41 `CatchUpAtV41`), réglages de l'app par catégorie (`AppSettings`, `AppSettingsScreen`, migration v42 `FormatNullsAtV42`). Tranché en codant :
+  - la zone perd la couleur et les trois drapeaux de validation que son schéma promettait sans rien stocker (migration v40) ; la validation se règle au niveau de l'app et de l'outil ;
+  - le modèle d'un fournisseur reste un TEXT avec son éditeur, comme l'icône : sa liste dépend de la clé saisie et du réseau, le schéma ne peut pas l'énumérer ;
+  - un champ secret se saisit masqué, avec un œil ; le thème masque désormais tout champ mot de passe, qui ne l'était pas ;
+  - le rattrapage d'une automation est une variante sous `catch_up` : `limited` apporte `window` (DURÉE), `unlimited` rien, choisi explicitement ; il va avec la planification et seulement avec elle, une règle que le schéma ne sait pas dire et que `AutomationService` tient ;
+  - un réglage borné de l'app (limites IA, libellés relatifs, heure de début de journée) est une SCALE, réglée au curseur ;
+  - les catégories « interface » et « données » ne stockent aucun réglage : la première est un bouchon, la seconde des actions (sauvegarde, import).
 
 ## Écarté
 
