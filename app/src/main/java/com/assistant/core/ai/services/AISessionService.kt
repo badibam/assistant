@@ -200,7 +200,11 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "provider_session_id" to sessionEntity.providerSessionId,
                     "created_at" to sessionEntity.createdAt,
                     "last_activity" to sessionEntity.lastActivity,
-                    "is_active" to sessionEntity.isActive
+                    "is_active" to sessionEntity.isActive,
+                    // Frozen at the first call: PromptManager builds L3 from it, and a snapshot
+                    // rebuilt on each call changes the prompt right after L1, where the
+                    // provider's cache then stops
+                    "app_state_snapshot" to sessionEntity.appStateSnapshot
                 ),
                 "messages" to messageEntities.map { msg ->
                     mapOf(
