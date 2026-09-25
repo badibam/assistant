@@ -608,7 +608,7 @@ Configurations gérées par `AIProviderConfigService`, providers découverts via
 ## 12. Communication modules
 
 ### Structure
-Un module est une liste de champs déclarée par l'IA (`docs/design/unified-fields.md`, décision 17) : `{"fields": [...]}`, chaque champ une définition de champ comme dans `extra_fields`, que l'IA nomme elle-même (la réponse revient sous ce nom) et qui dit s'il est `required`. Sans champ, le module demande une confirmation ; la question est le `pre_text`.
+Un module est une liste de champs déclarée par l'IA : `{"fields": [...]}`, chaque champ une définition de champ comme dans `extra_fields`, que l'IA nomme elle-même (la réponse revient sous ce nom) et qui dit s'il est `required`. Sans champ, le module demande une confirmation ; la question est le `pre_text`.
 
 **Validation** : `CommunicationModules` déclare le module avec les champs (`declarationNodes`, schéma `communication_module` généré) ; `check` le confronte à ce schéma puis à `FieldConfigValidator` (clé en snake_case, clés distinctes, réglages du type). Un module refusé devient un FORMAT_ERROR qui dit pourquoi ; rien n'est ignoré en silence. `CommunicationModule` garde la déclaration telle qu'écrite, et ses `fields` ne se lisent qu'une fois le module vérifié.
 

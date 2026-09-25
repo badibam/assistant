@@ -143,9 +143,24 @@ data class SelectionResult(
 **Périodes** : Stockées dans `timestampSelection` (non visible dans SelectionResult, géré en interne par ZoneScopeSelector)
 
 ##
+## Champs et entrées
+
+Toute valeur de l'app est un champ d'un type de champ (`core/fields`, `FieldType`) : ce qu'on saisit dans une entrée, l'état qu'y écrivent l'app et ses actions, un réglage, une question de l'IA. Le type de champ porte la forme de la valeur, ses contraintes, son schéma, sa saisie (`FieldInput`), son affichage (`FieldValue`, partout où une valeur se montre) et sa description pour l'IA ; un outil ne porte que ses façons rapides de créer une entrée et ses calculs sur plusieurs entrées.
+
+- **Rangement par auteur** : `name` et `timestamp`, déclarés par le core, vivent en colonnes ; les champs du type d'outil dans `data` ; ceux de l'utilisateur dans `extra` ; l'état dans `state`. Deux auteurs qui font évoluer leurs champs chacun de son côté ne partagent jamais un objet. `id`, `tool_instance_id`, `tooltype` servent à retrouver l'entrée et ne sont pas des champs.
+- **Usage de `name` et `timestamp`** : chaque type d'outil les déclare obligatoires, facultatifs ou absents (une note n'a pas de nom) ; absent, rien ne les montre et le schéma refuse une valeur.
+- **État** : décrit par des champs pour ses libellés et ses filtres, jamais saisi. Un champ DURÉE peut être « en cours » : `start_duration` écrit l'instant dans `state.running.<data|extra>.<champ>`, `stop_duration` ajoute le temps écoulé à la valeur. La vérité est en base, un chronomètre survit à l'app tuée.
+- **Valeur par défaut** : une suggestion, appliquée par qui agit — le formulaire la préremplit, une action rapide l'applique, l'IA la lit dans le schéma. Le service n'écrit jamais une valeur qu'on ne lui a pas donnée : un champ absent veut dire « pas de réponse ».
+- **Copie de la config dans une entrée** : un fait quand l'entrée doit continuer de dire ce qu'elle disait (l'unité d'un suivi numérique, le titre d'un message envoyé) ; sinon une dérivation, calculée à la lecture et jamais stockée.
+- **CHOICE** : ses options sont des groupes `{value, label, color}`, une couleur de la palette du thème faisant une pastille. Multiple, ordonné (un classement, saisi avec haut/bas) ou ouvert : une valeur nouvelle rejoint les options dans la transaction qui écrit l'entrée.
+- **DURÉE** : des millisecondes ; la précision et la forme de la config ne décident que de la saisie et de l'affichage.
+
+Un réglage se déclare avec les mêmes champs, assemblés par un ensemble fixe de formes (`SettingNode`) : champ, groupe, liste, variante (des réglages selon la valeur d'un CHOICE, stockés à plat à côté de lui) et section (de l'affichage seul). Un réglage déclare sa valeur par défaut, qui est aussi le sens de son absence ; il peut être secret (saisi masqué, jamais envoyé à l'IA ni journalisé). L'écran d'une config est le formulaire de sa déclaration (`SettingsForm`), où un type d'outil peut brancher son propre éditeur sur un réglage.
+
+##
 ## Validation par schéma
 
-Aucun schéma n'est écrit à la main ni nommé dans une donnée : ils sont générés depuis des déclarations (`docs/design/config-fields.md`, `docs/design/unified-fields.md`).
+Aucun schéma n'est écrit à la main ni nommé dans une donnée : ils sont générés depuis des déclarations.
 
 - **Entrées** : le schéma se génère depuis les champs que le type d'outil déclare (`getEntryFields`) et les champs de l'utilisateur (`extra_fields`), par `BaseSchemas.getEntrySchema`. `ToolDataService` valide toute écriture, quel que soit l'appelant, après avoir arrondi les nombres à leurs décimales (`NumericPrecision`) ; `FieldValueValidator` ajoute ce qu'un schéma ne sait pas dire (le début d'une plage avant sa fin).
 - **Configs d'outil** : le schéma se génère depuis la partie commune (`ToolConfigSettings`) et la partie du type d'outil (`getConfigSettings`), par `SettingsSchemaGenerator` ; une variante (le `type` d'un suivi) devient un `oneOf`. `ToolInstanceService` valide toute écriture de config.

@@ -7,7 +7,7 @@ import com.assistant.core.fields.settings.SettingNode
 /**
  * Interface for AI providers (Claude, OpenAI, DeepSeek, etc.)
  *
- * A provider declares its settings with the fields (docs/design/config-fields.md): the schema its
+ * A provider declares its settings with the fields (docs/DATA.md): the schema its
  * config is held to (AIProviderSettings) and its config screen (AIProviderConfigScreen) are
  * generated from the declaration. The API key is a secret setting.
  *

@@ -13,8 +13,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Covers a communication module as the AI declares it (docs/design/unified-fields.md, decision
- * 17): a list of fields, each a field definition the AI names, and the answer checked against
+ * Covers a communication module as the AI declares it (docs/AI.md): a list of fields, each a field definition the AI names, and the answer checked against
  * the schema generated from them.
  */
 class CommunicationModulesTest {

@@ -4,7 +4,7 @@ import com.assistant.core.database.entities.AppSettingCategories
 import org.json.JSONObject
 
 /**
- * Brings the format settings to their v42 form (docs/design/config-fields.md, decision 15): a
+ * Brings the format settings to their v42 form (docs/DATA.md): a
  * null that said "follow the phone" (locale_override, timezone_override, use_24_hour_format,
  * date_format_pattern) becomes an absence, which the format declaration reads the same way.
  *

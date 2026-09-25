@@ -201,9 +201,9 @@ data class AIMessage(
 }
 
 /**
- * A question put to the user as a list of fields the AI declares (docs/design/unified-fields.md,
- * decision 17): each field is entered with the input of its field type, and the answer is an
- * object of values under the fields' names, checked against the schema generated from them.
+ * A question put to the user as a list of fields the AI declares (docs/AI.md): each field is
+ * entered with the input of its field type, and the answer is an object of values under the
+ * fields' names, checked against the schema generated from them.
  * A module without fields asks for a confirmation.
  *
  * Holds the declaration as the AI wrote it: CommunicationModules.check reads it before anything

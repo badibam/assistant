@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
- * The config screen of any tool (docs/design/config-fields.md, decision 3): the form of its
+ * The config screen of any tool (docs/DATA.md): the form of its
  * declaration (ToolConfigSettings), with the parts the core draws itself -- the icon picker, the
  * zone's tool groups -- and those its tool type attaches (ToolTypeContract.getConfigEditors).
  *

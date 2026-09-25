@@ -4,7 +4,7 @@ import org.json.JSONObject
 
 /**
  * Brings a tool config to its v39 form, the one its declaration describes
- * (docs/design/config-fields.md):
+ * (docs/DATA.md):
  * - without "schema_id" and "data_schema_id": the schemas are generated from the tool type's
  *   declarations, and these were copies of what the tool type and the config already say;
  * - a Messages tool's delays as DURATIONs in milliseconds: "creation_horizon_days" becomes

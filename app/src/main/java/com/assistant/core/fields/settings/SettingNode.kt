@@ -4,7 +4,7 @@ import com.assistant.core.fields.FieldDefinition
 
 /**
  * One node of a settings declaration: what a config holds, described so that its schema, its
- * screen and its conversion for the AI all come from one place (docs/design/config-fields.md).
+ * screen and its conversion for the AI all come from one place (docs/DATA.md).
  *
  * Two levels and nothing else. A value is always a field type ([Field]); what assembles values
  * is this fixed set of shapes, which does not grow case by case. What a field type cannot say

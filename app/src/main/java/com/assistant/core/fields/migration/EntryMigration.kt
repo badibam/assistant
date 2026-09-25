@@ -10,7 +10,7 @@ import org.json.JSONObject
 
 /**
  * What a change of a tool's config does to the entries already recorded
- * (docs/design/config-fields.md, decisions 8 and 9).
+ * (docs/DATA.md).
  *
  * Nothing is declared for it: the fields the old config gives the entries are compared with the
  * ones the new config gives them, "data" (the tool type's fixed fields, from getEntryFields) and

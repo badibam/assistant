@@ -37,7 +37,7 @@ interface SettingEditor {
 }
 
 /**
- * The form of any settings declaration (docs/design/config-fields.md, decision 3): a field by the
+ * The form of any settings declaration (docs/DATA.md): a field by the
  * input of its field type, a group as a card, a list with add, remove and reorder, a variant with
  * the settings of the option chosen, a section as a titled card over settings stored beside it.
  * A setting the app writes itself (SettingNode.Field.systemWritten) is not shown; a secret one

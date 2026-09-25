@@ -14,7 +14,7 @@ import org.junit.Test
 
 /**
  * What a config change does to the recorded entries, deduced from the fields the old and the
- * new config give them (docs/design/config-fields.md, decisions 8 and 9): a value that loses its
+ * new config give them (docs/DATA.md): a value that loses its
  * meaning goes, an entry that loses a required value goes, and nothing is invented.
  */
 class EntryMigrationTest {

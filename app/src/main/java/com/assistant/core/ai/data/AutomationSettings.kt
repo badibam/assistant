@@ -14,7 +14,7 @@ import com.assistant.core.validation.Schema
 import com.assistant.core.validation.SchemaCategory
 
 /**
- * An automation's settings, declared with the fields (docs/design/config-fields.md): its name,
+ * An automation's settings, declared with the fields (docs/DATA.md): its name,
  * the provider it runs with, its group, whether it is on, its schedule, and what it does about
  * the runs it missed. Not its zone (its place), its seed session (its message) nor its history.
  *

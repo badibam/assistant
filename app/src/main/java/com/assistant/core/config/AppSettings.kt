@@ -15,7 +15,7 @@ import com.assistant.core.validation.SchemaCategory
 import org.json.JSONObject
 
 /**
- * The app's settings, declared with the fields by category (docs/design/config-fields.md): the
+ * The app's settings, declared with the fields by category (docs/DATA.md): the
  * schema AppConfigService checks every write of a category against, the settings screen, and the
  * reading of a category all come from here.
  */

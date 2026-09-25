@@ -5,11 +5,11 @@ import com.assistant.core.ai.data.LegacyCatchUp
 import org.json.JSONObject
 
 /**
- * Brings an automation's catch-up settings to their v41 form (docs/design/config-fields.md,
- * decisions 14 and 15): the explicit choice "limited" or "unlimited" is stored, and a limited
- * window is a DURATION in milliseconds instead of a number of minutes. A scheduled automation
- * with no window had chosen "unlimited", since the screen refused to save it otherwise; an
- * automation without schedule has no catch-up settings at all.
+ * Brings an automation's catch-up settings to their v41 form (docs/DATA.md): the explicit
+ * choice "limited" or "unlimited" is stored, and a limited window is a DURATION in milliseconds
+ * instead of a number of minutes. A scheduled automation with no window had chosen "unlimited",
+ * since the screen refused to save it otherwise; an automation without schedule has no catch-up
+ * settings at all.
  *
  * Shared by the database migration and the backup import.
  */

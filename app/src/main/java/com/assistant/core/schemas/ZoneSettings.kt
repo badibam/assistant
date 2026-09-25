@@ -11,7 +11,7 @@ import com.assistant.core.validation.Schema
 import com.assistant.core.validation.SchemaCategory
 
 /**
- * A zone's settings, declared with the fields (docs/design/config-fields.md): what a zone stores
+ * A zone's settings, declared with the fields (docs/DATA.md): what a zone stores
  * beside its identity and its place in the list. Its schema, "zone_config", is generated from here,
  * and ZoneService checks every write against it.
  */

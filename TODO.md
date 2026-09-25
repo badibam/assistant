@@ -4,7 +4,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Un seul système de champs (`docs/design/unified-fields.md`) : blocs A et B faits, bloc C bien avancé (dates et durées en ISO, `state` et chronomètre pour l'IA, toutes les configs en champs par `docs/design/config-fields.md`). Prochain : la fin du bloc C — prompt L1 réécrit une fois (dont `confirm_migration` et `fill_values` de UPDATE_TOOL), modules de communication en listes de champs, valeurs proposées dans la demande de validation, rejeu du prompt — puis l'élagage des deux specs, leurs garanties en tests.
+- Un seul système de champs : blocs A à C faits, reste `docs/design/unified-fields.md` — le pointeur (choix des champs, filtres par valeur), la valeur par défaut portée par un champ, les détails des commandes dans le chat, RÉFÉRENCE. Prochain : rejouer le prompt L1 réécrit sur l'appareil (`docs/ai-prompt-replay.md`, quatre messages), puis concevoir le pointeur.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
@@ -12,6 +12,8 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 - `ToolTypeContract.getAvailableOperations` n'a aucun appelant (le tracking y liste des opérations qui n'existent pas) — à supprimer avec ses quatre implémentations au prochain passage sur le contrat.
 
+- Les exécutions d'une automation décrites comme des entrées (champs déclarés, schéma généré, dates en ISO par ce schéma) — le jour où l'IA les lit ; ce ne sont pas des réglages.
+- Une sauvegarde emporte-t-elle la clé d'API d'un fournisseur (réglage secret) ? — à trancher avant d'ouvrir l'export à un usage partagé.
 - Seuil de taille des données par automation — quand une automation légitime montre un `DATA_REFUSED` dans son historique d'exécution ; la valeur globale deviendra la valeur par défaut.
 - Marquer les lignes que les migrations 13→14 et 14→15 n'ont pas su transformer, et le dire une fois au démarrage (jamais les supprimer) — si des lignes `MIGRATION` apparaissent en « Error » dans l'écran des journaux.
 - Validation désactivée par défaut, que l'IA contourne donc sans rien demander (`docs/design/architecture-audit-debt.md`) — décision reportée le 2026-09-22.

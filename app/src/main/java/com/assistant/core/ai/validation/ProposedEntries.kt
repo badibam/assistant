@@ -24,7 +24,7 @@ data class ProposedEntry(val values: List<ProposedValue>)
 /**
  * The entries an action of the AI writes, read into stored values and matched with their
  * fields, so that a validation request shows what is proposed and not only a sentence
- * (docs/design/unified-fields.md, decision 16).
+ * (docs/DATA.md: a value is shown by its field type, everywhere).
  *
  * Only what the AI gives is shown: an update lists the values it changes.
  */
