@@ -17,12 +17,15 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 7. **Un champ DURÉE peut être « en cours ».** Deux opérations du dispatcher (du genre `tool_data.start_duration` / `stop_duration`) : le départ écrit l'instant dans `state` de l'entrée (`state.running.<champ>`), l'arrêt écrit le temps écoulé dans le champ et retire la clé. Le temps écoulé se calcule à la lecture. La vérité est en base : un chronomètre survit à l'app tuée. L'IA passe par les mêmes opérations. Le tracking n'y ajoute que ses boutons et sa règle « démarrer une activité arrête celle qui tourne dans le même outil ». Aujourd'hui seul le tracking montre un bouton démarrer.
 8. **Le type DURÉE stocke des millisecondes, sans unité.** L'unité vit dans la config du champ et décide de la saisie et de l'affichage : une précision (la plus petite unité saisie et affichée) et une forme (composée « 1 h 25 min » ou unité unique « 85 min »). Pas de mois ni d'année : ce ne sont pas des durées fixes ; si le besoin vient, c'est un autre type (une période de calendrier, avec son départ). Face à l'IA, une durée est en ISO 8601 (`PT1H25M`), marquée dans le schéma de stockage par un format du genre `duration-millis` d'où `SchemaModelView` dérive la vue de l'IA, et convertie aux mêmes endroits que les dates.
 
+9. **Le tracking a un champ principal `value`.** Déclaré par le type d'outil dans `data`, son type de champ est fixé par la config de l'instance ; le changer est une migration de champ. Les modes rapides du tracking agissent toujours sur `value` ; les champs de `extra` se remplissent dans la fenêtre d'édition — comme aujourd'hui, où la saisie rapide n'écrit que la valeur. Si les valeurs par défaut arrivent, la saisie rapide en remplit `extra`.
+
 ## Écarté
 
 - Fusionner `data` et `custom_fields` en un seul objet : collision permanente entre noms fixes et noms de l'utilisateur, et un outil ne pourrait plus refuser une clé inconnue (`additionalProperties: false`). Les gains attendus venaient de la déclaration unique des champs, pas du stockage.
 - Garder l'état dans `data` : même collision, et l'IA devrait deviner, clé par clé, ce qui se saisit.
 - Des colonnes communes pour `position` ou `archived` : pas de deuxième outil qui en ait besoin aujourd'hui.
 - Le chronomètre porté par le type DURÉE lui-même : il doit survivre à la fermeture du formulaire, ce qui est le rôle de `state`, pas du type.
+- Un tracking sans champ principal, chaque suivi n'étant que des champs de `extra` : les modes rapides ne sauraient plus sur quel champ agir. Revenir vers cette forme reste une migration mécanique (`data.value` déplacé dans `extra`) ; l'inverse demanderait de choisir un champ principal par suivi.
 - `user` comme nom de `extra` : s'opposerait à « IA » dans le reste de l'app.
 
 ## État du code au 2026-09-25
@@ -35,8 +38,10 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 
 ## Ouvert
 
-- La valeur du tracking est un champ fixe dont le type dépend de la config de l'instance ; ses raccourcis (`items`) portent un nom, une quantité par défaut et une unité, et l'unité est aujourd'hui stockée par entrée.
+- L'unité de NUMERIC : les raccourcis d'un suivi numeric portent chacun leur unité et chaque entrée stocke la sienne, ce qu'une unité dans la config du champ (comme pour DURÉE) casserait.
+- Un champ obligatoire dans `extra` : une saisie rapide ouvrirait alors la fenêtre d'édition préremplie.
 - `raw` du tracking : dérivé, à ne plus stocker (dette du manifeste).
+- `true_label` et `false_label` recopiés de la config dans chaque entrée booléenne du tracking.
 - Les copies `common_title`, `common_content`, `priority` sur une occurrence de message : champs ou état.
 - Types à ajouter : tags / pastille, étiquette du tracking.
 - Réglages d'un champ : valeur par défaut, validation du choix contre ses options, label affiché ou non.
