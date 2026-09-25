@@ -4,6 +4,8 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
+- Un seul système de champs (`docs/design/unified-fields.md`) : modèle posé, implémentation en quatre blocs. Prochain : bloc A, la couche des champs dans `core/fields`.
+
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur
