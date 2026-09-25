@@ -21,22 +21,6 @@ import com.assistant.core.strings.Strings
 
 
 /**
- * Helper parsing JSON into a Map
- */
-private fun parseJsonToMap(jsonString: String): Map<String, Any> {
-    return try {
-        val json = JSONObject(jsonString)
-        val map = mutableMapOf<String, Any>()
-        json.keys().forEach { key ->
-            map[key] = json.get(key)
-        }
-        map
-    } catch (e: Exception) {
-        emptyMap()
-    }
-}
-
-/**
  * Extension making navigation easier from the UI
  */
 fun DataNavigator.getPathDisplayName(path: String): String {
@@ -238,12 +222,10 @@ suspend fun DataNavigator.getDataFields(toolPath: String, context: Context): Lis
 
         LogManager.schema("DATA_FIELDS: Found ToolType: ${toolType::class.simpleName}")
 
-        // Use data schema from config
-        val configMap = parseJsonToMap(toolInstanceInfo.configJson)
-        val dataSchemaId = configMap["data_schema_id"]?.toString()
-        val schemaString = if (dataSchemaId != null) {
-            toolType.getSchema(dataSchemaId, context)?.content
-        } else null
+        // The entry schema of this tool, its user's fields included
+        val schemaString = com.assistant.core.tools.BaseSchemas.getEntrySchema(
+            toolType, org.json.JSONObject(toolInstanceInfo.configJson), context
+        )
         LogManager.schema("DATA_FIELDS: Schema string length: ${schemaString?.length ?: 0}")
         if (schemaString.isNullOrBlank()) {
             LogManager.schema("DATA_FIELDS: No data schema found for tool type: ${toolType::class.simpleName}", "ERROR")
@@ -338,12 +320,10 @@ suspend fun DataNavigator.getFieldChildrenFromCommonStructure(toolPath: String, 
             return@withContext emptyList()
         }
 
-        // Use data schema from config
-        val configMap = parseJsonToMap(toolInstanceInfo.configJson)
-        val dataSchemaId = configMap["data_schema_id"]?.toString()
-        val schemaString = if (dataSchemaId != null) {
-            toolType.getSchema(dataSchemaId, context)?.content
-        } else null
+        // The entry schema of this tool, its user's fields included
+        val schemaString = com.assistant.core.tools.BaseSchemas.getEntrySchema(
+            toolType, org.json.JSONObject(toolInstanceInfo.configJson), context
+        )
         if (schemaString.isNullOrBlank()) {
             LogManager.schema("No data schema found for tool type: ${toolType::class.simpleName}", "ERROR")
             return@withContext emptyList()

@@ -21,9 +21,6 @@ enum class TrackingKind(val key: String, val valueType: FieldType?) {
     TIMER("timer", FieldType.DURATION),
     OCCURRENCE("occurrence", null);
 
-    val dataSchemaId: String get() = "tracking_data_$key"
-    val configSchemaId: String get() = "tracking_config_$key"
-
     companion object {
         fun fromKey(key: String): TrackingKind =
             entries.firstOrNull { it.key == key } ?: throw IllegalArgumentException("Unknown tracking type: $key")

@@ -12,10 +12,15 @@ import org.json.JSONObject
 /**
  * Contract for tool type implementations
  * Defines the mandatory static metadata that each tool type must provide
- * Extends SchemaProvider for unified form validation across the app
  * Includes data migration capabilities for autonomous data upgrades
  */
-interface ToolTypeContract : SchemaProvider {
+interface ToolTypeContract {
+
+    /**
+     * The label of [fieldName] as a screen shows it, for a validation error or the pointer
+     * to name it.
+     */
+    fun getFormFieldName(fieldName: String, context: Context): String
     
     /**
      * Human-readable display name for this tool type

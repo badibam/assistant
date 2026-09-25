@@ -1,5 +1,6 @@
 package com.assistant.tools.notes.ui.components
 
+import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.ui.FieldValuesSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.Arrangement
@@ -122,11 +123,10 @@ fun EditNoteDialog(
                 )
             )
 
-            val schema = toolType.getSchema("notes_data", context)
-            validationResult = if (schema != null) {
-                SchemaValidator.validate(schema, entryData, context)
-            } else {
-                ValidationResult.error("Notes data schema not found")
+            validationResult = try {
+                SchemaValidator.validate(BaseSchemas.entrySchema(toolType, toolInstanceId, context), entryData, context)
+            } catch (e: IllegalStateException) {
+                ValidationResult.error(e.message ?: "Notes data schema unavailable")
             }
             LogManager.ui("Notes validation result: isValid=${validationResult.isValid}")
             if (!validationResult.isValid) {

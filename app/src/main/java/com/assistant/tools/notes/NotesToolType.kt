@@ -54,18 +54,6 @@ object NotesToolType : ToolTypeContract {
         return notesSpecificConfig
     }
 
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return when (schemaId) {
-            "notes_config" -> com.assistant.core.tools.ToolConfigSettings.schema(this, schemaId, context)
-            "notes_data" -> createNotesDataSchema(context, toolInstanceId)
-            else -> null
-        }
-    }
-
-    override fun getAllSchemaIds(): List<String> {
-        return listOf("notes_config", "notes_data")
-    }
-
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(tool = "notes", context = context)
         return when (fieldName) {
@@ -77,20 +65,6 @@ object NotesToolType : ToolTypeContract {
 
     /** Notes have no setting of their own. */
     override fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode> = emptyList()
-
-    /**
-     * The data schema of notes, generated from their declared fields.
-     */
-    private fun createNotesDataSchema(context: Context, toolInstanceId: String?): Schema {
-        val s = Strings.`for`(tool = "notes", context = context)
-        return Schema(
-            id = "notes_data",
-            displayName = s.tool("schema_data_display_name"),
-            description = s.tool("schema_data_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = BaseSchemas.getEntrySchema(this, toolInstanceId, context)
-        )
-    }
 
     /**
      * A note: a text, without a name (none would say anything the text does not), kept in a

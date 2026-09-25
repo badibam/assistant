@@ -326,11 +326,11 @@ For example: creating a note carrying the exact time it was written.
 
 ### SCHEMA
 
-Retrieves a JSON schema for validation.
+Retrieves a JSON schema, asked for by what it describes. **Exactly one** parameter:
 
-**Parameters**:
-
-- `id` (string, **required**): schema_id
+- `tooltype` (string): the config of a tool of that type, with every variant (a tracking\'s `type` decides its settings)
+- `tool_instance_id` (string): the entries of that tool, its extra fields included
+- `id` (string): any other schema, by its name (`zone_config`, `field_type_TEXT`, …)
 
 ### ICONS
 
@@ -367,7 +367,6 @@ Creates data in a batch.
 
 **Notes**:
 
-- The `schema_id` is derived automatically from the configuration of the tool instance
 - **LITERAL VALUES ONLY**: `data` holds JSON values alone (strings, numbers, booleans, arrays, objects). Never executable code (new Date(), expressions, and so on)
 
 ### UPDATE_DATA
@@ -387,7 +386,6 @@ Updates data in a batch.
 
 - **PARTIAL UPDATE**: only the fields you supply are changed. Absent fields keep their existing values
 - **OPTIMISATION**: include only the fields that strictly need changing. For example: updating content → do not include `timestamp`; fixing a spelling → include neither `timestamp` nor any other metadata
-- The `schema_id` is derived automatically from the configuration of the tool instance
 - **LITERAL VALUES ONLY**: `data` holds JSON values alone (strings, numbers, booleans, arrays, objects). Never executable code
 
 ### DELETE_DATA
@@ -422,7 +420,7 @@ Creates a tool instance.
 
 - `zone_id` (string, **required**)
 - `tooltype` (string, **required**)
-- `config` (object, **required**): JSON configuration (must include `schema_id` and `data_schema_id`)
+- `config` (object, **required**): JSON configuration, held to the config schema of its tooltype (`SCHEMA` with `tooltype`)
 
 ### UPDATE_TOOL
 
@@ -629,22 +627,21 @@ Returns up to 50 entries, including extra when the tool has extra fields:
 
 ### Example 4: retrieving a schema
 
-**Config schema** (tool_instance_id optional):
+**Config schema** of a tool type:
 ```json
 {
   "type": "SCHEMA",
   "params": {
-    "id": "tracking_config_numeric"
+    "tooltype": "tracking"
   }
 }
 ```
 
-**Data schema** (tool_instance_id required for the extra fields):
+**Data schema** of a tool, its extra fields included:
 ```json
 {
   "type": "SCHEMA",
   "params": {
-    "id": "journal_data",
     "tool_instance_id": "tools_abc123"
   }
 }
@@ -710,7 +707,7 @@ Returns every entry of the period. Then take the IDs alone and pass them to DELE
 }
 ```
 
-Creates 2 weight entries with extra fields. The schema_id is derived automatically from the config of the tool.
+Creates 2 weight entries with extra fields.
 
 ### Example 2: updating data (partial update)
 
@@ -758,9 +755,8 @@ Deletes 2 specific entries.
     "zone_id": "zone_sante_123",
     "tooltype": "tracking",
     "config": {
-      "schema_id": "tracking_config_numeric",
-      "data_schema_id": "tracking_data_numeric",
       "name": "Weight",
+      "type": "numeric",
       "..."
     }
   }
@@ -788,74 +784,22 @@ Creates a new themed zone.]]></string>
     <!-- PART D: VALIDATION SYSTEM                                        -->
     <!-- ================================================================ -->
 
-    <!-- D.1 Schema ID principle [DEGREE 1] -->
-    <string name="ai_chunk_validation_schema_principle"><![CDATA[## Validation by schema ID
+    <!-- D.1 Schema principle [DEGREE 1] -->
+    <string name="ai_chunk_validation_schema_principle"><![CDATA[## Validation by schema
 
-All data and configurations are validated through **JSON Schema**, with explicit identifiers.
-
-### Principle
-
-Every piece of data or configuration carries a `schema_id` naming the validation schema to use.
-
-### Types of schema
-
-**Config schemas**: validate the configuration of a tool instance
-Format: `{tooltype}_config_{variant}` (e.g. `tracking_config_numeric`)
-
-**Data schemas**: validate the data entries
-Format: `{tooltype}_data_{variant}` (e.g. `tracking_data_numeric`)
+All data and configurations are validated through **JSON Schema**. The schemas of a tool are generated from its type: nothing in a config or an entry names them, and you never write a schema identifier.
 
 ### Retrieving the schemas
 
-**Config schemas** (tool_instance_id optional):
-```json
-{
-  "type": "SCHEMA",
-  "params": { "id": "tracking_config_numeric" }
-}
-```
+A schema is asked for by what it describes:
 
-**Data schemas** (tool_instance_id **required**):
-```json
-{
-  "type": "SCHEMA",
-  "params": {
-    "id": "journal_data",
-    "tool_instance_id": "tools_abc123"
-  }
-}
-```
+- **The config of a tool type**: `{ "type": "SCHEMA", "params": { "tooltype": "tracking" } }`. It holds every variant: the settings a tracking takes depend on its `type`.
+- **The entries of a tool**: `{ "type": "SCHEMA", "params": { "tool_instance_id": "tools_abc123" } }`. It holds the extra fields of that tool.
+- **Anything else**, by its name: `{ "type": "SCHEMA", "params": { "id": "zone_config" } }`.
 
-The `tool_instance_id` enriches the schema with the custom fields of that instance. The schema returned holds the complete JSON structure, with every required and optional field and their constraints.]]></string>
+The schema returned holds the complete JSON structure, with every required and optional field and their constraints.]]></string>
 
-    <!-- D.2 Relation between the IDs [DEGREE 2] -->
-    <string name="ai_chunk_validation_schema_relation"><![CDATA[## How schema_id and data_schema_id relate
-
-### In the configurations
-
-Every tool configuration holds **two** schema IDs:
-
-- **`schema_id`**: the schema validating the configuration itself
-- **`data_schema_id`**: the schema validating the future data this tool will accept
-
-### Example
-
-```json
-{
-  "schema_id": "tracking_config_numeric",
-  "data_schema_id": "tracking_data_numeric",
-  "name": "Daily weight",
-  "type": "numeric",
-  "unit": "kg"
-}
-```
-
-Here:
-
-- The config is validated with `tracking_config_numeric`
-- The future data will be validated with `tracking_data_numeric`]]></string>
-
-    <!-- D.3 Usage strategy [DEGREE 1] -->
+    <!-- D.2 Usage strategy [DEGREE 1] -->
     <string name="ai_chunk_validation_strategy"><![CDATA[## Validation strategy
 
 ### Golden rule
@@ -875,16 +819,15 @@ Here:
 ```
 User: "Create a daily weight tracking"
 
-1. Query SCHEMA tracking_config_numeric
-2. Query SCHEMA tracking_data_numeric
-3. Read which fields are required
-4. Build the config with every mandatory field
+1. Query SCHEMA with tooltype "tracking"
+2. Read which fields are required for type "numeric"
+3. Build the config with every mandatory field
 5. Run CREATE_TOOL with the validated config
 ```
 
 This approach makes sure your actions are always accepted by the system.]]></string>
 
-    <!-- D.4 System-managed fields [DEGREE 1] -->
+    <!-- D.3 System-managed fields [DEGREE 1] -->
     <string name="ai_chunk_validation_system_managed"><![CDATA[## Fields managed by the system
 
 **CRITICAL RULE**: some fields are managed automatically by the system and **must NEVER be included** in your commands.
@@ -897,7 +840,7 @@ In the JSON schemas, these fields are marked `"system_managed": true`.
 
 - **NEVER supply** these fields in your action parameters
 - The system generates them itself on creation and on change
-- Examples: `id`, `created_at`, `updated_at`, `schema_id`
+- Examples: `id`, `created_at`, `updated_at`
 
 The system ignores these fields automatically when they appear in your commands.]]></string>
 
@@ -1013,7 +956,7 @@ Read the error message and adapt your strategy:
 
 - **Invalid ID** → list the available zones and tools to find the right ID
 - **Missing parameter** → retrieve the schema to see which fields are required
-- **Schema not found** → check which schema_ids exist for that tooltype
+- **Schema not found** → check the tooltype or the tool_instance_id you asked it for
 
 ### When an action fails
 
@@ -1123,8 +1066,7 @@ The flow stops, the user has their answer.]]></string>
   "pre_text": "I am first going to check that the Health zone exists and retrieve the schemas I need.",
   "data_commands": [
     { "type": "ZONES", "params": {} },
-    { "type": "SCHEMA", "params": { "id": "tracking_config_numeric" } },
-    { "type": "SCHEMA", "params": { "id": "tracking_data_numeric" } }
+    { "type": "SCHEMA", "params": { "tooltype": "tracking" } }
   ]
 }
 ```
@@ -1143,9 +1085,8 @@ The flow stops, the user has their answer.]]></string>
         "zone_id": "zone_sante_id",
         "tooltype": "tracking",
         "config": {
-          "schema_id": "tracking_config_numeric",
-          "data_schema_id": "tracking_data_numeric",
           "name": "Daily weight",
+          "type": "numeric",
           "..."
         }
       }

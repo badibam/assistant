@@ -103,18 +103,6 @@ object MessageToolType : ToolTypeContract {
     // Schemas (SchemaProvider interface)
     // ========================================
 
-    override fun getAllSchemaIds(): List<String> {
-        return listOf("messages_config", "messages_data")
-    }
-
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return when (schemaId) {
-            "messages_config" -> com.assistant.core.tools.ToolConfigSettings.schema(this, schemaId, context)
-            "messages_data" -> createMessagesDataSchema(context, toolInstanceId)
-            else -> null
-        }
-    }
-
     /**
      * Creates messages configuration schema — the template itself.
      *
@@ -151,20 +139,6 @@ object MessageToolType : ToolTypeContract {
             SettingNode.Group("schedule", s.tool("field_schedule"), ScheduleSettings.nodes(shared::shared)),
             field("creation_horizon_days", FieldType.NUMERIC, required = true, default = 2, config = mapOf("min" to 1, "decimals" to 0)),
             field("validity_window_minutes", FieldType.NUMERIC, required = true, default = 60, config = mapOf("min" to 0, "decimals" to 0))
-        )
-    }
-
-    /**
-     * The data schema of message occurrences, generated from their declared fields.
-     */
-    private fun createMessagesDataSchema(context: Context, toolInstanceId: String?): Schema {
-        val s = Strings.`for`(tool = "messages", context = context)
-        return Schema(
-            id = "messages_data",
-            displayName = s.tool("schema_data_display_name"),
-            description = s.tool("schema_data_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = BaseSchemas.getEntrySchema(this, toolInstanceId, context)
         )
     }
 

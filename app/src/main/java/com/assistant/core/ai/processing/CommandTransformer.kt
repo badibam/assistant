@@ -137,18 +137,14 @@ object CommandTransformer {
     private fun transformSchemaCommand(command: DataCommand): ExecutableCommand? {
         LogManager.aiPrompt("transformSchemaCommand() - routing to schemas.get", "VERBOSE")
 
-        val schemaId = command.params["id"] as? String
-        if (schemaId.isNullOrEmpty()) {
-            LogManager.aiPrompt("SCHEMA command missing id parameter", "WARN")
+        // A schema is asked for by what it describes: a tool type's config, a tool's entries,
+        // or anything else by its name
+        val params = listOf("tooltype", "tool_instance_id", "id")
+            .mapNotNull { key -> (command.params[key] as? String)?.takeIf { it.isNotEmpty() }?.let { key to it as Any } }
+            .toMap()
+        if (params.isEmpty()) {
+            LogManager.aiPrompt("SCHEMA command names neither a tooltype, a tool_instance_id nor an id", "WARN")
             return null
-        }
-
-        val params = mutableMapOf<String, Any>("id" to schemaId)
-
-        // Add toolInstanceId if present (required for data/execution schemas with custom fields)
-        command.params["tool_instance_id"]?.let {
-            params["tool_instance_id"] = it
-            LogManager.aiPrompt("SCHEMA command includes tool_instance_id for enrichment", "VERBOSE")
         }
 
         return ExecutableCommand(

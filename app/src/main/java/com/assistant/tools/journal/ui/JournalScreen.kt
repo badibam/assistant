@@ -272,7 +272,6 @@ fun JournalScreen(
                             val params = mapOf(
                                 "tool_instance_id" to toolInstanceId,
                                 "tooltype" to "journal",
-                                "schema_id" to "journal_data",
                                 "name" to s.tool("placeholder_untitled"),
                                 "timestamp" to System.currentTimeMillis(),
                                 "data" to JSONObject()  // Empty data object - content is optional

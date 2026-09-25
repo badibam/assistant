@@ -55,18 +55,6 @@ object JournalToolType : ToolTypeContract {
         """.trimIndent()
     }
 
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return when (schemaId) {
-            "journal_config" -> com.assistant.core.tools.ToolConfigSettings.schema(this, schemaId, context)
-            "journal_data" -> createJournalDataSchema(context, toolInstanceId)
-            else -> null
-        }
-    }
-
-    override fun getAllSchemaIds(): List<String> {
-        return listOf("journal_config", "journal_data")
-    }
-
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(tool = "journal", context = context)
         return when (fieldName) {
@@ -87,20 +75,6 @@ object JournalToolType : ToolTypeContract {
             required = true,
             default = "descending"
         ))
-    }
-
-    /**
-     * The data schema of journal entries, generated from their declared fields.
-     */
-    private fun createJournalDataSchema(context: Context, toolInstanceId: String?): Schema {
-        val s = Strings.`for`(tool = "journal", context = context)
-        return Schema(
-            id = "journal_data",
-            displayName = s.tool("schema_data_display_name"),
-            description = s.tool("schema_data_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = BaseSchemas.getEntrySchema(this, toolInstanceId, context)
-        )
     }
 
     /**

@@ -8,7 +8,7 @@ import org.json.JSONObject
  * sends inside "data" (a message occurrence's copies of its template are written by the scheduler).
  *
  * At the root of an entry the service reads named params only and derives the marked ones
- * itself -- tooltype from the tool, schema_id from its config, the timestamps from the clock --
+ * itself -- tooltype from the tool, the timestamps from the clock --
  * so no caller's value reaches them either.
  */
 object SystemManagedFields {

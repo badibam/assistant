@@ -182,7 +182,6 @@ class AICommandProcessor(private val context: Context) {
     private suspend fun transformActionCommand(command: DataCommand): ExecutableCommand? {
         return when (command.type) {
             // Tool data actions - batch operations by default (per AI.md line 182)
-            // Schema ID enrichment: automatically inject data_schema_id from tool instance config
             "CREATE_DATA" -> {
                 LogManager.aiService("CREATE_DATA original params keys: ${command.params.keys}", "DEBUG")
                 val enrichedParams = toStoredForm(command.params)

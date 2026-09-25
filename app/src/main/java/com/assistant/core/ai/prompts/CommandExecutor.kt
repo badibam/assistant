@@ -63,28 +63,17 @@ class CommandExecutor(private val context: Context) {
     private val s = Strings.`for`(context = context)
 
     /**
-     * Generate schema deduplication key
-     *
-     * For config schemas: returns schema_id only
-     * For data schemas: returns "schema_id:toolInstanceId" (composite key)
-     *
-     * Data schemas are enriched with custom_fields per instance, so the same schema_id with a
-     * different toolInstanceId produces a different schema.
-     *
-     * @param schemaId The schema ID (e.g., "tracking_data_numeric", "tracking_config_numeric")
-     * @param toolInstanceId The tool instance ID (null for config schemas)
-     * @return Deduplication key string
+     * What tells two schemas apart, for not sending the model one it already has: the entries
+     * of a tool are one schema per tool ("entries:<id>"), since its user's fields are in it; any
+     * other schema is told by its name ("tracking_config", "zone_config").
      */
-    private fun getSchemaDeduplicationKey(schemaId: String, toolInstanceId: String?): String {
-        // Check if schema requires instance-specific enrichment (data schemas)
-        val requiresInstanceId = schemaId.contains("_data_") ||
-                                 schemaId.endsWith("_data")
+    private fun schemaKey(schemaId: String?, toolInstanceId: String?): String? =
+        toolInstanceId?.let { "entries:$it" } ?: schemaId
 
-        return if (requiresInstanceId && toolInstanceId != null) {
-            "$schemaId:$toolInstanceId"
-        } else {
-            schemaId
-        }
+    /** [schemaKey] of the schema a schemas.get command asks for, by what it names. */
+    private fun requestedSchemaKey(params: Map<String, Any?>): String? {
+        val tooltype = params["tooltype"] as? String
+        return schemaKey(params["id"] as? String ?: tooltype?.let { "${it}_config" }, params["tool_instance_id"] as? String)
     }
 
     /**
@@ -155,10 +144,7 @@ class CommandExecutor(private val context: Context) {
                 // Get verbalization from SchemaService for consistency with DATA_ADDED
                 val schemaService = com.assistant.core.services.SchemaService(context)
                 val schemaCommandResults = missingSchemas.map { schema ->
-                    val params = org.json.JSONObject().apply {
-                        put("id", schema.schemaId)
-                        schema.toolInstanceId?.let { put("tool_instance_id", it) }
-                    }
+                    val params = org.json.JSONObject().put("tool_instance_id", schema.toolInstanceId)
                     val details = schemaService.verbalize("get", params, context)
 
                     com.assistant.core.ai.data.CommandResult(
@@ -208,12 +194,9 @@ class CommandExecutor(private val context: Context) {
 
             // Check for schema deduplication BEFORE execution
             if (command.resource == "schemas" && command.operation == "get" && sessionId != null) {
-                val schemaId = command.params["id"] as? String
-                val toolInstanceId = command.params["tool_instance_id"] as? String
+                val deduplicationKey = requestedSchemaKey(command.params)
 
-                if (schemaId != null) {
-                    // Generate composite key for data/execution schemas (includes toolInstanceId)
-                    val deduplicationKey = getSchemaDeduplicationKey(schemaId, toolInstanceId)
+                if (deduplicationKey != null) {
 
                     // Check inter-message deduplication (historical)
                     val isDuplicatedFromHistory = deduplicationKey in historicalSchemas
@@ -230,7 +213,7 @@ class CommandExecutor(private val context: Context) {
                             commandResult = com.assistant.core.ai.data.CommandResult(
                                 command = "${command.resource}.${command.operation}",
                                 status = CommandStatus.CACHED,
-                                details = s.shared("ai_schema_already_included").format(schemaId),
+                                details = s.shared("ai_schema_already_included").format(deduplicationKey),
                                 data = null,
                                 error = null,
                                 isActionCommand = false  // schemas.get is a query
@@ -936,11 +919,8 @@ class CommandExecutor(private val context: Context) {
     /**
      * Check if required data schemas are available before executing TOOL_DATA commands
      *
-     * For each tool_data command:
-     * 1. Extract toolInstanceId from params
-     * 2. Fetch tool instance config via coordinator
-     * 3. Extract data_schema_id from config
-     * 4. Check if schema exists in historicalSchemas or currentBatchSchemas
+     * For each tool_data command, the entries schema of its tool ("entries:<id>") must already be
+     * in historicalSchemas or currentBatchSchemas; one that is not is fetched here.
      *
      * Returns list of missing schemas that need to be fetched before data queries
      *
@@ -970,10 +950,7 @@ class CommandExecutor(private val context: Context) {
         // This allows detecting schemas that will be fetched in the same batch
         val schemaCommands = commands.filter { it.resource == "schemas" && it.operation == "get" }
         for (schemaCommand in schemaCommands) {
-            val schemaId = schemaCommand.params["id"] as? String
-            val toolInstanceId = schemaCommand.params["tool_instance_id"] as? String
-            if (schemaId != null) {
-                val key = getSchemaDeduplicationKey(schemaId, toolInstanceId)
+            requestedSchemaKey(schemaCommand.params)?.let { key ->
                 currentBatchSchemas.add(key)
                 LogManager.aiPrompt("Pre-added schema $key from current batch SCHEMA command", "DEBUG")
             }
@@ -990,85 +967,23 @@ class CommandExecutor(private val context: Context) {
             checkedInstances.add(toolInstanceId)
 
             try {
-                // Fetch tool instance config to get data_schema_id
-                val configResult = coordinator.processUserAction("tools.get", mapOf(
-                    "tool_instance_id" to toolInstanceId
-                ))
-
-                if (!configResult.isSuccess) {
-                    LogManager.aiPrompt("Failed to fetch config for tool instance $toolInstanceId: ${configResult.error}", "WARN")
-                    continue // Skip if config fetch fails (tool might not exist)
-                }
-
-                // Extract config_json and parse data_schema_id
-                val toolInstance = configResult.data?.get("tool_instance") as? Map<*, *>
-                @Suppress("UNCHECKED_CAST")
-                val configMap = toolInstance?.get("config") as? Map<String, Any?>
-
-                if (configMap == null) {
-                    LogManager.aiPrompt("No config found for tool instance $toolInstanceId", "WARN")
-                    continue
-                }
-
-                val configJson = JsonUtils.toJSONObject(configMap)
-                val dataSchemaId = configJson.optString("data_schema_id")
-
-                if (dataSchemaId.isEmpty()) {
-                    LogManager.aiPrompt("No data_schema_id in config for tool instance $toolInstanceId", "WARN")
-                    continue
-                }
-
-                // Generate deduplication key (composite for data schemas)
-                val deduplicationKey = getSchemaDeduplicationKey(dataSchemaId, toolInstanceId)
-
-                // Check if schema is available (historical or current batch)
+                // The entries schema of this tool, its user's fields included
+                val deduplicationKey = "entries:$toolInstanceId"
                 val isAvailable = deduplicationKey in historicalSchemas || deduplicationKey in currentBatchSchemas
-                LogManager.aiPrompt("Schema availability for $deduplicationKey: historical=${deduplicationKey in historicalSchemas}, currentBatch=${deduplicationKey in currentBatchSchemas}", "DEBUG")
+                LogManager.aiPrompt("Schema availability for $deduplicationKey: $isAvailable", "DEBUG")
 
                 if (!isAvailable) {
-                    LogManager.aiPrompt("Schema $deduplicationKey is missing for tool instance $toolInstanceId", "DEBUG")
-
-                    // Fetch the schema content immediately
-                    val schemaResult = coordinator.processUserAction("schemas.get", mapOf(
-                        "id" to dataSchemaId,
-                        "tool_instance_id" to toolInstanceId
+                    val schemaResult = coordinator.processUserAction("schemas.get", mapOf("tool_instance_id" to toolInstanceId))
+                    val schemaId = schemaResult.data?.get("schema_id") as? String ?: deduplicationKey
+                    val schemaContent = (schemaResult.data?.get("content") as? String)?.takeIf { it.isNotEmpty() }
+                    missingSchemas.add(MissingSchemaInfo(
+                        schemaId = schemaId,
+                        toolInstanceId = toolInstanceId,
+                        // A schema that cannot be read is said so to the model, rather than left out
+                        schemaContent = schemaContent
+                            ?: "{\"error\": \"Failed to fetch schema: ${schemaResult.error ?: "no content"}\"}"
                     ))
-
-                    LogManager.aiPrompt("Schema fetch result: isSuccess=${schemaResult.isSuccess}, data keys=${schemaResult.data?.keys}, error=${schemaResult.error}", "DEBUG")
-
-                    if (schemaResult.isSuccess) {
-                        val schemaContent = schemaResult.data?.get("content") as? String
-                        LogManager.aiPrompt("Schema content: ${schemaContent?.take(100)}...", "DEBUG")
-
-                        if (schemaContent != null && schemaContent.isNotEmpty()) {
-                            missingSchemas.add(MissingSchemaInfo(
-                                schemaId = dataSchemaId,
-                                toolInstanceId = toolInstanceId,
-                                schemaContent = schemaContent
-                            ))
-                            LogManager.aiPrompt("Successfully added schema $dataSchemaId to missing schemas", "DEBUG")
-                        } else {
-                            LogManager.aiPrompt("Schema $dataSchemaId content is null or empty", "ERROR")
-                            // Add with error message as content
-                            missingSchemas.add(MissingSchemaInfo(
-                                schemaId = dataSchemaId,
-                                toolInstanceId = toolInstanceId,
-                                schemaContent = "{\"error\": \"Schema content is null or empty\"}"
-                            ))
-                        }
-                    } else {
-                        LogManager.aiPrompt("Failed to fetch schema $dataSchemaId: ${schemaResult.error}", "ERROR")
-                        // Add with error message as content
-                        missingSchemas.add(MissingSchemaInfo(
-                            schemaId = dataSchemaId,
-                            toolInstanceId = toolInstanceId,
-                            schemaContent = "{\"error\": \"Failed to fetch schema: ${schemaResult.error}\"}"
-                        ))
-                    }
-                } else {
-                    LogManager.aiPrompt("Schema $deduplicationKey already available", "DEBUG")
                 }
-
             } catch (e: Exception) {
                 LogManager.aiPrompt("Error checking schema for tool instance $toolInstanceId: ${e.message}", "ERROR", e)
                 // Continue checking other instances even if one fails
@@ -1124,9 +1039,8 @@ class CommandExecutor(private val context: Context) {
                             val toolInstanceId = commandResult.data?.get("tool_instance_id") as? String
                             LogManager.aiPrompt("    schema.get found, schema_id=$schemaId, toolInstanceId=$toolInstanceId, data keys=${commandResult.data?.keys}", "DEBUG")
 
-                            if (schemaId != null) {
-                                // Generate composite key for data/execution schemas
-                                val deduplicationKey = getSchemaDeduplicationKey(schemaId, toolInstanceId)
+                            val deduplicationKey = schemaKey(schemaId, toolInstanceId)
+                            if (deduplicationKey != null) {
                                 schemaKeys.add(deduplicationKey)
                                 LogManager.aiPrompt("Found historical schema: $deduplicationKey", "VERBOSE")
                             } else {

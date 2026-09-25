@@ -1,5 +1,6 @@
 package com.assistant.tools.journal.ui
 
+import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.ui.FieldValuesSaver
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -139,13 +140,11 @@ fun JournalEntryScreen(
         val toolType = ToolTypeManager.getToolType("journal")
         if (toolType != null) {
             // Build data structure like service expects
-            // Note: schema_id must be at root level for validation (per ActionValidator pattern)
             // CRITICAL: data field is required by schema, and content must be present (even if empty)
             // to prevent SchemaValidator from filtering out the entire data map when it's empty
             val entryData = mutableMapOf<String, Any>(
                 "tool_instance_id" to toolInstanceId,
                 "tooltype" to "journal",
-                "schema_id" to "journal_data",  // Required for validation
                 "name" to title,
                 "timestamp" to timestamp,
                 "data" to mapOf(
@@ -163,12 +162,7 @@ fun JournalEntryScreen(
             // Get schema WITH toolInstanceId to include custom fields definitions. A tool whose
             // custom fields cannot be read fails here, and says why rather than crash the screen.
             validationResult = try {
-                val schema = toolType.getSchema("journal_data", context, toolInstanceId)
-                if (schema != null) {
-                    SchemaValidator.validate(schema, entryData, context)
-                } else {
-                    ValidationResult.error("Journal data schema not found")
-                }
+                SchemaValidator.validate(BaseSchemas.entrySchema(toolType, toolInstanceId, context), entryData, context)
             } catch (e: IllegalStateException) {
                 ValidationResult.error(e.message ?: "Journal data schema unavailable")
             }
@@ -194,7 +188,6 @@ fun JournalEntryScreen(
                     val params = mutableMapOf<String, Any>(
                         "id" to entryId,
                         "tool_instance_id" to toolInstanceId,
-                        "schema_id" to "journal_data",
                         "name" to title,
                         "timestamp" to timestamp,
                         "data" to JSONObject().apply {

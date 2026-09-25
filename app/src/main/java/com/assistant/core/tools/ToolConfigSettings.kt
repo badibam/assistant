@@ -43,9 +43,7 @@ object ToolConfigSettings {
                     config = mapOf("length" to TextLength.SHORT.name)),
                 field("validate_config", text("tools_config_label_config_validation"), FieldType.BOOLEAN, text("tools_base_schema_config_validate_config"), default = false),
                 field("validate_data", text("tools_config_label_data_validation"), FieldType.BOOLEAN, text("tools_base_schema_config_validate_data"), default = false),
-                field("always_send", text("tools_config_label_always_send"), FieldType.BOOLEAN, text("tools_base_schema_config_always_send"), default = false),
-                field("schema_id", "schema_id", FieldType.TEXT, text("tools_base_schema_config_schema_id")),
-                field("data_schema_id", "data_schema_id", FieldType.TEXT, text("tools_base_schema_config_data_schema_id"))
+                field("always_send", text("tools_config_label_always_send"), FieldType.BOOLEAN, text("tools_base_schema_config_always_send"), default = false)
             )),
             SettingNode.ListOf("extra_fields", text("custom_fields_section_title"),
                 SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)))

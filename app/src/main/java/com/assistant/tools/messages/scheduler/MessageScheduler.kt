@@ -1,5 +1,6 @@
 package com.assistant.tools.messages.scheduler
 
+import com.assistant.core.tools.BaseSchemas
 import android.content.Context
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -282,7 +283,6 @@ object MessageScheduler : ToolScheduler {
         val result = coordinator.processUserAction("tool_data.create", mapOf(
             "tool_instance_id" to toolInstanceId,
             "tooltype" to "messages",
-            "schema_id" to "messages_data",
             "name" to name,
             "timestamp" to dueAt,
             "data" to JSONObject(),
@@ -505,16 +505,15 @@ object MessageScheduler : ToolScheduler {
     ): String? {
         val toolType = ToolTypeManager.getToolType("messages") ?: return "messages tooltype not found"
         val schema = try {
-            toolType.getSchema("messages_data", context, toolInstanceId)
+            BaseSchemas.entrySchema(toolType, toolInstanceId, context)
         } catch (e: IllegalStateException) {
             // The tool's custom fields cannot be read: the occurrence cannot be checked
             return e.message ?: "messages_data schema unavailable"
-        } ?: return "messages_data schema not found"
+        }
 
         val entry = mapOf(
             "tool_instance_id" to toolInstanceId,
             "tooltype" to "messages",
-            "schema_id" to "messages_data",
             "name" to name,
             "timestamp" to dueAt,
             "data" to data,

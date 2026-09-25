@@ -103,23 +103,13 @@ class DataNavigator(private val context: Context) {
                 return emptyList()
             }
 
-            // Read data_schema_id straight from the config
-            val configMap = parseJsonToMap(toolInstance.config)
-            val dataSchemaId = configMap["data_schema_id"]?.toString()
-
-            if (dataSchemaId.isNullOrEmpty()) {
-                LogManager.coordination("No data_schema_id found in config for tool $toolInstanceId", "WARN")
-                return emptyList()
-            }
-
-            val dataSchema = toolType.getSchema(dataSchemaId, context)
-            if (dataSchema == null) {
-                LogManager.coordination("No data schema found for schemaId: $dataSchemaId", "WARN")
-                return emptyList()
-            }
+            // The entry schema of this tool, its user's fields included
+            val schemaContent = com.assistant.core.tools.BaseSchemas.getEntrySchemaOrThrow(
+                toolType, org.json.JSONObject(toolInstance.config), toolInstanceId, context
+            )
 
             LogManager.coordination("Resolved data schema for tool $toolInstanceId")
-            return parseSchemaToFieldNodes(dataSchema.content, "tools.$toolInstanceId")
+            return parseSchemaToFieldNodes(schemaContent, "tools.$toolInstanceId")
 
         } catch (e: Exception) {
             LogManager.coordination("Error getting field children for $toolInstanceId: ${e.message}", "ERROR", e)
@@ -338,20 +328,6 @@ class DataNavigator(private val context: Context) {
         } catch (e: Exception) {
             LogManager.coordination("Error loading tool instance $toolInstanceId: ${e.message}", "ERROR", e)
             null
-        }
-    }
-
-    private fun parseJsonToMap(jsonString: String): Map<String, Any> {
-        return try {
-            val json = JSONObject(jsonString)
-            val map = mutableMapOf<String, Any>()
-            json.keys().forEach { key ->
-                map[key] = json.get(key)
-            }
-            map
-        } catch (e: Exception) {
-            LogManager.coordination("Error parsing JSON to map: ${e.message}", "ERROR", e)
-            emptyMap()
         }
     }
 

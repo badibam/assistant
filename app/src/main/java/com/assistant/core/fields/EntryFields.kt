@@ -114,7 +114,7 @@ object CoreFields {
  * The data schema of a tool type's entries, generated from its declaration and the user's
  * fields, so that no tool type writes an entry schema by hand.
  *
- * What locates an entry (id, tool_instance_id, tooltype, schema_id) is described but is not a
+ * What locates an entry (id, tool_instance_id, tooltype) is described but is not a
  * field. Everything else is: the core's fields at the root, then "data", "extra" and "state".
  */
 object EntrySchemaGenerator {
@@ -140,7 +140,6 @@ object EntrySchemaGenerator {
         properties.put("id", locator(text("tools_base_schema_data_id"), systemManaged = false))
         properties.put("tool_instance_id", locator(text("tools_base_schema_data_tool_instance_id"), systemManaged = false))
         properties.put("tooltype", locator(text("tools_base_schema_data_tooltype"), systemManaged = true))
-        properties.put("schema_id", locator(text("tools_base_schema_data_schema_id"), systemManaged = true))
 
         // The core's fields. An ABSENT one is not declared, and additionalProperties refuses it.
         coreField(properties, required, CoreFields.name(text), declared.name, text)?.put("minLength", 1)

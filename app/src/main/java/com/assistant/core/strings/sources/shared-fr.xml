@@ -625,8 +625,6 @@
     <string name="tools_base_schema_custom_field_config">Configuration spécifique au type de champ</string>
     <string name="tools_config_label_config_validation">Validation config par IA</string>
     <string name="tools_config_label_data_validation">Validation données par IA</string>
-    <string name="tools_config_label_schema_id">Identifiant de schéma</string>
-    <string name="tools_config_label_data_schema_id">Identifiant de schéma de données</string>
     <string name="tools_config_label_always_send">Toujours envoyer à l\'IA</string>
     <string name="tools_config_label_validate_config">Validation config</string>
     <string name="tools_config_label_validate_data">Validation données</string>
@@ -676,8 +674,6 @@
     <string name="tools_base_schema_config_management">Qui gère l\'outil : l\'utilisateur (manual) ou l\'IA (ai)</string>
     <string name="tools_base_schema_config_display_mode">Forme de l\'outil dans sa zone, de la plus petite (ICON) à la plus grande (FULL)</string>
     <string name="tools_base_schema_config_icon_name">Nom de l\'icône de l\'outil (un nom d\'icône Lucide)</string>
-    <string name="tools_base_schema_config_schema_id">Identifiant de ce schéma de configuration, posé par le système</string>
-    <string name="tools_base_schema_config_data_schema_id">Identifiant du schéma que suivent les entrées de l\'outil, posé par le système</string>
     <string name="tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
     <string name="tools_base_schema_config_validate_config">Requiert validation utilisateur avant modification configuration</string>
     <string name="tools_base_schema_config_validate_data">Requiert validation utilisateur avant modification données</string>
@@ -690,7 +686,6 @@
     <string name="tools_base_schema_data_timestamp">Moment auquel se rapporte l\'entrée ; maintenant s\'il est omis, et peut être dans le passé</string>
     <string name="tools_base_schema_data_created_at">Date de création de l\'entrée, posée par le système</string>
     <string name="tools_base_schema_data_updated_at">Date de dernière modification de l\'entrée, posée par le système</string>
-    <string name="tools_base_schema_data_schema_id">Identifiant du schéma que suit l\'entrée, posé par le système</string>
     <string name="tools_base_schema_data_data">Données spécifiques au type d\'outil</string>
     <string name="entry_schema_extra">Champs ajoutés à cet outil par l\'utilisateur</string>
     <string name="entry_schema_state">État de l\'entrée, écrit par ses actions et par l\'app, jamais directement</string>
@@ -815,7 +810,6 @@
     <string name="service_error_entry_not_found">Entrée introuvable: %1$s</string>
     <string name="service_error_missing_tool_instance_id">Paramètre obligatoire manquant: tool_instance_id</string>
     <string name="service_error_missing_entry_id">Paramètre obligatoire manquant: entry_id</string>
-    <string name="error_missing_schema_id">Schema_id manquant dans les données de configuration</string>
     <string name="service_error_zone_name_required">Nom de zone obligatoire</string>
     <string name="service_error_zone_id_required">ID de zone obligatoire</string>
     <string name="service_error_zone_not_found">Zone introuvable</string>
@@ -828,7 +822,8 @@
     <string name="service_error_no_results_found">Aucun résultat trouvé pour l'opération %1$s</string>
     <string name="service_error_invalid_phase">Phase invalide: %1$s</string>
     <string name="service_error_unknown_category">Catégorie inconnue: %1$s</string>
-    <string name="service_error_schema_requires_tool_instance_id">Le schéma \'%1$s\' (catégorie: %2$s) nécessite le paramètre tool_instance_id</string>
+    <string name="service_error_schema_target_missing">Un schéma se demande par un tooltype, un tool_instance_id ou un id</string>
+    <string name="service_error_schema_not_found">Aucun schéma pour %1$s</string>
 
     <!-- AI SYSTEM MESSAGES - Messages système générés par CommandExecutor -->
     <string name="ai_system_no_commands">Aucune commande à exécuter</string>

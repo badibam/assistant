@@ -256,8 +256,6 @@ fun JournalConfigScreen(
                     try {
                         // Build config data
                         val configData = mutableMapOf<String, Any>(
-                            "schema_id" to "journal_config",
-                            "data_schema_id" to "journal_data",
                             "name" to name,
                             "description" to description,
                             "icon_name" to iconName,

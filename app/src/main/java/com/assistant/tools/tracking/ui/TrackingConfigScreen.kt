@@ -134,8 +134,6 @@ fun TrackingConfigScreen(
     /** Validates and saves, the entries deleted first when the type changed. */
     fun save() {
         val toSave = JSONObject(config.toString()).apply {
-            put("schema_id", kind.configSchemaId)
-            put("data_schema_id", kind.dataSchemaId)
             if (customFields.isNotEmpty()) put("extra_fields", customFields.toJsonArray()) else remove("extra_fields")
         }
         UI.ValidationHelper.validateAndSave(

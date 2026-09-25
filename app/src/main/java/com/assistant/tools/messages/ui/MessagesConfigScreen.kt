@@ -388,8 +388,6 @@ fun MessagesConfigScreen(
                     try {
                         // Build complete configuration with schema IDs
                         val configData = mutableMapOf<String, Any>(
-                            "schema_id" to "messages_config",
-                            "data_schema_id" to "messages_data",
                             "name" to name,
                             "description" to description,
                             "icon_name" to iconName,

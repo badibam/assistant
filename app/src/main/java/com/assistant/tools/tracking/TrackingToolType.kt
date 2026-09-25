@@ -33,7 +33,7 @@ import org.json.JSONObject
  * Tracking Tool Type implementation
  * Provides static metadata for tracking tool instances
  */
-object TrackingToolType : ToolTypeContract, SchemaProvider {
+object TrackingToolType : ToolTypeContract {
     
     override fun getDisplayName(context: Context): String {
         val s = Strings.`for`(tool = "tracking", context = context)
@@ -61,36 +61,6 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
             "display_mode": "LINE"
         }
         """.trimIndent()
-    }
-
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        // Config schemas (no custom fields)
-        if (schemaId.startsWith("tracking_config_")) {
-            TrackingKind.entries.firstOrNull { it.configSchemaId == schemaId } ?: return null
-            return com.assistant.core.tools.ToolConfigSettings.schema(this, schemaId, context)
-        }
-
-        // Data schemas, generated from the declared fields: for the tool's own config when it is
-        // given, for a new tool of the type the schema id names otherwise
-        if (schemaId.startsWith("tracking_data_")) {
-            val kind = TrackingKind.entries.firstOrNull { it.dataSchemaId == schemaId } ?: return null
-            val config = if (toolInstanceId != null) BaseSchemas.loadToolConfig(toolInstanceId, context)
-                         else JSONObject(getDefaultConfig()).put("type", kind.key)
-            val s = Strings.`for`(tool = "tracking", context = context)
-            return Schema(
-                id = schemaId,
-                displayName = s.tool("schema_data_display_name"),
-                description = s.tool("schema_data_description"),
-                category = SchemaCategory.TOOL_DATA,
-                content = BaseSchemas.getEntrySchemaOrThrow(this, config, toolInstanceId, context)
-            )
-        }
-
-        return null
-    }
-
-    override fun getAllSchemaIds(): List<String> {
-        return TrackingKind.entries.map { it.configSchemaId } + TrackingKind.entries.map { it.dataSchemaId }
     }
 
     /**

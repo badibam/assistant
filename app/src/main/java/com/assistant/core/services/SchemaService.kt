@@ -4,7 +4,10 @@ import android.content.Context
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
+import com.assistant.core.tools.BaseSchemas
+import com.assistant.core.tools.ToolConfigSettings
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.Schema
 import com.assistant.core.schemas.ZoneSchemaProvider
 import com.assistant.core.fields.settings.FieldTypeSchemas
@@ -48,48 +51,61 @@ class SchemaService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Get a specific schema by ID
+     * The schema of what the params name: "tooltype", the config of a tool of that type;
+     * "tool_instance_id", the entries of that tool; "id", any other schema by its name.
+     *
+     * A tool's schemas are generated from its type's declarations. Their name is computed from
+     * what they describe ("tracking_config", "tracking_data") and handed back as "schema_id" so a
+     * caller can tell two schemas apart; it is stored nowhere.
      */
     private suspend fun handleGetSchema(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val schemaId = params.optString("id", "")
-        if (schemaId.isEmpty()) {
-            return OperationResult.error("Schema ID is required")
-        }
+        val tooltype = params.optString("tooltype")
+        val toolInstanceId = params.optString("tool_instance_id")
+        val schemaId = params.optString("id")
+        LogManager.service("SchemaService.get() called with tooltype='$tooltype', toolInstanceId='$toolInstanceId', id='$schemaId'")
 
-        val toolInstanceId = params.optString("tool_instance_id", null)
-        LogManager.service("SchemaService.get() called with schemaId='$schemaId', toolInstanceId='$toolInstanceId'")
+        val schema = when {
+            toolInstanceId.isNotEmpty() -> entrySchema(toolInstanceId)
+            tooltype.isNotEmpty() -> configSchema(tooltype)
+            schemaId.isNotEmpty() -> getSystemSchema(schemaId)
+            else -> return OperationResult.error(s.shared("service_error_schema_target_missing"))
+        } ?: return OperationResult.error(s.shared("service_error_schema_not_found").format(listOf(tooltype, toolInstanceId, schemaId).first { it.isNotEmpty() }))
 
-        val schema = getSchemaById(schemaId, toolInstanceId)
+        val resultData = mutableMapOf<String, Any>(
+            "schema_id" to schema.id,
+            "content" to schema.content
+        )
+        // Entries schemas are one per tool: the tool is part of what tells two of them apart
+        if (toolInstanceId.isNotEmpty()) resultData["tool_instance_id"] = toolInstanceId
 
-        if (schema != null) {
-            // Check if schema requires toolInstanceId (data/execution schemas need it for custom fields)
-            val requiresInstanceId = schema.category == com.assistant.core.validation.SchemaCategory.TOOL_DATA ||
-                                      schema.category == com.assistant.core.validation.SchemaCategory.TOOL_EXECUTION
+        return OperationResult.success(resultData)
+    }
 
-            if (requiresInstanceId && toolInstanceId == null) {
-                val s = Strings.`for`(context = context)
-                return OperationResult.error(
-                    s.shared("service_error_schema_requires_tool_instance_id").format(schemaId, schema.category.name)
-                )
-            }
+    /** The config schema of a tool of [tooltype], or null when there is no such type. */
+    private fun configSchema(tooltype: String): Schema? {
+        val toolType = ToolTypeManager.getToolType(tooltype) ?: return null
+        return ToolConfigSettings.schema(toolType, "${tooltype}_config", context)
+    }
 
-            // Build result data - always include schema_id and content
-            val resultData = mutableMapOf<String, Any>(
-                "schema_id" to schema.id,
-                "content" to schema.content
-            )
-
-            // Include toolInstanceId if provided (needed for deduplication key in loadHistoricalSchemas)
-            if (toolInstanceId != null) {
-                resultData["tool_instance_id"] = toolInstanceId
-            }
-
-            return OperationResult.success(resultData)
-        } else {
-            return OperationResult.error("Schema not found: $schemaId")
-        }
+    /**
+     * The schema of the entries of the tool [toolInstanceId], from its current config.
+     *
+     * @throws IllegalStateException when the tool's config or fields cannot be read: an error
+     *   for the caller, not a schema that does not exist
+     */
+    private suspend fun entrySchema(toolInstanceId: String): Schema? {
+        val tool = com.assistant.core.database.AppDatabase.getDatabase(context).toolInstanceDao().getToolInstanceById(toolInstanceId)
+            ?: return null
+        val toolType = ToolTypeManager.getToolType(tool.tooltype) ?: return null
+        return Schema(
+            id = "${tool.tooltype}_data",
+            displayName = toolType.getDisplayName(context),
+            description = toolType.getDescription(context),
+            category = SchemaCategory.TOOL_DATA,
+            content = BaseSchemas.getEntrySchemaOrThrow(toolType, JSONObject(tool.config_json), toolInstanceId, context)
+        )
     }
 
     /**
@@ -109,26 +125,6 @@ class SchemaService(private val context: Context) : ExecutableService {
     // ========================================================================================
     // Schema Resolution Methods
     // ========================================================================================
-
-    /**
-     * Get schema by ID with automatic provider discovery
-     * @param schemaId Schema identifier
-     * @param toolInstanceId Optional tool instance ID for data/execution schema enrichment
-     */
-    private fun getSchemaById(schemaId: String, toolInstanceId: String?): Schema? {
-        LogManager.service("Resolving schema for ID: $schemaId, toolInstanceId=$toolInstanceId")
-
-        // Try system schemas first (hardcoded providers, no toolInstanceId needed)
-        val systemSchema = getSystemSchema(schemaId)
-        if (systemSchema != null) return systemSchema
-
-        // Try tooltype schemas via discovery (may need toolInstanceId for data/execution schemas)
-        val tooltypeSchema = getTooltypeSchema(schemaId, toolInstanceId)
-        if (tooltypeSchema != null) return tooltypeSchema
-
-        LogManager.service("Schema not found: $schemaId", "WARN")
-        return null
-    }
 
     /**
      * Get system schemas (hardcoded providers)
@@ -167,42 +163,6 @@ class SchemaService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Get tooltype schemas via ToolTypeManager discovery
-     *
-     * CRITICAL: Do NOT mask technical exceptions - they must propagate to AI
-     *
-     * @param schemaId Schema identifier
-     * @param toolInstanceId Optional tool instance ID for data/execution schema enrichment
-     */
-    private fun getTooltypeSchema(schemaId: String, toolInstanceId: String?): Schema? {
-        LogManager.service("Searching for schema '$schemaId' across all tooltypes (toolInstanceId=$toolInstanceId)")
-
-        // Outer try catches only ToolTypeManager.getAllToolTypes() failures (technical error)
-        val allToolTypes = try {
-            ToolTypeManager.getAllToolTypes()
-        } catch (e: Exception) {
-            // CRITICAL: Technical error accessing ToolTypeManager - let it propagate
-            LogManager.service("Technical error accessing ToolTypeManager: ${e.message}", "ERROR", e)
-            throw IllegalStateException("Failed to access ToolTypeManager: ${e.message}", e)
-        }
-
-        // A tooltype answers null for an id it does not own. One that throws owns the id and
-        // failed to build it (a tool whose custom fields cannot be read): that is an error for
-        // the caller, not a schema that does not exist.
-        for ((toolTypeName, toolType) in allToolTypes) {
-            val schema = toolType.getSchema(schemaId, context, toolInstanceId)
-            if (schema != null) {
-                LogManager.service("Found schema '$schemaId' in tooltype '$toolTypeName'")
-                return schema
-            }
-        }
-
-        // Schema not found in any tooltype (not an error, just doesn't exist)
-        LogManager.service("Schema '$schemaId' not found in any tooltype")
-        return null
-    }
-
-    /**
      * Get all available schema IDs in the system
      */
     private fun getAllSchemaIds(): List<String> {
@@ -211,8 +171,8 @@ class SchemaService(private val context: Context) : ExecutableService {
         // Add system schema IDs (hardcoded)
         schemaIds.addAll(getSystemSchemaIds())
 
-        // Add tooltype schema IDs via discovery
-        schemaIds.addAll(getTooltypeSchemaIds())
+        // A tool type's config and entries, by their computed names
+        ToolTypeManager.getAllToolTypes().keys.forEach { schemaIds.add("${it}_config"); schemaIds.add("${it}_data") }
 
         LogManager.service("Found ${schemaIds.size} total schema IDs")
         return schemaIds.sorted()
@@ -237,35 +197,6 @@ class SchemaService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Get tooltype schema IDs via discovery
-     */
-    private fun getTooltypeSchemaIds(): List<String> {
-        val schemaIds = mutableListOf<String>()
-
-        try {
-            val allToolTypes = ToolTypeManager.getAllToolTypes()
-            LogManager.service("Found ${allToolTypes.size} tooltypes for schema discovery")
-
-            for ((toolTypeName, toolType) in allToolTypes) {
-                try {
-                    // TODO: Add method to ToolTypeContract to list available schema IDs
-                    // For now, assume standard pattern: {tooltype}_config, {tooltype}_data
-                    schemaIds.add("${toolTypeName}_config")
-                    schemaIds.add("${toolTypeName}_data")
-
-                    LogManager.service("Added schema IDs for tooltype: $toolTypeName")
-                } catch (e: Exception) {
-                    LogManager.service("Failed to get schema IDs from tooltype '$toolTypeName': ${e.message}", "WARN")
-                }
-            }
-        } catch (e: Exception) {
-            LogManager.service("Failed to discover tooltype schemas: ${e.message}", "ERROR", e)
-        }
-
-        return schemaIds
-    }
-
-    /**
      * Verbalize schema operation
      */
     override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
@@ -273,8 +204,8 @@ class SchemaService(private val context: Context) : ExecutableService {
 
         return when (operation) {
             "get" -> {
-                val schemaId = params.optString("id", "")
-                s.shared("action_verbalize_schema_get").format(schemaId)
+                val target = listOf("tooltype", "tool_instance_id", "id").map { params.optString(it) }.firstOrNull { it.isNotEmpty() } ?: ""
+                s.shared("action_verbalize_schema_get").format(target)
             }
             "list" -> s.shared("action_verbalize_schema_list")
             else -> s.shared("action_verbalize_unknown")

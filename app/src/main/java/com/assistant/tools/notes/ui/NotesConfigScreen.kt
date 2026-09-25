@@ -221,8 +221,6 @@ fun NotesConfigScreen(
                     isSaving = true
                     try {
                         val configData = mutableMapOf<String, Any>(
-                            "schema_id" to "notes_config",  // Add schema_id for validation
-                            "data_schema_id" to "notes_data", // Add data_schema_id for runtime
                             "name" to name,
                             "description" to description,
                             "icon_name" to iconName,

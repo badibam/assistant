@@ -46,6 +46,21 @@ object BaseSchemas {
     }
 
     /**
+     * The entry schema of the tool [toolInstanceId] as a Schema, for a caller checking an entry
+     * before handing it to the service.
+     *
+     * @throws IllegalStateException if the tool's config cannot be loaded or its fields read
+     */
+    fun entrySchema(toolType: ToolTypeContract, toolInstanceId: String, context: Context): com.assistant.core.validation.Schema =
+        com.assistant.core.validation.Schema(
+            id = "entries:$toolInstanceId",
+            displayName = toolType.getDisplayName(context),
+            description = toolType.getDescription(context),
+            category = com.assistant.core.validation.SchemaCategory.TOOL_DATA,
+            content = getEntrySchema(toolType, toolInstanceId, context)
+        )
+
+    /**
      * [getEntrySchema] for a config the caller already holds, with its failure named after the
      * tool, so that a schema built from the wrong config never passes for the right one.
      *
@@ -87,8 +102,6 @@ object BaseSchemas {
             "icon_name" -> s.shared("tools_config_label_icon")
             "validate_config" -> s.shared("tools_config_label_validate_config")
             "validate_data" -> s.shared("tools_config_label_validate_data")
-            "schema_id" -> s.shared("tools_config_label_schema_id")
-            "data_schema_id" -> s.shared("tools_config_label_data_schema_id")
             else -> null
         }
     }

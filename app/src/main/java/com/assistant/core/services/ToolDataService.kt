@@ -1053,7 +1053,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             ?: return WriteTarget.Refused(s.shared("service_error_data_schema_not_found").format("", tool.tooltype))
         return WriteTarget.Ready(
             tool, config, Schema(
-                id = config.optString("data_schema_id"),
+                id = "entries:${tool.id}",
                 displayName = tool.tooltype,
                 description = "",
                 category = com.assistant.core.validation.SchemaCategory.TOOL_DATA,
