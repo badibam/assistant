@@ -117,17 +117,17 @@
     <!-- AI Interaction - Validation and Communication Modules -->
     <string name="ai_validation_title">Validation required</string>
     <string name="ai_validation_status">Status</string>
-    <string name="ai_module_multiple_choice_title">Multiple choice</string>
     <string name="ai_module_validation_title">Confirmation</string>
-    <string name="ai_module_no_question">No question provided</string>
-    <string name="ai_module_no_message">No message provided</string>
     <string name="ai_module_cancelled">Communication module cancelled by the user</string>
     <string name="ai_module_response_prefix">Answer:</string>
-    <string name="ai_module_select_option">Select an option</string>
-    <string name="ai_module_free_text_label">Free answer</string>
-    <string name="ai_module_free_text_placeholder">A detail or another answer</string>
-    <string name="ai_module_precision_prefix">Detail:</string>
-    <string name="ai_module_other_response_prefix">Other answer:</string>
+    <string name="ai_module_question_title">Question</string>
+    <string name="ai_module_confirmed">Confirmed</string>
+    <string name="ai_module_fields">Fields</string>
+    <string name="ai_module_field_name_description">The key the answer to this field comes back under, in snake_case: yours to choose, unique in the module</string>
+    <string name="ai_module_field_required">Required</string>
+    <string name="ai_module_field_required_description">Whether the user must answer this field before sending</string>
+    <string name="ai_schema_communication_module_name">Communication module</string>
+    <string name="ai_schema_communication_module_desc">The fields a question to the user asks for; none for a confirmation</string>
 
     <!-- AI Interaction - System Messages for Cancellations -->
     <string name="ai_system_communication_no_response">No answer provided to the communication module</string>
@@ -148,8 +148,6 @@
 
     <!-- AI Response Parsing -->
     <string name="ai_response_invalid_format">Answer format not respected by the AI - raw text:</string>
-    <string name="ai_error_communication_module_unknown_type">Unknown communicationModule type: %1$s</string>
-    <string name="ai_error_communication_module_parse">Error while parsing the communicationModule: %1$s</string>
 
     <!-- AI Response Validation Errors -->
     <string name="ai_error_validation_multiple_action_types">Several command types present: %1$s. Only one type is allowed per answer.</string>
@@ -1029,16 +1027,9 @@
     <string name="ai_schema_field_action_commands_desc">Action commands to run (mutually exclusive with dataCommands and communicationModule)</string>
     <string name="ai_schema_field_posttext_desc">Text to show after the actions have run successfully (only together with actionCommands)</string>
     <string name="ai_schema_field_keep_control_desc">Keep control after the actions succeed, to chain further actions. In that case you will still see what the commands of the current message returned (successes, failures, ids of the created objects, and so on). Useful for multi-step sequences with intermediate system feedback.</string>
-    <string name="ai_schema_field_communication_module_desc">Communication module for interaction with the user (mutually exclusive with dataCommands and actionCommands)</string>
+    <string name="ai_schema_field_communication_module_desc">A question to the user as a list of fields, with the schema communication_module (mutually exclusive with data_commands and action_commands)</string>
 
     <!-- communication_module schemas -->
-    <string name="ai_schema_communication_multiple_choice_name">Multiple choice module</string>
-    <string name="ai_schema_communication_multiple_choice_desc">Schema for the multiple choice communication module</string>
-    <string name="ai_schema_communication_multiple_choice_question_desc">The question to ask the user</string>
-    <string name="ai_schema_communication_multiple_choice_options_desc">List of options the user can choose from (minimum 2)</string>
-    <string name="ai_schema_communication_validation_name">Validation module</string>
-    <string name="ai_schema_communication_validation_desc">Schema for the validation communication module</string>
-    <string name="ai_schema_communication_validation_message_desc">The validation message/question to show the user</string>
 
     <!-- CUSTOM FIELDS SCHEMAS - Field type definitions -->
     <string name="field_type_text_display_name">Text</string>

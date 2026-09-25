@@ -29,14 +29,14 @@ is which -- a data entry is only a data entry inside CREATE_DATA -- so it works 
 ```json blocks rather than on loose braces. The objects it knows:
 
   - a response (pre_text and the rest): the AI message schema;
-  - a communication module's data: that module's schema;
   - a CREATE_DATA entry: the keys every entry schema requires, whatever its tool (the list
     EntrySchemaGenerator starts from), where a key the command's params carry counts as
     present, since the service copies tool_instance_id and tooltype into every entry.
 
 A schema's `required` is read from the Kotlin source: the least indented list in the function
-that builds it is the top level's. A field definition is not read here: its schema is generated
-from its declaration, and FieldTypeSchemasTest validates the prompt's definitions against it.
+that builds it is the top level's. A field definition and a communication module are not read
+here: their schemas are generated from their declarations, and FieldTypeSchemasTest and
+CommunicationModulesTest validate the prompt's examples against them.
 A tool config is not read either: its schema is generated from its tool type's declaration,
 whose labels need an Android context, and the prompt's only CREATE_TOOL example elides.
 
@@ -60,7 +60,6 @@ PROMPT = ROOT / "app/src/main/java/com/assistant/core/strings/sources/ai_prompt_
 FIELD_TYPE = ROOT / "app/src/main/java/com/assistant/core/fields/FieldType.kt"
 ENTRY_FIELDS = ROOT / "app/src/main/java/com/assistant/core/fields/EntryFields.kt"
 MESSAGE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/AIMessageSchemas.kt"
-MODULE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/CommunicationModuleSchemas.kt"
 ICON_INDEX = ROOT / "app/src/main/assets/icons/index.json"
 
 # A JSON type, as the schema declares it, against the Python types a parsed example yields.
@@ -175,7 +174,7 @@ def missing(obj, required, supplied=()):
 def required_problems(example, schemas):
     """Every object of one whole example that lacks a field its schema requires."""
     problems = []
-    response_required, module_required, data_required = schemas
+    response_required, data_required = schemas
 
     def at(path, key):
         return f"{path}.{key}" if path else key
@@ -196,12 +195,6 @@ def required_problems(example, schemas):
             keys = missing(value, response_required)
             if keys:
                 report(path, "response", keys)
-
-        module = value.get("communication_module")
-        if isinstance(module, dict) and module.get("type") in module_required:
-            keys = missing(module.get("data", {}), module_required[module["type"]])
-            if keys:
-                report(at(path, "communication_module.data"), f"{module['type']} module", keys)
 
         params = value.get("params")
         if isinstance(params, dict):
@@ -276,8 +269,6 @@ def main():
     # 4. every object carries what its schema requires
     schemas = (
         required_lists(MESSAGE_SCHEMAS, "getAIMessageResponseSchemaContent")[0],
-        {module: required_lists(MODULE_SCHEMAS, f"get{module}Schema")[0]
-         for module in ("MultipleChoice", "Validation")},
         entry_required(),
     )
     whole_count = 0

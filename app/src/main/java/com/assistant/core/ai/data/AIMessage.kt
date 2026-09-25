@@ -1,6 +1,5 @@
 package com.assistant.core.ai.data
 
-import android.content.Context
 import com.assistant.core.ai.utils.JsonNormalizer
 import org.json.JSONArray
 import org.json.JSONObject
@@ -67,12 +66,7 @@ data class AIMessage(
         // Serialize keepControl as boolean (or omit if null/false)
         keepControl?.let { if (it) json.put("keep_control", true) }
 
-        communicationModule?.let { module ->
-            val moduleJson = JSONObject()
-            moduleJson.put("type", module.type)
-            moduleJson.put("data", JSONObject(module.data))
-            json.put("communication_module", moduleJson)
-        }
+        communicationModule?.let { json.put("communication_module", it.declaration) }
 
         // Serialize completed as boolean (or omit if null/false)
         completed?.let { if (it) json.put("completed", true) }
@@ -153,20 +147,8 @@ data class AIMessage(
                     json.optBoolean("keep_control", false)
                 } else null
 
-                val communicationModule = json.optJSONObject("communication_module")?.let { moduleJson ->
-                    try {
-                        val type = moduleJson.getString("type")
-                        val data = parseParams(moduleJson.getJSONObject("data"))
-
-                        when (type) {
-                            "MultipleChoice" -> CommunicationModule.MultipleChoice(type, data)
-                            "Validation" -> CommunicationModule.Validation(type, data)
-                            else -> null
-                        }
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
+                // Kept as written: CommunicationModules.check says what is wrong with it
+                val communicationModule = json.optJSONObject("communication_module")?.let { CommunicationModule(it) }
 
                 // Parse completed as boolean (true = work completed)
                 val completed = if (json.has("completed")) {
@@ -219,59 +201,23 @@ data class AIMessage(
 }
 
 /**
- * Communication modules for user interaction
- * Sealed class for controlled set of core modules
+ * A question put to the user as a list of fields the AI declares (docs/design/unified-fields.md,
+ * decision 17): each field is entered with the input of its field type, and the answer is an
+ * object of values under the fields' names, checked against the schema generated from them.
+ * A module without fields asks for a confirmation.
  *
- * Pattern analogous to tool_data: common type + variable data in Map
- * Data validated via CommunicationModuleSchemas
+ * Holds the declaration as the AI wrote it: CommunicationModules.check reads it before anything
+ * uses [fields], so that a malformed module is refused with its reason instead of dropped.
  *
- * Exclusive with dataCommands/actionCommands/postText:
- * - If communicationModule present → only preText + communicationModule (+ optional validationRequest if related)
- * - User response stored as simple SessionMessage with textContent
+ * Exclusive with dataCommands and actionCommands; the question itself is the preText.
  */
-sealed class CommunicationModule {
-    abstract val type: String
-    abstract val data: Map<String, Any?>
+data class CommunicationModule(val declaration: JSONObject) {
 
-    /**
-     * Convert module to text representation for display in message history
-     * Used to show the question/prompt even after the module is no longer interactive
-     */
-    abstract fun toText(context: Context): String
-
-    /**
-     * Multiple choice question
-     * Data: question (String), options (List<String>)
-     */
-    data class MultipleChoice(
-        override val type: String = "MultipleChoice",
-        override val data: Map<String, Any?>
-    ) : CommunicationModule() {
-        override fun toText(context: Context): String {
-            val question = data["question"] as? String ?: ""
-            @Suppress("UNCHECKED_CAST")
-            val options = data["options"] as? List<String> ?: emptyList()
-
-            val optionsList = options.mapIndexed { index, option ->
-                "${index + 1}. $option"
-            }.joinToString("\n")
-
-            return "$question\n\n$optionsList"
-        }
+    /** The fields asked for, each with whether an answer needs it. Valid once checked. */
+    val fields: List<com.assistant.core.fields.settings.SettingNode.Field> by lazy {
+        CommunicationModules.fieldsOf(declaration)
     }
 
-    /**
-     * Validation/confirmation request
-     * Data: message (String)
-     */
-    data class Validation(
-        override val type: String = "Validation",
-        override val data: Map<String, Any?>
-    ) : CommunicationModule() {
-        override fun toText(context: Context): String {
-            return data["message"] as? String ?: ""
-        }
-    }
-
-    // TODO: Add Slider, DataSelector modules when needed
+    /** The labels of the fields asked for, one per line, for the history of the conversation. */
+    fun toText(): String = fields.joinToString("\n") { it.definition.displayName }
 }

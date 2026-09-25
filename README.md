@@ -85,7 +85,7 @@ cd assistant
 - **Prompts** : Multi-niveaux (documentation L1 + données utilisateur L2)
 - **Automations** : Scheduling, triggers, exécution autonome avec limites
 - **Validation** : Hiérarchie App > Zone > Tool > Session > Request
-- **Communication** : Modules MultipleChoice et Validation
+- **Communication** : questions de l'IA à l'utilisateur sous forme de champs (choix, texte, nombre, date…), ou simple confirmation
 - **Providers** : Abstraction extensible (Claude, OpenAI, DeepSeek)
 - **Composer** : Architecture multi-blocs avec enrichments alternés, double preview UI/Prompt
 

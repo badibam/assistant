@@ -107,19 +107,18 @@ fun ChatMessageBubble(
                                 message.textContent.startsWith(responsePrefix)
 
                             // If it's a response and we have the question from previous AI message, show it
-                            if (isCommunicationResponse && previousAIMessage?.aiMessage?.communicationModule != null) {
+                            val answered = previousAIMessage?.aiMessage?.communicationModule
+                            if (isCommunicationResponse && answered != null) {
+                                // The answer by the fields it answers, under the question the
+                                // AI's preText asked
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    // Show question from communication module
                                     UI.Text(
-                                        text = previousAIMessage.aiMessage.communicationModule.toText(context),
-                                        type = TextType.BODY
+                                        text = previousAIMessage.aiMessage.preText,
+                                        type = TextType.CAPTION
                                     )
-                                    // Show separator
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    // Show response
-                                    UI.Text(
-                                        text = message.textContent,
-                                        type = TextType.BODY
+                                    com.assistant.core.ai.ui.components.CommunicationAnswer(
+                                        module = answered,
+                                        answer = message.textContent.removePrefix(responsePrefix).trim()
                                     )
                                 }
                             } else {

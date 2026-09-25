@@ -280,12 +280,12 @@ object PromptChunks {
             val allSchemaIds = result.data?.get("schema_ids") as? List<String> ?: emptyList()
 
             // Filter to get only system schemas (exclude tooltype-specific ones)
-            // System schemas: zone_*, app_*, ai_*, communication_module_*, field_type_*
+            // System schemas: zone_*, app_*, ai_*, communication_module, field_type_*
             val systemSchemaIds = allSchemaIds.filter { schemaId ->
                 schemaId.startsWith("zone_") ||
                 schemaId.startsWith("app_") ||
                 schemaId.startsWith("ai_") ||
-                schemaId.startsWith("communication_module_") ||
+                schemaId == com.assistant.core.ai.data.CommunicationModules.SCHEMA_ID ||
                 schemaId.startsWith("field_type_")
             }.sorted()
 

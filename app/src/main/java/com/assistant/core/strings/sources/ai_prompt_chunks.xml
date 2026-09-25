@@ -144,20 +144,33 @@ The user will answer **yes** or **no**. If no, the actions will not be carried o
     <!-- B.4 CommunicationModules - explanation [DEGREE 1] -->
     <string name="ai_chunk_response_communication_modules_intro"><![CDATA[## Communication modules
 
-The communication modules let you interact with the user through dedicated interfaces.
+A communication module asks the user something through a form: you declare its fields, the user fills them in, and you receive the answer in the next exchange. Your `pre_text` is the question; the module holds what to answer.
 
-### Available types
+`communication_module` has one key, `fields`: the fields to fill in, in order. Each one is a field definition, as in a tool\'s `extra_fields` (same types, same `config`), with two differences:
 
-**MultipleChoice**: offers several options for the user to choose one from.
-Structure: {{SCHEMA:communication_module_multiple_choice}}
+- `name` is **yours**: the key the answer comes back under, in snake_case, unique in the module
+- `required`: `true` when the user must answer the field before sending; `false` by default
 
-**Validation**: asks for a simple yes/no confirmation.
-Structure: {{SCHEMA:communication_module_validation}}
+**No field** (`"fields": []`) asks for a confirmation: the user confirms or cancels what your `pre_text` says.
+
+Pick the type that fits the answer:
+
+- one option among several: CHOICE; `"multiple": true` for several, `"ordered": true` for a ranking of the options, `"open": true` to let the user type an option you did not list
+- free text: TEXT, its `config.length` bounding it
+- yes or no: BOOLEAN
+- a number: NUMERIC, or SCALE between two labelled bounds
+- a moment or a length of time: DATE, TIME, DATETIME, DURATION
+
+The whole schema: `SCHEMA` with the ID `communication_module`.
+
+### The answer
+
+An object of values under the names of your fields, dates and durations in ISO 8601 (Part E): `{"zone": "work", "why": "Done with it"}`. A field left empty is absent. A confirmation answers `confirmed`. If the user cancels, a system message says so.
 
 ### Important rules
 
-- A communicationModule **replaces** dataCommands and actionCommands entirely
-- You will receive the user answer in the next exchange]]></string>
+- A communication module **replaces** data_commands and action_commands entirely
+- CHAT sessions only]]></string>
 
     <!-- B.6 Complete examples [DEGREE 3] -->
     <string name="ai_chunk_response_examples"><![CDATA[## Examples of complete answers
@@ -199,14 +212,25 @@ Structure: {{SCHEMA:communication_module_validation}}
 {
   "pre_text": "Several zones are named \'Sport\'. Which one do you want to delete?",
   "communication_module": {
-    "type": "MultipleChoice",
-    "data": {
-      "question": "Choose the zone to delete",
-      "options": ["Sport (created on 15/01)", "Sport (created on 20/02)", "Cancel"]
-    }
+    "fields": [
+      {
+        "name": "zone",
+        "display_name": "Zone to delete",
+        "type": "CHOICE",
+        "required": true,
+        "config": {
+          "options": [
+            { "value": "zone_sport_1", "label": "Sport (created on 15/01)" },
+            { "value": "zone_sport_2", "label": "Sport (created on 20/02)" }
+          ]
+        }
+      }
+    ]
   }
 }
-```]]></string>
+```
+
+The answer comes back as `{"zone": "zone_sport_2"}`.]]></string>
 
     <!-- ================================================================ -->
     <!-- PART C: AVAILABLE COMMANDS                                       -->
@@ -1122,16 +1146,26 @@ The flow stops, the user has their answer.]]></string>
 {
   "pre_text": "The \'Work\' zone does not exist in your system. Your current zones are: Health, Productivity, Leisure. Do you want to delete one of those?",
   "communication_module": {
-    "type": "MultipleChoice",
-    "data": {
-      "question": "Which zone do you want to delete?",
-      "options": ["Health", "Productivity", "Leisure", "Cancel"]
-    }
+    "fields": [
+      {
+        "name": "zone",
+        "display_name": "Zone to delete",
+        "type": "CHOICE",
+        "required": true,
+        "config": {
+          "options": [
+            { "value": "zone_sante_id", "label": "Health" },
+            { "value": "zone_productivite_id", "label": "Productivity" },
+            { "value": "zone_loisirs_id", "label": "Leisure" }
+          ]
+        }
+      }
+    ]
   }
 }
 ```
 
-**User**: picks "Productivity"
+**User**: answers `{"zone": "zone_productivite_id"}`
 
 **AI - turn 3**:
 

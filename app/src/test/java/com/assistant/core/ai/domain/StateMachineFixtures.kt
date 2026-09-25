@@ -95,8 +95,8 @@ internal fun command(type: String = "tool_data.get") = DataCommand(
 )
 
 /** A question put to the user, for the cases where the AI hands control back. */
-internal fun question() = CommunicationModule.MultipleChoice(
-    data = mapOf("question" to "which one?", "options" to listOf("a", "b"))
+internal fun question() = CommunicationModule(
+    org.json.JSONObject().put("fields", org.json.JSONArray())
 )
 
 /**

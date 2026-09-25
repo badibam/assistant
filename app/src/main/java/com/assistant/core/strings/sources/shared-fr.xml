@@ -117,17 +117,17 @@
     <!-- AI Interaction - Validation and Communication Modules -->
     <string name="ai_validation_title">Validation requise</string>
     <string name="ai_validation_status">Statut</string>
-    <string name="ai_module_multiple_choice_title">Choix multiple</string>
     <string name="ai_module_validation_title">Confirmation</string>
-    <string name="ai_module_no_question">Aucune question fournie</string>
-    <string name="ai_module_no_message">Aucun message fourni</string>
     <string name="ai_module_cancelled">Module de communication annulé par l\'utilisateur</string>
     <string name="ai_module_response_prefix">Réponse :</string>
-    <string name="ai_module_select_option">Sélectionnez une option</string>
-    <string name="ai_module_free_text_label">Réponse libre</string>
-    <string name="ai_module_free_text_placeholder">Précision ou une autre réponse</string>
-    <string name="ai_module_precision_prefix">Précision :</string>
-    <string name="ai_module_other_response_prefix">Autre réponse :</string>
+    <string name="ai_module_question_title">Question</string>
+    <string name="ai_module_confirmed">Confirmé</string>
+    <string name="ai_module_fields">Champs</string>
+    <string name="ai_module_field_name_description">La clé sous laquelle revient la réponse à ce champ, en snake_case : à toi de la choisir, unique dans le module</string>
+    <string name="ai_module_field_required">Obligatoire</string>
+    <string name="ai_module_field_required_description">Si l\'utilisateur doit répondre à ce champ avant d\'envoyer</string>
+    <string name="ai_schema_communication_module_name">Module de communication</string>
+    <string name="ai_schema_communication_module_desc">Les champs que demande une question à l\'utilisateur ; aucun pour une confirmation</string>
 
     <!-- AI Interaction - System Messages for Cancellations -->
     <string name="ai_system_communication_no_response">Aucune réponse fournie au module de communication</string>
@@ -148,8 +148,6 @@
 
     <!-- AI Response Parsing -->
     <string name="ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>
-    <string name="ai_error_communication_module_unknown_type">Type de communicationModule inconnu: %1$s</string>
-    <string name="ai_error_communication_module_parse">Erreur de parsing du communicationModule: %1$s</string>
 
     <!-- AI Response Validation Errors -->
     <string name="ai_error_validation_multiple_action_types">Plusieurs types de commandes présents: %1$s. Un seul type autorisé par réponse.</string>
@@ -1029,16 +1027,9 @@
     <string name="ai_schema_field_action_commands_desc">Commandes d\'actions à exécuter (mutuellement exclusif avec dataCommands et communicationModule)</string>
     <string name="ai_schema_field_posttext_desc">Texte à afficher après l\'exécution réussie des actions (uniquement avec actionCommands)</string>
     <string name="ai_schema_field_keep_control_desc">Garde la main après succès des actions pour enchaîner d\'autres actions. Dans ce cas, tu verras quand même le retour des commandes du message actuel (succès, échecs, id des objets créés, etc.) Utile pour séquences multi-étapes avec feedback système intermédiaire.</string>
-    <string name="ai_schema_field_communication_module_desc">Module de communication pour interaction avec l\'utilisateur (mutuellement exclusif avec dataCommands et actionCommands)</string>
+    <string name="ai_schema_field_communication_module_desc">Une question à l\'utilisateur sous forme de liste de champs, de schéma communication_module (exclusif de data_commands et action_commands)</string>
 
     <!-- communication_module schemas -->
-    <string name="ai_schema_communication_multiple_choice_name">Module de choix multiple</string>
-    <string name="ai_schema_communication_multiple_choice_desc">Schéma pour module de communication à choix multiples</string>
-    <string name="ai_schema_communication_multiple_choice_question_desc">La question à poser à l\'utilisateur</string>
-    <string name="ai_schema_communication_multiple_choice_options_desc">Liste d\'options parmi lesquelles l\'utilisateur peut choisir (minimum 2)</string>
-    <string name="ai_schema_communication_validation_name">Module de validation</string>
-    <string name="ai_schema_communication_validation_desc">Schéma pour module de communication de validation</string>
-    <string name="ai_schema_communication_validation_message_desc">Le message/question de validation à afficher à l\'utilisateur</string>
 
     <!-- CUSTOM FIELDS SCHEMAS - Field type definitions -->
     <string name="field_type_text_display_name">Texte</string>

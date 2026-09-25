@@ -74,9 +74,14 @@ class FieldTypeSchemasTest {
         assertEquals("definitions the app refuses: $rejected", emptyList<JsonNode>(), rejected)
     }
 
-    /** The objects of [node] that define a field: a label and a field type. */
+    /**
+     * The objects of [node] that define a field: a label and a field type. A communication
+     * module's fields are the AI's own, named and required or not: CommunicationModulesTest
+     * reads them.
+     */
     private fun definitionsIn(node: JsonNode, types: Set<String>): Sequence<JsonNode> = sequence {
         if (node.isObject && node.has("display_name") && node.path("type").asText() in types) yield(node)
-        node.elements().forEach { yieldAll(definitionsIn(it, types)) }
+        node.fields().forEach { (key, child) -> if (key != "communication_module") yieldAll(definitionsIn(child, types)) }
+        if (node.isArray) node.elements().forEach { yieldAll(definitionsIn(it, types)) }
     }
 }

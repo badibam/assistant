@@ -155,6 +155,12 @@ object JsonUtils {
     }
 
     /**
+     * Convert one JSON value, of any kind, to its Kotlin form: a JSONArray to a List, a
+     * JSONObject to a Map, all the way down; JSONObject.NULL to null.
+     */
+    fun toValue(value: Any?): Any? = fromJSONValue(value)
+
+    /**
      * Convert JSONObject to mutable Map recursively
      */
     private fun jsonObjectToMap(jsonObject: JSONObject): MutableMap<String, Any?> {

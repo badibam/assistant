@@ -608,19 +608,11 @@ Configurations gérées par `AIProviderConfigService`, providers découverts via
 ## 12. Communication modules
 
 ### Structure
-```kotlin
-sealed class CommunicationModule {
-    abstract val type: String
-    abstract val data: Map<String, Any?>
+Un module est une liste de champs déclarée par l'IA (`docs/design/unified-fields.md`, décision 17) : `{"fields": [...]}`, chaque champ une définition de champ comme dans `extra_fields`, que l'IA nomme elle-même (la réponse revient sous ce nom) et qui dit s'il est `required`. Sans champ, le module demande une confirmation ; la question est le `pre_text`.
 
-    data class MultipleChoice(type: String = "MultipleChoice", data: Map<String, Any?>)
-    data class Validation(type: String = "Validation", data: Map<String, Any?>)
-}
-```
+**Validation** : `CommunicationModules` déclare le module avec les champs (`declarationNodes`, schéma `communication_module` généré) ; `check` le confronte à ce schéma puis à `FieldConfigValidator` (clé en snake_case, clés distinctes, réglages du type). Un module refusé devient un FORMAT_ERROR qui dit pourquoi ; rien n'est ignoré en silence. `CommunicationModule` garde la déclaration telle qu'écrite, et ses `fields` ne se lisent qu'une fois le module vérifié.
 
-**Validation** : Via `CommunicationModuleSchemas` (object) avec schémas JSON. MultipleChoice (question, options array min 2), Validation (message).
-
-**Parsing** : Types non reconnus ou parsing échoué → module ignoré (null).
+**Réponse** : la carte dessine les champs avec `SettingsForm` ; Confirmer n'est possible que quand la réponse tient au schéma généré depuis les champs (`checkAnswer`). La réponse part à l'IA en objet de valeurs, dates et durées en ISO 8601 (`answerForModel`), une confirmation en `confirmed` ; le fil la réaffiche par les composants d'affichage des champs (`CommunicationAnswer`).
 
 ### Flow de réponse utilisateur
 ```kotlin
@@ -634,7 +626,8 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
         module = ctx.communicationModule,
         onResponse = { response ->
             AIOrchestrator.resumeWithResponse(response)
-        }
+        },
+        onCancel = { AIOrchestrator.cancelCommunication() }
     )
 }
 ```
@@ -667,7 +660,7 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
 **AI queries** : Générés après exécution dataCommands IA, stockés après réponse AI, type DATA_ADDED avec formattedData.
 **AI actions** : Générés après exécution actionCommands IA, stockés après réponse AI, type ACTIONS_EXECUTED sans formattedData.
 **Limites** : Générés quand limite atteinte, type LIMIT_REACHED avec summary, pas de renvoie auto (attend message user).
-**Format errors** : Générés quand parsing communicationModule échoue, type FORMAT_ERROR avec détails erreurs, renvoie auto à l'IA pour correction.
+**Format errors** : Générés quand la réponse de l'IA ne se lit pas ou enfreint une règle du format (module de communication compris), type FORMAT_ERROR avec détails erreurs, renvoie auto à l'IA pour correction.
 **Erreurs système** : Générés pour erreurs réseau (NETWORK_ERROR), provider (PROVIDER_ERROR) et timeout watchdog (SESSION_TIMEOUT). **TOUJOURS visibles dans l'UI** pour transparence utilisateur. Filtrés du prompt IA (excludeFromPrompt=true, audit uniquement).
 
 ### Format dans prompts

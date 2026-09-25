@@ -1,26 +1,32 @@
 package com.assistant.core.ai.ui.components
 
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.CommunicationModule
+import com.assistant.core.ai.data.CommunicationModules
+import com.assistant.core.fields.FieldValue
+import com.assistant.core.fields.settings.SettingsForm
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
+import com.assistant.core.utils.JsonUtils
+import com.assistant.core.utils.LogManager
+import org.json.JSONObject
 
 /**
- * Communication Module Card - Inline display in message flow
+ * Communication Module Card - inline in the message flow
  *
- * Displays communication modules (MultipleChoice, Validation) as interactive cards
- * within the AI message flow, allowing users to respond or cancel.
+ * The fields the AI asks for, each entered with the input of its field type (SettingsForm, as
+ * any declaration), under the AI's preText which holds the question. Confirming sends the
+ * answer, its dates and durations in the form the AI reads; it is possible once every field
+ * the module needs has a value its field takes. A module without fields is a confirmation.
  *
- * Design: Card with primary color border highlight to attract attention
- *
- * @param module Communication module to display
- * @param onResponse Callback when user responds (receives response text)
+ * @param module Communication module to display, checked when the AI's answer was parsed
+ * @param onResponse Receives the answer as the AI will read it
  * @param onCancel Callback when user cancels the module
  */
 @Composable
@@ -32,221 +38,100 @@ fun CommunicationModuleCard(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // Use unified InteractionCard with primary border
-    InteractionCard(
-        title = when (module) {
-            is CommunicationModule.MultipleChoice -> s.shared("ai_module_multiple_choice_title")
-            is CommunicationModule.Validation -> s.shared("ai_module_validation_title")
-        },
+    // The answer as stored values, kept across a rotation as its JSON text
+    var answerJson by rememberSaveable { mutableStateOf("{}") }
+    val answer = remember(answerJson) { JSONObject(answerJson) }
+    val isComplete = remember(answerJson) { CommunicationModules.checkAnswer(module, answer, context).isValid }
+
+    UI.InteractionCard(
+        title = s.shared(if (module.fields.isEmpty()) "ai_module_validation_title" else "ai_module_question_title"),
         content = {
-            // Module-specific content
-            when (module) {
-                is CommunicationModule.MultipleChoice -> {
-                    MultipleChoiceModule(
-                        module = module,
-                        onResponse = onResponse,
-                        onCancel = onCancel
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (module.fields.isNotEmpty()) {
+                    SettingsForm(
+                        nodes = module.fields,
+                        config = answer,
+                        onChange = { answerJson = it.toString() },
+                        context = context
                     )
                 }
-                is CommunicationModule.Validation -> {
-                    ValidationModule(
-                        module = module,
-                        onResponse = onResponse,
-                        onCancel = onCancel
-                    )
-                }
-            }
-        },
-        actions = {
-            // Action buttons are handled within the specific modules
-            // This slot is not used for communication modules
-        }
-    )
-}
 
-/**
- * Multiple Choice Module - Inline display
- *
- * Displays a question with multiple options as buttons.
- * User must select one option before confirming.
- */
-@Composable
-private fun MultipleChoiceModule(
-    module: CommunicationModule.MultipleChoice,
-    onResponse: (String) -> Unit,
-    onCancel: () -> Unit
-) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-
-    // Extract data
-    val question = module.data["question"] as? String ?: s.shared("ai_module_no_question")
-
-    // Parse options (can be List<String> or JSONArray string)
-    val options = when (val optionsData = module.data["options"]) {
-        is List<*> -> optionsData.mapNotNull { it as? String }
-        is org.json.JSONArray -> {
-            // Parse JSONArray to List<String>
-            List(optionsData.length()) { i -> optionsData.getString(i) }
-        }
-        else -> emptyList()
-    }
-
-    // Local state for selected option and free text
-    var selectedOption by rememberSaveable { mutableStateOf<String?>(null) }
-    var freeText by rememberSaveable { mutableStateOf("") }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Question
-        UI.Text(
-            text = question,
-            type = TextType.BODY
-        )
-
-        // Options selection
-        if (options.isNotEmpty()) {
-            UI.Text(
-                text = s.shared("ai_module_select_option"),
-                type = TextType.LABEL
-            )
-
-            // Display options as buttons
-            options.forEach { option ->
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    UI.Button(
-                        type = if (selectedOption == option) ButtonType.PRIMARY else ButtonType.DEFAULT,
-                        size = Size.M,
-                        onClick = { selectedOption = option }
-                    ) {
-                        UI.Text(
-                            text = option,
-                            type = TextType.BODY
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        UI.ActionButton(
+                            action = ButtonAction.CANCEL,
+                            display = ButtonDisplay.LABEL,
+                            size = Size.M,
+                            onClick = onCancel
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        UI.ActionButton(
+                            action = ButtonAction.CONFIRM,
+                            display = ButtonDisplay.LABEL,
+                            size = Size.M,
+                            enabled = isComplete,
+                            onClick = {
+                                onResponse(
+                                    if (module.fields.isEmpty()) CONFIRMED
+                                    else CommunicationModules.answerForModel(module, answer, context).toString()
+                                )
+                            }
                         )
                     }
                 }
             }
+        },
+        actions = {
+            // The buttons are inside the content, next to the fields they send
         }
-
-        // Free text field (always visible)
-        UI.FormField(
-            label = s.shared("ai_module_free_text_label"),
-            value = freeText,
-            onChange = { freeText = it },
-            fieldType = FieldType.TEXT_MEDIUM,
-            required = false
-        )
-
-        // Action buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Cancel button
-            Box(modifier = Modifier.weight(1f)) {
-                UI.ActionButton(
-                    action = ButtonAction.CANCEL,
-                    display = ButtonDisplay.LABEL,
-                    size = Size.M,
-                    onClick = onCancel
-                )
-            }
-
-            // Confirm button (enabled if option selected OR free text provided)
-            Box(modifier = Modifier.weight(1f)) {
-                UI.ActionButton(
-                    action = ButtonAction.CONFIRM,
-                    display = ButtonDisplay.LABEL,
-                    size = Size.M,
-                    enabled = selectedOption != null || freeText.isNotBlank(),
-                    onClick = {
-                        // Build response based on selections:
-                        // 1. Option only → "[option]"
-                        // 2. Option + text → "[option]. Précision : [text]"
-                        // 3. Text only → "Autre réponse : [text]"
-                        val response = when {
-                            selectedOption != null && freeText.isNotBlank() -> {
-                                "$selectedOption. ${s.shared("ai_module_precision_prefix")} $freeText"
-                            }
-                            selectedOption != null -> {
-                                selectedOption!!
-                            }
-                            freeText.isNotBlank() -> {
-                                "${s.shared("ai_module_other_response_prefix")} $freeText"
-                            }
-                            else -> ""
-                        }
-                        if (response.isNotEmpty()) {
-                            onResponse(response)
-                        }
-                    }
-                )
-            }
-        }
-    }
+    )
 }
 
+/** What a module without fields answers when the user confirms: read by the AI. */
+const val CONFIRMED = "confirmed"
+
 /**
- * Validation Module - Inline display
+ * The user's answer to a module, shown in the history under the AI's question: each field by
+ * its label and the display of its field type, or the confirmation for a module without fields.
  *
- * Displays a confirmation message with Yes/No buttons.
+ * @param module The module answered
+ * @param answer The answer as the AI read it, after the response prefix
  */
 @Composable
-private fun ValidationModule(
-    module: CommunicationModule.Validation,
-    onResponse: (String) -> Unit,
-    onCancel: () -> Unit
-) {
+fun CommunicationAnswer(module: CommunicationModule, answer: String) {
     val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
 
-    // Extract data
-    val message = module.data["message"] as? String ?: s.shared("ai_module_no_message")
+    if (module.fields.isEmpty()) {
+        UI.Text(text = Strings.`for`(context = context).shared("ai_module_confirmed"), type = TextType.BODY)
+        return
+    }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Title
-        UI.Text(
-            text = s.shared("ai_module_validation_title"),
-            type = TextType.SUBTITLE
-        )
+    val values = remember(answer) {
+        try {
+            CommunicationModules.answerFromModel(module, JSONObject(answer), context)
+        } catch (e: Exception) {
+            // Stored by the app from a checked answer: one that does not read is shown as stored
+            LogManager.aiUI("Communication answer does not read: ${e.message}", "WARN")
+            null
+        }
+    }
+    if (values == null) {
+        UI.Text(text = answer, type = TextType.BODY)
+        return
+    }
 
-        // Message
-        UI.Text(
-            text = message,
-            type = TextType.BODY
-        )
-
-        // Action buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Cancel button
-            Box(modifier = Modifier.weight(1f)) {
-                UI.ActionButton(
-                    action = ButtonAction.CANCEL,
-                    display = ButtonDisplay.LABEL,
-                    size = Size.M,
-                    onClick = onCancel
-                )
-            }
-
-            // Confirm button
-            Box(modifier = Modifier.weight(1f)) {
-                UI.ActionButton(
-                    action = ButtonAction.CONFIRM,
-                    display = ButtonDisplay.LABEL,
-                    size = Size.M,
-                    onClick = { onResponse("confirmed") }
-                )
-            }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        module.fields.forEach { field ->
+            UI.Text(text = field.definition.displayName, type = TextType.LABEL)
+            FieldValue(field.definition, JsonUtils.toValue(values.opt(field.definition.name)), context)
         }
     }
 }

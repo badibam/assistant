@@ -865,18 +865,10 @@ class AIEventProcessor(
                     formatErrors.add(s.shared("ai_error_validation_request_without_actions"))
                 }
 
-                // Validate communication module schemas if present
+                // Check the communication module's fields before anything reads them
                 cleanedAIMessage.communicationModule?.let { module ->
-                    val schema = com.assistant.core.ai.data.CommunicationModuleSchemas.getSchema(module.type, context)
-                    if (schema != null) {
-                        val validation = com.assistant.core.validation.SchemaValidator.validate(
-                            schema = schema,
-                            data = module.data,
-                            context = context
-                        )
-                        if (!validation.isValid) {
-                            formatErrors.add("Invalid communication module: ${validation.errorMessage}")
-                        }
+                    com.assistant.core.ai.data.CommunicationModules.check(module.declaration, context)?.let {
+                        formatErrors.add("Invalid communication module: $it")
                     }
                 }
 
@@ -917,7 +909,7 @@ class AIEventProcessor(
                     "  actionCommands: ${cleanedAIMessage.actionCommands?.size ?: 0} commands\n" +
                     "  postText: ${cleanedAIMessage.postText?.take(50) ?: "null"}\n" +
                     "  keepControl: ${cleanedAIMessage.keepControl ?: "null"}\n" +
-                    "  communicationModule: ${cleanedAIMessage.communicationModule?.type ?: "null"}\n" +
+                    "  communicationModule: ${cleanedAIMessage.communicationModule?.let { "${it.fields.size} fields" } ?: "null"}\n" +
                     "  completed: ${cleanedAIMessage.completed ?: "null"}",
                     "DEBUG"
                 )

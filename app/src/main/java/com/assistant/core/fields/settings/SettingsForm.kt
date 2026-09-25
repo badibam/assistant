@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.FieldInput
+import com.assistant.core.utils.JsonUtils
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
 import com.assistant.core.ui.CardType
@@ -105,8 +106,9 @@ private fun NodeForm(
                     fieldType = com.assistant.core.ui.FieldType.PASSWORD,
                     required = node.required
                 )
-                // An absent setting shows the value its absence means
-                else -> FieldInput(node.definition, stored ?: node.default, { set(name, it) }, context, required = node.required)
+                // An absent setting shows the value its absence means. The input takes the Kotlin
+                // form of a value: a list of options, not the JSONArray they are stored as
+                else -> FieldInput(node.definition, JsonUtils.toValue(stored) ?: node.default, { set(name, it) }, context, required = node.required)
             }
         }
 

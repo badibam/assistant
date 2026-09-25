@@ -115,17 +115,7 @@ object AIMessageSchemas {
             },
             "communication_module": {
               "type": "object",
-              "required": ["type", "data"],
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "enum": ["MultipleChoice", "Validation"]
-                },
-                "data": {
-                  "type": "object"
-                }
-              },
-              "additionalProperties": false,
+              "required": ["fields"],
               "description": "${s.shared("ai_schema_field_communication_module_desc")}"
             }
           },
