@@ -46,7 +46,7 @@ import com.assistant.tools.messages.scheduler.MessageScheduler
  * Occurrence lifecycle (data.status):
  * - pending: created ahead of time by the scheduler, holds only its own part
  * - sent: went out, holds the copied invariant part and the send result
- * - expired: its time passed beyond validity_window_minutes while the app was off
+ * - expired: its time passed beyond validity_window while the app was off
  * - cancelled: its time arrived while the template was disabled — a decision, not a miss
  */
 object MessageToolType : ToolTypeContract {
@@ -111,16 +111,19 @@ object MessageToolType : ToolTypeContract {
                 required = required, default = default)
         val priorities = listOf("default", "high", "low")
         return listOf(
-            field("enabled", FieldType.BOOLEAN, required = true, default = true),
+            field("enabled", FieldType.BOOLEAN, default = true),
             field("common_title", FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)),
             field("common_content", FieldType.TEXT, config = mapOf("length" to TextLength.LONG.name)),
-            field("priority", FieldType.CHOICE, required = true, default = "default",
+            field("priority", FieldType.CHOICE, default = "default",
                 config = mapOf("options" to ChoiceSettings.storedOptions(priorities, priorities.associateWith { s.tool("priority_$it") }))),
-            field("external_notifications", FieldType.BOOLEAN, required = true, default = true),
+            field("external_notifications", FieldType.BOOLEAN, default = true),
             // Absent: nothing fires on its own, the tool is a channel fed on demand
             SettingNode.Group("schedule", s.tool("field_schedule"), ScheduleSettings.nodes(shared::shared)),
-            field("creation_horizon_days", FieldType.NUMERIC, required = true, default = 2, config = mapOf("min" to 1, "decimals" to 0)),
-            field("validity_window_minutes", FieldType.NUMERIC, required = true, default = 60, config = mapOf("min" to 0, "decimals" to 0))
+            // How far ahead occurrences are created, and how long a missed one may still go out
+            field("creation_horizon", FieldType.DURATION, default = 2 * 86_400_000L,
+                config = mapOf("precision" to "DAY", "form" to "SINGLE")),
+            field("validity_window", FieldType.DURATION, default = 3_600_000L,
+                config = mapOf("precision" to "MINUTE", "form" to "COMPOSED"))
         )
     }
 
@@ -195,8 +198,8 @@ object MessageToolType : ToolTypeContract {
             "external_notifications" -> s.tool("field_external_notifications")
             "priority" -> s.tool("field_priority")
             "schedule" -> s.tool("field_schedule")
-            "creation_horizon_days" -> s.tool("field_creation_horizon_days")
-            "validity_window_minutes" -> s.tool("field_validity_window_minutes")
+            "creation_horizon" -> s.tool("field_creation_horizon")
+            "validity_window" -> s.tool("field_validity_window")
             "status" -> s.tool("field_status")
             "notification_sent" -> s.tool("field_notification_sent")
             "read" -> s.tool("field_read")

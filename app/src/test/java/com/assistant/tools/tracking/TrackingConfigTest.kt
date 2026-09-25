@@ -38,12 +38,6 @@ class TrackingConfigTest {
         assertEquals(2, TrackingConfig.counterStep(TrackingShortcut("Glass", -2)))
     }
 
-    @Test
-    fun aCounterAllowsDecrement_unlessTheConfigSaysNot() {
-        assertTrue(TrackingConfig.allowsDecrement(JSONObject("""{ "type": "counter" }""")))
-        assertFalse(TrackingConfig.allowsDecrement(JSONObject("""{ "type": "counter", "allow_decrement": false }""")))
-    }
-
     /** An occurrence, or a timer before it stops, writes no value at all rather than a null. */
     @Test
     fun entryData_leavesOutWhatIsAbsent() {

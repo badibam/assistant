@@ -296,7 +296,8 @@ object PromptManager {
                 ?.let { JsonUtils.toJSONObject(it) } ?: continue
 
             try {
-                val alwaysSend = config.optBoolean("always_send", false)
+                val alwaysSend = com.assistant.core.tools.ToolConfigSettings
+                    .read(toolInstanceMap["tooltype"] as String, config, context).boolean("always_send")
 
                 if (alwaysSend) {
                     // Generate TOOL_DATA command for this instance (all data, no filters)

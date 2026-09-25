@@ -177,10 +177,10 @@ class ValidationResolver(private val context: Context) {
                     }
                     else -> {
                         // UPDATE_TOOL_CONFIG, DELETE_TOOL: Tool exists, check app + zone + tool configs
-                        val toolConfig = loadToolConfig(toolInstanceId)
+                        val toolConfig = loadToolSettings(toolInstanceId)
                         val zoneConfig = loadZoneConfigForTool(toolInstanceId)
 
-                        val toolRequires = toolConfig.optBoolean("validate_config", false)
+                        val toolRequires = toolConfig.boolean("validate_config")
                         val zoneRequires = zoneConfig.optBoolean("validate_tool_config_changes", false)
                         val appRequires = appConfig.validateToolConfigChanges
 
@@ -196,7 +196,7 @@ class ValidationResolver(private val context: Context) {
                                 else -> null
                             },
                             zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() },
-                            toolName = toolConfig.optString("name").takeIf { it.isNotBlank() }
+                            toolName = toolConfig.string("name")
                         )
                     }
                 }
@@ -204,10 +204,10 @@ class ValidationResolver(private val context: Context) {
 
             ActionScope.TOOL_DATA -> {
                 val toolInstanceId = extractToolInstanceId(action)
-                val toolConfig = loadToolConfig(toolInstanceId)
+                val toolConfig = loadToolSettings(toolInstanceId)
                 val zoneConfig = loadZoneConfigForTool(toolInstanceId)
 
-                val toolRequires = toolConfig.optBoolean("validate_data", false)
+                val toolRequires = toolConfig.boolean("validate_data")
                 val zoneRequires = zoneConfig.optBoolean("validate_tool_data_changes", false)
                 val appRequires = appConfig.validateToolDataChanges
 
@@ -223,7 +223,7 @@ class ValidationResolver(private val context: Context) {
                         else -> null
                     },
                     zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() },
-                    toolName = toolConfig.optString("name").takeIf { it.isNotBlank() }
+                    toolName = toolConfig.string("name")
                 )
             }
         }
@@ -345,33 +345,21 @@ class ValidationResolver(private val context: Context) {
     }
 
     /**
-     * Loads tool instance configuration JSON
+     * The config of the tool [toolInstanceId], read through its declaration.
+     *
+     * @throws IllegalStateException when the tool cannot be read: whether it asks for validation
+     *   is then unknown, and an unknown is not taken for a no
      */
-    private suspend fun loadToolConfig(toolInstanceId: String): JSONObject {
-        return try {
-            val result = coordinator.processUserAction("tools.get", mapOf(
-                "tool_instance_id" to toolInstanceId
-            ))
-
-            if (result.status == CommandStatus.SUCCESS) {
-                // tools.get returns "tool_instance" map containing config
-                val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-                @Suppress("UNCHECKED_CAST")
-                val configMap = toolInstance?.get("config") as? Map<String, Any?>
-                if (configMap != null) {
-                    JsonUtils.toJSONObject(configMap)
-                } else {
-                    LogManager.aiService("ValidationResolver: Tool $toolInstanceId has no config", "WARN")
-                    JSONObject()
-                }
-            } else {
-                LogManager.aiService("ValidationResolver: Failed to load tool $toolInstanceId: ${result.error}", "WARN")
-                JSONObject()
-            }
-        } catch (e: Exception) {
-            LogManager.aiService("ValidationResolver: Exception loading tool config: ${e.message}", "ERROR", e)
-            JSONObject()
+    private suspend fun loadToolSettings(toolInstanceId: String): com.assistant.core.fields.settings.SettingValues {
+        val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
+        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+        @Suppress("UNCHECKED_CAST")
+        val config = (toolInstance?.get("config") as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
+        val tooltype = toolInstance?.get("tooltype") as? String
+        if (result.status != CommandStatus.SUCCESS || config == null || tooltype == null) {
+            throw IllegalStateException("Cannot read tool $toolInstanceId to know whether it asks for validation: ${result.error}")
         }
+        return com.assistant.core.tools.ToolConfigSettings.read(tooltype, config, context)
     }
 
     /**

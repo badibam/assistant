@@ -212,24 +212,18 @@ class AICommandProcessor(private val context: Context) {
             "STOP_DURATION" -> durationCommand(command, "stop_duration")
 
             // Tool instance actions
-            "CREATE_TOOL" -> {
-                val transformedParams = command.params
-                ExecutableCommand(
-                    resource = "tools",
-                    operation = "create",
-                    params = transformedParams,
-                    isActionCommand = true
-                )
-            }
-            "UPDATE_TOOL" -> {
-                val transformedParams = command.params
-                ExecutableCommand(
-                    resource = "tools",
-                    operation = "update",
-                    params = transformedParams,
-                    isActionCommand = true
-                )
-            }
+            "CREATE_TOOL" -> ExecutableCommand(
+                resource = "tools",
+                operation = "create",
+                params = configToStoredForm(command.params),
+                isActionCommand = true
+            )
+            "UPDATE_TOOL" -> ExecutableCommand(
+                resource = "tools",
+                operation = "update",
+                params = configToStoredForm(command.params),
+                isActionCommand = true
+            )
             "DELETE_TOOL" -> ExecutableCommand(
                 resource = "tools",
                 operation = "delete",
@@ -374,6 +368,20 @@ class AICommandProcessor(private val context: Context) {
             ),
             isActionCommand = true
         )
+    }
+
+    /**
+     * [params] with the config's dates and durations turned into milliseconds, where the
+     * config schema of its tooltype marks them (a Messages tool's delays, its schedule's dates).
+     * The tooltype is the one injectTooltypeIfNeeded read from the tool for an update.
+     */
+    private fun configToStoredForm(params: Map<String, Any?>): Map<String, Any?> {
+        val config = params["config"] ?: return params
+        val tooltype = params["tooltype"] as? String ?: return params
+        val toolType = ToolTypeManager.getToolType(tooltype) ?: return params
+        val schema = JSONObject(com.assistant.core.tools.ToolConfigSettings.schema(toolType, "${tooltype}_config", context).content)
+        val zone = AppConfigManager.getDateTimeConfig().getZoneId()
+        return params.toMutableMap().apply { put("config", ModelValues.fromModel(config, schema, zone)) }
     }
 
     /**

@@ -266,7 +266,7 @@ fun TrackingConfigScreen(
                 if (kind == TrackingKind.COUNTER) {
                     UI.ToggleField(
                         label = s.tool("config_label_allow_decrement"),
-                        checked = TrackingConfig.allowsDecrement(config),
+                        checked = TrackingConfig.allowsDecrement(config, context),
                         onCheckedChange = { allowed -> update { put("allow_decrement", allowed) } },
                         required = false
                     )

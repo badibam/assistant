@@ -196,8 +196,9 @@ fun NotesScreen(
                 }
             } else if (toolInstance != null) {
                 // Tool header (now scrollable)
-                val toolName = config.optString("name", s.tool("display_name"))
-                val toolDescription = config.optString("description", "")
+                val settings = com.assistant.core.tools.ToolConfigSettings.read(com.assistant.tools.notes.NotesToolType, config, context)
+                val toolName = settings.string("name")!!
+                val toolDescription = settings.string("description").orEmpty()
 
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -205,7 +206,7 @@ fun NotesScreen(
                     UI.PageHeader(
                         title = toolName,
                         subtitle = toolDescription.takeIf { it.isNotBlank() },
-                        icon = config.optString("icon_name", "sticky-note"),
+                        icon = settings.string("icon_name")!!,
                         leftButton = ButtonAction.BACK,
                         rightButton = ButtonAction.CONFIGURE,
                         onLeftClick = onNavigateBack,

@@ -29,7 +29,7 @@ import com.assistant.core.versioning.SettingsAtV33
 import com.assistant.core.versioning.ChoiceOptionsAtV37
 import com.assistant.core.versioning.FieldsAtV36
 import com.assistant.core.versioning.NumericDecimalsAtV38
-import com.assistant.core.versioning.SchemaIdsAtV39
+import com.assistant.core.versioning.ToolConfigsAtV39
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -1359,14 +1359,14 @@ abstract class AppDatabase : RoomDatabase() {
 
         private val MIGRATION_38_39 = object : Migration(38, 39) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Tool configs lose their schema ids: see SchemaIdsAtV39. Configs only.
+                // Tool configs take the form their declaration describes: see ToolConfigsAtV39
                 var rewritten = 0
-                database.query("SELECT id, config_json FROM tool_instances").use { cursor ->
+                database.query("SELECT id, tooltype, config_json FROM tool_instances").use { cursor ->
                     while (cursor.moveToNext()) {
                         val id = cursor.getString(0)
                         // A config that cannot be read stays as it was and is logged
                         try {
-                            val config = SchemaIdsAtV39.config(org.json.JSONObject(cursor.getString(1)))
+                            val config = ToolConfigsAtV39.config(cursor.getString(1), org.json.JSONObject(cursor.getString(2)))
                             database.execSQL("UPDATE tool_instances SET config_json = ? WHERE id = ?", arrayOf(config.toString(), id))
                             rewritten++
                         } catch (e: Exception) {

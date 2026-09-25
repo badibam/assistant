@@ -60,6 +60,14 @@ object ToolConfigSettings {
     fun defaults(toolType: ToolTypeContract, context: Context): org.json.JSONObject =
         com.assistant.core.fields.settings.SettingDefaults.of(nodes(toolType, context))
 
+    /** [config] of a tool of [toolType], read through its declaration (SettingValues). */
+    fun read(toolType: ToolTypeContract, config: org.json.JSONObject, context: Context): com.assistant.core.fields.settings.SettingValues =
+        com.assistant.core.fields.settings.SettingValues(nodes(toolType, context), config)
+
+    /** [config] of a tool of [tooltype], read through its declaration. */
+    fun read(tooltype: String, config: org.json.JSONObject, context: Context): com.assistant.core.fields.settings.SettingValues =
+        read(ToolTypeManager.getToolType(tooltype) ?: error("Unknown tooltype $tooltype"), config, context)
+
     /** The schema a config of [toolType] is held to, under [id]. */
     fun schema(toolType: ToolTypeContract, id: String, context: Context): Schema {
         val s = Strings.`for`(context = context)

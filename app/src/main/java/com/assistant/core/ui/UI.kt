@@ -446,8 +446,8 @@ object UI {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // The stored icon; a tool created with none gets its tooltype's default
-            val iconName = JSONObject(tool.config_json).optString("icon_name")
+            val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
+            val iconName = settings.string("icon_name").orEmpty()
             if (iconName.isNotBlank()) Icon(
                 iconName = iconName,
                 size = 24.dp,
@@ -455,7 +455,7 @@ object UI {
             )
             
             // Instance name
-            val toolInstanceName = JSONObject(tool.config_json).optString("name", "Unnamed")
+            val toolInstanceName = settings.string("name")!!
             Text(toolInstanceName, TextType.BODY)
         }
     }

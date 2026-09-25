@@ -102,9 +102,10 @@ fun TrackingScreen(
             )
         } else if (toolInstance != null) {
             // Tool header with UI.PageHeader
-            val toolName = config.optString("name", s.tool("display_name"))
-            val toolDescription = config.optString("description", "")
-            val iconName = config.optString("icon_name", "activity")
+            val settings = com.assistant.core.tools.ToolConfigSettings.read(com.assistant.tools.tracking.TrackingToolType, config, context)
+            val toolName = settings.string("name")!!
+            val toolDescription = settings.string("description").orEmpty()
+            val iconName = settings.string("icon_name")!!
             
             UI.PageHeader(
                 title = toolName,

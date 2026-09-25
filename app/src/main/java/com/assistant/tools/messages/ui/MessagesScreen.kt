@@ -137,12 +137,13 @@ fun MessagesScreen(
         return
     }
 
+    val settings = com.assistant.core.tools.ToolConfigSettings.read(com.assistant.tools.messages.MessageToolType, config, context)
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(16.dp)) {
             UI.PageHeader(
-                title = config.optString("name", s.tool("display_name")),
-                subtitle = config.optString("description", "").takeIf { it.isNotBlank() },
-                icon = config.optString("icon_name", "bell"),
+                title = settings.string("name")!!,
+                subtitle = settings.string("description")?.takeIf { it.isNotBlank() },
+                icon = settings.string("icon_name")!!,
                 leftButton = ButtonAction.BACK,
                 rightButton = ButtonAction.CONFIGURE,
                 onLeftClick = onNavigateBack,

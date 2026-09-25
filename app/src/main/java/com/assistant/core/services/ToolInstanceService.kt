@@ -110,7 +110,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // has none. The interface takes that route, assigning names in its editor.
         val namedConfigJson = assignMissingFieldNames(configJson)
 
-        val iconCheck = checkIconName(withDefaultIcon(namedConfigJson, toolType))
+        val iconCheck = checkIconName(namedConfigJson)
         val storedConfigJson = when (iconCheck) {
             is IconCheck.Refused -> return OperationResult.error(iconCheck.message)
             is IconCheck.Kept -> iconCheck.configJson
@@ -571,18 +571,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         }
     }
 
-    /**
-     * A tool created without an icon takes its tooltype's default, the way a field created
-     * without a technical name gets one: the interface starts from a default config that
-     * carries it, and a tool the AI created without one would otherwise have none to show or
-     * to edit.
-     */
-    private fun withDefaultIcon(configJson: String, toolType: String): String {
-        val config = JSONObject(configJson)
-        if (config.optString("icon_name").isNotBlank()) return configJson
-        val default = ToolTypeManager.getToolType(toolType)?.getDefaultIconName() ?: return configJson
-        return config.put("icon_name", default).toString()
-    }
 
     /**
      * An icon name is a Lucide name. A former one is stored under the name it became, and a

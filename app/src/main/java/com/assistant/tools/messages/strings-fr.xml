@@ -18,8 +18,8 @@
     <string name="schema_config_common_content">Corps commun à chaque notification (optionnel, composé avec le contenu propre à l\'envoi)</string>
     <string name="schema_config_priority">Priorité des notifications de ce message (default, high, low)</string>
     <string name="schema_config_external_notifications">Afficher notifications système Android</string>
-    <string name="schema_config_creation_horizon_days">Nombre de jours d\'occurrences créées à l\'avance, pour laisser le temps de les remplir</string>
-    <string name="schema_config_validity_window_minutes">Retard au-delà duquel une occurrence non partie expire au lieu d\'être envoyée</string>
+    <string name="schema_config_creation_horizon">Avance avec laquelle les occurrences sont créées, pour laisser le temps de les remplir</string>
+    <string name="schema_config_validity_window">Retard au-delà duquel une occurrence non partie expire au lieu d\'être envoyée</string>
 
     <!-- SCHEMAS DATA - Une occurrence = un envoi. Part propre écrite avant, part commune copiée à l\'envoi -->
     <string name="schema_data_status">État de l\'occurrence (pending, sent, expired, cancelled)</string>
@@ -42,8 +42,8 @@
     <string name="field_schedule">Planning</string>
     <string name="field_priority">Priorité</string>
     <string name="field_external_notifications">Notifications externes</string>
-    <string name="field_creation_horizon_days">Jours d\'avance</string>
-    <string name="field_validity_window_minutes">Fenêtre de validité</string>
+    <string name="field_creation_horizon">Créées à l\'avance</string>
+    <string name="field_validity_window">Fenêtre de validité</string>
     <string name="field_status">État</string>
     <string name="field_notification_sent">Notification envoyée</string>
     <string name="field_read">Lu</string>

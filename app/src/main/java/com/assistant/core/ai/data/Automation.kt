@@ -20,7 +20,7 @@ data class Automation(
      *
      * Beyond it the occurrence is skipped: it leaves a log line and no session, since the
      * history is made of sessions and an empty "skipped" one would be a shape to handle
-     * everywhere. Same notion as the Messages tooltype's validity_window_minutes.
+     * everywhere. Same notion as the Messages tooltype's validity_window.
      */
     val catchUpWindowMinutes: Long? = null,
 

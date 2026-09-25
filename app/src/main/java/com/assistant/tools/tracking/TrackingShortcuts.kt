@@ -39,7 +39,8 @@ object TrackingConfig {
     }
 
     /** Whether a counter's shortcuts also take away; they do unless the config says otherwise. */
-    fun allowsDecrement(config: JSONObject): Boolean = config.optBoolean("allow_decrement", true)
+    fun allowsDecrement(config: JSONObject, context: android.content.Context): Boolean =
+        com.assistant.core.tools.ToolConfigSettings.read(TrackingToolType, config, context).boolean("allow_decrement")
 
     /** The amount a counter shortcut adds or takes away: its value, 1 when it has none. */
     fun counterStep(shortcut: TrackingShortcut): Int = shortcut.value?.toInt()?.takeIf { it != 0 }?.let { Math.abs(it) } ?: 1

@@ -1,5 +1,7 @@
 package com.assistant.tools.messages.scheduler
 
+import com.assistant.core.fields.settings.SettingValues
+import com.assistant.tools.messages.MessageToolType
 import com.assistant.core.tools.BaseSchemas
 import android.content.Context
 import com.assistant.core.coordinator.Coordinator
@@ -40,8 +42,6 @@ import java.time.ZoneId
  */
 object MessageScheduler : ToolScheduler {
 
-    private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
-    private const val MILLIS_PER_MINUTE = 60L * 1000L
 
     /** Guards against a pattern that would otherwise enumerate forever within the horizon. */
     private const val MAX_EXPECTED_PER_HORIZON = 1000
@@ -120,7 +120,8 @@ object MessageScheduler : ToolScheduler {
         // The switch sits at the root of the config, not inside the recurrence: it suspends
         // the whole template — everything the instance owes, a hand-placed occurrence
         // included — and it exists even when there is no recurrence at all.
-        val enabled = config.optBoolean("enabled", true)
+        val settings = com.assistant.core.tools.ToolConfigSettings.read(MessageToolType, config, context)
+        val enabled = settings.boolean("enabled")
 
         val pending = loadPending(coordinator, toolInstanceId, timezone)
 
@@ -138,16 +139,16 @@ object MessageScheduler : ToolScheduler {
                 "ERROR"
             )
             is StoredSchedule.Readable -> if (enabled) {
-                reconcilePending(context, coordinator, toolInstanceId, config, stored.schedule, pending, now, timezone)
+                reconcilePending(context, coordinator, toolInstanceId, settings, stored.schedule, pending, now, timezone)
             }
             StoredSchedule.None -> if (enabled) {
-                reconcilePending(context, coordinator, toolInstanceId, config, null, pending, now, timezone)
+                reconcilePending(context, coordinator, toolInstanceId, settings, null, pending, now, timezone)
             }
         }
 
         // Reconciliation only ever touches occurrences still in the future, so the due set is
         // exactly what was loaded above — nothing it did can have added to or removed from it.
-        firePending(coordinator, toolInstanceId, config, enabled, pending, now)
+        firePending(coordinator, toolInstanceId, settings, enabled, pending, now)
     }
 
     // ========================================
@@ -168,18 +169,18 @@ object MessageScheduler : ToolScheduler {
         context: Context,
         coordinator: Coordinator,
         toolInstanceId: String,
-        config: JSONObject,
+        settings: SettingValues,
         schedule: ScheduleConfig?,
         pending: List<PendingOccurrence>,
         now: Long,
         timezone: ZoneId
     ) {
-        val horizonDays = config.optInt("creation_horizon_days", 0)
-        if (horizonDays <= 0) {
+        val horizon = settings.number("creation_horizon")?.toLong() ?: 0L
+        if (horizon <= 0) {
             LogManager.service("Message template $toolInstanceId has no creation horizon, skipping reconciliation", "WARN")
             return
         }
-        val horizonEnd = now + horizonDays * MILLIS_PER_DAY
+        val horizonEnd = now + horizon
 
         // No recurrence means nothing is expected, so everything it had generated is orphaned:
         // removing the recurrence and changing it take the same path.
@@ -199,7 +200,7 @@ object MessageScheduler : ToolScheduler {
         }
 
         for (dueAt in expected.filter { it !in existingTimes }) {
-            createPendingOccurrence(context, coordinator, toolInstanceId, config, dueAt, timezone)
+            createPendingOccurrence(context, coordinator, toolInstanceId, settings, dueAt, timezone)
         }
     }
 
@@ -264,11 +265,11 @@ object MessageScheduler : ToolScheduler {
         context: Context,
         coordinator: Coordinator,
         toolInstanceId: String,
-        config: JSONObject,
+        settings: SettingValues,
         dueAt: Long,
         timezone: ZoneId
     ) {
-        val name = config.optString("name")
+        val name = settings.string("name")!!
         val state = JSONObject().apply {
             put("status", "pending")
             put("triggered_by", "SCHEDULE")
@@ -317,7 +318,7 @@ object MessageScheduler : ToolScheduler {
     private suspend fun firePending(
         coordinator: Coordinator,
         toolInstanceId: String,
-        config: JSONObject,
+        settings: SettingValues,
         enabled: Boolean,
         pending: List<PendingOccurrence>,
         now: Long
@@ -325,12 +326,8 @@ object MessageScheduler : ToolScheduler {
         val due = pending.filter { it.dueAt <= now }.sortedBy { it.dueAt }
         if (due.isEmpty()) return
 
-        val validityWindowMinutes = config.optInt("validity_window_minutes", -1)
-        if (validityWindowMinutes < 0) {
-            LogManager.service("Message template $toolInstanceId has no validity window, skipping its due occurrences", "WARN")
-            return
-        }
-        val validityWindowMillis = validityWindowMinutes * MILLIS_PER_MINUTE
+        val validityWindowMillis = settings.number("validity_window")?.toLong()
+            ?: error("Message template $toolInstanceId has no validity window, not even its default")
 
         for (occurrence in due) {
             when {
@@ -341,7 +338,7 @@ object MessageScheduler : ToolScheduler {
                     resolveWithoutSending(coordinator, occurrence, "expired")
 
                 else ->
-                    send(coordinator, toolInstanceId, config, occurrence)
+                    send(coordinator, toolInstanceId, settings, occurrence)
             }
         }
     }
@@ -357,14 +354,14 @@ object MessageScheduler : ToolScheduler {
     private suspend fun send(
         coordinator: Coordinator,
         toolInstanceId: String,
-        config: JSONObject,
+        settings: SettingValues,
         occurrence: PendingOccurrence
     ) {
-        val commonTitle = config.optString("common_title").takeIf { it.isNotEmpty() }
-        val commonContent = config.optString("common_content").takeIf { it.isNotEmpty() }
+        val commonTitle = settings.string("common_title")?.takeIf { it.isNotEmpty() }
+        val commonContent = settings.string("common_content")?.takeIf { it.isNotEmpty() }
         val ownTitle = occurrence.data.optString("title").takeIf { it.isNotEmpty() }
         val ownContent = occurrence.data.optString("content").takeIf { it.isNotEmpty() }
-        val priority = config.optString("priority", "default")
+        val priority = settings.string("priority")!!
 
         val title = listOfNotNull(commonTitle, ownTitle).joinToString(" · ")
         val content = listOfNotNull(commonContent, ownContent).joinToString("\n\n").takeIf { it.isNotEmpty() }
@@ -379,7 +376,7 @@ object MessageScheduler : ToolScheduler {
         }
 
         var notificationSent = false
-        if (config.optBoolean("external_notifications", true)) {
+        if (settings.boolean("external_notifications")) {
             val params = mutableMapOf<String, Any>(
                 "title" to title,
                 "priority" to priority

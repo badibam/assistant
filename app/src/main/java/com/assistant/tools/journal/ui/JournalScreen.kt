@@ -111,8 +111,7 @@ fun JournalScreen(
 
                 // Sort entries according to config
                 val configJson = JsonUtils.toJSONObject(toolInstance?.get("config") as? Map<String, Any?> ?: emptyMap()).toString()
-                val config = try { JSONObject(configJson) } catch (e: Exception) { JSONObject() }
-                val sortOrder = config.optString("sort_order", "descending")
+                val sortOrder = com.assistant.core.tools.ToolConfigSettings.read(com.assistant.tools.journal.JournalToolType, JSONObject(configJson), context).string("sort_order")
 
                 entries = if (sortOrder == "ascending") {
                     loadedEntries.sortedBy { it.timestamp }
@@ -188,8 +187,9 @@ fun JournalScreen(
                 }
             } else if (toolInstance != null) {
                 // Tool header
-                val toolName = config.optString("name", s.tool("display_name"))
-                val toolDescription = config.optString("description", "")
+                val settings = com.assistant.core.tools.ToolConfigSettings.read(com.assistant.tools.journal.JournalToolType, config, context)
+                val toolName = settings.string("name")!!
+                val toolDescription = settings.string("description").orEmpty()
 
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -197,7 +197,7 @@ fun JournalScreen(
                     UI.PageHeader(
                         title = toolName,
                         subtitle = toolDescription.takeIf { it.isNotBlank() },
-                        icon = config.optString("icon_name", "book-open"),
+                        icon = settings.string("icon_name")!!,
                         leftButton = ButtonAction.BACK,
                         rightButton = ButtonAction.CONFIGURE,
                         onLeftClick = onNavigateBack,

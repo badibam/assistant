@@ -199,7 +199,7 @@ fun TrackingQuickEntry(
                     TrackingKind.COUNTER -> {
                         val step = TrackingConfig.counterStep(shortcut)
                         TextButton("+$step", !isSaving) { quickSave(shortcut, step) }
-                        if (TrackingConfig.allowsDecrement(config)) TextButton("-$step", !isSaving) { quickSave(shortcut, -step) }
+                        if (TrackingConfig.allowsDecrement(config, context)) TextButton("-$step", !isSaving) { quickSave(shortcut, -step) }
                         QuickButton(ButtonAction.EDIT, !isSaving) { openDialog(shortcut.name, step, null, free = false) }
                     }
                     TrackingKind.BOOLEAN -> {

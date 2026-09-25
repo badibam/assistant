@@ -18,8 +18,8 @@
     <string name="schema_config_common_content">Common body of every notification (optional, combined with the content of the sending itself)</string>
     <string name="schema_config_priority">Priority of this message\'s notifications (default, high, low)</string>
     <string name="schema_config_external_notifications">Show Android system notifications</string>
-    <string name="schema_config_creation_horizon_days">Number of days of occurrences created ahead, to leave time to fill them in</string>
-    <string name="schema_config_validity_window_minutes">Delay past which an occurrence that has not gone out expires instead of being sent</string>
+    <string name="schema_config_creation_horizon">How far ahead occurrences are created, to leave time to fill them in</string>
+    <string name="schema_config_validity_window">Delay past which an occurrence that has not gone out expires instead of being sent</string>
 
     <!-- SCHEMAS DATA - One occurrence = one sending. Own part written beforehand, common part copied at sending -->
     <string name="schema_data_status">State of the occurrence (pending, sent, expired, cancelled)</string>
@@ -42,8 +42,8 @@
     <string name="field_schedule">Schedule</string>
     <string name="field_priority">Priority</string>
     <string name="field_external_notifications">External notifications</string>
-    <string name="field_creation_horizon_days">Days ahead</string>
-    <string name="field_validity_window_minutes">Validity window</string>
+    <string name="field_creation_horizon">Created ahead</string>
+    <string name="field_validity_window">Validity window</string>
     <string name="field_status">Status</string>
     <string name="field_notification_sent">Notification sent</string>
     <string name="field_read">Read</string>

@@ -851,7 +851,9 @@ class CommandExecutor(private val context: Context) {
                 data["name"]?.let { reordered["name"] = it }
                 data["tooltype"]?.let { reordered["tooltype"] = it }
 
-                data["tool_instance"]?.let { reordered["tool_instance"] = it }
+                // A config's dates and durations in ISO 8601, found by its tooltype's config schema
+                data["tool_instance"]?.let { reordered["tool_instance"] = configForModel(it, timezone)!! }
+                (data["tool_instances"] as? List<*>)?.let { list -> reordered["tool_instances"] = list.map { configForModel(it, timezone) } }
 
                 // Add remaining fields (except tool_instance if already processed)
                 data.forEach { (key, value) ->
@@ -885,6 +887,17 @@ class CommandExecutor(private val context: Context) {
         val json = org.json.JSONObject(reordered as Map<*, *>)
         return if (command.resource == "tool_data") json.toString(2)
         else DateTimeConverter.timestampsToISO(json, timezone).toString(2)
+    }
+
+    /** A tool instance of a result, its config in the form the model reads. */
+    private fun configForModel(instance: Any?, timezone: java.time.ZoneId): Any? {
+        val map = instance as? Map<*, *> ?: return instance
+        val config = map["config"] ?: return instance
+        val tooltype = map["tooltype"] as? String ?: return instance
+        val toolType = com.assistant.core.tools.ToolTypeManager.getToolType(tooltype)
+            ?: throw IllegalStateException("Unknown tooltype $tooltype")
+        val schema = JSONObject(com.assistant.core.tools.ToolConfigSettings.schema(toolType, "${tooltype}_config", context).content)
+        return map.toMutableMap().apply { put("config", ModelValues.toModel(config, schema, timezone)) }
     }
 
     /**
