@@ -21,6 +21,7 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 10. **Un suivi numérique porte son unité dans chaque entrée.** Le tracking déclare deux champs fixes : `value` (NUMERIC, un simple nombre) et `unit` (CHOICE, dont les options sont les unités déclarées dans la config du suivi). Un raccourci impose son unité, prise dans cette liste ; une saisie libre la choisit. Vaut aussi pour un suivi à une seule unité (`units: ["kg"]`) : un seul modèle, et l'unité se lit toujours dans l'entrée. Une entrée a exactement une valeur et une unité ; les raccourcis se suppriment librement ; les statistiques regroupent par unité ; renommer une unité est une migration d'option de CHOICE. La valeur NUMERIC en général reste un nombre, son unité dans la config du champ.
 11. **Une copie de la config dans une entrée est un fait quand l'entrée doit continuer de dire ce qu'elle disait à sa création ; sinon c'est une dérivation, calculée à la lecture.** Faits : `common_title`, `common_content`, `priority` d'une occurrence de message (ce qui est parti ne se réécrit pas) — champs de `data` écrits par le système ; l'unité d'un suivi numérique. Dérivations, qui ne se stockent plus : `true_label` / `false_label` d'une entrée booléenne, `raw` du tracking.
 12. **Une valeur par défaut est une suggestion, appliquée par qui agit, jamais par le service.** Le formulaire la préremplit (l'utilisateur peut l'effacer) ; une action rapide l'applique, le geste voulant dire « comme d'habitude » ; l'IA la lit dans le schéma et l'écrit ou non, explicitement. Le service n'écrit jamais une valeur qu'on ne lui a pas donnée : un champ absent veut dire « pas de réponse ». Aujourd'hui `default_value` est déclaré dans le schéma de config de chaque type de champ, mais ni l'éditeur ni le service ne s'en servent.
+13. **Tags et pastilles sont deux réglages de CHOICE, pas des types.** Chaque option peut porter une couleur, prise dans la palette du thème : un choix avec couleurs s'affiche en pastilles. Un choix peut avoir un vocabulaire ouvert : une valeur nouvelle, de l'interface ou de l'IA, est ajoutée aux options de la config dans la même opération que l'écriture de l'entrée, puis validée normalement ; fermé, il refuse comme aujourd'hui. Des tags sont un CHOICE multiple ouvert. Un champ passe de fermé à ouvert sans migration. Les quasi-doublons (« Travail » / « travail » / « boulot ») se traitent à l'implémentation.
 
 ## Écarté
 
@@ -45,7 +46,7 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 
 - L'unité par défaut d'une saisie libre dans un suivi numérique : la première de la liste, ou celle de la dernière entrée.
 - Un champ obligatoire dans `extra` : une saisie rapide ouvrirait alors la fenêtre d'édition préremplie.
-- Types à ajouter : tags / pastille, étiquette du tracking.
+- L'étiquette du tracking (une entrée qui n'est qu'un nom et un moment).
 - Réglage d'un champ : label affiché ou non. (La validation d'un CHOICE contre ses options existe déjà : `enum` dans le schéma généré.)
 - Questionnaire, réponses multiples et ordonnées des modules de communication, Données structurées : à exprimer avec les champs.
 - La config des outils en champs : plus tard, un chantier à part.
