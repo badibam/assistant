@@ -1569,6 +1569,9 @@
     <string name="error_unknown">Erreur inconnue</string>
     <string name="app_config_format_schema_description">Formats de date, d\'heure et d\'affichage de l\'app</string>
     <string name="service_error_invalid_timestamp_format">Horodatage illisible : %1$s</string>
+    <string name="service_error_duration_running">La durée %1$s est déjà en cours</string>
+    <string name="service_error_duration_not_running">La durée %1$s n\'est pas en cours</string>
+    <string name="service_error_duration_unknown">Aucun champ de durée %3$s dans %2$s de l\'entrée %1$s</string>
     <string name="service_error_tool_groups_empty_name">Un nom de groupe ne peut pas être vide</string>
     <string name="service_error_tool_groups_duplicate">Le groupe \'%1$s\' existe déjà</string>
     <string name="service_error_operation_failed">Échec de l\'opération</string>

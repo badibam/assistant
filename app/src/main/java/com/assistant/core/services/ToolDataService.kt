@@ -22,7 +22,13 @@ import com.assistant.core.validation.SystemManagedFields
 import com.assistant.core.validation.Schema
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.tools.BaseSchemas
+import com.assistant.core.fields.ChoiceSettings
+import com.assistant.core.fields.FieldContainer
+import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.FieldValueValidator
+import com.assistant.core.fields.RunningDurations
+import com.assistant.core.fields.toJsonArray
+import com.assistant.core.fields.withOptionsAdded
 import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.utils.LogManager
 
@@ -50,6 +56,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "batch_update" -> batchUpdateEntries(params, token)  // Batch update multiple entries
                 "batch_delete" -> batchDeleteEntries(params, token)  // Batch delete multiple entries
                 "remove_custom_field" -> removeCustomFieldFromAllEntries(params, token)  // Remove custom field from all entries
+                "start_duration" -> startDuration(params, token)  // A DURATION field starts running
+                "stop_duration" -> stopDuration(params, token)    // It stops, and the time elapsed is added to it
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
@@ -94,7 +102,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Enrich data with auto-generated fields (e.g., raw display field for tracking)
         val finalDataJson = enrichDataIfSupported(tooltype, toolInstanceId, dataJson, name)
 
-        validateEntry(target, name, timestamp, finalDataJson, extraJson, stateJson)
+        // An open choice's new values join its options, in the same transaction as the entry
+        val grownConfig = configWithNewOptions(target, finalDataJson, extraJson)
+        val checked = grownConfig?.let { target.withConfig(it) } ?: target
+
+        validateEntry(checked, name, timestamp, finalDataJson, extraJson, stateJson)
             ?.let { return OperationResult.error(it) }
 
         val now = System.currentTimeMillis()
@@ -112,7 +124,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
 
         val dao = getToolDataDao()
-        storeSettled(tooltype, dao.getByToolInstance(toolInstanceId) + entity, entity.id) { settled ->
+        storeSettled(tooltype, dao.getByToolInstance(toolInstanceId) + entity, entity.id, checked.grown(grownConfig)) { settled ->
             dao.insert(settled ?: entity)
         }
 
@@ -135,12 +147,14 @@ class ToolDataService(private val context: Context) : ExecutableService {
      *
      * [after] is the tool instance's entries as they stand once the write is done, [writtenId] the
      * entry created or updated (null after a delete). [write] stores the write itself, handed the
-     * version the tool type settled it to, or null when it left it as it was.
+     * version the tool type settled it to, or null when it left it as it was. [toolConfig] is the
+     * tool with its config grown by an open choice, stored in the same transaction.
      */
     private suspend fun storeSettled(
         tooltype: String,
         after: List<ToolDataEntity>,
         writtenId: String?,
+        toolConfig: ToolInstance? = null,
         write: suspend (settled: ToolDataEntity?) -> Unit
     ) {
         val settled = ToolTypeManager.getToolType(tooltype)
@@ -151,6 +165,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val now = System.currentTimeMillis()
 
         AppDatabase.getDatabase(context).withTransaction {
+            toolConfig?.let { AppDatabase.getDatabase(context).toolInstanceDao().updateToolInstance(it) }
             write(writtenId?.let { settled[it] })
             settled.values
                 .filter { it.id != writtenId }
@@ -223,14 +238,18 @@ class ToolDataService(private val context: Context) : ExecutableService {
             updatedAt = System.currentTimeMillis()
         )
 
+        // An open choice's new values join its options, in the same transaction as the entry
+        val grownConfig = configWithNewOptions(target, updatedEntity.data, updatedEntity.extra)
+        val checked = grownConfig?.let { target.withConfig(it) } ?: target
+
         // The whole entry is checked, not only the fields sent: after the merge it is what will be stored
         validateEntry(
-            target, updatedEntity.name, updatedEntity.timestamp, updatedEntity.data, updatedEntity.extra, updatedEntity.state
+            checked, updatedEntity.name, updatedEntity.timestamp, updatedEntity.data, updatedEntity.extra, updatedEntity.state
         )?.let { return OperationResult.error(it) }
 
         val after = dao.getByToolInstance(existingEntity.toolInstanceId)
             .map { if (it.id == updatedEntity.id) updatedEntity else it }
-        storeSettled(existingEntity.tooltype, after, updatedEntity.id) { settled ->
+        storeSettled(existingEntity.tooltype, after, updatedEntity.id, checked.grown(grownConfig)) { settled ->
             dao.update(settled ?: updatedEntity)
         }
 
@@ -723,6 +742,105 @@ class ToolDataService(private val context: Context) : ExecutableService {
     }
 
     /**
+     * Starts a DURATION field of an entry: the instant goes into the entry's state, which is
+     * where a stopwatch survives the app being killed.
+     *
+     * Params: id (the entry), container ("data" or "extra"), field (its name)
+     */
+    private suspend fun startDuration(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        val located = locateDuration(params) ?: return OperationResult.error(durationError(params))
+        val (entity, target, container, field) = located
+        if (RunningDurations.startedAt(entity.state?.let { JSONObject(it) }, container, field) != null) {
+            return OperationResult.error(s.shared("service_error_duration_running").format(field))
+        }
+
+        val now = System.currentTimeMillis()
+        val state = RunningDurations.start(entity.state?.let { JSONObject(it) }, container, field, now)
+        val updated = entity.copy(state = state.toString(), updatedAt = now)
+        return storeDurationChange(target, updated, mapOf("id" to entity.id, "started_at" to now))
+    }
+
+    /**
+     * Stops a running DURATION field: the time since it started is added to its value, and its
+     * start leaves the state.
+     *
+     * Params: id (the entry), container ("data" or "extra"), field (its name)
+     */
+    private suspend fun stopDuration(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        val located = locateDuration(params) ?: return OperationResult.error(durationError(params))
+        val (entity, target, container, field) = located
+        val state = entity.state?.let { JSONObject(it) }
+        if (RunningDurations.startedAt(state, container, field) == null) {
+            return OperationResult.error(s.shared("service_error_duration_not_running").format(field))
+        }
+
+        val now = System.currentTimeMillis()
+        val values = JSONObject(when (container) {
+            FieldContainer.DATA -> entity.data
+            FieldContainer.EXTRA -> entity.extra ?: "{}"
+        })
+        val stored = if (values.has(field)) values.getLong(field) else null
+        val stopped = RunningDurations.stop(state, container, field, stored, now)
+        values.put(field, stopped.value)
+
+        val updated = entity.copy(
+            data = if (container == FieldContainer.DATA) values.toString() else entity.data,
+            extra = if (container == FieldContainer.EXTRA) values.toString() else entity.extra,
+            state = stopped.state.takeIf { it.length() > 0 }?.toString(),
+            updatedAt = now
+        )
+        return storeDurationChange(target, updated, mapOf("id" to entity.id, "value" to stopped.value))
+    }
+
+    /** An entry, its tool, and one of its DURATION fields, as a start or stop names them. */
+    private data class LocatedDuration(
+        val entity: ToolDataEntity,
+        val target: WriteTarget.Ready,
+        val container: FieldContainer,
+        val field: String
+    )
+
+    /** The DURATION field [params] name, or null when there is none (durationError says why). */
+    private suspend fun locateDuration(params: JSONObject): LocatedDuration? {
+        val entity = getToolDataDao().getById(params.optString("id")) ?: return null
+        val container = FieldContainer.entries.firstOrNull { it.key == params.optString("container") } ?: return null
+        val field = params.optString("field").takeIf { it.isNotEmpty() } ?: return null
+        val target = loadWriteTarget(entity.toolInstanceId) as? WriteTarget.Ready ?: return null
+
+        val fields = when (container) {
+            FieldContainer.DATA -> ToolTypeManager.getToolType(entity.tooltype)
+                ?.getEntryFields(target.config, context)?.data?.map { it.definition } ?: emptyList()
+            FieldContainer.EXTRA -> target.config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
+        }
+        if (fields.none { it.name == field && it.type == FieldType.DURATION }) return null
+        return LocatedDuration(entity, target, container, field)
+    }
+
+    private fun durationError(params: JSONObject): String =
+        s.shared("service_error_duration_unknown").format(
+            params.optString("id"), params.optString("container"), params.optString("field")
+        )
+
+    /** Checks and stores an entry a start or a stop rewrote, and notifies its tool. */
+    private suspend fun storeDurationChange(
+        target: WriteTarget.Ready,
+        updated: ToolDataEntity,
+        result: Map<String, Any>
+    ): OperationResult {
+        validateEntry(target, updated.name, updated.timestamp, updated.data, updated.extra, updated.state)
+            ?.let { return OperationResult.error(it) }
+
+        val dao = getToolDataDao()
+        val after = dao.getByToolInstance(updated.toolInstanceId).map { if (it.id == updated.id) updated else it }
+        storeSettled(updated.tooltype, after, updated.id) { settled -> dao.update(settled ?: updated) }
+
+        getZoneIdForTool(updated.toolInstanceId)?.let { DataChangeNotifier.notifyToolDataChanged(updated.toolInstanceId, it) }
+        return OperationResult.success(result)
+    }
+
+    /**
      * Removes a custom field from all entries of a tool instance.
      *
      * Called by ToolInstanceService when a custom field is deleted from the tool config.
@@ -907,9 +1025,58 @@ class ToolDataService(private val context: Context) : ExecutableService {
     /** The tool an entry is written to, as the write path needs it, or why it cannot be written to. */
     private sealed interface WriteTarget {
         /** [schema] is the entry schema generated for the tool: its type's fields and the user's. */
-        class Ready(val tool: ToolInstance, val config: JSONObject, val schema: Schema) : WriteTarget
+        class Ready(val tool: ToolInstance, val config: JSONObject, val schema: Schema) : WriteTarget {
+            /** The same tool with [config], its schema generated anew. */
+            fun withConfig(config: JSONObject, context: Context): Ready = Ready(
+                tool, config, schema.copy(content = BaseSchemas.getEntrySchema(ToolTypeManager.getToolType(tool.tooltype)!!, config, context))
+            )
+
+            /** The tool to store with [grownConfig], or null when the config did not grow. */
+            fun grown(grownConfig: JSONObject?): ToolInstance? =
+                grownConfig?.let { tool.copy(config_json = it.toString(), updated_at = System.currentTimeMillis()) }
+        }
         class Refused(val error: String) : WriteTarget
     }
+
+    private fun WriteTarget.Ready.withConfig(config: JSONObject) = withConfig(config, context)
+
+    /** A value read from JSON as the fields read it: a list for an array, as is otherwise. */
+    private fun plainValue(value: Any): Any = if (value is org.json.JSONArray) JsonUtils.toList(value) else value
+
+    /**
+     * The tool's config once the new values an entry gives to its open CHOICE fields have joined
+     * their options, or null when there are none. The user's fields keep their options in
+     * extra_fields; a tool type's own open field, in the config it says (configWithOptionsAdded).
+     */
+    private fun configWithNewOptions(target: WriteTarget.Ready, dataJson: String, extraJson: String?): JSONObject? {
+        var config = target.config
+        var grown = false
+
+        val extraValues = extraJson?.let { JSONObject(it) }
+        val userFields = config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
+        val grownFields = userFields.map { field ->
+            if (field.type != FieldType.CHOICE) return@map field
+            val added = ChoiceSettings.fromConfig(field.config).newOptionsIn(extraValues?.opt(field.name)?.let { plainValue(it) })
+            if (added.isEmpty()) field else field.withOptionsAdded(added).also { grown = true }
+        }
+        if (grown) config = JSONObject(config.toString()).put("extra_fields", grownFields.toJsonArray())
+
+        val toolType = ToolTypeManager.getToolType(target.tool.tooltype) ?: return if (grown) config else null
+        val dataValues = JSONObject(dataJson)
+        toolType.getEntryFields(target.config, context).data.map { it.definition }
+            .filter { it.type == FieldType.CHOICE }
+            .forEach { field ->
+                val added = ChoiceSettings.fromConfig(field.config).newOptionsIn(dataValues.opt(field.name)?.let { plainValue(it) })
+                if (added.isNotEmpty()) {
+                    config = toolType.configWithOptionsAdded(config, field.name, added)
+                    grown = true
+                }
+            }
+
+        return if (grown) config else null
+    }
+
+
 
     /** Load a tool and its entry schema, read straight from the database and its config. */
     private suspend fun loadWriteTarget(toolInstanceId: String): WriteTarget {

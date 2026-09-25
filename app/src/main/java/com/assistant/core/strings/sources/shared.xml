@@ -1569,6 +1569,9 @@
     <string name="error_unknown">Unknown error</string>
     <string name="app_config_format_schema_description">Date, time and display formats of the app</string>
     <string name="service_error_invalid_timestamp_format">Unreadable timestamp: %1$s</string>
+    <string name="service_error_duration_running">The duration %1$s is already running</string>
+    <string name="service_error_duration_not_running">The duration %1$s is not running</string>
+    <string name="service_error_duration_unknown">No duration field %3$s in %2$s of entry %1$s</string>
     <string name="service_error_tool_groups_empty_name">A group name cannot be empty</string>
     <string name="service_error_tool_groups_duplicate">The group \'%1$s\' already exists</string>
     <string name="service_error_operation_failed">Operation failed</string>

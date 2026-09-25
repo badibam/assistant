@@ -122,6 +122,14 @@ interface ToolTypeContract : SchemaProvider {
     fun getEntryFields(config: JSONObject, context: Context): com.assistant.core.fields.EntryFields
 
     /**
+     * [config] once [added] have joined the options of the CHOICE field [field] this tool type
+     * declares in data, for a field whose vocabulary is open. Only a tool type that declares an
+     * open CHOICE in data keeps its options in its config and answers; the service asks no other.
+     */
+    fun configWithOptionsAdded(config: JSONObject, field: String, added: List<String>): JSONObject =
+        throw IllegalStateException("${this::class.simpleName} declares no open choice in data")
+
+    /**
      * Enrich data before storage by calculating derived/auto-generated fields
      * This method is called by ToolDataService before inserting data into database
      *
