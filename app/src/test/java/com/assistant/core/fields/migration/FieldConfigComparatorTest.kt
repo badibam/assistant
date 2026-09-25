@@ -120,9 +120,9 @@ class FieldConfigComparatorTest {
 
     // ==================== Changing a field's type ====================
 
-    /** Changing a type is refused outright rather than migrated. */
+    /** A value of the former type means nothing to the new one: every value goes. */
     @Test
-    fun changingAFieldsType_isBlocked() {
+    fun changingAFieldsType_stripsItsValues() {
         val changes = FieldConfigComparator.compare(
             oldFields = listOf(field("count", type = FieldType.TEXT)),
             newFields = listOf(field("count", type = FieldType.NUMERIC))
@@ -133,8 +133,7 @@ class FieldConfigComparatorTest {
         assertEquals(FieldType.NUMERIC, typeChanged.newType)
 
         val strategies = MigrationPolicy.getStrategies(changes)
-        assertEquals(MigrationStrategy.ERROR, strategies[typeChanged])
-        assertTrue(MigrationPolicy.hasErrorStrategy(strategies))
+        assertEquals(MigrationStrategy.STRIP_FIELD, strategies[typeChanged])
     }
 
     /** A type change stops the comparison for that field: nothing else about it is reported. */
@@ -314,7 +313,6 @@ class FieldConfigComparatorTest {
         assertTrue(changes.any { it is FieldChange.ScaleRangeChanged })
 
         val strategies = MigrationPolicy.getStrategies(changes)
-        assertFalse(MigrationPolicy.hasErrorStrategy(strategies))
         assertTrue(MigrationPolicy.requiresMigration(strategies))
     }
 
@@ -328,6 +326,5 @@ class FieldConfigComparatorTest {
 
         val strategies = MigrationPolicy.getStrategies(changes)
         assertFalse(MigrationPolicy.requiresMigration(strategies))
-        assertFalse(MigrationPolicy.hasErrorStrategy(strategies))
     }
 }

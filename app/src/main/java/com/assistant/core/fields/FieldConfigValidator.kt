@@ -1,8 +1,6 @@
 package com.assistant.core.fields
 
 import android.content.Context
-import com.assistant.core.fields.migration.FieldChange
-import com.assistant.core.fields.migration.FieldConfigComparator
 import com.assistant.core.strings.Strings
 
 /**
@@ -441,46 +439,6 @@ object FieldConfigValidator {
             return ValidationResult(
                 isValid = false,
                 errorMessage = s.shared("field_validation_duration_form").format(form.toString())
-            )
-        }
-
-        return ValidationResult(isValid = true)
-    }
-
-    /**
-     * Validates that no field types have changed between old and new configurations.
-     *
-     * This validation is required for AI-driven configuration updates to prevent
-     * data corruption. Changing a field's type would make existing values invalid
-     * (e.g., text stored in a numeric field).
-     *
-     * Type changes are detected by FieldConfigComparator as FieldChange.TypeChanged
-     * for fields with the same name but different types.
-     *
-     * @param oldFields Previous field configuration
-     * @param newFields New field configuration
-     * @param context Android context for string translation
-     * @return ValidationResult with success if no type changes detected
-     */
-    fun validateNoTypeChanges(
-        oldFields: List<FieldDefinition>,
-        newFields: List<FieldDefinition>,
-        context: Context
-    ): ValidationResult {
-        val s = Strings.`for`(context = context)
-
-        // Detect all changes using comparator
-        val changes = FieldConfigComparator.compare(oldFields, newFields)
-
-        // Check for type changes
-        val typeChanges = changes.filterIsInstance<FieldChange.TypeChanged>()
-        if (typeChanges.isNotEmpty()) {
-            val changedFields = typeChanges.joinToString(", ") {
-                "${it.name} (${it.oldType} → ${it.newType})"
-            }
-            return ValidationResult(
-                isValid = false,
-                errorMessage = "${s.shared("error_field_type_changed")}: $changedFields"
             )
         }
 

@@ -238,7 +238,9 @@ fun ZoneScreen(
                 try {
                     coordinator.processUserAction("tools.update", mapOf(
                         "tool_instance_id" to toolId,
-                        "config" to JsonUtils.toMap(config)
+                        "config" to JsonUtils.toMap(config),
+                        // The config screens have asked the user before saving a change that loses data
+                        "confirm_migration" to true
                     ))
                     editingToolId = null
                     showingConfigFor = null

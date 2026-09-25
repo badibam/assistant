@@ -1205,8 +1205,9 @@
     <string name="migration_failed">Migration failed</string>
     <string name="migration_warning_note">Careful: this operation cannot be undone. The erased data cannot be recovered.</string>
     <string name="migration_no_changes">No change detected</string>
-    <string name="error_field_type_changed">The type of a field cannot be changed (a type change would corrupt the existing data)</string>
-    <string name="error_migration_blocked">This change cannot be applied</string>
+    <string name="migration_type_changed">%1$d field(s) whose type changed: their data will be erased</string>
+    <string name="service_error_migration_unconfirmed">This change removes %1$d value(s) from the entries of this tool and deletes %2$d entr(ies) left without a required value. Send it again with "confirm_migration": true to apply it.</string>
+    <string name="service_error_migration_missing_values">Entries have no value for a field this change makes required: %1$s</string>
 
     <!-- CUSTOM FIELDS - Labels for form field names -->
     <string name="label_display_name">Displayed name</string>

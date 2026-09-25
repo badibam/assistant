@@ -57,7 +57,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "batch_create" -> batchCreateEntries(params, token)  // Batch create multiple entries
                 "batch_update" -> batchUpdateEntries(params, token)  // Batch update multiple entries
                 "batch_delete" -> batchDeleteEntries(params, token)  // Batch delete multiple entries
-                "remove_custom_field" -> removeCustomFieldFromAllEntries(params, token)  // Remove custom field from all entries
                 "start_duration" -> startDuration(params, token)  // A DURATION field starts running
                 "stop_duration" -> stopDuration(params, token)    // It stops, and the time elapsed is added to it
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
@@ -848,68 +847,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         getZoneIdForTool(updated.toolInstanceId)?.let { DataChangeNotifier.notifyToolDataChanged(updated.toolInstanceId, it) }
         return OperationResult.success(result)
-    }
-
-    /**
-     * Removes a custom field from all entries of a tool instance.
-     *
-     * Called by ToolInstanceService when a custom field is deleted from the tool config.
-     * Uses SQLite json_remove() for efficient bulk update without loading entries in memory.
-     *
-     * @param params Must contain: toolInstanceId (string), fieldName (string)
-     * @return OperationResult with updated_count
-     */
-    private suspend fun removeCustomFieldFromAllEntries(params: JSONObject, token: CancellationToken): OperationResult {
-        if (token.isCancelled) return OperationResult.cancelled()
-
-        val toolInstanceId = params.optString("tool_instance_id")
-        val fieldName = params.optString("field_name")
-
-        if (toolInstanceId.isEmpty() || fieldName.isEmpty()) {
-            return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, fieldName"))
-        }
-
-        try {
-            // Use direct SQL query with json_remove() for performance
-            // SQLite json_remove() syntax: json_remove(json, path)
-            val database = AppDatabase.getDatabase(context).openHelper.writableDatabase
-
-            database.execSQL(
-                """
-                UPDATE tool_data
-                SET extra = json_remove(extra, ?),
-                    updated_at = ?
-                WHERE tool_instance_id = ? AND extra IS NOT NULL
-                """.trimIndent(),
-                arrayOf("$.$fieldName", System.currentTimeMillis(), toolInstanceId)
-            )
-
-            // Count affected entries for logging
-            val affectedCount = database.compileStatement(
-                "SELECT changes()"
-            ).simpleQueryForLong()
-
-            LogManager.service(
-                "Removed custom field '$fieldName' from $affectedCount entries in tool instance $toolInstanceId"
-            )
-
-            // Notify UI of data change
-            val zoneId = getZoneIdForTool(toolInstanceId)
-            if (zoneId != null) {
-                DataChangeNotifier.notifyToolDataChanged(toolInstanceId, zoneId)
-            }
-
-            return OperationResult.success(mapOf(
-                "updated_count" to affectedCount.toInt()
-            ))
-        } catch (e: Exception) {
-            LogManager.service(
-                "Failed to remove custom field: ${e.message}",
-                "ERROR",
-                e
-            )
-            return OperationResult.error("Failed to remove custom field: ${e.message}")
-        }
     }
 
     /**

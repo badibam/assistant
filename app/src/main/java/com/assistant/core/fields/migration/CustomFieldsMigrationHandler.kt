@@ -80,12 +80,6 @@ fun rememberCustomFieldsMigrationHandler(
                         LogManager.ui("DEBUG Migration Handler: migrationCheck type=${migrationCheck::class.simpleName}")
 
                         when (migrationCheck) {
-                            is MigrationCheckResult.Error -> {
-                                // Migration blocked - show error
-                                LogManager.ui("Migration blocked: ${migrationCheck.errorMessage}", "ERROR")
-                                onError(migrationCheck.errorMessage)
-                            }
-
                             is MigrationCheckResult.NeedsMigration -> {
                                 // Migration needed - show dialog
                                 LogManager.ui("Migration needed - showing confirmation dialog")

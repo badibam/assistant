@@ -14,7 +14,6 @@ package com.assistant.core.fields.migration
  * - NONE: No action needed (cosmetic changes, field additions)
  * - STRIP_FIELD: Remove field from all entries (field deletion)
  * - STRIP_FIELD_IF_VALUE: Conditional removal (removed CHOICE options)
- * - ERROR: Block the configuration change (name/type changes)
  */
 enum class MigrationStrategy {
     /**
@@ -33,6 +32,7 @@ enum class MigrationStrategy {
      *
      * Applied to:
      * - FieldChange.Removed: Field deleted from configuration
+     * - FieldChange.TypeChanged: a value of the former type means nothing to the new one
      *
      * Result: custom_fields[fieldName] removed from all tool_data entries
      *
@@ -58,16 +58,5 @@ enum class MigrationStrategy {
      * Before: {"extra": {"tags": ["work", "urgent", "review"]}}
      * After:  {"extra": {}} (if "urgent" was removed and is in the list)
      */
-    STRIP_FIELD_IF_VALUE,
-
-    /**
-     * Block the configuration change with an error.
-     *
-     * Applied to:
-     * - FieldChange.TypeChanged: type changes would create invalid data,
-     *   such as text stored in a numeric field
-     *
-     * Result: Configuration save is rejected with an error message
-     */
-    ERROR
+    STRIP_FIELD_IF_VALUE
 }

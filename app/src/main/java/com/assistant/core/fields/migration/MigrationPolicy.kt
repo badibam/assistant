@@ -13,14 +13,14 @@ import com.assistant.core.strings.Strings
  * Strategy mapping:
  * - Added → NONE (no migration needed)
  * - Removed → STRIP_FIELD (remove from all entries)
- * - TypeChanged → ERROR (forbidden)
+ * - TypeChanged → STRIP_FIELD (a value of the former type means nothing to the new one)
  * - ChoiceOptionsRemoved → STRIP_FIELD_IF_VALUE (conditional removal)
  * - CosmeticChange → NONE (no migration needed)
  *
  * Architecture:
  * - Pure strategy determination (no side effects)
  * - Localized descriptions via string system
- * - Used by both UI (CustomFieldsEditor) and AI (ToolInstanceService)
+ * - Used by EntryMigration, whoever changes the config
  */
 object MigrationPolicy {
 
@@ -44,8 +44,8 @@ object MigrationPolicy {
                 // Remove field from all entries when field is deleted
                 is FieldChange.Removed -> MigrationStrategy.STRIP_FIELD
 
-                // Forbid type changes (would corrupt existing values)
-                is FieldChange.TypeChanged -> MigrationStrategy.ERROR
+                // A value of the former type means nothing to the new one
+                is FieldChange.TypeChanged -> MigrationStrategy.STRIP_FIELD
 
                 // Remove field only from entries using removed options
                 is FieldChange.ChoiceOptionsRemoved -> MigrationStrategy.STRIP_FIELD_IF_VALUE
@@ -75,9 +75,7 @@ object MigrationPolicy {
      * - What data will be affected
      * - What actions will be taken
      *
-     * Used by:
-     * - UI: Displayed in confirmation dialog before migration
-     * - AI: Returned as error message when strategy is ERROR
+     * Displayed in the confirmation dialog before migration.
      *
      * @param changes List of detected changes
      * @param strategies Map of strategies for each change
@@ -97,11 +95,15 @@ object MigrationPolicy {
         val scaleRangeChangedCount = changes.count { it is FieldChange.ScaleRangeChanged }
         val choiceShapeChangedCount = changes.count { it is FieldChange.ChoiceShapeChanged }
         val choiceOptionsRemovedCount = changes.count { it is FieldChange.ChoiceOptionsRemoved }
-        val errorCount = changes.count { strategies[it] == MigrationStrategy.ERROR }
+        val typeChangedCount = changes.count { it is FieldChange.TypeChanged }
 
         // Build description for each change type
         if (fieldRemovalCount > 0) {
             lines.add(s.shared("migration_fields_removed").format(fieldRemovalCount))
+        }
+
+        if (typeChangedCount > 0) {
+            lines.add(s.shared("migration_type_changed").format(typeChangedCount))
         }
 
         if (scaleRangeChangedCount > 0) {
@@ -121,36 +123,11 @@ object MigrationPolicy {
             lines.add(s.shared("migration_config_restricted").format(configRestrictedCount))
         }
 
-        if (errorCount > 0) {
-            // List specific errors
-            changes.filter { strategies[it] == MigrationStrategy.ERROR }.forEach { change ->
-                val errorMessage = when (change) {
-                    is FieldChange.TypeChanged ->
-                        s.shared("error_field_type_changed")
-
-                    else -> s.shared("error_migration_blocked")
-                }
-                lines.add(errorMessage)
-            }
-        }
-
         return if (lines.isEmpty()) {
             s.shared("migration_no_changes")
         } else {
             lines.joinToString("\n")
         }
-    }
-
-    /**
-     * Check if any change has an ERROR strategy.
-     *
-     * Used to quickly determine if the configuration change should be blocked.
-     *
-     * @param strategies Map of strategies for detected changes
-     * @return true if any strategy is ERROR
-     */
-    fun hasErrorStrategy(strategies: Map<FieldChange, MigrationStrategy>): Boolean {
-        return strategies.values.any { it == MigrationStrategy.ERROR }
     }
 
     /**

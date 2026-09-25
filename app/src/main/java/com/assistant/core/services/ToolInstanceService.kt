@@ -19,9 +19,8 @@ import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldNameGenerator
 import com.assistant.core.fields.FieldConfigValidator
 import com.assistant.core.fields.ValidationException
-import com.assistant.core.fields.migration.FieldConfigComparator
-import com.assistant.core.fields.migration.MigrationPolicy
-import com.assistant.core.fields.migration.FieldDataMigrator
+import com.assistant.core.fields.migration.EntryMigration
+import androidx.room.withTransaction
 import com.assistant.core.scheduling.CoreScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -165,7 +164,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // Process custom fields if config is being updated
         if (configJson.isNotBlank()) {
             val processResult = processCustomFields(
-                toolInstanceId = toolInstanceId,
                 oldConfigJson = existingTool.config_json,
                 newConfigJson = configJson,
                 token = token
@@ -192,6 +190,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             checkConfig(existingTool.tooltype, configJson)?.let { return OperationResult.error(it) }
         }
 
+        // What the change does to the recorded entries: refused while it loses something the
+        // caller has not agreed to lose, or leaves an entry without a value it now requires
+        val migration = if (configJson.isNotBlank()) {
+            planMigration(existingTool, configJson).also { plan ->
+                refuseMigration(plan, params.optBoolean("confirm_migration", false))?.let { return it }
+            }
+        } else null
+
         // Store old zone_id for notification
         val oldZoneId = existingTool.zone_id
 
@@ -203,7 +209,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         if (token.isCancelled) return OperationResult.cancelled()
 
-        toolInstanceDao.updateToolInstance(updatedTool)
+        // The config and what it does to the entries are one write: neither lands without the other
+        database.withTransaction {
+            toolInstanceDao.updateToolInstance(updatedTool)
+            if (migration != null) applyMigration(existingTool, migration)
+        }
+        if (migration != null && (migration.updated.isNotEmpty() || migration.deleted.isNotEmpty())) {
+            DataChangeNotifier.notifyToolDataChanged(toolInstanceId, updatedTool.zone_id)
+        }
 
         // Notify UI of tools change in affected zones
         if (newZoneId != null && newZoneId != oldZoneId) {
@@ -220,7 +233,61 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             "tool_instance_id" to updatedTool.id,
             "zone_id" to updatedTool.zone_id,
             "updated_at" to updatedTool.updated_at
-        ) + iconCheck.report())
+        ) + iconCheck.report() + (migration?.let { report(it) } ?: emptyMap()))
+    }
+
+    /** What the config [newConfigJson] would do to the entries of [tool], as its config stands now. */
+    private suspend fun planMigration(tool: ToolInstance, newConfigJson: String): EntryMigration.Plan {
+        val toolType = ToolTypeManager.getToolType(tool.tooltype)
+            ?: throw IllegalStateException("Unknown tooltype ${tool.tooltype}")
+        fun fieldsOf(config: JSONObject) = EntryMigration.Fields(
+            data = toolType.getEntryFields(config, context).data,
+            extra = config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
+        )
+        return EntryMigration.plan(
+            old = fieldsOf(JSONObject(tool.config_json)),
+            new = fieldsOf(JSONObject(newConfigJson)),
+            entries = database.toolDataDao().getByToolInstance(tool.id)
+        )
+    }
+
+    /**
+     * The refusal of [plan], or null when it can be applied: values it removes and entries it
+     * deletes need [confirmed] (the screen asks the user, the AI says so explicitly), and an entry
+     * left without the value of a field now required is never stored.
+     *
+     * The refusal carries the counts in "migration", for the screen to show them.
+     */
+    private fun refuseMigration(plan: EntryMigration.Plan, confirmed: Boolean): OperationResult? {
+        if (plan.missing.isNotEmpty()) {
+            val fields = plan.missing.entries.joinToString(", ") { (field, count) -> "$field ($count)" }
+            return OperationResult.error(s.shared("service_error_migration_missing_values").format(fields), report(plan))
+        }
+        if (plan.losesData && !confirmed) {
+            return OperationResult.error(
+                s.shared("service_error_migration_unconfirmed").format(plan.removedValues, plan.deleted.size),
+                report(plan)
+            )
+        }
+        return null
+    }
+
+    /** What a migration does, under "migration" in a result. */
+    private fun report(plan: EntryMigration.Plan): Map<String, Any> = mapOf("migration" to mapOf(
+        "removed_values" to plan.removedValues,
+        "deleted_entries" to plan.deleted.size,
+        "missing_values" to plan.missing
+    ))
+
+    /** Writes [plan] to the entries of [tool], inside the caller's transaction. */
+    private suspend fun applyMigration(tool: ToolInstance, plan: EntryMigration.Plan) {
+        val dao = database.toolDataDao()
+        plan.updated.forEach { dao.update(it.copy(updatedAt = System.currentTimeMillis())) }
+        plan.deleted.forEach { dao.deleteById(it.id) }
+        if (plan.deleted.isEmpty()) return
+        // A rule spanning the entries (a manual order) settles again once some are gone
+        val toolType = ToolTypeManager.getToolType(tool.tooltype) ?: return
+        toolType.settleEntries(dao.getByToolInstance(tool.id), null).forEach { dao.update(it) }
     }
     
     /**
@@ -608,20 +675,16 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      * Runs on every config update, whatever the caller:
      * 1. Refusing technical names this service never assigned (invented names, renames)
      * 2. Assigning a technical name to each field that arrives without one
-     * 3. Refusing type changes, which would make stored values invalid
-     * 4. Detecting structural changes and migrating the data accordingly
-     * 5. Validating all field definitions
+     * 3. Validating all field definitions
      *
-     * Migration is automatic and silent for AI updates (no user confirmation).
+     * What the change does to the entries is EntryMigration's, once the whole config is checked.
      *
-     * @param toolInstanceId ID of the tool instance being updated
      * @param oldConfigJson Previous configuration JSON
      * @param newConfigJson New configuration JSON (with custom_fields possibly modified)
      * @param token Cancellation token
      * @return OperationResult with processed_config containing generated field names
      */
     private suspend fun processCustomFields(
-        toolInstanceId: String,
         oldConfigJson: String,
         newConfigJson: String,
         token: CancellationToken
@@ -636,36 +699,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             val oldFieldsArray = oldConfig.optJSONArray("extra_fields")
             val newFieldsArray = newConfig.optJSONArray("extra_fields")
 
-            // If no custom_fields in new config, nothing to process
+            // Without user's fields, there is nothing to name or check
             if (newFieldsArray == null || newFieldsArray.length() == 0) {
-                // If old config had fields, we need to migrate (remove all fields from entries)
-                if (oldFieldsArray != null && oldFieldsArray.length() > 0) {
-                    val oldFields = oldFieldsArray.toFieldDefinitions()
-
-                    // Use migration system to handle removal
-                    val changes = oldFields.map { field ->
-                        com.assistant.core.fields.migration.FieldChange.Removed(field.name)
-                    }
-
-                    val strategies = MigrationPolicy.getStrategies(changes)
-
-                    val migrationResult = FieldDataMigrator.migrateCustomFields(
-                        coordinator = Coordinator(context),
-                        toolInstanceId = toolInstanceId,
-                        changes = changes,
-                        strategies = strategies,
-                        context = context,
-                        token = token
-                    )
-
-                    if (!migrationResult.success) {
-                        LogManager.service(
-                            "Failed to remove all custom fields: ${migrationResult.error}",
-                            "ERROR"
-                        )
-                        return migrationResult
-                    }
-                }
                 return OperationResult.success(mapOf("processed_config" to newConfigJson))
             }
 
@@ -698,77 +733,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
             if (token.isCancelled) return OperationResult.cancelled()
 
-            // Phase 2: Migration validation and execution
-            // Validate no forbidden changes (type changes only - removals are legitimate)
-            val typeValidation = FieldConfigValidator.validateNoTypeChanges(
-                oldFields = oldFields,
-                newFields = processedFields,
-                context = context
-            )
-            if (!typeValidation.isValid) {
-                LogManager.service(
-                    "Tool config attempted forbidden type change: ${typeValidation.errorMessage}",
-                    "ERROR"
-                )
-                return OperationResult.error(typeValidation.errorMessage ?: s.shared("error_field_type_changed"))
-            }
-
-            // Detect all structural changes
-            val changes = FieldConfigComparator.compare(oldFields, processedFields)
-
-            if (changes.isNotEmpty()) {
-                LogManager.service(
-                    "Detected ${changes.size} custom field change(s) for tool $toolInstanceId",
-                    "INFO"
-                )
-
-                // Determine migration strategies
-                val strategies = MigrationPolicy.getStrategies(changes)
-
-                // Check for error strategies (should have been caught above, but double-check)
-                if (MigrationPolicy.hasErrorStrategy(strategies)) {
-                    val errorMessage = MigrationPolicy.getDescription(changes, strategies, context)
-                    LogManager.service(
-                        "Migration blocked by error strategy: $errorMessage",
-                        "ERROR"
-                    )
-                    return OperationResult.error(errorMessage)
-                }
-
-                // Execute migration if needed (silent for AI)
-                if (MigrationPolicy.requiresMigration(strategies)) {
-                    LogManager.service(
-                        "Executing automatic migration for tool $toolInstanceId",
-                        "INFO"
-                    )
-
-                    val migrationResult = FieldDataMigrator.migrateCustomFields(
-                        coordinator = Coordinator(context),
-                        toolInstanceId = toolInstanceId,
-                        changes = changes,
-                        strategies = strategies,
-                        context = context,
-                        token = token
-                    )
-
-                    if (!migrationResult.success) {
-                        LogManager.service(
-                            "Migration failed: ${migrationResult.error}",
-                            "ERROR"
-                        )
-                        return migrationResult
-                    }
-
-                    LogManager.service(
-                        "Migration completed successfully",
-                        "INFO"
-                    )
-                }
-            }
-
-            if (token.isCancelled) return OperationResult.cancelled()
-
-            // Phase 3: Field definition validation (all fields must pass)
+            // Phase 2: Field definition validation (all fields must pass)
             val existingFieldsForValidation = processedFields.toMutableList()
             for ((index, field) in processedFields.withIndex()) {
                 // For validation, exclude current field from existing list to avoid self-collision
@@ -786,7 +751,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 }
             }
 
-            // Phase 4: Build processed config with generated names
+            // Phase 3: Build processed config with generated names
             val processedFieldsArray = processedFields.toJsonArray()
             newConfig.put("extra_fields", processedFieldsArray)
 
@@ -801,26 +766,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             LogManager.service("Failed to process custom fields: ${e.message}", "ERROR", e)
             return OperationResult.error("Failed to process custom fields: ${e.message}")
         }
-    }
-
-    /**
-     * Legacy helper function - DEPRECATED.
-     * Now handled by FieldDataMigrator.migrateCustomFields() which supports
-     * multiple migration strategies (STRIP_FIELD, STRIP_FIELD_IF_VALUE, etc.)
-     *
-     * This function is kept for reference only and should not be used in new code.
-     */
-    @Deprecated(
-        message = "Use FieldDataMigrator.migrateCustomFields() instead",
-        replaceWith = ReplaceWith("FieldDataMigrator.migrateCustomFields(...)")
-    )
-    private suspend fun removeCustomFieldFromEntries(
-        toolInstanceId: String,
-        fieldName: String,
-        token: CancellationToken
-    ) {
-        // Kept for reference only - not used anymore
-        // Migration now handled by FieldDataMigrator
     }
 
     /**

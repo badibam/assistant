@@ -23,6 +23,9 @@ data class OperationResult(
         ) = OperationResult(true, data, requiresBackground = requiresBackground, requiresContinuation = requiresContinuation)
 
         fun error(message: String) = OperationResult(false, error = message)
+
+        /** A refusal that also says what the caller needs to act on it, such as what a change would cost. */
+        fun error(message: String, data: Map<String, Any>) = OperationResult(false, data = data, error = message)
         fun cancelled() = OperationResult(false, cancelled = true)
     }
 }

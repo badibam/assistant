@@ -1205,8 +1205,9 @@
     <string name="migration_failed">Échec de la migration</string>
     <string name="migration_warning_note">Attention : Cette opération est irréversible. Les données effacées ne pourront pas être récupérées.</string>
     <string name="migration_no_changes">Aucune modification détectée</string>
-    <string name="error_field_type_changed">Le type d\'un champ ne peut pas être modifié (modification de type corromprait les données existantes)</string>
-    <string name="error_migration_blocked">Cette modification ne peut pas être appliquée</string>
+    <string name="migration_type_changed">%1$d champ(s) dont le type a changé : leurs données seront effacées</string>
+    <string name="service_error_migration_unconfirmed">Cette modification retire %1$d valeur(s) des entrées de cet outil et supprime %2$d entrée(s) restée(s) sans valeur obligatoire. Renvoie-la avec "confirm_migration": true pour l\'appliquer.</string>
+    <string name="service_error_migration_missing_values">Des entrées n\'ont pas de valeur pour un champ que cette modification rend obligatoire : %1$s</string>
 
     <!-- CUSTOM FIELDS - Labels for form field names -->
     <string name="label_display_name">Nom affiché</string>
