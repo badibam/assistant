@@ -18,6 +18,7 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 8. **Le type DURÉE stocke des millisecondes, sans unité.** L'unité vit dans la config du champ et décide de la saisie et de l'affichage : une précision (la plus petite unité saisie et affichée) et une forme (composée « 1 h 25 min » ou unité unique « 85 min »). Pas de mois ni d'année : ce ne sont pas des durées fixes ; si le besoin vient, c'est un autre type (une période de calendrier, avec son départ). Face à l'IA, une durée est en ISO 8601 (`PT1H25M`), marquée dans le schéma de stockage par un format du genre `duration-millis` d'où `SchemaModelView` dérive la vue de l'IA, et convertie aux mêmes endroits que les dates.
 
 9. **Le tracking a un champ principal `value`.** Déclaré par le type d'outil dans `data`, son type de champ est fixé par la config de l'instance ; le changer est une migration de champ. Les modes rapides du tracking agissent toujours sur `value` ; les champs de `extra` se remplissent dans la fenêtre d'édition — comme aujourd'hui, où la saisie rapide n'écrit que la valeur. Si les valeurs par défaut arrivent, la saisie rapide en remplit `extra`.
+10. **Un suivi numérique porte son unité dans chaque entrée.** Le tracking déclare deux champs fixes : `value` (NUMERIC, un simple nombre) et `unit` (CHOICE, dont les options sont les unités déclarées dans la config du suivi). Un raccourci impose son unité, prise dans cette liste ; une saisie libre la choisit. Vaut aussi pour un suivi à une seule unité (`units: ["kg"]`) : un seul modèle, et l'unité se lit toujours dans l'entrée. Une entrée a exactement une valeur et une unité ; les raccourcis se suppriment librement ; les statistiques regroupent par unité ; renommer une unité est une migration d'option de CHOICE. La valeur NUMERIC en général reste un nombre, son unité dans la config du champ.
 
 ## Écarté
 
@@ -26,6 +27,7 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 - Des colonnes communes pour `position` ou `archived` : pas de deuxième outil qui en ait besoin aujourd'hui.
 - Le chronomètre porté par le type DURÉE lui-même : il doit survivre à la fermeture du formulaire, ce qui est le rôle de `state`, pas du type.
 - Un tracking sans champ principal, chaque suivi n'étant que des champs de `extra` : les modes rapides ne sauraient plus sur quel champ agir. Revenir vers cette forme reste une migration mécanique (`data.value` déplacé dans `extra`) ; l'inverse demanderait de choisir un champ principal par suivi.
+- Pour l'unité d'un suivi numérique : une seule unité par suivi (bloque l'alimentation, les médicaments, le sport, où chaque chose mesurée a la sienne) ; une unité texte libre par entrée (« g », « gr », « grammes ») ; l'unité dérivée du raccourci et non stockée (l'IA devrait la chercher ailleurs, et un raccourci ne pourrait plus se supprimer) ; un champ NUMERIC par unité (une entrée pourrait en remplir deux ou aucun, et le champ principal disparaît).
 - `user` comme nom de `extra` : s'opposerait à « IA » dans le reste de l'app.
 
 ## État du code au 2026-09-25
@@ -38,7 +40,7 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 
 ## Ouvert
 
-- L'unité de NUMERIC : les raccourcis d'un suivi numeric portent chacun leur unité et chaque entrée stocke la sienne, ce qu'une unité dans la config du champ (comme pour DURÉE) casserait.
+- L'unité par défaut d'une saisie libre dans un suivi numérique : la première de la liste, ou celle de la dernière entrée.
 - Un champ obligatoire dans `extra` : une saisie rapide ouvrirait alors la fenêtre d'édition préremplie.
 - `raw` du tracking : dérivé, à ne plus stocker (dette du manifeste).
 - `true_label` et `false_label` recopiés de la config dans chaque entrée booléenne du tracking.
