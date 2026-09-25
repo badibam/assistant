@@ -4,7 +4,9 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Un seul système de champs : blocs A à C faits, reste `docs/design/unified-fields.md` — le pointeur (choix des champs, filtres par valeur), la valeur par défaut portée par un champ, les détails des commandes dans le chat, RÉFÉRENCE. Prochain : rejouer le prompt L1 réécrit sur l'appareil (`docs/ai-prompt-replay.md`, quatre messages), puis concevoir le pointeur.
+- Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — le pointeur (choix des champs, filtres par valeur), la valeur par défaut portée par un champ, les détails des commandes dans le chat, RÉFÉRENCE. Prochain : concevoir le pointeur.
+- L'unité d'un suivi numérique a deux places dans sa config : `value.unit` (réglage du champ NUMERIC) et `units` (la liste d'où chaque entrée tire son unité). Au rejeu, l'IA a pris la première, et les entrées n'ont pas de `data.unit`. Retirer `unit` du réglage `value` d'un suivi.
+- Un BOOLEAN ou une SCALE sans valeur s'affichent à l'écran comme « non » ou comme le minimum : obligatoires dans une question de l'IA, Confirmer reste grisé sans que rien ne dise pourquoi.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
@@ -14,6 +16,8 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 - Les exécutions d'une automation décrites comme des entrées (champs déclarés, schéma généré, dates en ISO par ce schéma) — le jour où l'IA les lit ; ce ne sont pas des réglages.
 - Une sauvegarde emporte-t-elle la clé d'API d'un fournisseur (réglage secret) ? — à trancher avant d'ouvrir l'export à un usage partagé.
+- Cache de DeepSeek : au rejeu, la lecture en cache reste à 7 808 tokens (le système seul) quand l'entrée monte à 24 000 ; la conversation est repayée plein tarif à chaque appel, les trois quarts du coût d'une session. À mesurer : ce qui empêche le préfixe de conversation d'être repris d'un appel à l'autre.
+- Défilement saccadé à la réouverture d'une longue session CHAT — à mesurer (recompositions de la liste, défilements automatiques successifs).
 - Seuil de taille des données par automation — quand une automation légitime montre un `DATA_REFUSED` dans son historique d'exécution ; la valeur globale deviendra la valeur par défaut.
 - Marquer les lignes que les migrations 13→14 et 14→15 n'ont pas su transformer, et le dire une fois au démarrage (jamais les supprimer) — si des lignes `MIGRATION` apparaissent en « Error » dans l'écran des journaux.
 - Validation désactivée par défaut, que l'IA contourne donc sans rien demander (`docs/design/architecture-audit-debt.md`) — décision reportée le 2026-09-22.
