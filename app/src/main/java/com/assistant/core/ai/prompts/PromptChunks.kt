@@ -245,70 +245,31 @@ object PromptChunks {
             SessionType.SEED -> throw IllegalStateException("Cannot build session types for SEED session type")
         }
 
-        return """
-## Type de session actuelle : $currentMode
-
-**CHAT** : Conversation interactive avec l'utilisateur.
-- Communication modules et Validation Request autorisés
-- Pas de flag `completed` (l'utilisateur contrôle la fin)
-
-**AUTOMATION** : Exécution autonome programmée.
-- Communication modules et Validation Request **interdits** (exécution autonome)
-- **DOIT** utiliser `"completed": true` pour terminer
-- `pre_text` reste obligatoire, `post_text` optionnel
-""".trimIndent()
+        return Strings.`for`(context = context).shared("ai_chunk_session_types").format(currentMode)
     }
 
     /**
-     * Build tooltypes list with dynamic content from ToolTypeManager
-     */
-    /**
-     * Build list of system schema IDs dynamically via SchemaService
+     * The names of the schemas the AI asks for by name: neither a tool's config nor its entries,
+     * which it asks for by tool type or tool (SCHEMA), nor the app's settings, which no command
+     * of the AI reads or writes.
      */
     private suspend fun buildSystemSchemaIds(context: Context): String {
-        val sb = StringBuilder()
-        val coordinator = Coordinator(context)
-
-        sb.appendLine("### Schémas système disponibles")
-        sb.appendLine()
-
-        // Call schemas.list to get all schema IDs
-        val result = coordinator.processUserAction("schemas.list", emptyMap())
-
-        if (result.isSuccess) {
-            @Suppress("UNCHECKED_CAST")
-            val allSchemaIds = result.data?.get("schema_ids") as? List<String> ?: emptyList()
-
-            // Filter to get only system schemas (exclude tooltype-specific ones)
-            // System schemas: zone_*, app_*, ai_*, communication_module, field_type_*
-            val systemSchemaIds = allSchemaIds.filter { schemaId ->
-                schemaId.startsWith("zone_") ||
-                schemaId.startsWith("app_") ||
-                schemaId.startsWith("ai_") ||
+        val result = Coordinator(context).processUserAction("schemas.list", emptyMap())
+        if (!result.isSuccess) {
+            throw IllegalStateException("Cannot list the schemas for the prompt: ${result.error}")
+        }
+        @Suppress("UNCHECKED_CAST")
+        val allSchemaIds = result.data?.get("schema_ids") as? List<String> ?: emptyList()
+        val named = allSchemaIds.filter { schemaId ->
+            schemaId == com.assistant.core.schemas.ZoneSettings.SCHEMA_ID ||
                 schemaId == com.assistant.core.ai.data.CommunicationModules.SCHEMA_ID ||
                 schemaId.startsWith("field_type_")
-            }.sorted()
-
-            if (systemSchemaIds.isNotEmpty()) {
-                sb.appendLine("Les schémas système suivants sont disponibles :")
-                sb.appendLine()
-                for (schemaId in systemSchemaIds) {
-                    sb.appendLine("- `$schemaId`")
-                }
-            } else {
-                sb.appendLine("Aucun schéma système trouvé.")
-            }
-        } else {
-            sb.appendLine("Erreur lors de la récupération des schémas système.")
-            LogManager.aiPrompt("Failed to load system schemas: ${result.error}", "ERROR")
-        }
-
-        sb.appendLine()
-        sb.appendLine("**Note** : Les schémas spécifiques aux tooltypes sont listés dans la section Types d'Outils.")
-
-        return sb.toString()
+        }.sorted()
+        return Strings.`for`(context = context).shared("ai_chunk_system_schema_ids")
+            .format(named.joinToString("\n") { "- `$it`" })
     }
 
+    /** The tool types, each with its description. */
     private fun buildTooltypesList(context: Context): String {
         val s = Strings.`for`(context = context)
         val sb = StringBuilder()

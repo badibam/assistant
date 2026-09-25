@@ -12,15 +12,15 @@ Le prompt ci-dessous et sa grille sont à **mettre à jour quand le L1 bouge** :
 
 ## Le prompt
 
-Trois messages, envoyés l'un après l'autre dans la même session, chacun une fois la réponse au précédent arrivée. La limite d'allers-retours d'une session CHAT se compte depuis le dernier message de l'utilisateur : les dix étapes d'un seul tenant la dépasseraient, trois messages restent chacun en dessous.
+Quatre messages, envoyés l'un après l'autre dans la même session, chacun une fois la réponse au précédent arrivée. La limite d'allers-retours d'une session CHAT se compte depuis le dernier message de l'utilisateur : les douze étapes d'un seul tenant la dépasseraient, quatre messages restent chacun en dessous.
 
 Message 1 :
 
 ```
 Tu es en test. Je vérifie que tes instructions correspondent au code de l'app.
-Le test tient en trois messages ; celui-ci est le premier. Réponds en français.
+Le test tient en quatre messages ; celui-ci est le premier. Réponds en français.
 
-Règles du test, valables pour les trois messages :
+Règles du test, valables pour les quatre messages :
 - Travaille uniquement dans la zone que tu crées à l'étape 1. Ne modifie et ne
   supprime rien d'autre, sous aucun prétexte.
 - Enchaîne toutes les étapes d'un même message sans me rendre la main entre
@@ -71,7 +71,7 @@ Deuxième message du test, mêmes règles.
 Message 3 :
 
 ```
-Troisième et dernier message du test, mêmes règles.
+Troisième message du test, mêmes règles.
 
 9. Renomme le champ « Humeur » en « Humeur du jour », sans perdre les valeurs
    déjà saisies. Relis une entrée pour me le prouver, en recopiant son humeur.
@@ -79,6 +79,23 @@ Troisième et dernier message du test, mêmes règles.
 10. Demande-moi une confirmation explicite avant d'agir, pour une action de ton
     choix dans la zone « Test L1 ».
 ```
+
+Message 4 :
+
+```
+Quatrième et dernier message du test, mêmes règles.
+
+11. Ajoute à « Poids test » un champ échelle « Forme » de 1 à 5, et donne une
+    forme à la première entrée. Passe ensuite l'échelle de 1 à 10. Si l'app te
+    prévient d'une perte, dis-moi ce qui serait perdu et attends mon accord.
+
+12. Pose-moi une question en deux volets par un module de communication : le
+    moment de ma prochaine pesée (date et heure) et, parmi trois objectifs que tu
+    proposes, celui que je retiens. Répète ensuite mes réponses telles que tu les
+    as reçues.
+```
+
+À l'étape 11, répondre « d'accord » quand l'IA annonce la perte : c'est un nouveau message, qui relance l'IA.
 
 ## Grille de lecture
 
@@ -91,11 +108,13 @@ Troisième et dernier message du test, mêmes règles.
 | 3 | `"type": "TEXT"` avec `config.length` à `MEDIUM` (250) ou `LONG` (1500), **sans clé `name`** | `TEXT_MEDIUM` ou `TEXT_UNLIMITED` (types morts depuis la migration v25→v26). Un `name` envoyé n'est pas refusé à la création, il est gardé : c'est l'IA qui n'a pas suivi le L1 |
 | 4 | Deux identifiants snake_case attribués par l'app | Aucun identifiant — les champs ont été enregistrés sans nom, ce que la création faisait avant le 2026-09-23 ; ou ceux que l'IA avait proposés |
 | 5 | `SCHEMA` demandé avec le `tool_instance_id` ; chaque entrée porte un `name` ; horodatages en ISO 8601 **avec décalage**, « Pesé le » compris | Une entrée sans `name` → refus ; millisecondes brutes, ou une date sans décalage |
-| 6 | `fields` liste `data.quantity` et `custom_fields.<id>` ; `period_start`/`period_end` **à la racine** ; l'humeur et le « Pesé le » **reviennent**, le second en ISO ; l'en-tête de période est en ISO avec décalage | Un objet `period` imbriqué ; des `custom_fields` absents → la création en lot les perd encore (corrigé le 2026-09-24) ; un « Pesé le » en nombre brut → la frontière des dates fuit |
+| 6 | `fields` liste `data.value` et `extra.<id>` ; `period_start`/`period_end` **à la racine** ; l'humeur et le « Pesé le » **reviennent**, le second en ISO ; l'en-tête de période est en ISO avec décalage | Un objet `period` imbriqué ; des `extra` absents → la création en lot les perd encore (corrigé le 2026-09-24) ; un « Pesé le » en nombre brut → la frontière des dates fuit |
 | 7 | `page` et `limit` | `offset`, qui sera refusé |
 | 8 | Refus lisible disant que le conteneur n'est pas un champ, puis reprise correcte | Refus incompréhensible, ou boucle |
 | 9 | `display_name` modifié, `name` conservé, l'humeur relue intacte | `name` modifié → refus attendu. Valeur perdue → le champ a été supprimé puis recréé au lieu d'être renommé par son `display_name` : le service refuse un `name` changé, donc c'est un autre chemin, à consigner |
 | 10 | `validation_request` posé, et un vrai dialogue de validation avant d'agir | L'action passe sans dialogue — à rapprocher de la validation désactivée par défaut, dette d'audit reportée le 2026-09-22 |
+| 11 | Un premier `UPDATE_TOOL` avec la config **entière**, refusé avec `removed_values` à 1 ; l'IA dit qu'une forme serait effacée et attend ; après « d'accord », le même envoi avec `"confirm_migration": true`, et la forme de la première entrée a disparu | `confirm_migration` posé d'emblée sans demander ; une config partielle (les seuls `extra_fields`), refusée faute de `name` ; la valeur gardée alors qu'elle ne veut plus dire la même chose |
+| 12 | Un `communication_module` à deux champs (`DATETIME` et `CHOICE` à trois options), obligatoires ; la carte les montre avec leurs composants ; l'IA recopie une date en ISO 8601 avec décalage et la valeur de l'option choisie | L'ancienne forme (`MultipleChoice`, `options` en chaînes) → FORMAT_ERROR ; la question posée en texte seul ; une date relue en millisecondes |
 | limite | Si la limite d'allers-retours tombe, un message système le dit à l'écran | Plus rien ne se passe après un message envoyé, sans rien à l'écran |
 
 ## Relire le rejeu

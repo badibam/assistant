@@ -31,7 +31,8 @@ is which -- a data entry is only a data entry inside CREATE_DATA -- so it works 
   - a response (pre_text and the rest): the AI message schema;
   - a CREATE_DATA entry: the keys every entry schema requires, whatever its tool (the list
     EntrySchemaGenerator starts from), where a key the command's params carry counts as
-    present, since the service copies tool_instance_id and tooltype into every entry.
+    present, since the service copies tool_instance_id and tooltype into every entry, and
+    tooltype counts as present always: AICommandProcessor reads it from the tool.
 
 A schema's `required` is read from the Kotlin source: the least indented list in the function
 that builds it is the top level's. A field definition and a communication module are not read
@@ -61,6 +62,9 @@ FIELD_TYPE = ROOT / "app/src/main/java/com/assistant/core/fields/FieldType.kt"
 ENTRY_FIELDS = ROOT / "app/src/main/java/com/assistant/core/fields/EntryFields.kt"
 MESSAGE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/AIMessageSchemas.kt"
 ICON_INDEX = ROOT / "app/src/main/assets/icons/index.json"
+
+# What AICommandProcessor adds to an entry command itself, from the tool it names.
+INJECTED = {"tooltype"}
 
 # A JSON type, as the schema declares it, against the Python types a parsed example yields.
 JSON_TYPES = {
@@ -200,7 +204,7 @@ def required_problems(example, schemas):
         if isinstance(params, dict):
             if value.get("type") == "CREATE_DATA":
                 for index, entry in enumerate(params.get("entries", [])):
-                    keys = missing(entry, data_required, supplied=params.keys())
+                    keys = missing(entry, data_required, supplied=set(params.keys()) | INJECTED)
                     if keys:
                         report(at(path, f"params.entries[{index}]"), "CREATE_DATA entry", keys)
         for key, child in value.items():

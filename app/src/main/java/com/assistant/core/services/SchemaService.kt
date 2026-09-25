@@ -166,12 +166,13 @@ class SchemaService(private val context: Context) : ExecutableService {
      */
     private fun getSystemSchemaIds(): List<String> {
         val schemaIds = mutableListOf(
-            "zone_config",
-            "app_config",
+            ZoneSettings.SCHEMA_ID,
             // AI schemas
             "ai_message_response",
             CommunicationModules.SCHEMA_ID
         )
+        // One schema per category of the app's settings, by the name getSystemSchema serves
+        schemaIds.addAll(com.assistant.core.config.AppSettings.CATEGORIES.map { "app_config_$it" })
 
         schemaIds.addAll(FieldTypeSchemas.getAllSchemaIds())
 
