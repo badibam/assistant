@@ -133,13 +133,15 @@ fun TrackingEntryDialog(
                 )
             }
 
+            // An open choice: a unit typed here joins the tool's units when the entry is saved.
+            // Once the tool has units, an entry takes one of them.
             if (unitField != null) {
-                UI.FormSelection(
-                    label = unitField.displayName,
-                    options = units,
-                    selected = values["unit"] as? String ?: "",
-                    onSelect = { values = values + ("unit" to it) },
-                    required = true
+                FieldInput(
+                    fieldDef = unitField,
+                    value = values["unit"],
+                    onChange = { values = values + ("unit" to it) },
+                    context = context,
+                    required = units.isNotEmpty()
                 )
             }
 

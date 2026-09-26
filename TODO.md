@@ -5,7 +5,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## En cours
 
 - Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — le pointeur (choix des champs, filtres par valeur), la valeur par défaut portée par un champ, les détails des commandes dans le chat, RÉFÉRENCE. Prochain : concevoir le pointeur.
-- L'unité d'une entrée de suivi numérique, ouverte : une unité tapée à la saisie (écran ou IA) rejoint `units` — le suivi répond à `configWithOptionsAdded`, la saisie passe par le rendu commun d'un choix ouvert, le champ `unit` existe même quand `units` est vide (vérifier qu'un choix sans option passe la validation) ; une seule unité listée : pas de sélecteur, « Valeur (kg) ».
 - Un BOOLEAN ou une SCALE sans valeur s'affichent à l'écran comme « non » ou comme le minimum : obligatoires dans une question de l'IA, Confirmer reste grisé sans que rien ne dise pourquoi.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.

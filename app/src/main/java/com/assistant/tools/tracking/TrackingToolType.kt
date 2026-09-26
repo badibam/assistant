@@ -106,7 +106,8 @@ object TrackingToolType : ToolTypeContract {
      * A tracking entry: a name (the shortcut or the activity), a moment, and a main field,
      * "value", whose field type comes from the tool's type and whose settings come from the
      * config's "value". A numeric one also carries its unit, one of the units the config
-     * declares, so an entry keeps saying what it measured when shortcuts change. An occurrence
+     * declares or a new one that joins them, so an entry keeps saying what it measured when
+     * shortcuts change. An occurrence
      * has no value: the entry is the fact that something happened.
      *
      * A timer's value is absent while it runs: its start is in the entry's state until it is
@@ -136,8 +137,9 @@ object TrackingToolType : ToolTypeContract {
             )
         )
 
-        val units = config.optJSONArray("units")?.let { array -> (0 until array.length()).map { array.getString(it) } } ?: emptyList()
-        if (kind == TrackingKind.NUMERIC && units.isNotEmpty()) {
+        // Open: a unit given with an entry joins the units (configWithOptionsAdded), so a tool
+        // without units yet takes its first one from an entry
+        if (kind == TrackingKind.NUMERIC) {
             fields.add(
                 FixedField(
                     FieldDefinition(
@@ -146,13 +148,19 @@ object TrackingToolType : ToolTypeContract {
                         description = s.tool("schema_data_unit"),
                         type = FieldType.CHOICE,
                         alwaysVisible = true,
-                        config = mapOf("options" to com.assistant.core.fields.ChoiceSettings.storedOptions(units))
+                        config = mapOf("options" to ChoiceSettings.storedOptions(TrackingConfig.units(config)), "open" to true)
                     )
                 )
             )
         }
 
         return EntryFields(name = CoreFieldUsage.REQUIRED, timestamp = CoreFieldUsage.OPTIONAL, data = fields)
+    }
+
+    /** A new unit given with a numeric entry joins the end of the units. */
+    override fun configWithOptionsAdded(config: JSONObject, field: String, added: List<String>): JSONObject {
+        check(field == "unit") { "tracking declares no open choice \"$field\"" }
+        return JSONObject(config.toString()).put("units", org.json.JSONArray(TrackingConfig.units(config) + added))
     }
 
     override fun getAvailableOperations(): List<String> {

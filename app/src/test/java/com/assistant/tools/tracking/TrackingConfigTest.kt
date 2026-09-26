@@ -23,6 +23,16 @@ class TrackingConfigTest {
         assertEquals(listOf("g", "kg"), TrackingConfig.units(config))
     }
 
+    /** A unit typed with an entry joins the units, last, the rest of the config as it was. */
+    @Test
+    fun aNewUnit_joinsTheUnits() {
+        val grown = TrackingToolType.configWithOptionsAdded(config, "unit", listOf("lb"))
+
+        assertEquals(listOf("g", "kg", "lb"), TrackingConfig.units(grown))
+        assertEquals(TrackingConfig.shortcuts(config), TrackingConfig.shortcuts(grown))
+        assertEquals(listOf("km"), TrackingConfig.units(TrackingToolType.configWithOptionsAdded(JSONObject("""{ "type": "numeric" }"""), "unit", listOf("km"))))
+    }
+
     @Test
     fun aNewShortcut_goesLast_andTheConfigHandedInStaysAsItWas() {
         val grown = TrackingConfig.withShortcut(config, TrackingShortcut("Bread", 50, "g"))

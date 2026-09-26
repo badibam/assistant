@@ -122,6 +122,21 @@ class FieldValueSchemaTest {
         assertFalse(multiple.accepts("""["a", "a"]"""))
     }
 
+    /**
+     * An open choice with no option yet (a numeric tracking tool without units) takes no value
+     * until a write adds one to its options, and leaves the field empty.
+     */
+    @Test
+    fun choice_withoutOptionsRefusesEveryValueUntilOneIsAdded() {
+        val definition = JSONObject("""{ "name": "f", "display_name": "F", "type": "CHOICE", "config": { "options": [], "open": true } }""").toFieldDefinition()
+        val schema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7).getSchema(
+            EntrySchemaGenerator.generate(EntryFields(name = CoreFieldUsage.ABSENT, timestamp = CoreFieldUsage.ABSENT), listOf(definition)) { it })
+
+        assertFalse(schema.accepts("\"kg\""))
+        assertTrue(schema.validate(mapper.readTree("""{ "tool_instance_id": "t", "tooltype": "x", "extra": {} }""")).isEmpty())
+        assertEquals(listOf("kg"), ChoiceSettings.fromConfig(definition.config).newOptionsIn("kg"))
+    }
+
     @Test
     fun boolean_takesABooleanOnly() {
         val schema = schemaFor("""{ "type": "BOOLEAN" }""")
