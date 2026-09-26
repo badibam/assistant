@@ -75,7 +75,7 @@ cd assistant
 - **UI** : Composants réutilisables, thèmes personnalisables, patterns standardisés avec highlight
 - **Versioning** : Migrations SQL + transformations JSON centralisées
 - **Backup/Restore** : Export/import/reset avec gestion versions et détection erreurs
-- **Navigation données** : DataNavigator hiérarchique + ZoneScopeSelector avec périodes
+- **Pointeur** : désigne une zone ou un outil dans un message à l'IA, joint sa config ou ses entrées, restreintes par période, filtres par valeur et champs
 - **Logging** : Système de logs in-app avec filtres (niveau, durée, tag) et purge automatique
 
 ### Système IA
