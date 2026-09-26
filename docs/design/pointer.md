@@ -73,6 +73,5 @@ Le 2026-09-26 : `filters` dans `tool_data.get`, la forme enregistrée (`PointerC
 
 - **L'app et l'entrée comme cibles**, et les entrées d'une zone : elles demandent une lecture sur plusieurs outils (requête neuve ou plusieurs `tool_data.get`), les réglages de l'app comme config, et une étiquette par entrée que chaque type d'outil fournit (une note n'a pas de nom). La liste des entrées d'un outil dans le sélecteur : ordre, recherche.
 - **Les noms relus à l'affichage** : l'aperçu d'un pointeur est encore un texte écrit à sa création ; un outil renommé garde son ancien nom dans les messages déjà envoyés.
-- **Les filtres de date autres que la période** prennent une date fixe, même dans une automation : le sélecteur de période n'y est pas encore branché.
 - **Les valeurs présentes** proposées pour un filtre TEXT (`DataNavigator.getDistinctValues`).
 - Les libellés relatifs complets dans les automations (« le jour même », « début / fin du jour même »).

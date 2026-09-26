@@ -139,6 +139,7 @@ fun PointerSelector(
             fields = fields,
             filters = selection.filters,
             chosenFields = selection.fields,
+            relative = relative,
             onDismiss = { showFilters = false },
             onConfirm = { filters, chosen ->
                 selection = selection.copy(filters = filters, fields = chosen)
@@ -242,7 +243,7 @@ private fun AttachPanel(
 
 /** The period of the entries: periods picked in a chat, relative ones for an automation. */
 @Composable
-private fun PeriodEditor(period: TimestampSelection, relative: Boolean, onChange: (TimestampSelection) -> Unit) {
+internal fun PeriodEditor(period: TimestampSelection, relative: Boolean, onChange: (TimestampSelection) -> Unit) {
     if (relative) {
         RelativePeriodRangeSelector(
             startPeriodType = period.minPeriodType,

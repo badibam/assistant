@@ -88,6 +88,7 @@
     <string name="filter_op_in">est l\'une de</string>
     <string name="filter_op_absent">sans réponse</string>
     <string name="filter_op_present">avec réponse</string>
+    <string name="filter_op_period">sur la période</string>
     <string name="pointer_enrichment_config">Configuration Pointer</string>
     <string name="ai_enrichment_selection_label">Sélection:</string>
     <string name="ai_enrichment_importance">Importance</string>

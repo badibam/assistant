@@ -113,4 +113,41 @@ class PointerSelectionTest {
         assertEquals(selection.filters.toString(), restored.filters.toString())
         assertEquals(selection.pointer(end).toJson().toString(), restored.pointer(end).toJson().toString())
     }
+
+    // Days in Paris, for the cases on a DATE field
+    private val paris = java.time.ZoneId.of("Europe/Paris")
+    private val day: (Long) -> String = { java.time.Instant.ofEpochMilli(it).atZone(paris).toLocalDate().toString() }
+    private fun at(d: Int, hour: Int) = java.time.LocalDateTime.of(2026, 9, d, hour, 0).atZone(paris).toInstant().toEpochMilli()
+
+    @Test
+    fun `a period on a date field is a start and an end on that field, each only when set`() {
+        val filters = periodFilters("extra.due", TimestampSelection(minRelativePeriod = RelativePeriod(0, PeriodType.WEEK)), end, day)
+        assertEquals(1, filters.length())
+        assertEquals("extra.due", filters.getJSONObject(0).getString("field"))
+        assertEquals(">=", filters.getJSONObject(0).getString("op"))
+        assertEquals("0_WEEK", filters.getJSONObject(0).getString("value"))
+    }
+
+    @Test
+    fun `a day picked on a DATE field is that day, from its start to its last day, even when days start at 4 00`() {
+        // The day of the 15th, from 4:00 to 3:59:59.999 on the 16th
+        val picked = Period(at(15, 4), PeriodType.DAY)
+        val filters = periodFilters("extra.due", TimestampSelection(minPeriod = picked, maxPeriod = picked), { at(16, 4) - 1 }, day)
+        assertEquals("2026-09-15", filters.getJSONObject(0).getString("value"))
+        assertEquals("2026-09-15", filters.getJSONObject(1).getString("value"))
+    }
+
+    @Test
+    fun `a date picked on a DATE field is its day, on a moment its milliseconds`() {
+        val date = TimestampSelection(maxCustomDateTime = at(20, 12))
+        assertEquals("2026-09-20", periodFilters("extra.due", date, end, day).getJSONObject(0).getString("value"))
+        assertEquals(at(20, 12), periodFilters("extra.at", date, end, null).getJSONObject(0).getLong("value"))
+    }
+
+    @Test
+    fun `now stays now, resolved at each send`() {
+        val filters = periodFilters("extra.due", TimestampSelection(maxIsNow = true), end, day)
+        assertEquals("NOW", filters.getJSONObject(0).getString("value"))
+        assertEquals("<=", filters.getJSONObject(0).getString("op"))
+    }
 }

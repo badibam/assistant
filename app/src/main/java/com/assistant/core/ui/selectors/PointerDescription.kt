@@ -8,6 +8,8 @@ import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.FilterOperator
 import com.assistant.core.strings.StringsContext
+import com.assistant.core.ui.components.PeriodType
+import com.assistant.core.ui.components.RelativePeriod
 import com.assistant.core.ui.components.generatePeriodLabel
 import com.assistant.core.ui.components.generateRelativePeriodLabel
 import com.assistant.core.utils.AppConfigManager
@@ -25,6 +27,10 @@ object PointerDescription {
     /** The label of a condition. */
     fun operator(op: FilterOperator, s: StringsContext): String = s.shared("filter_op_${op.name.lowercase()}")
 
+    private val RELATIVE = Regex("^-?\\d+_[A-Z]+$")
+
+    private fun isDate(field: FieldDefinition) = field.type == FieldType.DATE || field.type == FieldType.DATETIME
+
     /** A stored value of [field] as text. */
     fun value(field: FieldDefinition, value: Any?, s: StringsContext): String = when {
         value == null -> s.shared("label_no_value")
@@ -33,6 +39,11 @@ object PointerDescription {
             value.joinToString(", ") { choice.labelOf(it.toString()) }
         }
         field.type == FieldType.CHOICE -> ChoiceSettings.fromConfig(field.config).labelOf(value.toString())
+        // A date bound resolved at each send: now, or a period relative to it
+        isDate(field) && value == "NOW" -> s.shared("period_now_label")
+        isDate(field) && value is String && RELATIVE.matches(value) -> value.split("_").let { (offset, type) ->
+            generateRelativePeriodLabel(RelativePeriod(offset.toInt(), PeriodType.valueOf(type)), s)
+        }
         field.type == FieldType.DURATION && value is Number -> Durations.format(value.toLong(), field.config, s)
         field.type == FieldType.DATETIME && value is Number -> DateUtils.formatFullDateTime(value.toLong())
         field.type == FieldType.BOOLEAN -> s.shared(if (value == true) "label_yes" else "label_no")

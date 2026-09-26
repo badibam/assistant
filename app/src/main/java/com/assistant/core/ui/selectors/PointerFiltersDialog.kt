@@ -21,17 +21,22 @@ import com.assistant.core.ui.ButtonDisplay
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.core.ui.components.getPeriodEndTimestamp
+import com.assistant.core.utils.AppConfigManager
 import org.json.JSONArray
 import org.json.JSONObject
+import java.time.Instant
 
 /**
  * The value filters and the fields of a tool's entries, edited apart from the selector.
  *
  * Every filter must hold. One is added by picking a field, a condition among those its type takes
  * (EntryFilters.operatorsFor) and a value entered with the field's own input; it is checked as
- * tool_data.get will check it, so a filter that would be refused cannot be added. The period is
- * not here: it has its place on the selector.
+ * tool_data.get will check it, so a filter that would be refused cannot be added. A date field
+ * is filtered as the period is, with the period editor: its start and its end, relative in an
+ * automation. The period itself is not here: it has its place on the selector.
  *
+ * @param relative Whether a date is relative, the pointer being replayed later
  * @param fields The tool's fields a filter may name, by path
  * @param chosenFields The fields to attach, all of them when null
  */
@@ -40,6 +45,7 @@ fun PointerFiltersDialog(
     fields: Map<String, FieldDefinition>,
     filters: JSONArray,
     chosenFields: List<String>?,
+    relative: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (filters: JSONArray, fields: List<String>?) -> Unit
 ) {
@@ -59,8 +65,15 @@ fun PointerFiltersDialog(
     val draftJson = JSONObject(draft)
     val draftField = filterable[draftJson.optString("field")]
     val draftOp = FilterOperator.of(draftJson.optString("op"))
-    val draftValid = draftField != null && draftOp != null &&
-        EntryFilters.parse(JSONArray().put(draftJson), filterable) { s.shared(it) } is EntryFilters.Parsed.Ready
+    // A date field's period, the condition its editor stands for
+    val isDate = draftField?.type == FieldType.DATE || draftField?.type == FieldType.DATETIME
+    val draftPeriod = draftJson.optJSONObject(PERIOD)?.let { TimestampSelection.fromJson(it) }
+    val periodBounds = draftPeriod?.let { periodFilters(draftJson.getString("field"), it, { p -> getPeriodEndTimestamp(p) }, day(draftField)) }
+    val draftValid = when {
+        periodBounds != null -> periodBounds.length() > 0
+        else -> draftField != null && draftOp != null &&
+            EntryFilters.parse(JSONArray().put(draftJson), filterable) { s.shared(it) } is EntryFilters.Parsed.Ready
+    }
 
     UI.Dialog(
         type = DialogType.CONFIGURE,
@@ -100,19 +113,37 @@ fun PointerFiltersDialog(
                 required = true
             )
             if (draftField != null) {
-                val ops = EntryFilters.operatorsFor(draftField.type).toList()
+                // A date takes a period, or no answer, or an answer
+                val ops = if (isDate) listOf(FilterOperator.ABSENT, FilterOperator.PRESENT) else EntryFilters.operatorsFor(draftField.type).toList()
+                val periodLabel = s.shared("filter_op_period")
+                val labels = (if (isDate) listOf(periodLabel) else emptyList()) + ops.map { PointerDescription.operator(it, s) }
                 UI.FormSelection(
                     label = s.shared("pointer_filter_condition"),
-                    options = ops.map { PointerDescription.operator(it, s) },
-                    selected = draftOp?.let { PointerDescription.operator(it, s) } ?: "",
+                    options = labels,
+                    selected = when {
+                        draftPeriod != null -> periodLabel
+                        else -> draftOp?.let { PointerDescription.operator(it, s) } ?: ""
+                    },
                     onSelect = { label ->
-                        val op = ops.first { PointerDescription.operator(it, s) == label }
-                        draft = JSONObject().put("field", draftJson.getString("field")).put("op", op.key).toString()
+                        val next = JSONObject().put("field", draftJson.getString("field"))
+                        if (label == periodLabel) next.put(PERIOD, TimestampSelection().toJson())
+                        else next.put("op", ops.first { PointerDescription.operator(it, s) == label }.key)
+                        draft = next.toString()
                     },
                     required = true
                 )
             }
-            if (draftField != null && draftOp != null) {
+            if (draftPeriod != null) {
+                PeriodEditor(draftPeriod, relative) { period ->
+                    draft = JSONObject(draft).put(PERIOD, period.toJson()).toString()
+                }
+                UI.ActionButton(action = ButtonAction.ADD, enabled = draftValid, onClick = {
+                    val all = JSONArray(current)
+                    for (i in 0 until periodBounds!!.length()) all.put(periodBounds.get(i))
+                    current = all.toString()
+                    draft = "{}"
+                })
+            } else if (draftField != null && draftOp != null) {
                 FilterValueInput(draftField, draftOp, if (draftJson.isNull("value")) null else draftJson.opt("value")) { value ->
                     draft = JSONObject(draft).apply { if (value == null) remove("value") else put("value", value) }.toString()
                 }
@@ -136,6 +167,14 @@ fun PointerFiltersDialog(
         }
     }
 }
+
+/** The key of a date field's period in the filter being written. */
+private const val PERIOD = "period"
+
+/** How a DATE field stores a moment: the day it falls on, in the app's timezone; null for an instant. */
+private fun day(field: FieldDefinition?): ((Long) -> String)? =
+    if (field?.type != FieldType.DATE) null
+    else { millis -> Instant.ofEpochMilli(millis).atZone(AppConfigManager.getDateTimeConfig().getZoneId()).toLocalDate().toString() }
 
 /**
  * The value of a filter, entered as its field is: none for "no answer" and "answered", two for

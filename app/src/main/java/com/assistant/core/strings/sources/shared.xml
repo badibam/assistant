@@ -88,6 +88,7 @@
     <string name="filter_op_in">is one of</string>
     <string name="filter_op_absent">no answer</string>
     <string name="filter_op_present">answered</string>
+    <string name="filter_op_period">on the period</string>
     <string name="pointer_enrichment_config">Pointer configuration</string>
     <string name="ai_enrichment_selection_label">Selection:</string>
     <string name="ai_enrichment_importance">Importance</string>

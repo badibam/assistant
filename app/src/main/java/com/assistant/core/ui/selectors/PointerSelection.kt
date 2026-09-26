@@ -28,19 +28,6 @@ data class TimestampSelection(
     val minRelativePeriod: RelativePeriod? = null,
     val maxRelativePeriod: RelativePeriod? = null
 ) {
-    /** The bound the period starts at, as a filter value, or null when it has none. */
-    val start: Any?
-        get() = when {
-            minIsNow -> "NOW"
-            else -> minRelativePeriod?.let { "${it.offset}_${it.type.name}" } ?: minCustomDateTime ?: minPeriod?.timestamp
-        }
-
-    /** The bound the period ends at: the last instant of a period picked, by [periodEnd]. */
-    fun end(periodEnd: (Period) -> Long): Any? = when {
-        maxIsNow -> "NOW"
-        else -> maxRelativePeriod?.let { "${it.offset}_${it.type.name}" } ?: maxCustomDateTime ?: maxPeriod?.let(periodEnd)
-    }
-
     fun toJson(): JSONObject = JSONObject().apply {
         minPeriodType?.let { put("min_period_type", it.name) }
         minPeriod?.let { put("min_period", JSONObject().put("timestamp", it.timestamp).put("type", it.type.name)) }
@@ -107,7 +94,7 @@ data class PointerSelection(
     val complete: Boolean get() = level == PointerKind.ZONE || level == PointerKind.TOOL
 
     /** Whether the entries are narrowed, by a period or a value filter. */
-    val narrowed: Boolean get() = period.start != null || period.end { it.timestamp } != null || filters.length() > 0
+    val narrowed: Boolean get() = periodFilters("timestamp", period, { it.timestamp }, day = null).length() > 0 || filters.length() > 0
 
     /** Into [zone]: what only a tool offers goes, and so does anything chosen in another zone. */
     fun intoZone(zone: Named): PointerSelection = PointerSelection(zone = zone, config = config)
@@ -134,8 +121,8 @@ data class PointerSelection(
         }
         val all = JSONArray()
         if (level == PointerKind.TOOL) {
-            period.start?.let { all.put(JSONObject().put("field", "timestamp").put("op", ">=").put("value", it)) }
-            period.end(periodEnd)?.let { all.put(JSONObject().put("field", "timestamp").put("op", "<=").put("value", it)) }
+            val bounds = periodFilters("timestamp", period, periodEnd, day = null)
+            for (i in 0 until bounds.length()) all.put(bounds.get(i))
             for (i in 0 until filters.length()) all.put(filters.get(i))
         }
         return PointerConfig(
@@ -173,5 +160,35 @@ data class PointerSelection(
                 fields = json.optJSONArray("fields")?.let { a -> (0 until a.length()).map { a.getString(it) } }
             )
         }
+    }
+}
+
+private const val DAY_MILLIS = 86_400_000L
+
+/**
+ * A period on the date field [path] as filters: ">=" its start and "<=" its end, each only when
+ * set. "NOW" and a relative period stay as they are, resolved at each send; a date or a period
+ * picked is in milliseconds, or for a DATE field ([day] given) the day it falls on: the last day
+ * of a period picked is the one before the next period starts.
+ */
+fun periodFilters(path: String, period: TimestampSelection, periodEnd: (Period) -> Long, day: ((Long) -> String)?): JSONArray {
+    fun fixed(millis: Long): Any = day?.invoke(millis) ?: millis
+    val start: Any? = when {
+        period.minIsNow -> "NOW"
+        period.minRelativePeriod != null -> period.minRelativePeriod.let { "${it.offset}_${it.type.name}" }
+        period.minCustomDateTime != null -> fixed(period.minCustomDateTime)
+        period.minPeriod != null -> fixed(period.minPeriod.timestamp)
+        else -> null
+    }
+    val end: Any? = when {
+        period.maxIsNow -> "NOW"
+        period.maxRelativePeriod != null -> period.maxRelativePeriod.let { "${it.offset}_${it.type.name}" }
+        period.maxCustomDateTime != null -> fixed(period.maxCustomDateTime)
+        period.maxPeriod != null -> periodEnd(period.maxPeriod).let { last -> if (day != null) day(last + 1 - DAY_MILLIS) else last }
+        else -> null
+    }
+    return JSONArray().apply {
+        start?.let { put(JSONObject().put("field", path).put("op", ">=").put("value", it)) }
+        end?.let { put(JSONObject().put("field", path).put("op", "<=").put("value", it)) }
     }
 }
