@@ -157,6 +157,12 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 
 **UI.FormSelection** - Sélections avec label, options, selected, onSelect et required.
 
+**UI.BooleanField** - Oui/non en deux boutons. Une réponse (`Boolean?`) part sans bouton choisi et se vide si elle est facultative ; un état (`Boolean`, une automation activée) a toujours un bouton choisi et ne se vide jamais. Une liste où l'on coche plusieurs éléments est faite de `UI.Checkbox`.
+
+**UI.SliderField** - Échelle ; sans réponse, pas de poignée et « — ».
+
+**`required`** - Chaque saisie le reçoit, sans valeur par défaut : vrai pour un champ qui peut être vide et bloque la validation tant qu'il l'est ; un champ qui a toujours une valeur (filtre, sélecteur) ne l'est pas. Le thème le marque à sa façon (`FieldLabel`, un astérisque dans le thème par défaut) ; une saisie en plusieurs parties (plage, durée, choix multiple) marque son libellé commun.
+
 **UI.FormActions** - Container standardisé pour boutons de formulaire avec ActionButton (SAVE, CANCEL, DELETE conditionnel).
 
 ### Pattern State/Controller

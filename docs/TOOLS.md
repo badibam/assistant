@@ -51,7 +51,7 @@ Dossier tools/[type]/ contient :
 ### Interface ToolTypeContract
 Interface principale avec méthodes pour :
 - **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultIconName(), getDefaultDisplayMode(), getAvailableOperations()
-- **Déclarations** : getEntryFields() (champs des entrées), getConfigSettings() (réglages propres, à côté de la partie commune `ToolConfigSettings`) ; schémas, config par défaut et lecture en sont générés
+- **Déclarations** : getEntryFields() (champs des entrées), getConfigSettings() (réglages propres, à côté de la partie commune `ToolConfigSettings`) ; schémas, config par défaut et lecture en sont générés ; configWithOptionsAdded() pour un type qui déclare un choix ouvert dans `data`
 - **Interface utilisateur** : getUsageScreen() @Composable ; l'écran de config est généré depuis la déclaration (`ToolConfigScreen`, `SettingsForm`), et getConfigEditors() y branche les parties qu'un type dessine lui-même, par nom de réglage (la planification de Messages)
 - **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations(), getScheduler()
 - **Enrichissement** : enrichData() (défaut identity, enrichissement automatique avant persistence)
@@ -144,7 +144,7 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
 ### Suivi (Tracking)
 **Usage** : Données temporelles quantitatives/qualitatives
-**Configuration** : Type de valeur (numeric, text, scale, choice, timer), unité, fréquence, items prédéfinis
+**Configuration** : Type de valeur (numeric, counter, text, scale, choice, timer…), unités (numérique : la liste où chaque entrée prend la sienne, une unité nouvelle saisie la rejoint ; compteur : une unité fixe), items prédéfinis
 **Exemples** : Poids, humeur échelle 1-10, alimentation libre
 
 ### Objectif (Goal)
