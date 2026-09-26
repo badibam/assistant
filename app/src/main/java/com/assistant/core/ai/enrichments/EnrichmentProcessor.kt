@@ -269,7 +269,8 @@ class EnrichmentProcessor(
                 if (pointer.entries) {
                     val params = mutableMapOf<String, Any>("id" to toolInstanceId)
                     if (pointer.filters.length() > 0) params["filters"] = JsonUtils.toList(pointer.filters)
-                    pointer.fields?.let { params["fields"] = it }
+                    // The id always goes, for the AI to act on an entry it is shown
+                    pointer.fields?.let { params["fields"] = (listOf("id") + it).distinct() }
                     add(DataCommand(
                         id = buildQueryId("tool_data", params),
                         type = "TOOL_DATA",

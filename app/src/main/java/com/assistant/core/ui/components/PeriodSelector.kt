@@ -388,7 +388,7 @@ fun SinglePeriodSelector(
  * @param useOnlyRelativeLabels if true, always use relative labels ("dans 145 ans"),
  *                             if false, fallback to absolute dates for distant periods
  */
-private fun generatePeriodLabel(
+fun generatePeriodLabel(
     period: Period,
     dayStartHour: Int,
     weekStartDay: String,
@@ -787,7 +787,7 @@ fun SingleRelativePeriodSelector(
  * Generate truly relative label for RelativePeriod
  * Examples: "Le jour-même", "La veille", "Le lendemain", "2 jours avant", "3 semaines après"
  */
-private fun generateRelativePeriodLabel(relativePeriod: RelativePeriod, s: com.assistant.core.strings.StringsContext): String {
+fun generateRelativePeriodLabel(relativePeriod: RelativePeriod, s: com.assistant.core.strings.StringsContext): String {
     val offset = relativePeriod.offset
     val type = relativePeriod.type
 

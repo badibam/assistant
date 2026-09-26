@@ -18,21 +18,9 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.enrichments.EnrichmentProcessor
-import com.assistant.core.ai.enrichments.PointerConfig
-import com.assistant.core.ai.enrichments.PointerKind
-import com.assistant.core.ai.enrichments.PointerTarget
-import com.assistant.core.ui.components.getPeriodEndTimestamp
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
-import com.assistant.core.ui.selectors.ZoneScopeSelector
-import com.assistant.core.ui.components.PeriodRangeSelector
-import com.assistant.core.ui.selectors.data.NavigationConfig
-import com.assistant.core.ui.selectors.data.SelectionResult
-import com.assistant.core.ui.selectors.data.SelectionLevel
-import com.assistant.core.ui.selectors.data.TimestampSelection
-import com.assistant.core.ui.selectors.data.PointerContext
-import com.assistant.core.ui.components.PeriodType
-import com.assistant.core.ui.components.Period
+import com.assistant.core.ui.selectors.PointerSelector
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.utils.LogManager
@@ -713,8 +701,8 @@ private fun EnrichmentConfigDialog(
 }
 
 /**
- * Specific dialog for POINTER enrichment with ZoneScopeSelector
- * Simplified: ZoneScopeSelector directly confirms without additional parameters
+ * The POINTER enrichment's dialog: the pointer selector, its period relative for a starting
+ * message that is replayed later (SEED), fixed for a chat.
  */
 @Composable
 private fun PointerEnrichmentDialog(
@@ -723,28 +711,10 @@ private fun PointerEnrichmentDialog(
     onConfirm: (config: String, uiPreview: String, promptPreview: String) -> Unit,
     sessionType: SessionType = SessionType.CHAT
 ) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-
-    // Show ZoneScopeSelector directly, confirm on selection
-    ZoneScopeSelector(
-        config = NavigationConfig(
-            allowZoneSelection = true,
-            allowInstanceSelection = true,
-            allowFieldSelection = false,  // Limited to instance level only
-            allowValueSelection = false,
-            title = s.shared("pointer_enrichment_selector_title"),
-            // SEED uses relative periods (template executed later)
-            // CHAT uses absolute periods (immediate execution)
-            useRelativeLabels = (sessionType == SessionType.SEED)
-        ),
+    PointerSelector(
+        relative = sessionType == SessionType.SEED,
         onDismiss = onDismiss,
-        onConfirm = { result ->
-            // Create config directly from selection result (no additional parameters)
-            val config = createPointerConfig(result)
-            val (uiPreview, promptPreview) = createPointerPreview(context, result)
-            onConfirm(config, uiPreview, promptPreview)
-        }
+        onConfirm = onConfirm
     )
 }
 
@@ -797,98 +767,3 @@ private fun PlaceholderEnrichmentDialog(
     }
 }
 
-/**
- * The stored form of a POINTER (PointerConfig) from what the selector returns: the zone or tool
- * by its id, the config attached when its CONFIG context has "config" ticked, the entries when
- * the DATA context has "data", and the period as filters on timestamp.
- */
-private fun createPointerConfig(selectionResult: SelectionResult): String {
-    val id = selectionResult.selectedPath.split(".").getOrNull(1)
-        ?: throw IllegalArgumentException("pointer path '${selectionResult.selectedPath}' names no zone nor tool")
-    val resources = selectionResult.selectedResources
-    return PointerConfig(
-        target = PointerTarget(if (selectionResult.selectionLevel == SelectionLevel.ZONE) PointerKind.ZONE else PointerKind.TOOL, id),
-        config = selectionResult.selectedContext == PointerContext.CONFIG && "config" in resources,
-        entries = selectionResult.selectedContext == PointerContext.DATA && "data" in resources,
-        filters = if (selectionResult.timestampSelection.isComplete) periodFilters(selectionResult.timestampSelection) else JSONArray()
-    ).toJson().toString()
-}
-
-/**
- * A period as filters on timestamp, from its first instant to its last: "NOW" and a relative
- * period as they are, resolved at each send; a date or a period picked, in milliseconds.
- */
-private fun periodFilters(selection: TimestampSelection): JSONArray {
-    val start: Any? = when {
-        selection.minIsNow -> "NOW"
-        else -> selection.minRelativePeriod?.let { "${it.offset}_${it.type.name}" }
-            ?: selection.minCustomDateTime
-            ?: selection.minPeriod?.timestamp
-    }
-    val end: Any? = when {
-        selection.maxIsNow -> "NOW"
-        else -> selection.maxRelativePeriod?.let { "${it.offset}_${it.type.name}" }
-            ?: selection.maxCustomDateTime
-            ?: selection.maxPeriod?.let { getPeriodEndTimestamp(it) }
-    }
-    return JSONArray().apply {
-        start?.let { put(JSONObject().put("field", "timestamp").put("op", ">=").put("value", it)) }
-        end?.let { put(JSONObject().put("field", "timestamp").put("op", "<=").put("value", it)) }
-    }
-}
-
-/**
- * Create human-readable previews from POINTER enrichment data
- * Returns Pair(uiPreview, promptPreview)
- *
- * Includes context (DATA, CONFIG) and detailed period information
- */
-private fun createPointerPreview(
-    context: Context,
-    selectionResult: SelectionResult
-): Pair<String, String> {
-    val s = Strings.`for`(context = context)
-
-    // Display name from displayChain (human-readable names)
-    val displayName = if (selectionResult.displayChain.isNotEmpty()) {
-        selectionResult.displayChain.last()
-    } else {
-        val pathParts = selectionResult.selectedPath.split("/").filter { it.isNotBlank() }
-        pathParts.lastOrNull() ?: s.shared("content_unnamed")
-    }
-
-    // Build UI preview parts
-    val uiParts = mutableListOf<String>()
-
-    // 1. Selection level prefix
-    when (selectionResult.selectionLevel) {
-        SelectionLevel.ZONE -> uiParts.add("${s.shared("ai_enrichment_pointer_zone")}: $displayName")
-        SelectionLevel.INSTANCE -> uiParts.add("${s.shared("ai_enrichment_pointer_tool")}: $displayName")
-        else -> uiParts.add(displayName)
-    }
-
-    // 2. Context
-    when (selectionResult.selectedContext) {
-        PointerContext.CONFIG -> uiParts.add(s.shared("ai_enrichment_pointer_context_config"))
-        PointerContext.DATA -> uiParts.add(s.shared("ai_enrichment_pointer_context_data"))
-        else -> {} // GENERIC: no context label
-    }
-
-    // 3. Period (if specified)
-    if (selectionResult.timestampSelection.isComplete) {
-        // TODO: Use centralized period formatting when available
-        uiParts.add(s.shared("ai_period_filtered"))
-    }
-
-    // Build prompt preview with ID
-    val pathParts = selectionResult.selectedPath.split(".").filter { it.isNotBlank() }
-    val cleanId = pathParts.lastOrNull() ?: selectionResult.selectedPath
-
-    val promptParts = uiParts.toMutableList()
-    promptParts.add("(id = $cleanId)")
-
-    return Pair(
-        uiParts.joinToString(", "),
-        promptParts.joinToString(" ")
-    )
-}

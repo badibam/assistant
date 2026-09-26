@@ -57,6 +57,37 @@
     <string name="ai_composer_enrichments_label">Enrichissements :</string>
     <string name="ai_enrichment_config">Configuration enrichissement</string>
     <string name="pointer_enrichment_selector_title">Sélectionner données</string>
+    <string name="pointer_level_app">App</string>
+    <string name="pointer_attach_config">Config</string>
+    <string name="pointer_attach_entries">Entrées</string>
+    <string name="pointer_period">Période</string>
+    <string name="pointer_filters_and_fields">Filtres et champs…</string>
+    <string name="pointer_filters_title">Filtres et champs</string>
+    <string name="pointer_filter_new">Nouveau filtre</string>
+    <string name="pointer_filter_field">Champ</string>
+    <string name="pointer_filter_condition">Condition</string>
+    <string name="pointer_choose_fields">Choisir les champs</string>
+    <string name="pointer_part_config">la config de %1$s</string>
+    <string name="pointer_part_entries">les entrées de %1$s</string>
+    <string name="pointer_part_fields">champs : %1$s</string>
+    <string name="pointer_summary_mention">Mention seule : l\'IA voit le nom, rien n\'est joint</string>
+    <string name="pointer_summary_mention_entries">Mention : %1$s. Rien n\'est joint, l\'IA peut les demander</string>
+    <string name="pointer_summary_attached">Joint : %1$s</string>
+    <string name="pointer_prompt_query">entrées non jointes, à lire avec : %1$s (ajoute les champs utiles)</string>
+    <string name="filter_between">%1$s entre %2$s et %3$s</string>
+    <string name="filter_low">De</string>
+    <string name="filter_high">À</string>
+    <string name="filter_value">Valeur</string>
+    <string name="filter_op_less">&lt;</string>
+    <string name="filter_op_less_or_equal">≤</string>
+    <string name="filter_op_equal">=</string>
+    <string name="filter_op_greater_or_equal">≥</string>
+    <string name="filter_op_greater">&gt;</string>
+    <string name="filter_op_between">entre</string>
+    <string name="filter_op_contains">contient</string>
+    <string name="filter_op_in">est l\'une de</string>
+    <string name="filter_op_absent">sans réponse</string>
+    <string name="filter_op_present">avec réponse</string>
     <string name="pointer_enrichment_config">Configuration Pointer</string>
     <string name="ai_enrichment_selection_label">Sélection:</string>
     <string name="ai_enrichment_importance">Importance</string>
@@ -407,7 +438,6 @@
     <string name="label_tools">Outils</string>
     <string name="label_zone">Zone</string>
     <string name="label_tool">Outil</string>
-    <string name="label_item">Élément</string>
     <string name="label_no_value">Aucune valeur</string>
 
     <!-- App Config - Format Settings labels -->
@@ -718,76 +748,32 @@
     <string name="zone_schema_icon_name">Nom de l\'icône de la zone (un nom d\'icône Lucide)</string>
 
     <!-- SCOPE SELECTOR - Hierarchical navigation labels -->
-    <string name="scope_all_instances">Tous les outils</string>
-    <string name="scope_all_fields">Tous les champs</string>
-    <string name="scope_selector_title">Sélection de données</string>
-    <string name="scope_navigation_selection">Navigation hiérarchique</string>
-    <string name="scope_available_values">Valeurs disponibles</string>
-    <string name="scope_preview">Aperçu</string>
 
     <!-- DUPLICATE SELECTOR - Duplication navigation -->
     <string name="duplicate_selector_title_tool">Sélectionner l\'outil à dupliquer</string>
     <string name="duplicate_selector_title_automation">Sélectionner l\'automation à dupliquer</string>
     <string name="duplicate_select_zone">Sélectionner la zone</string>
     <string name="duplicate_select_instance">Sélectionner l\'instance</string>
-    <string name="scope_temporal_selection">Sélection temporelle</string>
-    <string name="scope_name_selection">Sélection par nom</string>
-    <string name="scope_loading_config">Chargement de la configuration...</string>
-    <string name="scope_loading">Chargement...</string>
-    <string name="scope_error_loading_values">Erreur lors du chargement des valeurs</string>
-    <string name="scope_no_selection">Aucune sélection</string>
-    <string name="scope_sql_query">Requête SQL:</string>
-    <string name="scope_more_values">... et %1$d autres valeurs</string>
-    <string name="scope_loading_names">Chargement des noms...</string>
-    <string name="scope_more_names">... et %1$d autres</string>
 
     <!-- SCOPE SELECTOR - Date range labels -->
-    <string name="scope_date_start">Début</string>
-    <string name="scope_date_end">Fin</string>
-    <string name="scope_period_type">Type de période</string>
-    <string name="scope_custom_datetime">Date et heure personnalisée</string>
-    <string name="scope_select_datetime">Sélectionner...</string>
-    <string name="scope_period_custom">Date personnalisée</string>
 
     <!-- SCOPE SELECTOR - Level labels -->
-    <string name="scope_level_zone">Zone</string>
-    <string name="scope_level_instance">Outil</string>
-    <string name="scope_level_field">Champ</string>
-    <string name="scope_level_subfield">Sous-champ %1$d</string>
-    <string name="scope_level_generic">Niveau %1$d</string>
 
     <!-- SCOPE SELECTOR - Available entry names -->
-    <string name="scope_available_entry_names">Noms d'entrées disponibles</string>
-    <string name="scope_value_prefix">valeur</string>
 
     <!-- SCOPE SELECTOR - Navigation steps -->
-    <string name="scope_current_selection">Sélection actuelle</string>
     <string name="scope_select_zone">Sélectionner une zone</string>
     <string name="scope_select_tool">Sélectionner un outil</string>
-    <string name="scope_select_item">Sélectionner un élément</string>
     <string name="scope_no_options">Aucune option disponible</string>
-    <string name="scope_select_context">Sélectionner un contexte</string>
-    <string name="scope_select_resources">Ressources à inclure</string>
 
     <!-- SCOPE SELECTOR - Context labels -->
-    <string name="label_context">Contexte</string>
-    <string name="label_context_generic">Référence générique</string>
-    <string name="label_context_config">Configuration</string>
-    <string name="label_context_data">Données</string>
 
     <!-- SCOPE SELECTOR - Resource labels -->
-    <string name="label_resource_config">Configuration</string>
-    <string name="label_resource_config_schema">Schéma de configuration</string>
-    <string name="label_resource_data">Données</string>
-    <string name="label_resource_data_schema">Schéma de données</string>
 
     <!-- SCOPE SELECTOR - Period labels (context-specific) -->
-    <string name="label_period_reference">Période de référence (optionnelle)</string>
-    <string name="label_period_data">Période des données</string>
     <string name="label_period_type">Type de période</string>
 
     <!-- SCOPE SELECTOR - Error messages -->
-    <string name="error_loading_zones">Erreur lors du chargement des zones</string>
     <string name="error_loading_options">Erreur lors du chargement des options</string>
 
     <!-- SERVICES ERROR MESSAGES - Messages d'erreur des services -->
@@ -847,24 +833,6 @@
     <string name="data_navigator_title">Explorateur de données</string>
 
     <!-- SCOPE SELECTOR DETAILS - Labels détaillés pour sélection de scope -->
-    <string name="scope_no_selection_simple">Aucune sélection</string>
-    <string name="scope_no_selection_prefix">-- Aucune sélection</string>
-    <string name="scope_tool_not_selected">-- Outil non sélectionné</string>
-    <string name="scope_temporal_partial">sélection temporelle partielle</string>
-    <string name="scope_temporal_all">toutes les données temporelles</string>
-    <string name="scope_names_selected">%1$d noms sélectionnés</string>
-    <string name="scope_names_all_available">tous les noms disponibles</string>
-    <string name="scope_names_all">tous les noms</string>
-    <string name="scope_values_all">toutes les valeurs</string>
-    <string name="scope_value_single">valeur: %1$s</string>
-    <string name="scope_values_truncated">valeurs: %1$s</string>
-    <string name="scope_values_count">%1$d valeurs sélectionnées</string>
-    <string name="scope_period_day_selected">jour sélectionné</string>
-    <string name="scope_period_week_selected">semaine sélectionnée</string>
-    <string name="scope_period_month_selected">mois sélectionné</string>
-    <string name="scope_period_year_selected">année sélectionnée</string>
-    <string name="scope_period_generic_selected">période sélectionnée</string>
-    <string name="scope_undefined">non défini</string>
 
     <!-- THEME/UI COMPONENTS - Labels pour composants d\'interface -->
 
@@ -1390,8 +1358,6 @@
     <string name="ai_enrichment_pointer_period_range">%1$s à %2$s</string>
     <string name="ai_enrichment_pointer_period_from">à partir de %1$s</string>
     <string name="ai_enrichment_pointer_period_until">jusqu\'à %1$s</string>
-    <string name="ai_enrichment_pointer_relative_ago">il y a %1$d %2$s</string>
-    <string name="ai_enrichment_pointer_relative_future">dans %1$d %2$s</string>
     <string name="period_days">jours</string>
     <string name="period_weeks">semaines</string>
     <string name="period_months">mois</string>

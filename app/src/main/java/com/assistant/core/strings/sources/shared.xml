@@ -57,6 +57,37 @@
     <string name="ai_composer_enrichments_label">Enrichments:</string>
     <string name="ai_enrichment_config">Enrichment configuration</string>
     <string name="pointer_enrichment_selector_title">Select data</string>
+    <string name="pointer_level_app">App</string>
+    <string name="pointer_attach_config">Config</string>
+    <string name="pointer_attach_entries">Entries</string>
+    <string name="pointer_period">Period</string>
+    <string name="pointer_filters_and_fields">Filters and fields…</string>
+    <string name="pointer_filters_title">Filters and fields</string>
+    <string name="pointer_filter_new">New filter</string>
+    <string name="pointer_filter_field">Field</string>
+    <string name="pointer_filter_condition">Condition</string>
+    <string name="pointer_choose_fields">Choose the fields</string>
+    <string name="pointer_part_config">the config of %1$s</string>
+    <string name="pointer_part_entries">the entries of %1$s</string>
+    <string name="pointer_part_fields">fields: %1$s</string>
+    <string name="pointer_summary_mention">Mention only: the AI sees the name, nothing is attached</string>
+    <string name="pointer_summary_mention_entries">Mention: %1$s. Nothing is attached, the AI can ask for them</string>
+    <string name="pointer_summary_attached">Attached: %1$s</string>
+    <string name="pointer_prompt_query">entries not attached, read with: %1$s (add the fields you need)</string>
+    <string name="filter_between">%1$s between %2$s and %3$s</string>
+    <string name="filter_low">From</string>
+    <string name="filter_high">To</string>
+    <string name="filter_value">Value</string>
+    <string name="filter_op_less">&lt;</string>
+    <string name="filter_op_less_or_equal">≤</string>
+    <string name="filter_op_equal">=</string>
+    <string name="filter_op_greater_or_equal">≥</string>
+    <string name="filter_op_greater">&gt;</string>
+    <string name="filter_op_between">between</string>
+    <string name="filter_op_contains">contains</string>
+    <string name="filter_op_in">is one of</string>
+    <string name="filter_op_absent">no answer</string>
+    <string name="filter_op_present">answered</string>
     <string name="pointer_enrichment_config">Pointer configuration</string>
     <string name="ai_enrichment_selection_label">Selection:</string>
     <string name="ai_enrichment_importance">Importance</string>
@@ -407,7 +438,6 @@
     <string name="label_tools">Tools</string>
     <string name="label_zone">Zone</string>
     <string name="label_tool">Tool</string>
-    <string name="label_item">Item</string>
     <string name="label_no_value">No value</string>
 
     <!-- App Config - Format Settings labels -->
@@ -718,76 +748,32 @@
     <string name="zone_schema_icon_name">Name of the zone\'s icon (a Lucide icon name)</string>
 
     <!-- SCOPE SELECTOR - Hierarchical navigation labels -->
-    <string name="scope_all_instances">All the tools</string>
-    <string name="scope_all_fields">All the fields</string>
-    <string name="scope_selector_title">Data selection</string>
-    <string name="scope_navigation_selection">Hierarchical navigation</string>
-    <string name="scope_available_values">Available values</string>
-    <string name="scope_preview">Preview</string>
 
     <!-- DUPLICATE SELECTOR - Duplication navigation -->
     <string name="duplicate_selector_title_tool">Select the tool to duplicate</string>
     <string name="duplicate_selector_title_automation">Select the automation to duplicate</string>
     <string name="duplicate_select_zone">Select the zone</string>
     <string name="duplicate_select_instance">Select the instance</string>
-    <string name="scope_temporal_selection">Time selection</string>
-    <string name="scope_name_selection">Selection by name</string>
-    <string name="scope_loading_config">Loading the configuration...</string>
-    <string name="scope_loading">Loading...</string>
-    <string name="scope_error_loading_values">Error while loading the values</string>
-    <string name="scope_no_selection">No selection</string>
-    <string name="scope_sql_query">SQL query:</string>
-    <string name="scope_more_values">... and %1$d more values</string>
-    <string name="scope_loading_names">Loading the names...</string>
-    <string name="scope_more_names">... and %1$d more</string>
 
     <!-- SCOPE SELECTOR - Date range labels -->
-    <string name="scope_date_start">Start</string>
-    <string name="scope_date_end">End</string>
-    <string name="scope_period_type">Period type</string>
-    <string name="scope_custom_datetime">Custom date and time</string>
-    <string name="scope_select_datetime">Select...</string>
-    <string name="scope_period_custom">Custom date</string>
 
     <!-- SCOPE SELECTOR - Level labels -->
-    <string name="scope_level_zone">Zone</string>
-    <string name="scope_level_instance">Tool</string>
-    <string name="scope_level_field">Field</string>
-    <string name="scope_level_subfield">Subfield %1$d</string>
-    <string name="scope_level_generic">Level %1$d</string>
 
     <!-- SCOPE SELECTOR - Available entry names -->
-    <string name="scope_available_entry_names">Available entry names</string>
-    <string name="scope_value_prefix">value</string>
 
     <!-- SCOPE SELECTOR - Navigation steps -->
-    <string name="scope_current_selection">Current selection</string>
     <string name="scope_select_zone">Select a zone</string>
     <string name="scope_select_tool">Select a tool</string>
-    <string name="scope_select_item">Select an item</string>
     <string name="scope_no_options">No option available</string>
-    <string name="scope_select_context">Select a context</string>
-    <string name="scope_select_resources">Resources to include</string>
 
     <!-- SCOPE SELECTOR - Context labels -->
-    <string name="label_context">Context</string>
-    <string name="label_context_generic">Generic reference</string>
-    <string name="label_context_config">Configuration</string>
-    <string name="label_context_data">Data</string>
 
     <!-- SCOPE SELECTOR - Resource labels -->
-    <string name="label_resource_config">Configuration</string>
-    <string name="label_resource_config_schema">Configuration schema</string>
-    <string name="label_resource_data">Data</string>
-    <string name="label_resource_data_schema">Data schema</string>
 
     <!-- SCOPE SELECTOR - Period labels (context-specific) -->
-    <string name="label_period_reference">Reference period (optional)</string>
-    <string name="label_period_data">Period of the data</string>
     <string name="label_period_type">Period type</string>
 
     <!-- SCOPE SELECTOR - Error messages -->
-    <string name="error_loading_zones">Error while loading the zones</string>
     <string name="error_loading_options">Error while loading the options</string>
 
     <!-- SERVICES ERROR MESSAGES - Error messages of the services -->
@@ -847,24 +833,6 @@
     <string name="data_navigator_title">Data explorer</string>
 
     <!-- SCOPE SELECTOR DETAILS - Detailed labels for scope selection -->
-    <string name="scope_no_selection_simple">No selection</string>
-    <string name="scope_no_selection_prefix">-- No selection</string>
-    <string name="scope_tool_not_selected">-- Tool not selected</string>
-    <string name="scope_temporal_partial">partial time selection</string>
-    <string name="scope_temporal_all">all the time data</string>
-    <string name="scope_names_selected">%1$d names selected</string>
-    <string name="scope_names_all_available">all the available names</string>
-    <string name="scope_names_all">all the names</string>
-    <string name="scope_values_all">all the values</string>
-    <string name="scope_value_single">value: %1$s</string>
-    <string name="scope_values_truncated">values: %1$s</string>
-    <string name="scope_values_count">%1$d values selected</string>
-    <string name="scope_period_day_selected">day selected</string>
-    <string name="scope_period_week_selected">week selected</string>
-    <string name="scope_period_month_selected">month selected</string>
-    <string name="scope_period_year_selected">year selected</string>
-    <string name="scope_period_generic_selected">period selected</string>
-    <string name="scope_undefined">undefined</string>
 
     <!-- THEME/UI COMPONENTS - Labels for interface components -->
 
@@ -1390,8 +1358,6 @@
     <string name="ai_enrichment_pointer_period_range">%1$s to %2$s</string>
     <string name="ai_enrichment_pointer_period_from">from %1$s</string>
     <string name="ai_enrichment_pointer_period_until">until %1$s</string>
-    <string name="ai_enrichment_pointer_relative_ago">%1$d %2$s ago</string>
-    <string name="ai_enrichment_pointer_relative_future">in %1$d %2$s</string>
     <string name="period_days">days</string>
     <string name="period_weeks">weeks</string>
     <string name="period_months">months</string>
