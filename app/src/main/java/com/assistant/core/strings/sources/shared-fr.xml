@@ -425,7 +425,6 @@
     <!-- UI Component defaults -->
     <string name="ui_toggle_enabled">Activé</string>
     <string name="ui_toggle_disabled">Désactivé</string>
-    <string name="ui_new_item_placeholder">Nouvel élément</string>
     
     <!-- Messages et feedback -->
     <string name="message_loading">Chargement...</string>
@@ -867,8 +866,6 @@
     <string name="scope_undefined">non défini</string>
 
     <!-- THEME/UI COMPONENTS - Labels pour composants d\'interface -->
-    <string name="ui_form_list_add_label">Ajouter :</string>
-    <string name="ui_form_list_remove_label">Retirer :</string>
 
     <!-- SETTINGS - Configuration screens -->
     <string name="settings_title">Paramètres</string>

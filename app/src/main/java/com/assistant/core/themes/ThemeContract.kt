@@ -288,26 +288,6 @@ interface ThemeContract {
         required: Boolean
     )
     
-    @Composable
-    fun CounterField(
-        label: String,
-        incrementButtons: List<Pair<String, Int>>,
-        decrementButtons: List<Pair<String, Int>>,
-        onIncrement: (Int) -> Unit,
-        required: Boolean
-    )
-    
-    @Composable
-    fun DynamicList(
-        label: String,
-        items: List<String>,
-        onItemsChanged: (List<String>) -> Unit,
-        placeholder: String,
-        required: Boolean,
-        minItems: Int,
-        maxItems: Int
-    )
-    
     // =====================================
     // PALETTE SYSTEM
     // =====================================

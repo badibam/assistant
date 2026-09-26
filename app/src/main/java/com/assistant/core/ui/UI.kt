@@ -324,21 +324,6 @@ object UI {
         )
     }
     
-    /** A slider over whole numbers, one by one. */
-    @Composable
-    fun SliderField(
-        label: String,
-        value: Int,
-        onValueChange: (Int) -> Unit,
-        range: IntRange,
-        minLabel: String = "",
-        maxLabel: String = "",
-        required: Boolean = true
-    ) = CurrentTheme.current.SliderField(
-        label, value.toDouble(), { onValueChange(kotlin.math.round(it).toInt()) },
-        range.first.toDouble(), range.last.toDouble(), 1.0, minLabel, maxLabel, required
-    )
-
     /** A slider that stops every [step] from [min], decimals included (0 to 5 by 0.5). */
     @Composable
     fun SliderField(
@@ -352,38 +337,6 @@ object UI {
         maxLabel: String = "",
         required: Boolean = true
     ) = CurrentTheme.current.SliderField(label, value, onValueChange, min, max, step, minLabel, maxLabel, required)
-    
-    @Composable
-    fun CounterField(
-        label: String,
-        incrementButtons: List<Pair<String, Int>>, // Pairs of (displayText, incrementValue)
-        decrementButtons: List<Pair<String, Int>> = emptyList(),
-        onIncrement: (Int) -> Unit,
-        required: Boolean = true
-    ) = CurrentTheme.current.CounterField(label, incrementButtons, decrementButtons, onIncrement, required)
-    
-    @Composable
-    fun DynamicList(
-        label: String,
-        items: List<String>,
-        onItemsChanged: (List<String>) -> Unit,
-        placeholder: String? = null,
-        required: Boolean = true,
-        minItems: Int = 0,
-        maxItems: Int = Int.MAX_VALUE
-    ) {
-        val context = androidx.compose.ui.platform.LocalContext.current
-        val s = com.assistant.core.strings.Strings.`for`(context = context)
-        CurrentTheme.current.DynamicList(
-            label, 
-            items, 
-            onItemsChanged, 
-            placeholder ?: s.shared("ui_new_item_placeholder"), 
-            required, 
-            minItems, 
-            maxItems
-        )
-    }
     
     // =====================================
     // BUTTONS WITH AUTOMATIC ICONS
