@@ -49,7 +49,7 @@ La config n'est jamais filtrée. Une **mention d'entrées filtrées** transmet �
 
 ## Le côté IA
 
-Les filtres sont une capacité de `tool_data.get`, paramètre `filters`, que l'IA utilise aussi : le pointeur n'est qu'un formulaire qui écrit cette requête. `start_time` et `end_time` disparaissent, remplacés par un filtre sur `timestamp`. Les chemins se lisent par `FieldPatternGrammar`, comme `fields` ; le service valide des deux côtés. Les entrées d'une zone ou de l'app demandent une lecture sur plusieurs outils, qui n'existe pas encore. Le prompt L1 décrit `filters`, et le rejeu sur l'appareil suit (`docs/ai-prompt-replay.md`).
+Le pointeur écrit une requête `tool_data.get` avec `filters`, la capacité que l'IA utilise aussi (voir `docs/DATA.md`). Les entrées d'une zone ou de l'app demandent une lecture sur plusieurs outils, qui n'existe pas encore.
 
 ## L'écran
 

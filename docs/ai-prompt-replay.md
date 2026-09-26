@@ -58,7 +58,8 @@ Deuxième message du test, mêmes règles.
 6. Relis ces entrées sur les sept derniers jours jusqu'à maintenant, en ne
    demandant que l'identifiant, l'horodatage, la valeur du poids, l'humeur et
    « Pesé le ». Recopie l'horodatage, l'humeur et le « Pesé le » de la première
-   entrée, exactement tels que tu les as reçus.
+   entrée, exactement tels que tu les as reçus. Puis relis seulement celles
+   d'hier et d'aujourd'hui dont le poids dépasse le plus petit des trois.
 
 7. Refais la même lecture en demandant deux entrées par page, et donne-moi la
    page 2.
@@ -108,7 +109,7 @@ Quatrième et dernier message du test, mêmes règles.
 | 3 | `"type": "TEXT"` avec `config.length` à `MEDIUM` (250) ou `LONG` (1500), **sans clé `name`** | `TEXT_MEDIUM` ou `TEXT_UNLIMITED` (types morts depuis la migration v25→v26). Un `name` envoyé n'est pas refusé à la création, il est gardé : c'est l'IA qui n'a pas suivi le L1 |
 | 4 | Deux identifiants snake_case attribués par l'app | Aucun identifiant — les champs ont été enregistrés sans nom, ce que la création faisait avant le 2026-09-23 ; ou ceux que l'IA avait proposés |
 | 5 | `SCHEMA` demandé avec le `tool_instance_id` ; chaque entrée porte un `name` ; horodatages en ISO 8601 **avec décalage**, « Pesé le » compris | Une entrée sans `name` → refus ; millisecondes brutes, ou une date sans décalage |
-| 6 | `fields` liste `data.value` et `extra.<id>` ; `period_start`/`period_end` **à la racine** ; l'humeur et le « Pesé le » **reviennent**, le second en ISO ; l'en-tête de période est en ISO avec décalage | Un objet `period` imbriqué ; des `extra` absents → la création en lot les perd encore (corrigé le 2026-09-24) ; un « Pesé le » en nombre brut → la frontière des dates fuit |
+| 6 | `fields` liste `data.value` et `extra.<id>` ; la période est un filtre sur `timestamp` dans `filters` (`between` `["-7_DAY", "NOW"]` ou deux bornes) ; l'humeur et le « Pesé le » **reviennent**, le second en ISO ; l'en-tête « Filters » est en ISO avec décalage. La seconde lecture ajoute un filtre `data.value` `>` et une période sur hier et aujourd'hui, et rend les entrées attendues | `period_start`/`period_end`, refusés en les nommant ; un objet `period` ; des `extra` absents → la création en lot les perd encore (corrigé le 2026-09-24) ; un « Pesé le » en nombre brut → la frontière des dates fuit ; un filtre sur le poids appliqué par l'IA en lisant tout au lieu de le demander |
 | 7 | `page` et `limit` | `offset`, qui sera refusé |
 | 8 | Refus lisible disant que le conteneur n'est pas un champ, puis reprise correcte | Refus incompréhensible, ou boucle |
 | 9 | `display_name` modifié, `name` conservé, l'humeur relue intacte | `name` modifié → refus attendu. Valeur perdue → le champ a été supprimé puis recréé au lieu d'être renommé par son `display_name` : le service refuse un `name` changé, donc c'est un autre chemin, à consigner |

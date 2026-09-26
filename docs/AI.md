@@ -501,7 +501,7 @@ class EnrichmentProcessor {
 **Flow** : EnrichmentProcessor → DataCommand → CommandTransformer → CommandExecutor → SystemMessage.
 
 ### CommandTransformer
-**Transformations** : SCHEMA → schemas.get, TOOL_CONFIG → tools.get, TOOL_DATA → tool_data.get (résolution périodes), ZONE_CONFIG → zones.get, ZONES → zones.list, TOOL_INSTANCES → tools.list, ICONS → icons.overview (sans paramètre) ou icons.search (`categories` et/ou `query`).
+**Transformations** : SCHEMA → schemas.get, TOOL_CONFIG → tools.get, TOOL_DATA → tool_data.get (dates, périodes relatives et durées de ses `filters` mises en forme stockée d'après le type du champ, `FilterValues`), ZONE_CONFIG → zones.get, ZONES → zones.list, TOOL_INSTANCES → tools.list, ICONS → icons.overview (sans paramètre) ou icons.search (`categories` et/ou `query`).
 
 ### User vs AI Commands
 **User** : Source EnrichmentBlocks, types POINTER/USE/CREATE/MODIFY_CONFIG uniquement, but données contextuelles, jamais d'actions.

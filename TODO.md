@@ -4,7 +4,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — le pointeur (choix des champs, filtres par valeur), la valeur par défaut portée par un champ, les détails des commandes dans le chat, RÉFÉRENCE. Le pointeur est conçu (`docs/design/pointer.md`) ; prochain : l'implémenter, en commençant par `filters` dans `tool_data.get`.
+- Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — le pointeur (choix des champs, filtres par valeur), la valeur par défaut portée par un champ, les détails des commandes dans le chat, RÉFÉRENCE. Le pointeur est conçu (`docs/design/pointer.md`) et `tool_data.get` filtre par valeur ; prochain : l'adresse par identifiants et l'écran du sélecteur. Le L1 décrit `filters` : rejeu à faire sur l'appareil (`docs/ai-prompt-replay.md`, étape 6).
 - Un BOOLEAN ou une SCALE sans valeur s'affichent à l'écran comme « non » ou comme le minimum : obligatoires dans une question de l'IA, Confirmer reste grisé sans que rien ne dise pourquoi.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
