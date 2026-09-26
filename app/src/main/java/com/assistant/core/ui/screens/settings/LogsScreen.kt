@@ -200,7 +200,7 @@ fun LogsScreen(
                                 selectedTimeRange = LogTimeRange.entries[index]
                             }
                         },
-                        required = true
+                        required = false
                     )
 
                     // Level filter
@@ -217,7 +217,7 @@ fun LogsScreen(
                                 selectedMinLevel = LogLevel.entries[index]
                             }
                         },
-                        required = true
+                        required = false
                     )
 
                     // Tag filter

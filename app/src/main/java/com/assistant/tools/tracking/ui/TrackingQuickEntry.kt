@@ -168,14 +168,14 @@ fun TrackingQuickEntry(
         // choice is off while one runs.
         if (shortcuts.isNotEmpty()) {
             val canChooseDate = running.isEmpty()
-            UI.ToggleField(
+            UI.BooleanField(
                 label = "",
-                checked = customTimestamp != null && canChooseDate,
+                value = customTimestamp != null && canChooseDate,
+                onValueChange = { chosen ->
+                    if (canChooseDate) customTimestamp = if (chosen) System.currentTimeMillis() else null
+                },
                 trueLabel = s.tool("usage_custom_date"),
-                falseLabel = s.tool("usage_current_time"),
-                onCheckedChange = { checked ->
-                    if (canChooseDate) customTimestamp = if (checked) System.currentTimeMillis() else null
-                }
+                falseLabel = s.tool("usage_current_time")
             )
             customTimestamp?.takeIf { canChooseDate }?.let { chosen ->
                 FieldInput(

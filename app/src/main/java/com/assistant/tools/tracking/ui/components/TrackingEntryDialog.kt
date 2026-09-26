@@ -155,10 +155,10 @@ fun TrackingEntryDialog(
             }
 
             if (offerShortcut) {
-                UI.Checkbox(
-                    checked = addToShortcuts,
-                    onCheckedChange = { addToShortcuts = it },
-                    label = s.tool("usage_add_to_shortcuts")
+                UI.BooleanField(
+                    label = s.tool("usage_add_to_shortcuts"),
+                    value = addToShortcuts,
+                    onValueChange = { addToShortcuts = it }
                 )
             }
         }

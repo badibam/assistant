@@ -354,7 +354,7 @@ private fun ContextResourcesSection(
                 val newContext = allowedContexts.find { getContextLabel(it, s) == selectedLabel }
                 newContext?.let { onContextChange(it) }
             },
-            required = true
+            required = false
         )
 
         // Resources toggles (dynamic based on selected context)
@@ -367,11 +367,10 @@ private fun ContextResourcesSection(
             )
 
             availableResources.forEach { resource ->
-                UI.ToggleField(
+                UI.Checkbox(
                     label = getResourceLabel(resource, s),
                     checked = state.selectedResources.contains(resource),
-                    onCheckedChange = { onResourceToggle(resource) },
-                    required = false
+                    onCheckedChange = { onResourceToggle(resource) }
                 )
             }
         }

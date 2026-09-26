@@ -507,6 +507,7 @@ private fun TextBlockCard(
 
                 // Text field (delete button is positioned absolute)
                 UI.FormField(
+                    required = false,
                     label = placeholder,
                     value = block.text,
                     onChange = { newText ->
@@ -786,6 +787,7 @@ private fun PlaceholderEnrichmentDialog(
             )
 
             UI.FormField(
+                required = false,
                 label = s.shared("label_preview"),
                 value = preview,
                 onChange = { preview = it },

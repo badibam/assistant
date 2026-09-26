@@ -251,13 +251,17 @@ object UI {
     // UNIFIED FORMS
     // =====================================
     
+    /** The label of a field, marked as the theme marks a field that must be answered. */
+    @Composable
+    fun FieldLabel(label: String, required: Boolean) = CurrentTheme.current.FieldLabel(label, required)
+
     @Composable
     fun FormField(
         label: String,
         value: String,
         onChange: (String) -> Unit,
         fieldType: FieldType = FieldType.TEXT,
-        required: Boolean = true,
+        required: Boolean,
         state: ComponentState = ComponentState.NORMAL,
         readonly: Boolean = false,
         onClick: (() -> Unit)? = null,
@@ -282,7 +286,7 @@ object UI {
         options: List<String>,
         selected: String,
         onSelect: (String) -> Unit,
-        required: Boolean = true
+        required: Boolean
     ) = CurrentTheme.current.FormSelection(
         label = label,
         options = options,
@@ -303,39 +307,65 @@ object UI {
         label: String? = null
     ) = CurrentTheme.current.Checkbox(checked, onCheckedChange, label)
     
+    /**
+     * A yes/no answer, [value] null while there is none: touching the chosen answer again
+     * empties it unless it is [required]. The answers read "Yes" and "No" unless named.
+     */
     @Composable
-    fun ToggleField(
+    fun BooleanField(
         label: String,
-        checked: Boolean,
-        onCheckedChange: (Boolean) -> Unit,
+        value: Boolean?,
+        onValueChange: (Boolean?) -> Unit,
+        required: Boolean,
         trueLabel: String? = null,
-        falseLabel: String? = null,
-        required: Boolean = true
+        falseLabel: String? = null
+    ) = BooleanButtons(label, value, onValueChange, required, emptiable = !required, trueLabel, falseLabel)
+
+    /**
+     * A yes/no state, which always is one or the other (an automation on or off): never marked,
+     * never emptied.
+     */
+    @Composable
+    fun BooleanField(
+        label: String,
+        value: Boolean,
+        onValueChange: (Boolean) -> Unit,
+        trueLabel: String? = null,
+        falseLabel: String? = null
+    ) = BooleanButtons(label, value, { it?.let(onValueChange) }, required = false, emptiable = false, trueLabel, falseLabel)
+
+    @Composable
+    private fun BooleanButtons(
+        label: String,
+        value: Boolean?,
+        onValueChange: (Boolean?) -> Unit,
+        required: Boolean,
+        emptiable: Boolean,
+        trueLabel: String?,
+        falseLabel: String?
     ) {
         val context = androidx.compose.ui.platform.LocalContext.current
         val s = com.assistant.core.strings.Strings.`for`(context = context)
-        CurrentTheme.current.ToggleField(
-            label, 
-            checked, 
-            onCheckedChange, 
-            trueLabel ?: s.shared("ui_toggle_enabled"), 
-            falseLabel ?: s.shared("ui_toggle_disabled"), 
-            required
+        CurrentTheme.current.BooleanField(
+            label, value, onValueChange, trueLabel ?: s.shared("label_yes"), falseLabel ?: s.shared("label_no"), required, emptiable
         )
     }
-    
-    /** A slider that stops every [step] from [min], decimals included (0 to 5 by 0.5). */
+
+    /**
+     * A slider that stops every [step] from [min], decimals included (0 to 5 by 0.5), [value]
+     * null while there is no answer (see ThemeContract.SliderField).
+     */
     @Composable
     fun SliderField(
         label: String,
-        value: Double,
-        onValueChange: (Double) -> Unit,
+        value: Double?,
+        onValueChange: (Double?) -> Unit,
         min: Double,
         max: Double,
         step: Double,
+        required: Boolean,
         minLabel: String = "",
-        maxLabel: String = "",
-        required: Boolean = true
+        maxLabel: String = ""
     ) = CurrentTheme.current.SliderField(label, value, onValueChange, min, max, step, minLabel, maxLabel, required)
     
     // =====================================

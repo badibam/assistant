@@ -1008,6 +1008,7 @@ fun RelativePeriodRangeSelector(
                 ?: s.shared("period_type_custom")
 
             UI.FormSelection(
+                required = false,
                 label = s.shared("label_period_type"),
                 options = startTypeOptions.keys.toList(),
                 selected = startSelectedLabel,
@@ -1064,6 +1065,7 @@ fun RelativePeriodRangeSelector(
                 ?: s.shared("period_type_custom")
 
             UI.FormSelection(
+                required = false,
                 label = s.shared("label_period_type"),
                 options = endTypeOptions.keys.toList(),
                 selected = endSelectedLabel,
@@ -1179,6 +1181,7 @@ fun PeriodRangeSelector(
 
             // Start period type dropdown
             UI.FormSelection(
+                required = false,
                 label = "",
                 options = listOf(
                     s.shared("period_hour"),
@@ -1328,6 +1331,7 @@ fun PeriodRangeSelector(
 
             // End period type dropdown
             UI.FormSelection(
+                required = false,
                 label = "",
                 options = listOf(
                     s.shared("period_hour"),

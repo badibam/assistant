@@ -108,10 +108,12 @@ fun AutomationCard(
                 }
 
                 // Enabled toggle
-                UI.ToggleField(
+                UI.BooleanField(
                     label = "",
-                    checked = automation.isEnabled,
-                    onCheckedChange = onToggleEnabled
+                    value = automation.isEnabled,
+                    onValueChange = onToggleEnabled,
+                    trueLabel = s.shared("ui_toggle_enabled"),
+                    falseLabel = s.shared("ui_toggle_disabled")
                 )
             }
 

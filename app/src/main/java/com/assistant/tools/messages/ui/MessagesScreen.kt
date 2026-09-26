@@ -241,6 +241,7 @@ private fun ReceivedTab(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         UI.FormSelection(
+            required = false,
             label = "",
             options = listOf(
                 s.tool("filter_unread"),

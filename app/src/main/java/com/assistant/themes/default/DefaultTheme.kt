@@ -995,6 +995,13 @@ object DefaultTheme : ThemeContract {
     // FORMULAIRES
     // =====================================
     
+    /** A required field is marked by an asterisk after its label; an optional one bears no mark. */
+    @Composable
+    override fun FieldLabel(label: String, required: Boolean) {
+        if (label.isBlank()) return
+        Text(if (required) "$label *" else label, TextType.LABEL, false, null)
+    }
+
     @Composable
     override fun FormField(
         label: String,
@@ -1008,10 +1015,9 @@ object DefaultTheme : ThemeContract {
         required: Boolean,
         fieldModifier: FieldModifier
     ) {
-        val displayLabel = if (required) label else "$label (optionnel)"
         
         Column {
-            Text(displayLabel, TextType.LABEL, false, null)
+            FieldLabel(label, required)
             
             if (readonly) {
                 // Display as text when readonly - clickable if onClick provided
@@ -1023,7 +1029,7 @@ object DefaultTheme : ThemeContract {
                 
                 Box(modifier = textModifier) {
                     Text(
-                        text = if (value.isNotBlank()) value else "(vide)",
+                        text = value.ifBlank { com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current).shared("label_no_value") },
                         type = TextType.BODY,
                         fillMaxWidth = false,
                         textAlign = null
@@ -1052,10 +1058,9 @@ object DefaultTheme : ThemeContract {
         required: Boolean
     ) {
         var expanded by remember { mutableStateOf(false) }
-        val displayLabel = if (required) label else "$label (optionnel)"
         
         Column {
-            Text(displayLabel, TextType.LABEL, false, null)
+            FieldLabel(label, required)
             
             ExposedDropdownMenuBox(
                 expanded = expanded,
@@ -1123,75 +1128,48 @@ object DefaultTheme : ThemeContract {
         }
     }
     
+    /** Two segmented buttons side by side; neither is chosen while there is no answer. */
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    override fun ToggleField(
+    override fun BooleanField(
         label: String,
-        checked: Boolean,
-        onCheckedChange: (Boolean) -> Unit,
+        value: Boolean?,
+        onValueChange: (Boolean?) -> Unit,
         trueLabel: String,
         falseLabel: String,
-        required: Boolean
+        required: Boolean,
+        emptiable: Boolean
     ) {
-        val displayLabel = if (required) label else "$label (optionnel)"
-        
-        if (label.isNotBlank()) {
-            // With a label: Column layout
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Label du champ
-                Text(displayLabel, TextType.LABEL, false, null)
-                
-                // Toggle with labels
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Switch(
-                        checked = checked,
-                        onCheckedChange = onCheckedChange
-                    )
-                    
-                    androidx.compose.material3.Text(
-                        text = if (checked) trueLabel else falseLabel,
-                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                        color = if (checked) {
-                            CurrentTheme.getCurrentColorScheme().primary
-                        } else {
-                            CurrentTheme.getCurrentColorScheme().onSurfaceVariant
-                        }
-                    )
-                }
-            }
-        } else {
-            // Without a label: just the Row holding the toggle
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Switch(
-                    checked = checked,
-                    onCheckedChange = onCheckedChange
-                )
-                
-                androidx.compose.material3.Text(
-                    text = if (checked) trueLabel else falseLabel,
-                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                    color = if (checked) {
-                        CurrentTheme.getCurrentColorScheme().primary
-                    } else {
-                        CurrentTheme.getCurrentColorScheme().onSurfaceVariant
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (label.isNotBlank()) FieldLabel(label, required)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                listOf(true to trueLabel, false to falseLabel).forEachIndexed { index, (answer, text) ->
+                    SegmentedButton(
+                        selected = value == answer,
+                        onClick = {
+                            if (value != answer) onValueChange(answer)
+                            else if (emptiable) onValueChange(null)
+                        },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = 2)
+                    ) {
+                        androidx.compose.material3.Text(text)
                     }
-                )
+                }
             }
         }
     }
     
+    /**
+     * Without an answer the slider has no thumb, its track all inactive, and its value reads "—".
+     * Compose reports no change when a touch lands where its thumb already is, and an empty
+     * slider rests on its minimum: a touch that changed nothing on an empty slider answers that
+     * minimum when it ends.
+     */
     @Composable
     override fun SliderField(
         label: String,
-        value: Double,
-        onValueChange: (Double) -> Unit,
+        value: Double?,
+        onValueChange: (Double?) -> Unit,
         min: Double,
         max: Double,
         step: Double,
@@ -1199,39 +1177,57 @@ object DefaultTheme : ThemeContract {
         maxLabel: String,
         required: Boolean
     ) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
         // The track ends on the last stop, so every notch Compose draws falls on a step from min
         val lastStop = com.assistant.core.ui.SliderSteps.lastStop(min, max, step)
         val decimals = com.assistant.core.ui.SliderSteps.decimals(min, step)
+        val currentValue by rememberUpdatedState(value)
+        // Whether the touch under way has changed the value: read at once, not after a recomposition
+        val changedByTouch = remember { mutableStateOf(false) }
+        val colors = CurrentTheme.getCurrentColorScheme()
 
-        val displayLabel = if (required) label else "$label (optionnel)"
-        
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Label du champ
-            Text(displayLabel, TextType.LABEL, false, null)
-            
-            // Valeur actuelle
+            FieldLabel(label, required)
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 androidx.compose.material3.Text(
-                    text = String.format(java.util.Locale.getDefault(), "%.${decimals}f", value),
+                    text = value?.let { String.format(java.util.Locale.getDefault(), "%.${decimals}f", it) } ?: "—",
                     style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-                    color = CurrentTheme.getCurrentColorScheme().primary
+                    color = if (value != null) colors.primary else colors.onSurfaceVariant
                 )
+                if (value != null && !required) {
+                    TextButton(onClick = { onValueChange(null) }) {
+                        androidx.compose.material3.Text(s.shared("action_clear"))
+                    }
+                }
             }
-            
-            // Slider
+
             Slider(
-                value = value.toFloat(),
-                onValueChange = { onValueChange(com.assistant.core.ui.SliderSteps.snap(it.toDouble(), min, step)) },
+                value = (value ?: min).toFloat(),
+                onValueChange = {
+                    changedByTouch.value = true
+                    onValueChange(com.assistant.core.ui.SliderSteps.snap(it.toDouble(), min, step))
+                },
+                onValueChangeFinished = {
+                    if (!changedByTouch.value && currentValue == null) onValueChange(min)
+                    changedByTouch.value = false
+                },
                 valueRange = min.toFloat()..lastStop.toFloat(),
-                steps = com.assistant.core.ui.SliderSteps.innerStops(min, lastStop, step)
+                steps = com.assistant.core.ui.SliderSteps.innerStops(min, lastStop, step),
+                colors = if (value != null) SliderDefaults.colors() else SliderDefaults.colors(
+                    thumbColor = androidx.compose.ui.graphics.Color.Transparent,
+                    activeTrackColor = colors.surfaceVariant,
+                    activeTickColor = colors.onSurfaceVariant
+                )
             )
-            
-            // Labels min/max
+
             if (minLabel.isNotEmpty() || maxLabel.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1240,13 +1236,12 @@ object DefaultTheme : ThemeContract {
                     androidx.compose.material3.Text(
                         text = minLabel,
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                        color = CurrentTheme.getCurrentColorScheme().onSurfaceVariant
+                        color = colors.onSurfaceVariant
                     )
-                    
                     androidx.compose.material3.Text(
                         text = maxLabel,
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                        color = CurrentTheme.getCurrentColorScheme().onSurfaceVariant
+                        color = colors.onSurfaceVariant
                     )
                 }
             }

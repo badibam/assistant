@@ -176,6 +176,7 @@ fun ScheduleConfigEditor(
 
             // Pattern selector
             UI.FormSelection(
+                required = false,
                 label = s.shared("schedule_pattern_label"),
                 options = patternTypes.map { s.shared("schedule_pattern_$it") },
                 selected = s.shared("schedule_pattern_$selectedPatternType"),
@@ -350,7 +351,7 @@ private fun WeeklySimpleEditor(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    UI.ToggleField(
+                    UI.Checkbox(
                         label = dayName,
                         checked = days.contains(dayNumber),
                         onCheckedChange = { checked ->
@@ -408,7 +409,7 @@ private fun MonthlyRecurrentEditor(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    UI.ToggleField(
+                    UI.Checkbox(
                         label = monthName,
                         checked = months.contains(monthNumber),
                         onCheckedChange = { checked ->
@@ -427,6 +428,7 @@ private fun MonthlyRecurrentEditor(
 
         // Day of month (1-31)
         UI.FormField(
+            required = false,
             label = s.shared("schedule_day_of_month_label"),
             value = dayOfMonth.toString(),
             onChange = { newDay ->
@@ -473,6 +475,7 @@ private fun WeeklyCustomEditor(
                     // Day selector
                     val dayNames = (1..7).map { s.shared("day_of_week_$it") }
                     UI.FormSelection(
+                        required = false,
                         label = s.shared("schedule_day_label"),
                         options = dayNames,
                         selected = dayNames[moment.dayOfWeek - 1],
@@ -559,6 +562,7 @@ private fun YearlyRecurrentEditor(
                     // Month selector
                     val monthNames = (1..12).map { s.shared("month_$it") }
                     UI.FormSelection(
+                        required = false,
                         label = s.shared("schedule_month_label"),
                         options = monthNames,
                         selected = monthNames[date.month - 1],
@@ -574,6 +578,7 @@ private fun YearlyRecurrentEditor(
 
                     // Day
                     UI.FormField(
+                        required = false,
                         label = s.shared("schedule_day_label"),
                         value = date.day.toString(),
                         onChange = { newDay ->
@@ -707,6 +712,7 @@ private fun TimePickerField(
     var showPicker by rememberSaveable { mutableStateOf(false) }
 
     UI.FormField(
+        required = false,
         label = label,
         value = value,
         onChange = { },
@@ -744,6 +750,7 @@ private fun DateTimePickerField(
     val formattedValue = "${DateUtils.formatDateForDisplay(timestamp)} ${DateUtils.formatTimeForDisplay(timestamp)}"
 
     UI.FormField(
+        required = false,
         label = label,
         value = formattedValue,
         onChange = { },

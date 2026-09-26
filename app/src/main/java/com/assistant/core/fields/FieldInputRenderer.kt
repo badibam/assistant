@@ -99,8 +99,8 @@ fun FieldInput(
 
             UI.SliderField(
                 label = fieldDef.displayName,
-                value = (value as? Number)?.toDouble() ?: min,
-                onValueChange = { newValue -> onChange(if (wholeNumbers) newValue.toInt() else newValue) },
+                value = (value as? Number)?.toDouble(),
+                onValueChange = { newValue -> onChange(newValue?.let { if (wholeNumbers) it.toInt() else it }) },
                 min = min,
                 max = max,
                 step = step,
@@ -115,74 +115,62 @@ fun FieldInput(
         }
 
         com.assistant.core.fields.FieldType.BOOLEAN -> {
-            val boolValue = (value as? Boolean) ?: false
             val config = fieldDef.config
-
-            val s = Strings.`for`(context = context)
-            // Use user-provided labels if exist, otherwise use default translated labels
-            val trueLabel = config?.get("true_label") as? String ?: s.shared("label_yes")
-            val falseLabel = config?.get("false_label") as? String ?: s.shared("label_no")
-
-            UI.ToggleField(
+            UI.BooleanField(
                 label = fieldDef.displayName,
-                checked = boolValue,
-                onCheckedChange = { newValue -> onChange(newValue) },
-                trueLabel = trueLabel,
-                falseLabel = falseLabel,
-                required = required
+                value = value as? Boolean,
+                onValueChange = onChange,
+                required = required,
+                trueLabel = config?.get("true_label") as? String,
+                falseLabel = config?.get("false_label") as? String
             )
         }
 
         com.assistant.core.fields.FieldType.RANGE -> {
+            val s = Strings.`for`(context = context)
             val rangeValue = value as? Map<*, *>
-            val startValue = (rangeValue?.get("start") as? Number)?.toDouble() ?: 0.0
-            val endValue = (rangeValue?.get("end") as? Number)?.toDouble() ?: 0.0
+            val unit = fieldDef.config?.get("unit") as? String
+            val decimals = (fieldDef.config?.get("decimals") as? Number)?.toInt() ?: 0
+            // A whole number reads and writes as one, as a NUMERIC does: 7, not 7.0
+            fun text(bound: Any?): String = (bound as? Number)?.let { if (decimals == 0) it.toLong().toString() else it.toDouble().toString() } ?: ""
+            fun number(text: String): Number? = if (decimals == 0) text.toLongOrNull() else text.toDoubleOrNull()
+            // What is typed in each box, kept as typed: the range has a value only once both
+            // bounds read as numbers, and none while one is empty or unreadable
+            var startText by rememberSaveable { mutableStateOf(text(rangeValue?.get("start"))) }
+            var endText by rememberSaveable { mutableStateOf(text(rangeValue?.get("end"))) }
+            fun emit() {
+                val start = number(startText)
+                val end = number(endText)
+                onChange(if (start != null && end != null) mapOf("start" to start, "end" to end) else null)
+            }
 
-            val config = fieldDef.config
-            val unit = config?.get("unit") as? String
-
-            // Two numeric inputs (start and end)
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                UI.Text(
-                    text = fieldDef.displayName,
-                    type = TextType.LABEL,
-                    fillMaxWidth = true
-                )
+                UI.FieldLabel(fieldDef.displayName, required)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Start field
+                    // The range is marked as a whole, above: its two bounds bear no mark
                     Box(modifier = Modifier.weight(1f)) {
-                        val s = Strings.`for`(context = context)
                         UI.FormField(
                             label = s.shared("label_start") + (unit?.let { " ($it)" } ?: ""),
-                            value = startValue.toString(),
-                            onChange = { newValue ->
-                                val newStart = newValue.toDoubleOrNull() ?: 0.0
-                                onChange(mapOf("start" to newStart, "end" to endValue))
-                            },
+                            value = startText,
+                            onChange = { startText = it; emit() },
                             fieldType = UIFieldType.NUMERIC,
-                            required = required
+                            required = false
                         )
                     }
-
-                    // End field
                     Box(modifier = Modifier.weight(1f)) {
-                        val s = Strings.`for`(context = context)
                         UI.FormField(
                             label = s.shared("label_end") + (unit?.let { " ($it)" } ?: ""),
-                            value = endValue.toString(),
-                            onChange = { newValue ->
-                                val newEnd = newValue.toDoubleOrNull() ?: 0.0
-                                onChange(mapOf("start" to startValue, "end" to newEnd))
-                            },
+                            value = endText,
+                            onChange = { endText = it; emit() },
                             fieldType = UIFieldType.NUMERIC,
-                            required = required
+                            required = false
                         )
                     }
                 }
@@ -304,7 +292,7 @@ fun FieldInput(
                     value = displayTime,
                     onChange = {},
                     fieldType = UIFieldType.TEXT,
-                    required = true,
+                    required = false,
                     readonly = true,
                     onClick = { showTimePicker = true }
                 )
@@ -341,7 +329,7 @@ fun FieldInput(
         }
 
         com.assistant.core.fields.FieldType.DURATION -> {
-            DurationInput(fieldDef, value, onChange, context)
+            DurationInput(fieldDef, value, onChange, context, required)
         }
     }
 }
@@ -381,7 +369,8 @@ private fun DurationInput(
     fieldDef: FieldDefinition,
     value: Any?,
     onChange: (Any?) -> Unit,
-    context: Context
+    context: Context,
+    required: Boolean
 ) {
     val s = Strings.`for`(context = context)
     val precision = DurationUnit.fromConfig(fieldDef.config)
@@ -396,11 +385,7 @@ private fun DurationInput(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        UI.Text(
-            text = fieldDef.displayName,
-            type = TextType.LABEL,
-            fillMaxWidth = true
-        )
+        UI.FieldLabel(fieldDef.displayName, required)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -682,11 +667,7 @@ private fun ChoiceInput(
             }
 
             ChoiceShape.MULTIPLE -> {
-                UI.Text(
-                    text = fieldDef.displayName,
-                    type = TextType.LABEL,
-                    fillMaxWidth = true
-                )
+                UI.FieldLabel(fieldDef.displayName, required)
 
                 options.forEach { option ->
                     UI.Checkbox(
@@ -701,11 +682,7 @@ private fun ChoiceInput(
             }
 
             ChoiceShape.ORDERED -> {
-                UI.Text(
-                    text = fieldDef.displayName,
-                    type = TextType.LABEL,
-                    fillMaxWidth = true
-                )
+                UI.FieldLabel(fieldDef.displayName, required)
 
                 // Nothing ranked yet shows the options as the config lists them; a ranking stored
                 // before an option was added shows that option last. The first move records the

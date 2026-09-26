@@ -206,6 +206,7 @@ fun HistoryScreen(
         // Search bar
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             UI.FormField(
+                required = false,
                 label = s.shared("history_search_placeholder"),
                 value = searchQuery,
                 onChange = { searchQuery = it },
@@ -222,6 +223,7 @@ fun HistoryScreen(
             // Period filter dropdown
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormSelection(
+                    required = false,
                     label = "",
                     options = listOf(
                         s.shared("period_all"),
@@ -266,6 +268,7 @@ fun HistoryScreen(
             // Entries limit dropdown
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormSelection(
+                    required = false,
                     label = "",
                     options = listOf("10", "20", "50", "100"),
                     selected = entriesLimit.toString(),
@@ -403,6 +406,7 @@ fun HistoryScreen(
 
                 // Name field
                 UI.FormField(
+                    required = false,
                     label = s.shared("history_rename_label"),
                     value = newName,
                     onChange = { newName = it },

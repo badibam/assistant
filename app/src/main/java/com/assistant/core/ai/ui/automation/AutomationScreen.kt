@@ -304,6 +304,7 @@ fun AutomationScreen(
             // Period filter dropdown
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormSelection(
+                    required = false,
                     label = "",
                     options = listOf(
                         s.shared("period_all"),
@@ -351,6 +352,7 @@ fun AutomationScreen(
             // Entries limit dropdown
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormSelection(
+                    required = false,
                     label = "",
                     options = listOf("10", "25", "100", "250", "1000"),
                     selected = entriesLimit.toString(),

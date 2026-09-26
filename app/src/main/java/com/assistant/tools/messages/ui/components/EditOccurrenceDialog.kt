@@ -99,6 +99,7 @@ fun EditOccurrenceDialog(
             UI.Text(s.tool("edit_occurrence_hint"), TextType.CAPTION)
 
             UI.FormField(
+                required = false,
                 label = s.tool("label_title"),
                 value = title,
                 onChange = { title = it },
@@ -106,6 +107,7 @@ fun EditOccurrenceDialog(
             )
 
             UI.FormField(
+                required = false,
                 label = s.tool("label_content"),
                 value = content,
                 onChange = { content = it },

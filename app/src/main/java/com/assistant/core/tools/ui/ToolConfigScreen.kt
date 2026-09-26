@@ -168,6 +168,7 @@ fun ToolConfigScreen(
         // The zone is the tool's place, not a setting of its config: offered once the tool exists
         if (isEditing && zones.isNotEmpty()) {
             UI.FormSelection(
+                required = false,
                 label = s.shared("label_zone"),
                 options = zones.map { it.second },
                 selected = zones.find { it.first == currentZoneId }?.second ?: "",

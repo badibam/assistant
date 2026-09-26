@@ -33,6 +33,7 @@
     <string name="action_edit">Modifier</string>
     <string name="action_refresh">Actualiser</string>
     <string name="action_reset">Réinitialiser</string>
+    <string name="action_clear">Effacer</string>
     <string name="action_select">Sélectionner</string>
     <string name="action_up">Monter</string>
     <string name="action_down">Descendre</string>

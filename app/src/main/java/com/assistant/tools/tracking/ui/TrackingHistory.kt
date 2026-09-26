@@ -280,6 +280,7 @@ fun TrackingHistory(
             // Period filter dropdown
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormSelection(
+                    required = false,
                     label = "",
                     options = listOf(s.shared("period_all"), s.shared("period_hour"), s.shared("period_day"), s.shared("period_week"), s.shared("period_month"), s.shared("period_year")),
                     selected = when(periodFilter) {
@@ -316,6 +317,7 @@ fun TrackingHistory(
             // Entries limit dropdown
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormSelection(
+                    required = false,
                     label = "",
                     options = listOf("10", "25", "100", "250", "1000"),
                     selected = entriesLimit.toString(),

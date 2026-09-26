@@ -229,6 +229,14 @@ interface ThemeContract {
     // FORMULAIRES
     // =====================================
     
+    /**
+     * The label of a field, marking whether it must be answered before the form is confirmed: each
+     * input draws its own with it, and an input made of several parts (a range, a duration) above
+     * them. How [required] shows is the theme's choice.
+     */
+    @Composable
+    fun FieldLabel(label: String, required: Boolean)
+
     @Composable
     fun FormField(
         label: String,
@@ -264,22 +272,32 @@ interface ThemeContract {
         label: String?
     )
     
+    /**
+     * Yes or no: two buttons, [trueLabel] and [falseLabel]. [value] null is no answer yet, shown
+     * with neither chosen. Touching the chosen button again empties it when [emptiable], and
+     * changes nothing otherwise. A blank [label] shows the buttons alone.
+     */
     @Composable
-    fun ToggleField(
+    fun BooleanField(
         label: String,
-        checked: Boolean,
-        onCheckedChange: (Boolean) -> Unit,
+        value: Boolean?,
+        onValueChange: (Boolean?) -> Unit,
         trueLabel: String,
         falseLabel: String,
-        required: Boolean
+        required: Boolean,
+        emptiable: Boolean
     )
-    
-    /** A slider from [min] to [max] that stops every [step] from [min]; hands back the stop reached. */
+
+    /**
+     * A slider from [min] to [max] that stops every [step] from [min]; hands back the stop reached.
+     * [value] null is no answer yet, shown as such and not as a position. Any touch on the track
+     * answers, the minimum included; an answer that is not [required] can be emptied (null).
+     */
     @Composable
     fun SliderField(
         label: String,
-        value: Double,
-        onValueChange: (Double) -> Unit,
+        value: Double?,
+        onValueChange: (Double?) -> Unit,
         min: Double,
         max: Double,
         step: Double,
