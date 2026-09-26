@@ -6,7 +6,8 @@ import org.json.JSONObject
 /**
  * Brings a numeric tracking tool to its v43 form, where its units live in one place: the "units"
  * list, from which each entry takes its own ("unit" in its data). A unit set in the value settings
- * ("value.unit") leaves them and heads the list, unless the list already holds it.
+ * ("value.unit") leaves them and heads the list, unless the list already holds it. A counter keeps
+ * its "value.unit": it has no list, and that unit names what it counts.
  *
  * The entries of such a tool that record no unit showed that one next to their value: they take it,
  * so they keep saying what they measured.
@@ -23,11 +24,10 @@ object TrackingUnitAtV43 {
 
     /** [config] of a [tooltype] tool, as it stands at v43. */
     fun config(tooltype: String, config: JSONObject): JSONObject {
-        if (tooltype != "tracking") return config
+        if (tooltype != "tracking" || config.optString("type") != "numeric" || config.optJSONObject("value")?.has("unit") != true) return config
+        val unit = valueUnit(tooltype, config)
         val next = JSONObject(config.toString())
-        val value = next.optJSONObject("value") ?: return next
-        val unit = valueUnit(tooltype, next)
-        value.remove("unit")
+        next.getJSONObject("value").remove("unit")
         if (unit != null) {
             val units = next.optJSONArray("units") ?: JSONArray()
             val listed = (0 until units.length()).map { units.getString(it) }

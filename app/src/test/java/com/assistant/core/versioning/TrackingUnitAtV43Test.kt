@@ -36,6 +36,24 @@ class TrackingUnitAtV43Test {
     }
 
     @Test
+    fun aCounterKeepsItsUnit() {
+        val counter = JSONObject("""{ "type": "counter", "value": { "decimals": 0, "unit": "glasses" } }""")
+
+        assertSame(counter, TrackingUnitAtV43.config("tracking", counter))
+        assertEquals(null, TrackingUnitAtV43.valueUnit("tracking", counter))
+    }
+
+    @Test
+    fun anEmptyValueUnitIsDropped() {
+        val config = JSONObject("""{ "type": "numeric", "value": { "decimals": 1, "unit": "" } }""")
+
+        val next = TrackingUnitAtV43.config("tracking", config)
+
+        assertFalse(next.getJSONObject("value").has("unit"))
+        assertFalse("no unit to list", next.has("units"))
+    }
+
+    @Test
     fun otherToolsAreLeftAlone() {
         val journal = JSONObject("""{ "extra_fields": [ { "name": "walk", "type": "NUMERIC", "config": { "unit": "km", "decimals": 1 } } ] }""")
 

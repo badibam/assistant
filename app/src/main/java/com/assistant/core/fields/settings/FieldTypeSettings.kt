@@ -44,9 +44,13 @@ object FieldTypeSettings {
         )
     )
 
-    /** What a field of [type] adds to its definition: its settings, if the type has any. */
+    /**
+     * What a field of [type] adds to its definition: its settings, if the type has any. A number
+     * or a range the user adds measures in one unit, set with the field.
+     */
     private fun caseNodes(type: FieldType, text: (String) -> String): List<SettingNode> {
-        val settings = configNodes(type, text)
+        val settings = listOfNotNull(if (type == FieldType.NUMERIC || type == FieldType.RANGE) unit(text) else null) +
+            configNodes(type, text)
         if (settings.isEmpty()) return emptyList()
         // A number or a range needs its decimals, a scale its bounds and a choice its options:
         // their config is required
@@ -54,7 +58,10 @@ object FieldTypeSettings {
             required = type in setOf(FieldType.NUMERIC, FieldType.RANGE, FieldType.SCALE, FieldType.CHOICE)))
     }
 
-    /** The settings a field of [type] holds in its "config". */
+    /**
+     * The settings of a value of [type]: how it is made (a number's decimals, a scale's bounds, a
+     * choice's options...). What it measures is not among them: see [unit].
+     */
     fun configNodes(type: FieldType, text: (String) -> String): List<SettingNode> = when (type) {
         FieldType.TEXT -> listOf(
             field("length", "field_config_text_length", FieldType.CHOICE, text, default = TextLength.UNLIMITED.name,
@@ -63,7 +70,7 @@ object FieldTypeSettings {
                     TextLength.entries.associate { it.name to text("text_length_${it.name.lowercase()}_display_name") }))
         )
         FieldType.NUMERIC -> listOf(
-            unit(text), number("min", "field_config_min", text), number("max", "field_config_max", text),
+            number("min", "field_config_min", text), number("max", "field_config_max", text),
             wholeNumber("decimals", "field_config_decimals", text, default = 0, required = true),
             number("step", "field_config_step", text)
         )
@@ -94,7 +101,7 @@ object FieldTypeSettings {
             label("true_label", "field_config_true_label", text), label("false_label", "field_config_false_label", text)
         )
         FieldType.RANGE -> listOf(
-            number("min", "field_config_min", text), number("max", "field_config_max", text), unit(text),
+            number("min", "field_config_min", text), number("max", "field_config_max", text),
             wholeNumber("decimals", "field_config_decimals", text, default = 0, required = true)
         )
         FieldType.DATE -> emptyList()
@@ -139,7 +146,12 @@ object FieldTypeSettings {
     private fun label(name: String, labelKey: String, text: (String) -> String) =
         field(name, labelKey, FieldType.TEXT, text, config = mapOf("length" to TextLength.SHORT.name))
 
-    private fun unit(text: (String) -> String) = label("unit", "field_config_unit", text)
+    /**
+     * The one unit a number or a range is in, set once for all its values ("km"), stored as "unit"
+     * beside the value's settings. Whoever declares such a value adds it when its values share
+     * a unit; a value whose unit changes from one entry to the next records it with the entry.
+     */
+    fun unit(text: (String) -> String) = label("unit", "field_config_unit", text)
 
     private fun flag(name: String, labelKey: String, descriptionKey: String, text: (String) -> String) =
         field(name, labelKey, FieldType.BOOLEAN, text, default = false, description = descriptionKey)
