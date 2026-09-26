@@ -33,6 +33,7 @@ import com.assistant.core.versioning.ToolConfigsAtV39
 import com.assistant.core.versioning.CatchUpAtV41
 import com.assistant.core.versioning.FormatNullsAtV42
 import com.assistant.core.versioning.TrackingUnitAtV43
+import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -73,7 +74,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 43
+        const val VERSION = 44
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1360,6 +1361,33 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_43_44 = object : Migration(43, 44) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // A pointer names its target by id and its period as filters: see PointerAtV44
+                val format = database.query("SELECT settings FROM app_settings_categories WHERE category = ?", arrayOf<Any?>(com.assistant.core.database.entities.AppSettingCategories.FORMAT)).use { cursor ->
+                    if (cursor.moveToFirst()) org.json.JSONObject(cursor.getString(0)) else null
+                }
+                val calendar = PointerAtV44.Calendar.of(format)
+                var rewritten = 0
+                database.query("SELECT id, rich_content_json FROM session_messages WHERE rich_content_json LIKE '%POINTER%'").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        // A message or a pointer that cannot be read stays as it was and is logged
+                        try {
+                            val next = PointerAtV44.richContent(cursor.getString(1), calendar) { e ->
+                                LogManager.database("MIGRATION 43->44: a pointer of message $id left as it was: ${e.message}", "ERROR", e)
+                            } ?: continue
+                            database.execSQL("UPDATE session_messages SET rich_content_json = ? WHERE id = ?", arrayOf<Any?>(next, id))
+                            rewritten++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 43->44: message $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 43->44: $rewritten message(s) with their pointers rewritten", "INFO")
+            }
+        }
+
         private val MIGRATION_42_43 = object : Migration(42, 43) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // A numeric tracking tool's units live in "units" alone: see TrackingUnitAtV43
@@ -1804,7 +1832,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_39_40,
                     MIGRATION_40_41,
                     MIGRATION_41_42,
-                    MIGRATION_42_43
+                    MIGRATION_42_43,
+                    MIGRATION_43_44
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

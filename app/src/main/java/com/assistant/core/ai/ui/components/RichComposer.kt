@@ -18,6 +18,10 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.enrichments.EnrichmentProcessor
+import com.assistant.core.ai.enrichments.PointerConfig
+import com.assistant.core.ai.enrichments.PointerKind
+import com.assistant.core.ai.enrichments.PointerTarget
+import com.assistant.core.ui.components.getPeriodEndTimestamp
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.ui.selectors.ZoneScopeSelector
@@ -25,7 +29,6 @@ import com.assistant.core.ui.components.PeriodRangeSelector
 import com.assistant.core.ui.selectors.data.NavigationConfig
 import com.assistant.core.ui.selectors.data.SelectionResult
 import com.assistant.core.ui.selectors.data.SelectionLevel
-import com.assistant.core.ui.selectors.data.FieldSpecificData
 import com.assistant.core.ui.selectors.data.TimestampSelection
 import com.assistant.core.ui.selectors.data.PointerContext
 import com.assistant.core.ui.components.PeriodType
@@ -737,10 +740,7 @@ private fun PointerEnrichmentDialog(
         onDismiss = onDismiss,
         onConfirm = { result ->
             // Create config directly from selection result (no additional parameters)
-            val config = createPointerConfig(
-                selectionResult = result,
-                description = ""  // Optional description removed from UI
-            )
+            val config = createPointerConfig(result)
             val (uiPreview, promptPreview) = createPointerPreview(context, result)
             onConfirm(config, uiPreview, promptPreview)
         }
@@ -796,101 +796,43 @@ private fun PlaceholderEnrichmentDialog(
 }
 
 /**
- * Create JSON configuration for POINTER enrichment
- * Uses context-aware selection with selectedContext and selectedResources
- * Period selection comes from SelectionResult.timestampSelection
+ * The stored form of a POINTER (PointerConfig) from what the selector returns: the zone or tool
+ * by its id, the config attached when its CONFIG context has "config" ticked, the entries when
+ * the DATA context has "data", and the period as filters on timestamp.
  */
-private fun createPointerConfig(
-    selectionResult: SelectionResult,
-    description: String
-): String {
-    return JSONObject().apply {
-        // Core selection data
-        put("selected_path", selectionResult.selectedPath)
-        put("selection_level", selectionResult.selectionLevel.name)
+private fun createPointerConfig(selectionResult: SelectionResult): String {
+    val id = selectionResult.selectedPath.split(".").getOrNull(1)
+        ?: throw IllegalArgumentException("pointer path '${selectionResult.selectedPath}' names no zone nor tool")
+    val resources = selectionResult.selectedResources
+    return PointerConfig(
+        target = PointerTarget(if (selectionResult.selectionLevel == SelectionLevel.ZONE) PointerKind.ZONE else PointerKind.TOOL, id),
+        config = selectionResult.selectedContext == PointerContext.CONFIG && "config" in resources,
+        entries = selectionResult.selectedContext == PointerContext.DATA && "data" in resources,
+        filters = if (selectionResult.timestampSelection.isComplete) periodFilters(selectionResult.timestampSelection) else JSONArray()
+    ).toJson().toString()
+}
 
-        // Context-aware selection
-        put("selected_context", selectionResult.selectedContext.name)
-        put("selected_resources", JSONArray(selectionResult.selectedResources))
-
-        // Period selection (from ZoneScopeSelector)
-        val timestampSelection = selectionResult.timestampSelection
-        if (timestampSelection.isComplete) {
-            put("timestamp_selection", JSONObject().apply {
-                // Store min period (start of range)
-                timestampSelection.minPeriodType?.let { put("min_period_type", it.name) }
-
-                // Absolute period (CHAT)
-                timestampSelection.minPeriod?.let { period ->
-                    put("min_period", JSONObject().apply {
-                        put("timestamp", period.timestamp)
-                        put("type", period.type.name)
-                    })
-                }
-                // Relative period (AUTOMATION)
-                timestampSelection.minRelativePeriod?.let { relativePeriod ->
-                    put("min_relative_period", JSONObject().apply {
-                        put("offset", relativePeriod.offset)
-                        put("type", relativePeriod.type.name)
-                    })
-                }
-                // Custom date (always absolute)
-                timestampSelection.minCustomDateTime?.let { put("min_custom_date_time", it) }
-                // NOW marker
-                if (timestampSelection.minIsNow) {
-                    put("min_is_now", true)
-                }
-
-                // Store max period (end of range)
-                timestampSelection.maxPeriodType?.let { put("max_period_type", it.name) }
-
-                // Absolute period (CHAT)
-                timestampSelection.maxPeriod?.let { period ->
-                    put("max_period", JSONObject().apply {
-                        put("timestamp", period.timestamp)
-                        put("type", period.type.name)
-                    })
-                }
-                // Relative period (AUTOMATION)
-                timestampSelection.maxRelativePeriod?.let { relativePeriod ->
-                    put("max_relative_period", JSONObject().apply {
-                        put("offset", relativePeriod.offset)
-                        put("type", relativePeriod.type.name)
-                    })
-                }
-                // Custom date (always absolute)
-                timestampSelection.maxCustomDateTime?.let { put("max_custom_date_time", it) }
-                // NOW marker
-                if (timestampSelection.maxIsNow) {
-                    put("max_is_now", true)
-                }
-            })
-        }
-        if (description.isNotBlank()) put("description", description)
-
-        // Add field-specific data if present
-        selectionResult.fieldSpecificData?.let { fieldData ->
-            put("field_specific_data", JSONObject().apply {
-                when (fieldData) {
-                    is FieldSpecificData.TimestampData -> {
-                        put("type", "timestamp")
-                        put("min_timestamp", fieldData.minTimestamp)
-                        put("max_timestamp", fieldData.maxTimestamp)
-                        put("description", fieldData.description)
-                    }
-                    is FieldSpecificData.NameData -> {
-                        put("type", "name")
-                        put("selected_names", fieldData.selectedNames)
-                        put("available_names", fieldData.availableNames)
-                    }
-                    is FieldSpecificData.DataValues -> {
-                        put("type", "data")
-                        put("values", fieldData.values)
-                    }
-                }
-            })
-        }
-    }.toString()
+/**
+ * A period as filters on timestamp, from its first instant to its last: "NOW" and a relative
+ * period as they are, resolved at each send; a date or a period picked, in milliseconds.
+ */
+private fun periodFilters(selection: TimestampSelection): JSONArray {
+    val start: Any? = when {
+        selection.minIsNow -> "NOW"
+        else -> selection.minRelativePeriod?.let { "${it.offset}_${it.type.name}" }
+            ?: selection.minCustomDateTime
+            ?: selection.minPeriod?.timestamp
+    }
+    val end: Any? = when {
+        selection.maxIsNow -> "NOW"
+        else -> selection.maxRelativePeriod?.let { "${it.offset}_${it.type.name}" }
+            ?: selection.maxCustomDateTime
+            ?: selection.maxPeriod?.let { getPeriodEndTimestamp(it) }
+    }
+    return JSONArray().apply {
+        start?.let { put(JSONObject().put("field", "timestamp").put("op", ">=").put("value", it)) }
+        end?.let { put(JSONObject().put("field", "timestamp").put("op", "<=").put("value", it)) }
+    }
 }
 
 /**

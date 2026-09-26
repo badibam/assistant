@@ -19,6 +19,7 @@ import com.assistant.core.versioning.ToolConfigsAtV39
 import com.assistant.core.versioning.CatchUpAtV41
 import com.assistant.core.versioning.FormatNullsAtV42
 import com.assistant.core.versioning.TrackingUnitAtV43
+import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
 import org.json.JSONObject
@@ -693,6 +694,9 @@ class BackupService(private val context: Context) : ExecutableService {
             }
             if (fromVersion < 43 && toVersion >= 43) {
                 TrackingUnitAtV43.backup(data)
+            }
+            if (fromVersion < 44 && toVersion >= 44) {
+                PointerAtV44.backup(data)
             }
 
             // Transform app settings
