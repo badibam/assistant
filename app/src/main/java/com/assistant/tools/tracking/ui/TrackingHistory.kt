@@ -117,7 +117,6 @@ fun TrackingHistory(
             try {
                 // Prepare parameters according to period filter
                 val params = mutableMapOf<String, Any>(
-                    "operation" to "get_entries",
                     "tool_instance_id" to toolInstanceId,
                     "limit" to entriesLimit,
                     "page" to currentPage

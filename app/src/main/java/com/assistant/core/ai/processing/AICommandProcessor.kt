@@ -73,23 +73,14 @@ class AICommandProcessor(private val context: Context) {
                     }
                 }
 
-                // Parameters the prompt used to document and the transformer never read.
-                // They were dropped in silence: a nested 'period' left the query unfiltered over
-                // the whole history, which an AI reading the old delete example took for one month.
-                // The shapes may have been learned in past sessions, so they are named and refused.
-                // A period is now a filter on timestamp: the bounds it used to be set with are
-                // refused by name too, having been documented until then.
-                for (param in listOf("period", "period_start", "period_end", "start_time", "end_time")) {
-                    if (command.params.containsKey(param)) {
-                        val errorMsg = s.shared("ai_error_command_prefix")
-                            .format(index, command.type, s.shared("ai_error_param_period").format(param))
-                        validationErrors.add(errorMsg)
-                        LogManager.aiService(errorMsg, "WARN")
-                    }
-                }
-                if (command.params.containsKey("offset")) {
-                    val errorMsg = s.shared("ai_error_command_prefix")
-                        .format(index, command.type, s.shared("ai_error_param_offset"))
+                // A parameter the transformer does not read would be dropped in silence, and the
+                // query run without it: a period the AI believed set would read the whole history.
+                // So anything outside the documented ones is refused, named.
+                for (param in command.params.keys - TOOL_DATA_PARAMS) {
+                    val errorMsg = s.shared("ai_error_command_prefix").format(
+                        index, command.type,
+                        s.shared("service_error_param_unknown").format(param, TOOL_DATA_PARAMS.joinToString(", "))
+                    )
                     validationErrors.add(errorMsg)
                     LogManager.aiService(errorMsg, "WARN")
                 }
@@ -484,4 +475,8 @@ class AICommandProcessor(private val context: Context) {
         return command.copy(params = enrichedParams)
     }
 
+    companion object {
+        /** The parameters of a TOOL_DATA query, as the L1 prompt documents them. */
+        val TOOL_DATA_PARAMS = setOf("id", "fields", "filters", "limit", "page", "running")
+    }
 }

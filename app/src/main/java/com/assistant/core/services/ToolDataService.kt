@@ -43,6 +43,11 @@ import com.assistant.core.utils.LogManager
  */
 class ToolDataService(private val context: Context) : ExecutableService {
 
+    companion object {
+        /** The parameters of tool_data.get, and the phase the coordinator adds to every call. */
+        private val GET_PARAMS = setOf("tool_instance_id", "fields", "filters", "limit", "page", "running", "phase")
+    }
+
     private val s = Strings.`for`(context = context)
 
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
@@ -318,6 +323,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (toolInstanceId.isEmpty()) {
             LogManager.service("ToolDataService.getEntries - toolInstanceId is empty, returning error", "ERROR")
             return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
+        }
+
+        // A parameter this read does not take would be ignored, and the read widened in silence:
+        // a period set with a key it does not know would return the whole history
+        params.keys().asSequence().firstOrNull { it !in GET_PARAMS }?.let { param ->
+            return OperationResult.error(s.shared("service_error_param_unknown").format(param, (GET_PARAMS - "phase").joinToString(", ")))
         }
 
         // Filtering and pagination parameters

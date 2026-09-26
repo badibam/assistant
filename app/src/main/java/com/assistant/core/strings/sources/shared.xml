@@ -160,6 +160,7 @@
 
     <!-- Tool data - Pagination -->
     <string name="service_error_page_without_limit">Page %1$d requested without \'limit\': with no limit per page, everything fits on page 1. Give \'limit\' to paginate.</string>
+    <string name="service_error_param_unknown">Unknown parameter \'%1$s\'. Parameters: %2$s</string>
     <string name="service_error_filter_unreadable">Unreadable filter: %1$s. A filter is {\"field\": \"data.value\", \"op\": \"&lt;\", \"value\": 10}.</string>
     <string name="service_error_filter_unknown_field">Filter on \'%1$s\': the entries of this tool have no such field to filter on. Fields: %2$s</string>
     <string name="service_error_filter_operator">Filter on \'%1$s\': the condition \'%2$s\' does not apply to a %3$s field. Conditions: %4$s</string>
@@ -214,8 +215,6 @@
     <string name="ai_error_field_invalid_pattern">Unreadable field: %1$s. A field is either a root field with no dot (id, timestamp, name), or data.field_name, or extra.field_name, or state.key. \'data\', \'extra\' and \'state\' on their own are refused: they are containers, a field inside them has to be named. A field holding an object or a list is asked for whole: extra.field_name, not extra.field_name.start.</string>
 
     <!-- AI Errors - Rejected parameters -->
-    <string name="ai_error_param_period">The \'%1$s\' parameter does not exist. A period is a filter on timestamp, in \'filters\': [{\"field\": \"timestamp\", \"op\": \">=\", \"value\": \"-7_DAY\"}].</string>
-    <string name="ai_error_param_offset">The \'offset\' parameter does not exist. Pagination uses \'page\' (starting at 1) and \'limit\'.</string>
 
     <!-- AI Errors - Temporal parameters -->
     <string name="ai_error_period_invalid_iso">Unreadable ISO 8601 date: %1$s. Expected format: 2025-11-23T09:00:00+01:00</string>
