@@ -130,10 +130,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
             dao.insert(settled ?: entity)
         }
 
-        // Notify UI of data change in this tool instance
+        // Notify UI of data change in this tool instance, and of its config when the entry grew it
         val zoneId = getZoneIdForTool(toolInstanceId)
         if (zoneId != null) {
             DataChangeNotifier.notifyToolDataChanged(toolInstanceId, zoneId)
+            if (grownConfig != null) DataChangeNotifier.notifyToolsChanged(zoneId)
         }
 
         return OperationResult.success(
@@ -255,10 +256,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
             dao.update(settled ?: updatedEntity)
         }
 
-        // Notify UI of data change in this tool instance
+        // Notify UI of data change in this tool instance, and of its config when the entry grew it
         val zoneId = getZoneIdForTool(existingEntity.toolInstanceId)
         if (zoneId != null) {
             DataChangeNotifier.notifyToolDataChanged(existingEntity.toolInstanceId, zoneId)
+            if (grownConfig != null) DataChangeNotifier.notifyToolsChanged(zoneId)
         }
 
         return OperationResult.success(

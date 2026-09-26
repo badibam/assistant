@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.fields.CoreFields
 import com.assistant.core.fields.Durations
 import com.assistant.core.fields.FieldContainer
@@ -266,9 +267,18 @@ fun TrackingQuickEntry(
                             value = if (keepsValue) draft.value as? Number else null,
                             unit = draft.unit
                         )
+                        // Read again: the entry just saved may have grown the config (a new unit)
+                        val current = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
+                            .takeIf { it.isSuccess }
+                            ?.mapSingleData("tool_instance") { map -> @Suppress("UNCHECKED_CAST") (map["config"] as? Map<String, Any?>) }
+                            ?.let(JsonUtils::toJSONObject)
+                        if (current == null) {
+                            UI.Toast(context, s.shared("tools_config_error_save"), Duration.LONG)
+                            return@save
+                        }
                         val result = coordinator.processUserAction("tools.update", mapOf(
                             "tool_instance_id" to toolInstanceId,
-                            "config" to JsonUtils.toMap(TrackingConfig.withShortcut(config, shortcut))
+                            "config" to JsonUtils.toMap(TrackingConfig.withShortcut(current, shortcut))
                         ))
                         if (result.isSuccess) onConfigChanged()
                         else UI.Toast(context, result.error ?: s.shared("tools_config_error_save"), Duration.LONG)

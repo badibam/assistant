@@ -67,6 +67,15 @@ fun TrackingScreen(
                         historyRefreshTrigger++
                     }
                 }
+                // A tool of this zone changed its config, perhaps this one from an entry that
+                // brought a new unit or option: the config is read again without the loading
+                // state, which would clear the screen and what it holds
+                is DataChangeEvent.ToolsChanged -> {
+                    if (event.zoneId == toolInstance?.get("zone_id")) {
+                        val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
+                        if (result.isSuccess) toolInstance = result.mapSingleData("tool_instance") { map -> map }
+                    }
+                }
                 else -> {} // Ignore other events
             }
         }
