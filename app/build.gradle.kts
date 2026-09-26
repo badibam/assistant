@@ -308,6 +308,8 @@ dependencies {
     // Real org.json on the JVM: the android.jar stub throws on every call, which would
     // leave the key-rename used by the database migration untestable.
     testImplementation("org.json:json:20240303")
+    // A real SQLite with its JSON functions, to run the entry filters' SQL as the phone would
+    testImplementation("org.xerial:sqlite-jdbc:3.41.2.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

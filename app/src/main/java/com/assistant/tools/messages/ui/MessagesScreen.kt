@@ -452,7 +452,10 @@ private suspend fun loadByStatus(
 ): List<Occurrence> {
     val result = coordinator.processUserAction(
         "tool_data.get",
-        mapOf("tool_instance_id" to toolInstanceId, "status" to status)
+        mapOf(
+            "tool_instance_id" to toolInstanceId,
+            "filters" to listOf(mapOf("field" to "state.status", "op" to "in", "value" to listOf(status)))
+        )
     )
 
     if (!result.isSuccess) {

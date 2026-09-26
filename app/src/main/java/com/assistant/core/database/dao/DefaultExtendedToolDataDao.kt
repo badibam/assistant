@@ -53,24 +53,4 @@ class DefaultExtendedToolDataDao(
     override suspend fun getByItemName(toolInstanceId: String, itemName: String): List<ToolDataEntity> {
         return getByToolInstance(toolInstanceId).filter { it.name == itemName }
     }
-
-    // === Status-aware queries ===
-
-    override suspend fun getByStatus(
-        toolInstanceId: String,
-        status: String,
-        startTime: Long,
-        endTime: Long,
-        limit: Int,
-        offset: Int
-    ): List<ToolDataEntity> =
-        baseDao.getByStatusAndTimeRangePaginated(toolInstanceId, status, startTime, endTime, limit, offset)
-
-    override suspend fun countByStatus(
-        toolInstanceId: String,
-        status: String,
-        startTime: Long,
-        endTime: Long
-    ): Int =
-        baseDao.countByStatusAndTimeRange(toolInstanceId, status, startTime, endTime)
 }

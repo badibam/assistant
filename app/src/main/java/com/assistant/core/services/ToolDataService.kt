@@ -14,9 +14,12 @@ import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.JsonUtils
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.*
 import com.assistant.core.validation.FieldPatternGrammar
+import com.assistant.core.fields.EntryFilters
+import androidx.sqlite.db.SimpleSQLiteQuery
 import com.assistant.core.fields.NumericPrecision
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.validation.SchemaValidator
@@ -330,56 +333,36 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_page_without_limit").format(page))
         }
         val offset = (page - 1) * limit
-        val startTime = if (params.has("start_time")) params.optLong("start_time") else null
-        val endTime = if (params.has("end_time")) params.optLong("end_time") else null
-
-        // Status of the entries to return, for tooltypes whose data has a lifecycle
-        // (Messages occurrences and the future active tooltypes). Combines with the time
-        // range rather than excluding it: a status filter narrows, it does not replace.
-        val status = if (params.has("status")) params.optString("status") else null
 
         val dao = getToolDataDao()
 
         // Only the entries with a DURATION field running, for a screen to show and stop them
         val running = params.optBoolean("running", false)
 
-        val (entries, totalCount) = when {
-            running -> {
-                val data = dao.getRunning(toolInstanceId)
-                Pair(data, data.size)
+        val (entries, totalCount) = if (running) {
+            val data = dao.getRunning(toolInstanceId)
+            Pair(data, data.size)
+        } else {
+            // The value filters, a period being one on timestamp, checked against the tool's
+            // fields: the tool type's, the user's, and the state keys offered as filters
+            val target = when (val loaded = loadWriteTarget(toolInstanceId)) {
+                is WriteTarget.Refused -> return OperationResult.error(loaded.error)
+                is WriteTarget.Ready -> loaded
             }
-            // Status filter, optionally narrowed further by the time range
-            status != null -> {
-                val from = startTime ?: 0
-                val to = endTime ?: Long.MAX_VALUE
-                val count = dao.countByStatusAndTimeRange(toolInstanceId, status, from, to)
-                val data = dao.getByStatusAndTimeRangePaginated(toolInstanceId, status, from, to, limit, offset)
-                Pair(data, count)
+            val declared = ToolTypeManager.getToolType(target.tool.tooltype)?.getEntryFields(target.config, context)
+                ?: return OperationResult.error(s.shared("service_error_data_schema_not_found").format("", target.tool.tooltype))
+            val fields = EntryFilters.filterableFields(declared, userFields(target)) { s.shared(it) }
+            val filters = when (val parsed = EntryFilters.parse(params.optJSONArray("filters") ?: JSONArray(), fields) { s.shared(it) }) {
+                is EntryFilters.Parsed.Refused -> return OperationResult.error(parsed.error)
+                is EntryFilters.Parsed.Ready -> parsed.filters
             }
-            // Both startTime and endTime specified
-            startTime != null && endTime != null -> {
-                val count = dao.countByTimeRange(toolInstanceId, startTime, endTime)
-                val data = dao.getByTimeRangePaginated(toolInstanceId, startTime, endTime, limit, offset)
-                Pair(data, count)
-            }
-            // Only startTime specified (from timestamp >= startTime)
-            startTime != null -> {
-                val count = dao.countByTimeRange(toolInstanceId, startTime, Long.MAX_VALUE)
-                val data = dao.getByTimeRangePaginated(toolInstanceId, startTime, Long.MAX_VALUE, limit, offset)
-                Pair(data, count)
-            }
-            // Only endTime specified (from timestamp <= endTime)
-            endTime != null -> {
-                val count = dao.countByTimeRange(toolInstanceId, 0, endTime)
-                val data = dao.getByTimeRangePaginated(toolInstanceId, 0, endTime, limit, offset)
-                Pair(data, count)
-            }
-            // No time filtering
-            else -> {
-                val count = dao.countByToolInstance(toolInstanceId)
-                val data = dao.getByToolInstancePaginated(toolInstanceId, limit, offset)
-                Pair(data, count)
-            }
+
+            val select = EntryFilters.select(toolInstanceId, filters, fields, limit.takeIf { hasLimit }, offset)
+            val count = EntryFilters.count(toolInstanceId, filters, fields)
+            Pair(
+                dao.getFiltered(SimpleSQLiteQuery(select.clause, select.args.toTypedArray())),
+                dao.countFiltered(SimpleSQLiteQuery(count.clause, count.args.toTypedArray()))
+            )
         }
         
         val totalPages = if (totalCount == 0) 1 else ((totalCount - 1) / limit) + 1

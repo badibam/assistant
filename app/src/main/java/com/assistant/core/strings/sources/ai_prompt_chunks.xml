@@ -227,7 +227,7 @@ The query commands read the data without changing it.
 
 ### Data already supplied
 
-Data the user attached (POINTER enrichments) is already in your context, as earlier system messages, complete for the tool and period it names. Use it directly; query only what is missing, filtered differently, or changed since.
+Data the user attached (POINTER enrichments) is already in your context, as earlier system messages, complete for the tool, period and filters it names. Use it directly; query only what is missing, filtered differently, or changed since.
 
 ### TOOL_DATA
 
@@ -243,8 +243,11 @@ Retrieves the entries of one tool.
   - **State**: `"state.read"`, `"state.running"`, and so on: what the app and its actions wrote on the entry. `state.running` holds the start of each DURATION field running now
   - **No wildcard**: each field is listed on its own
   - **Refused**: `"data"`, `"extra"` and `"state"` alone. They are containers: name a field inside one (`"data.value"`). A path one level deeper is refused too: a field holding an object or a list is asked for whole (`"extra.sleep"`, not `"extra.sleep.start"`)
-- `period_start` (string, optional): start of the time filter, at the root of the params (never inside a `period` object). Formats in Part E
-- `period_end` (string, optional): end of the time filter, at the root of the params. Independent of `period_start`
+- `filters` (array, optional): which entries to return, by the values of their fields. **Every filter must hold**. Each is `{"field": ..., "op": ..., "value": ...}`:
+  - `field`: a path as in `fields` (`"timestamp"`, `"name"`, `"data.value"`, `"extra.mood"`, `"state.read"`)
+  - `op`, by the type of the field: a number, scale, duration, moment, day or time of day takes `<`, `<=`, `=`, `>=`, `>`, `between` (value `[low, high]`); a TEXT `=` or `contains`; a CHOICE `in` (value: a list of options, an entry matching if it holds one of them); a BOOLEAN `=` (`true` or `false`). Any field takes `absent` or `present`, with no value: a field missing from an entry is one left unanswered
+  - A period is a filter on `timestamp`. Dates, periods and durations in Part E
+  - No OR between two fields: make two queries
 - `limit` (number, optional): entries per page
 - `page` (number, optional): page number, starting at 1 (there is no `offset`)
 - `running` (boolean, optional): `true` for the entries with a DURATION field running now, to find a stopwatch to stop
@@ -559,8 +562,10 @@ Returns its whole config, extra fields included:
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value", "data.unit", "extra.mood"],
-    "period_start": "2024-01-01T00:00:00+01:00",
-    "period_end": "2024-02-01T00:00:00+01:00",
+    "filters": [
+      { "field": "timestamp", "op": ">=", "value": "2024-01-01T00:00:00+01:00" },
+      { "field": "timestamp", "op": "<", "value": "2024-02-01T00:00:00+01:00" }
+    ],
     "limit": 50
   }
 }
@@ -609,8 +614,9 @@ The entries of a tool, before writing them:
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id"],
-    "period_start": "2024-01-01T00:00:00+01:00",
-    "period_end": "2024-02-01T00:00:00+01:00"
+    "filters": [
+      { "field": "timestamp", "op": "between", "value": ["2024-01-01T00:00:00+01:00", "2024-01-31T23:59:59+01:00"] }
+    ]
   }
 }
 ```
@@ -794,22 +800,20 @@ A date or a duration, in a value you read or write, is ISO 8601:
 - a length of time: `"PT1H25M"` (1 hour 25 minutes), `"PT90S"`, `"P2DT3H"`
 - a day alone (a DATE field): `"2025-11-23"`; a time of day alone (a TIME field): `"09:00"`
 
-### Periods
+### Periods in filters
 
-`period_start` and `period_end` filter a query by time. Three formats:
+A filter on a moment (`timestamp`, a DATETIME field) or a day (a DATE field) takes three forms of value:
 
 **1. Relative periods (recommended)**: `offset_TYPE`
 - `"-1_DAY"` = yesterday, `"0_WEEK"` = this week, `"-7_DAY"` = the day 7 days ago
 - Types: HOUR, DAY, WEEK, MONTH, YEAR
 - They follow the user\'s settings (start of the day, start of the week)
 
-**2. `"NOW"`**: this exact instant, not a period. Combine it with a relative start for "up to now"
+**2. `"NOW"`**: this exact instant (or today, for a day), not a period
 
-**3. ISO 8601 moments**: for fixed dates, with their offset
+**3. Fixed**: an ISO 8601 moment with its offset, or a day `"2025-11-23"`
 
-- `period_start` and `period_end` are **optional and independent**: give one, the other, or both
-- The formats **mix** (relative start + NOW end)
-- A relative period given for both covers it whole: start `"-1_DAY"` and end `"-1_DAY"` is the whole of yesterday]]></string>
+A relative period is a span, and the condition says which edge of it counts: `>=` and `<` its start, `>` and `<=` its end, `=` the whole of it, `between` from the start of the first value to the end of the second. The forms mix: `["-7_DAY", "NOW"]`.]]></string>
 
 
     <!-- E.2 Period examples [DEGREE 2] -->
@@ -824,8 +828,7 @@ A date or a duration, in a value you read or write, is ISO 8601:
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value"],
-    "period_start": "-1_WEEK",
-    "period_end": "-1_WEEK"
+    "filters": [{ "field": "timestamp", "op": "=", "value": "-1_WEEK" }]
   }
 }
 ```
@@ -838,8 +841,7 @@ A date or a duration, in a value you read or write, is ISO 8601:
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value"],
-    "period_start": "-7_DAY",
-    "period_end": "NOW"
+    "filters": [{ "field": "timestamp", "op": "between", "value": ["-7_DAY", "NOW"] }]
   }
 }
 ```
@@ -852,12 +854,27 @@ A date or a duration, in a value you read or write, is ISO 8601:
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value"],
-    "period_start": "0_MONTH"
+    "filters": [{ "field": "timestamp", "op": ">=", "value": "0_MONTH" }]
   }
 }
 ```
 
-**Note**: `period_end` omitted = up to the last data available.]]></string>
+### Example 4: this month\'s weighings above 80 kg, with a mood noted
+
+```json
+{
+  "type": "TOOL_DATA",
+  "params": {
+    "id": "tracking_weight_123",
+    "fields": ["id", "timestamp", "data.value", "extra.mood"],
+    "filters": [
+      { "field": "timestamp", "op": "=", "value": "0_MONTH" },
+      { "field": "data.value", "op": ">", "value": 80 },
+      { "field": "extra.mood", "op": "present" }
+    ]
+  }
+}
+```]]></string>
 
     <!-- ================================================================ -->
     <!-- PART F: ERROR HANDLING                                           -->

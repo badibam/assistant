@@ -34,7 +34,7 @@ class AICommandProcessor(private val context: Context) {
      * Process AI data commands (queries) with security validation
      *
      * All AI dataCommands are marked as relative (isRelative=true) to ensure:
-     * - AI uses relative period format: period_start/period_end with "offset_TYPE" (e.g., "-7_DAY")
+     * - AI uses relative period format in its filters on dates: "offset_TYPE" (e.g., "-7_DAY")
      * - Automatic resolution using user's dayStartHour and weekStartDay configuration
      * - AI doesn't need to handle timestamps, timezones, or calendar calculations
      *
@@ -43,7 +43,7 @@ class AICommandProcessor(private val context: Context) {
      *   so a run catching up on a past day reads that day; the clock for a chat.
      * @return TransformationResult with executable commands and transformation errors
      */
-    fun processDataCommands(commands: List<DataCommand>, reference: Long): TransformationResult {
+    suspend fun processDataCommands(commands: List<DataCommand>, reference: Long): TransformationResult {
         LogManager.aiService("AICommandProcessor processing ${commands.size} data commands from AI", "DEBUG")
 
         // VALIDATION: Check that TOOL_DATA commands include 'fields' parameter
@@ -77,11 +77,15 @@ class AICommandProcessor(private val context: Context) {
                 // They were dropped in silence: a nested 'period' left the query unfiltered over
                 // the whole history, which an AI reading the old delete example took for one month.
                 // The shapes may have been learned in past sessions, so they are named and refused.
-                if (command.params.containsKey("period")) {
-                    val errorMsg = s.shared("ai_error_command_prefix")
-                        .format(index, command.type, s.shared("ai_error_param_period_object"))
-                    validationErrors.add(errorMsg)
-                    LogManager.aiService(errorMsg, "WARN")
+                // A period is now a filter on timestamp: the bounds it used to be set with are
+                // refused by name too, having been documented until then.
+                for (param in listOf("period", "period_start", "period_end", "start_time", "end_time")) {
+                    if (command.params.containsKey(param)) {
+                        val errorMsg = s.shared("ai_error_command_prefix")
+                            .format(index, command.type, s.shared("ai_error_param_period").format(param))
+                        validationErrors.add(errorMsg)
+                        LogManager.aiService(errorMsg, "WARN")
+                    }
                 }
                 if (command.params.containsKey("offset")) {
                     val errorMsg = s.shared("ai_error_command_prefix")

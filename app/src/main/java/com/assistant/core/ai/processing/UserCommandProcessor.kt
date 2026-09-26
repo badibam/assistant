@@ -26,7 +26,7 @@ class UserCommandProcessor(private val context: Context) {
      *   is building; an automation's scheduled time for the enrichments of its starting message.
      * @return List of ExecutableCommands ready for coordinator dispatch (errors logged but not returned for user commands)
      */
-    fun processCommands(commands: List<DataCommand>, reference: Long): List<ExecutableCommand> {
+    suspend fun processCommands(commands: List<DataCommand>, reference: Long): List<ExecutableCommand> {
         LogManager.aiPrompt("UserCommandProcessor processing ${commands.size} user commands", "DEBUG")
 
         // Delegate to shared transformer

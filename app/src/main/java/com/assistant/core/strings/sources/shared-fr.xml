@@ -160,6 +160,19 @@
 
     <!-- Tool data - Pagination -->
     <string name="service_error_page_without_limit">Page %1$d demandée sans \'limit\' : sans limite par page, tout tient sur la page 1. Précise \'limit\' pour paginer.</string>
+    <string name="service_error_filter_unreadable">Filtre illisible : %1$s. Un filtre s\'écrit {\"field\": \"data.value\", \"op\": \"&lt;\", \"value\": 10}.</string>
+    <string name="service_error_filter_unknown_field">Filtre sur \'%1$s\' : les entrées de cet outil n\'ont pas ce champ à filtrer. Champs : %2$s</string>
+    <string name="service_error_filter_operator">Filtre sur \'%1$s\' : la condition \'%2$s\' ne s\'applique pas à un champ %3$s. Conditions : %4$s</string>
+    <string name="service_error_filter_value">Filtre sur \'%1$s\' avec \'%2$s\' : valeur %3$s illisible, attendu %4$s</string>
+    <string name="filter_value_none">aucune valeur</string>
+    <string name="filter_value_options">une liste d\'options non vide</string>
+    <string name="filter_value_pair">une liste de deux valeurs, la plus petite d\'abord</string>
+    <string name="filter_value_text">un texte</string>
+    <string name="filter_value_number">un nombre</string>
+    <string name="filter_value_millis">des millisecondes</string>
+    <string name="filter_value_date">une date, AAAA-MM-JJ</string>
+    <string name="filter_value_time">une heure, HH:MM</string>
+    <string name="filter_value_boolean">true ou false</string>
 
     <!-- Automations - Catch-up settings -->
     <string name="automation_catch_up_title">Si l\'app n\'a pas tourné à l\'heure prévue</string>
@@ -201,14 +214,13 @@
     <string name="ai_error_field_invalid_pattern">Champ illisible : %1$s. Un champ est soit un champ racine sans point (id, timestamp, name), soit data.nom_du_champ, soit extra.nom_du_champ, soit state.clé. \'data\', \'extra\' et \'state\' seuls sont refusés : ce sont des conteneurs, il faut nommer un champ dedans. Un champ qui contient un objet ou une liste se demande en entier : extra.nom_du_champ, pas extra.nom_du_champ.start.</string>
 
     <!-- AI Errors - Rejected parameters -->
-    <string name="ai_error_param_period_object">Le paramètre \'period\' n\'existe pas. Le filtre temporel se pose avec \'period_start\' et \'period_end\' à la racine des params, jamais dans un objet imbriqué.</string>
+    <string name="ai_error_param_period">Le paramètre \'%1$s\' n\'existe pas. Une période est un filtre sur timestamp, dans \'filters\' : [{\"field\": \"timestamp\", \"op\": \">=\", \"value\": \"-7_DAY\"}].</string>
     <string name="ai_error_param_offset">Le paramètre \'offset\' n\'existe pas. La pagination se fait avec \'page\' (à partir de 1) et \'limit\'.</string>
 
     <!-- AI Errors - Temporal parameters -->
     <string name="ai_error_period_invalid_iso">Date ISO 8601 illisible : %1$s. Format attendu : 2025-11-23T09:00:00+01:00</string>
     <string name="ai_error_period_unknown_format">Période illisible : %1$s. Formats acceptés : période relative (offset_TYPE, ex. -7_DAY), marqueur NOW, ou date ISO 8601.</string>
     <string name="ai_error_period_unknown_type">Type de période inconnu : %1$s. Types acceptés : %2$s</string>
-    <string name="ai_error_timestamp_not_a_number">Le paramètre %1$s doit être un timestamp en millisecondes, reçu : %2$s</string>
 
     <!-- AI Data Types - Enrichment descriptions -->
     <string name="ai_data_zone">données zone</string>
@@ -1362,10 +1374,8 @@
     <string name="ai_data_header_trusted">DONNÉES FIABLES</string>
     <string name="ai_data_header_tool">Outil \'%1$s\'</string>
     <string name="ai_data_result_count">Nombre de résultats : %1$d enregistrements</string>
-    <string name="ai_data_period_range">Période : %1$s à %2$s</string>
-    <string name="ai_data_period_from">Période : à partir de %1$s</string>
-    <string name="ai_data_period_until">Période : jusqu\'à %1$s</string>
-    <string name="ai_data_period_all_time">Période : TOUT TEMPS (aucun filtre)</string>
+    <string name="ai_data_filters">Filtres : %1$s</string>
+    <string name="ai_data_filters_none">Filtres : aucun, tout l\'historique</string>
     <string name="ai_data_limit">Limite : %1$d</string>
     <string name="ai_data_status_filter">Filtre statut : %1$s</string>
     <string name="ai_data_template_filter">Filtre template : %1$s</string>

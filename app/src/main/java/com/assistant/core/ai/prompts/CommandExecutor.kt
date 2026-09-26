@@ -633,23 +633,12 @@ class CommandExecutor(private val context: Context) {
                     headerParts.add("=== ${s.shared("ai_data_header_trusted")}: ${s.shared("ai_data_header_tool").format(toolName)} ===")
                     headerParts.add(s.shared("ai_data_result_count").format(count))
 
-                    // Period info if present
-                    val startTime = command.params["start_time"] as? Long
-                    val endTime = command.params["end_time"] as? Long
-                    // ISO 8601 with its offset, in the app's timezone, like the data below it
-                    val zone = AppConfigManager.getDateTimeConfig().getZoneId()
-                    if (startTime != null && endTime != null) {
-                        val startDate = DateTimeConverter.timestampToISO(startTime, zone)
-                        val endDate = DateTimeConverter.timestampToISO(endTime, zone)
-                        headerParts.add(s.shared("ai_data_period_range").format(startDate, endDate))
-                    } else if (startTime != null) {
-                        val startDate = DateTimeConverter.timestampToISO(startTime, zone)
-                        headerParts.add(s.shared("ai_data_period_from").format(startDate))
-                    } else if (endTime != null) {
-                        val endDate = DateTimeConverter.timestampToISO(endTime, zone)
-                        headerParts.add(s.shared("ai_data_period_until").format(endDate))
+                    // The filters, a period included, written as the model writes them
+                    val filters = command.params["filters"] as? List<*>
+                    if (filters.isNullOrEmpty()) {
+                        headerParts.add(s.shared("ai_data_filters_none"))
                     } else {
-                        headerParts.add(s.shared("ai_data_period_all_time"))
+                        headerParts.add(s.shared("ai_data_filters").format(describeFilters(command, filters)))
                     }
 
                     val limit = command.params["limit"] as? Int
@@ -876,6 +865,31 @@ class CommandExecutor(private val context: Context) {
      *
      * @throws IllegalStateException when the tool or its fields cannot be read
      */
+    /**
+     * The filters of a TOOL_DATA query as the model writes them, their instants and durations in
+     * ISO 8601 by the tool's entry schema: "timestamp >= 2026-09-19T00:00:00+02:00".
+     */
+    private suspend fun describeFilters(command: ExecutableCommand, filters: List<*>): String {
+        val schema = loadEntrySchema(command)
+        val zone = AppConfigManager.getDateTimeConfig().getZoneId()
+        return filters.joinToString(", ") { raw ->
+            val filter = raw as? Map<*, *> ?: return@joinToString raw.toString()
+            val path = filter["field"] as? String ?: ""
+            val leaf = schema.optJSONObject("properties")?.let { properties ->
+                if ('.' in path) properties.optJSONObject(path.substringBefore('.'))
+                    ?.optJSONObject("properties")?.optJSONObject(path.substringAfter('.'))
+                else properties.optJSONObject(path)
+            }
+            fun model(value: Any?) = if (leaf != null) ModelValues.toModel(value, leaf, zone) else value
+            val shown = when (val value = filter["value"]) {
+                null -> ""
+                is List<*> -> value.map { model(it) }.toString()
+                else -> model(value).toString()
+            }
+            "$path ${filter["op"]} $shown".trim()
+        }
+    }
+
     private suspend fun loadEntrySchema(command: ExecutableCommand): JSONObject {
         val toolInstanceId = command.params["tool_instance_id"] as? String
             ?: throw IllegalStateException("No tool_instance_id in ${command.resource}.${command.operation}")

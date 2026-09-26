@@ -123,14 +123,15 @@ fun TrackingHistory(
                     "page" to currentPage
                 )
                 
-                // Add temporal filters according to period type. The end is the next period's
-                // start, since the query's upper bound is exclusive: worked out in the app's
-                // timezone by the period functions, so a day lasts 23 or 25 hours when the
-                // clocks change instead of a fixed 24.
+                // The period as a filter on timestamp, from its first millisecond to its last:
+                // worked out in the app's timezone by the period functions, so a day lasts 23
+                // or 25 hours when the clocks change instead of a fixed 24.
                 if (periodFilter != PeriodFilterType.ALL) {
                     val period = currentPeriod!!
-                    params["start_time"] = period.timestamp
-                    params["end_time"] = getPeriodEndTimestamp(period) + 1
+                    params["filters"] = listOf(
+                        mapOf("field" to "timestamp", "op" to ">=", "value" to period.timestamp),
+                        mapOf("field" to "timestamp", "op" to "<=", "value" to getPeriodEndTimestamp(period))
+                    )
                 }
                 
                 val result = coordinator.processUserAction("tool_data.get", params)
