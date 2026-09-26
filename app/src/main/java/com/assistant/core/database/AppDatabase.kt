@@ -32,6 +32,7 @@ import com.assistant.core.versioning.NumericDecimalsAtV38
 import com.assistant.core.versioning.ToolConfigsAtV39
 import com.assistant.core.versioning.CatchUpAtV41
 import com.assistant.core.versioning.FormatNullsAtV42
+import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -72,7 +73,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 42
+        const val VERSION = 43
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1359,6 +1360,44 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_42_43 = object : Migration(42, 43) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // A numeric tracking tool's units live in "units" alone: see TrackingUnitAtV43
+                val units = mutableMapOf<String, String>()
+                database.query("SELECT id, config_json FROM tool_instances WHERE tooltype = 'tracking'").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        // A config that cannot be read stays as it was and is logged
+                        try {
+                            val config = org.json.JSONObject(cursor.getString(1))
+                            TrackingUnitAtV43.valueUnit("tracking", config)?.let { units[id] = it }
+                            database.execSQL("UPDATE tool_instances SET config_json = ? WHERE id = ?",
+                                arrayOf<Any?>(TrackingUnitAtV43.config("tracking", config).toString(), id))
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 42->43: config of tool $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                var entries = 0
+                units.forEach { (toolId, unit) ->
+                    database.query("SELECT id, data FROM tool_data WHERE tool_instance_id = ?", arrayOf<Any?>(toolId)).use { cursor ->
+                        while (cursor.moveToNext()) {
+                            val id = cursor.getString(0)
+                            // An entry that cannot be read stays as it was and is logged
+                            try {
+                                val data = TrackingUnitAtV43.entryData(org.json.JSONObject(cursor.getString(1)), unit)
+                                database.execSQL("UPDATE tool_data SET data = ? WHERE id = ?", arrayOf<Any?>(data.toString(), id))
+                                entries++
+                            } catch (e: Exception) {
+                                LogManager.database("MIGRATION 42->43: entry $id left as it was: ${e.message}", "ERROR", e)
+                            }
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 42->43: ${units.size} tracking unit(s) moved to their units, $entries entry(ies) rewritten", "INFO")
+            }
+        }
+
         private val MIGRATION_41_42 = object : Migration(41, 42) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // The format settings say "follow the phone" by an absence: see FormatNullsAtV42
@@ -1764,7 +1803,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_38_39,
                     MIGRATION_39_40,
                     MIGRATION_40_41,
-                    MIGRATION_41_42
+                    MIGRATION_41_42,
+                    MIGRATION_42_43
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

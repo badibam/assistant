@@ -48,7 +48,8 @@ object TrackingToolType : ToolTypeContract {
 
     /**
      * A tracking tool's settings: what it follows ("type"), and for that type
-     * - value: the settings of the entries' main field, those of its field type (FieldTypeSettings);
+     * - value: the settings of the entries' main field, those of its field type (FieldTypeSettings)
+     *   but a number's unit;
      * - units: the units a numeric value can be in;
      * - items: the shortcuts, each a name, and for a numeric or counter tool the value it enters
      *   (and for a numeric one its unit, one of the units);
@@ -78,10 +79,12 @@ object TrackingToolType : ToolTypeContract {
                 )
                 kind.key to listOfNotNull(
                     // A number needs its decimals, a scale its bounds and a choice its options:
-                    // their value settings are required
+                    // their value settings are required. A number's unit is not among them: each
+                    // entry takes its own from "units".
                     kind.valueType?.let { valueType ->
                         SettingNode.Group("value", s.tool("schema_config_value"),
-                            FieldTypeSettings.configNodes(valueType, shared::shared),
+                            FieldTypeSettings.configNodes(valueType, shared::shared)
+                                .filterNot { it is SettingNode.Field && it.definition.name == "unit" },
                             required = kind == TrackingKind.NUMERIC || kind == TrackingKind.SCALE || kind == TrackingKind.CHOICE)
                     },
                     if (kind == TrackingKind.NUMERIC)

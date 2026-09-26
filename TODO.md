@@ -5,7 +5,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## En cours
 
 - Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — le pointeur (choix des champs, filtres par valeur), la valeur par défaut portée par un champ, les détails des commandes dans le chat, RÉFÉRENCE. Prochain : concevoir le pointeur.
-- L'unité d'un suivi numérique a deux places dans sa config : `value.unit` (réglage du champ NUMERIC) et `units` (la liste d'où chaque entrée tire son unité). Au rejeu, l'IA a pris la première, et les entrées n'ont pas de `data.unit`. Retirer `unit` du réglage `value` d'un suivi.
 - Un BOOLEAN ou une SCALE sans valeur s'affichent à l'écran comme « non » ou comme le minimum : obligatoires dans une question de l'IA, Confirmer reste grisé sans que rien ne dise pourquoi.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
