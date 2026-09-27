@@ -26,6 +26,10 @@ Conçu le 2026-09-27. Une incarnation, c'est l'IA de l'app qui parle en tant que
 - **L'identité est l'auteur de ce que l'utilisateur lit** : `pre_text`, `post_text`, les questions d'un module de communication, et le texte qu'elle écrit dans les données.
 - **Les noms restent à l'IA de l'app** : un outil, une zone, un champ qu'elle crée portent un nom neutre, lisible dans toute l'app.
 
+## Ce que porte le prompt
+
+La voix, l'esprit et le portrait, toujours : le portrait (court) dit qui parle, et c'est ce que l'identité ne penserait pas à aller chercher.
+
 ## Le bagage
 
 Le prompt ne porte que la liste des ressources (titre + description neutre de l'export). L'identité lit le contenu d'une ressource par une commande de lecture quand elle en a besoin. La description de personae suffit pour commencer ; la réécrire pour l'usage de l'app se décidera à l'usage.
@@ -39,5 +43,4 @@ Le prompt ne porte que la liste des ressources (titre + description neutre de l'
 ## Ouvert
 
 - Ce qu'affiche la ligne en haut de la zone.
-- La place du portrait dans le prompt.
 - Déclencheur de l'implémentation : un premier export publié par personae (aucun n'existe au 2026-09-27).
