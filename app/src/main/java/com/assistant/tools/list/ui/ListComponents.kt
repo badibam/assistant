@@ -64,6 +64,8 @@ internal fun ListItemDialog(
                 fieldType = FieldType.TEXT,
                 required = true
             )
+            // A line between the content and the list's fields, as between two of those fields
+            if (fields.isNotEmpty()) UI.Divider()
             CustomFieldsInput(
                 customFieldsMetadata = fields,
                 values = extra,

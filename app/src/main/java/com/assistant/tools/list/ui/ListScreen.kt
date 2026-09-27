@@ -214,6 +214,8 @@ fun ListScreen(
             fieldType = FieldType.TEXT,
             required = false
         )
+        // A line between the content and the list's fields, as between two of those fields
+        if (fields.isNotEmpty()) UI.Divider()
         com.assistant.core.fields.CustomFieldsInput(
             customFieldsMetadata = fields,
             values = typedExtra,
