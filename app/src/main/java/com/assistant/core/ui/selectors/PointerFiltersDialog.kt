@@ -75,11 +75,21 @@ fun PointerFiltersDialog(
             EntryFilters.parse(JSONArray().put(draftJson), filterable) { s.shared(it) } is EntryFilters.Parsed.Ready
     }
 
+    // The filters set, with the one being written when it is complete: confirming the dialog
+    // keeps what is on screen, without the add button being pressed first
+    fun withDraft(): JSONArray {
+        val all = JSONArray(current)
+        if (!draftValid) return all
+        if (periodBounds != null) for (i in 0 until periodBounds.length()) all.put(periodBounds.get(i))
+        else all.put(JSONObject(draft))
+        return all
+    }
+
     UI.Dialog(
         type = DialogType.CONFIGURE,
         confirmEnabled = !choosing || chosen.isNotEmpty(),
         onCancel = onDismiss,
-        onConfirm = { onConfirm(list, chosen.takeIf { choosing }) }
+        onConfirm = { onConfirm(withDraft(), chosen.takeIf { choosing }) }
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -138,9 +148,7 @@ fun PointerFiltersDialog(
                     draft = JSONObject(draft).put(PERIOD, period.toJson()).toString()
                 }
                 UI.ActionButton(action = ButtonAction.ADD, enabled = draftValid, onClick = {
-                    val all = JSONArray(current)
-                    for (i in 0 until periodBounds!!.length()) all.put(periodBounds.get(i))
-                    current = all.toString()
+                    current = withDraft().toString()
                     draft = "{}"
                 })
             } else if (draftField != null && draftOp != null) {
@@ -148,7 +156,7 @@ fun PointerFiltersDialog(
                     draft = JSONObject(draft).apply { if (value == null) remove("value") else put("value", value) }.toString()
                 }
                 UI.ActionButton(action = ButtonAction.ADD, enabled = draftValid, onClick = {
-                    current = JSONArray(current).put(JSONObject(draft)).toString()
+                    current = withDraft().toString()
                     draft = "{}"
                 })
             }
