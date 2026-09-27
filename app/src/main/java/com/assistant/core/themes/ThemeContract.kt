@@ -122,6 +122,10 @@ interface ThemeContract {
     @Composable
     fun Gauge(fraction: Float)
 
+    /** A horizontal line parting two parts of a screen or a card. */
+    @Composable
+    fun Divider()
+
     /**
      * The grip an item of a reorderable list is dragged by. Only its look: the gesture is the
      * core's (`ReorderableColumn`), which wraps it.

@@ -1,7 +1,6 @@
 package com.assistant.core.ai.ui.automation
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -121,7 +120,7 @@ fun ExecutionCard(
                 }
             }
 
-            Divider()
+            UI.Divider()
 
             // Row 3: Duration | Roundtrips
             Row(
@@ -171,7 +170,7 @@ fun ExecutionCard(
                 }
             }
 
-            Divider()
+            UI.Divider()
 
             // Row 5: VIEW button (right-aligned)
             Row(

@@ -685,6 +685,11 @@ object DefaultTheme : ThemeContract {
     }
 
     @Composable
+    override fun Divider() {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    }
+
+    @Composable
     override fun DragHandle() {
         val context = LocalContext.current
         val iconResource = requireNotNull(com.assistant.core.icons.Icons.drawable(context, "grip-vertical")) {

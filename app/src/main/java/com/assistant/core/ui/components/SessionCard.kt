@@ -1,7 +1,6 @@
 package com.assistant.core.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Divider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +63,7 @@ fun SessionCard(
                 )
             }
 
-            Divider()
+            UI.Divider()
 
             // Row 3: Metadata - Created date | Message count
             Row(
@@ -92,7 +91,7 @@ fun SessionCard(
                 }
             }
 
-            Divider()
+            UI.Divider()
 
             // Row 4: Action buttons (Resume, Rename, Delete)
             Row(

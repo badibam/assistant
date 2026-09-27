@@ -133,6 +133,10 @@ object UI {
     @Composable
     fun Gauge(fraction: Float) = CurrentTheme.current.Gauge(fraction.coerceIn(0f, 1f))
 
+    /** A horizontal line parting two parts of a screen or a card, drawn by the theme. */
+    @Composable
+    fun Divider() = CurrentTheme.current.Divider()
+
     /**
      * A round swatch of a tag color, as the current palette draws it, for choosing one.
      *

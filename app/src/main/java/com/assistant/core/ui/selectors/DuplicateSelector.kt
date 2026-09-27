@@ -168,7 +168,7 @@ fun DuplicateSelector(
                     }
                 }
 
-                Divider()
+                UI.Divider()
 
                 // Content
                 Box(
@@ -224,7 +224,7 @@ fun DuplicateSelector(
                     }
                 }
 
-                Divider()
+                UI.Divider()
 
                 // Actions
                 Row(
