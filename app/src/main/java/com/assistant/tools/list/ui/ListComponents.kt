@@ -30,12 +30,12 @@ import com.assistant.tools.list.ListItem
 
 /**
  * The values an item holds for the list's own fields, on one line, each drawn by its field type
- * and parted by a separator; nothing when it holds none.
+ * and parted by a separator: those it has, and those always shown ("no value" when empty).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ItemValues(fields: List<FieldDefinition>, extra: Map<String, Any?>, context: Context) {
-    val held = fields.mapNotNull { field -> extra[field.name]?.let { field to it } }
+    val held = fields.filter { extra[it.name] != null || it.alwaysVisible }.map { it to extra[it.name] }
     if (held.isEmpty()) return
     val separator = Strings.`for`(context = context).shared("list_item_summary_separator")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

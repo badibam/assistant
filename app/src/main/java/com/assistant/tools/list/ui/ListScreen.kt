@@ -27,6 +27,7 @@ import com.assistant.core.commands.CommandResult
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.defaultValues
 import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolConfigSettings
@@ -48,8 +49,8 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
- * The screen of a list: the items left, reordered by their handle; the checked ones below,
- * greyed, in the order they were checked; a field at the bottom to add an item by its name; and,
+ * The screen of a list: a field at the top to add an item by its name; the items left,
+ * reordered by their handle; the checked ones below, greyed, in the order they were checked; and,
  * once something is checked, the two actions on the checked items.
  *
  * Touching an item's name opens it, for its name and the list's own fields.
@@ -147,6 +148,26 @@ fun ListScreen(
             onRightClick = onConfigureClick
         )
 
+        // Adding an item, at the top: its name; the list's fields take their default values
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(modifier = Modifier.weight(1f)) {
+                UI.FormField(
+                    label = s.tool("add_item_label"),
+                    value = typed,
+                    onChange = { typed = it },
+                    fieldType = FieldType.TEXT,
+                    required = false
+                )
+            }
+            UI.ActionButton(
+                action = ButtonAction.ADD,
+                display = ButtonDisplay.ICON,
+                size = Size.S,
+                enabled = typed.isNotBlank(),
+                onClick = { write({ ListItems.add(coordinator, toolInstanceId, typed, fields.defaultValues()) }) { typed = "" } }
+            )
+        }
+
         if (shown.isEmpty()) UI.Text(s.tool("list_empty"), TextType.CAPTION)
 
         // The items left, in the manual order: the position written is the one the service
@@ -164,33 +185,15 @@ fun ListScreen(
             }
         }
 
-        // The checked items, greyed, in the order they were checked; not reordered
+        // The checked items, greyed, in the order they were checked, parted from the others;
+        // not reordered
         if (checked.isNotEmpty()) {
+            if (left.isNotEmpty()) UI.Divider()
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 checked.forEach { item ->
                     ItemRow(item, fields, onCheck = { write({ ListItems.setChecked(coordinator, item, it) }) }, onOpen = { openItemId = item.id })
                 }
             }
-        }
-
-        // Adding an item: its name, and nothing else to fill in
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(modifier = Modifier.weight(1f)) {
-                UI.FormField(
-                    label = s.tool("add_item_label"),
-                    value = typed,
-                    onChange = { typed = it },
-                    fieldType = FieldType.TEXT,
-                    required = false
-                )
-            }
-            UI.ActionButton(
-                action = ButtonAction.ADD,
-                display = ButtonDisplay.ICON,
-                size = Size.S,
-                enabled = typed.isNotBlank(),
-                onClick = { write({ ListItems.add(coordinator, toolInstanceId, typed, emptyMap()) }) { typed = "" } }
-            )
         }
 
         // The actions on the checked items, while there are some
