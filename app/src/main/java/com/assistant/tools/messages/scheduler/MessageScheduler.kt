@@ -47,6 +47,15 @@ object MessageScheduler : ToolScheduler {
     private const val MAX_EXPECTED_PER_HORIZON = 1000
 
     /**
+     * One pass at a time. Two passes that overlap (the core scheduler's tick, a manual send)
+     * would both read the same pending set and both create what is missing. A pass that finds
+     * one running leaves: that one does the work, and what it did not see goes to the next
+     * tick. It never waits, since a manual send calls it from inside a coordinator operation
+     * that the running pass may be waiting on.
+     */
+    private val passLock = kotlinx.coroutines.sync.Mutex()
+
+    /**
      * One pending occurrence as the scheduler needs it: its identity, when it is due, where
      * it came from, and the part already written into it.
      */
@@ -58,7 +67,10 @@ object MessageScheduler : ToolScheduler {
     )
 
     override suspend fun checkScheduled(context: Context) {
-
+        if (!passLock.tryLock()) {
+            LogManager.service("MessageScheduler: a pass is already running, this one leaves it the work", "DEBUG")
+            return
+        }
         try {
             val coordinator = Coordinator(context)
             val now = System.currentTimeMillis()
@@ -94,6 +106,8 @@ object MessageScheduler : ToolScheduler {
 
         } catch (e: Exception) {
             LogManager.service("MessageScheduler.checkScheduled() failed: ${e.message}", "ERROR", e)
+        } finally {
+            passLock.unlock()
         }
     }
 
@@ -123,7 +137,9 @@ object MessageScheduler : ToolScheduler {
         val settings = com.assistant.core.tools.ToolConfigSettings.read(MessageToolType, config, context)
         val enabled = settings.boolean("enabled")
 
-        val pending = loadPending(coordinator, toolInstanceId, timezone)
+        // Not read, the pending set is unknown: taken for empty, every pass would create again
+        // what already exists. Nothing is created, deleted or fired until it reads.
+        val pending = loadPending(coordinator, toolInstanceId, timezone) ?: return
 
         // Suspended means create nothing and delete nothing: the pending set drains on its own
         // as each occurrence is cancelled at its time, so suspending is never destructive.
@@ -190,10 +206,15 @@ object MessageScheduler : ToolScheduler {
         val existingTimes = futureScheduled.map { it.dueAt }.toSet()
         val expectedTimes = expected.toSet()
 
-        for (orphan in futureScheduled.filter { it.dueAt !in expectedTimes }) {
+        // The recurrence owes one occurrence per time: a second one at the same time is a
+        // duplicate, the first kept
+        val duplicates = futureScheduled.groupBy { it.dueAt }.values.flatMap { it.drop(1) }
+        val orphans = futureScheduled.filter { it.dueAt !in expectedTimes } + duplicates
+
+        for (orphan in orphans.distinctBy { it.id }) {
             val result = coordinator.processUserAction("tool_data.delete", mapOf("id" to orphan.id))
             if (result.isSuccess) {
-                LogManager.service("Deleted orphaned occurrence ${orphan.id} (no longer matches the recurrence)", "INFO")
+                LogManager.service("Deleted occurrence ${orphan.id}: no longer matches the recurrence, or duplicates another", "INFO")
             } else {
                 LogManager.service("Failed to delete orphaned occurrence ${orphan.id}: ${result.error}", "ERROR")
             }
@@ -442,7 +463,8 @@ object MessageScheduler : ToolScheduler {
     // ========================================
 
     /**
-     * Loads every pending occurrence of an instance, with no time bound.
+     * Loads every pending occurrence of an instance, with no time bound; null when they
+     * cannot be read.
      *
      * The status filter is what makes the absence of a bound possible. Asking by time window
      * instead would lose any occurrence left behind by a gap longer than the window — the app
@@ -452,15 +474,15 @@ object MessageScheduler : ToolScheduler {
         coordinator: Coordinator,
         toolInstanceId: String,
         timezone: ZoneId
-    ): List<PendingOccurrence> {
+    ): List<PendingOccurrence>? {
         val result = coordinator.processUserAction("tool_data.get", mapOf(
             "tool_instance_id" to toolInstanceId,
             "filters" to listOf(mapOf("field" to "state.status", "op" to "in", "value" to listOf("pending")))
         ))
 
         if (!result.isSuccess) {
-            LogManager.service("Failed to load pending occurrences of $toolInstanceId: ${result.error}", "ERROR")
-            return emptyList()
+            LogManager.service("Failed to load pending occurrences of $toolInstanceId, nothing done for it: ${result.error}", "ERROR")
+            return null
         }
 
         @Suppress("UNCHECKED_CAST")
