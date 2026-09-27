@@ -44,4 +44,5 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 - **Ordre** : les éléments non cochés dans l'ordre du glisser-déposer, les cochés en bas, grisés, dans l'ordre où ils l'ont été.
 - **Un élément** : un nom obligatoire (`name`, du cœur), rien d'autre de fixe ; une quantité, une échéance, une note sont des champs personnalisés de la liste. Deux éléments peuvent porter le même nom.
 - **Ajout rapide** : un champ de saisie en bas de la liste, sans fenêtre ; toucher un élément ouvre sa fenêtre d'édition. Pas de suggestion à la saisie : elle supposerait un historique.
+- **Tuile sur une zone**, cases cochables sans ouvrir l'outil : ICON et MINIMAL comme tout outil ; LINE, « 3 non cochés » ; CONDENSED et EXTENDED, les premiers non cochés que la place permet, puis « + 5 autres non cochés » ; SQUARE, tous les non cochés, qui défilent dans la tuile ; FULL, tous les éléments, cochés compris (en bas, grisés).
 - **Plus tard** : la remise à zéro planifiée (« tout décocher chaque matin »), avec les événements.
