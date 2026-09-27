@@ -17,3 +17,9 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 - **Un résultat porte la période qu'il couvre** quand sa formule lit une période : sa période de découpage, ou sa portée sans découpage. Un calcul qui lit un état n'a qu'une date.
 - **Même période de découpage = même résultat** : une nouvelle exécution le remplace. Rattraper une saisie tardive, c'est une portée plus large que le découpage ; recalculer un historique, une exécution à la main sur une portée élargie. Pas de recalcul automatique quand une source change : il pourra s'ajouter sans migrer les résultats.
 - Un remplacement qui change la valeur d'un résultat garde la trace de l'ancienne — à préciser.
+- **Ce qu'il calcule** : des entrées nommées et une formule arithmétique sur ces noms (`mange - depense`). Une entrée nommée agrège (somme, moyenne, minimum, maximum, nombre) une expression calculée pour chaque entrée d'un outil désigné ; une constante est une entrée nommée. L'expression peut suivre une référence (`data.value × ref(extra.aliment).kcal_100g ÷ 100`).
+
+## Prérequis de Calcul
+
+- **REFERENCE** (`unified-fields.md`) : sans lui, une entrée ne dit pas à quelle fiche elle correspond, et le calcul entrée par entrée (la nutrition) est impossible.
+- **Une sélection d'entrées au cœur** : un outil, des filtres (période comprise), des champs, avec sa forme enregistrée, sa partie d'écran et sa lecture. Le pointeur d'un message devient cette sélection plus ce qui ne regarde que l'IA (joindre ou mentionner, viser l'app ou une zone) ; Calcul utilise la sélection seule. Aujourd'hui `PointerConfig`, `PointerSelector` et `EnrichmentProcessor` mêlent les deux et vivent dans le code de l'IA.
