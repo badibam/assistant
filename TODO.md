@@ -4,13 +4,14 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — la fin du pointeur, la valeur par défaut portée par un champ, les détails des commandes dans le chat, RÉFÉRENCE. Le pointeur est fait pour une zone et un outil ; ce qui en reste est dans `docs/design/pointer.md`. À vérifier sur l'appareil : le nouveau sélecteur (chat et automation), la migration v44 sur une base qui a des pointeurs, l'historique d'un suivi par période, l'écran Messages, et le rejeu L1 (`docs/ai-prompt-replay.md`, étape 6).
+- Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — la valeur par défaut portée par un champ, les détails des commandes dans le chat, RÉFÉRENCE. À vérifier sur l'appareil : le pointeur (chat et automation, zone et outil), les migrations v44 et v45 sur une base qui a des pointeurs, et le rejeu L1 (`docs/ai-prompt-replay.md`) après les changements de `keep_control` et des modules.
 - Le thème par défaut écrit encore des textes en dur, hors du système de textes : les boutons de ses dialogues (« Confirm », « Confirmer », « Annuler » selon le type, `DefaultTheme.kt`, dialogues et sélecteurs de date et d'heure) — les passer par `s.shared()`.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur
 
+- Une entrée précise comme cible du pointeur (conçue dans `docs/design/pointer.md` : étiquette par type d'outil, liste dans le sélecteur, relecture de l'entrée) — si le besoin apparaît : peut-être superflu, un pointeur d'outil filtré couvre la plupart des cas. La cible APP attend que l'IA sache lire les réglages de l'app.
 - `ToolTypeContract.getAvailableOperations` n'a aucun appelant (le tracking y liste des opérations qui n'existent pas) — à supprimer avec ses quatre implémentations au prochain passage sur le contrat.
 
 - Les exécutions d'une automation décrites comme des entrées (champs déclarés, schéma généré, dates en ISO par ce schéma) — le jour où l'IA les lit ; ce ne sont pas des réglages.
