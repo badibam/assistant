@@ -80,6 +80,8 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 - Champs personnalisés affichés : sur la liste des entrées d'un journal (un par ligne, le nom à la taille du titre, sous un trait qui les sépare du texte), sur une entrée ouverte (un bloc par champ), sur une carte de note et sur une ligne de liste (deux par ligne, le nom en petit) ; un champ « Toujours afficher » vide y dit « Aucune valeur » ; un texte long prend toute la largeur. Décocher « Afficher le nom des champs » dans la config retire les noms partout ; une Liste neuve part sans les noms, les autres outils avec.
 
+- Saisie des champs personnalisés (fenêtre d'un élément de liste, formulaire d'ajout, note, entrée de journal, envoi de Messages, entrée de suivi) : plus de titre « Champs personnalisés », le nom de chaque champ en petit au-dessus de sa saisie, un trait entre deux champs.
+
 ## Réglages et affichage
 
 - Icônes à la place des glyphes : les boutons d'action en icône (enregistrer, supprimer en corbeille, flèches de période, en-têtes) ont leur couleur de bouton et une taille lisible ; dans le chat, les enrichissements du composeur et d'un message, le résultat d'une commande et le compte à rebours de fermeture ; les boutons horaire et déclencheurs d'une automation ; le fournisseur actif ; l'avertissement d'une validation ; le chemin des sélecteurs de copie et de pointeur.

@@ -420,7 +420,8 @@ private fun DurationInput(
  * Renders all custom fields in edit mode.
  *
  * This high-level component iterates over all field definitions and renders
- * a FieldInput for each one. It manages the global state of all field values.
+ * a FieldInput for each one, a line between two, under no title of its own: the form around it
+ * says what it is. It manages the global state of all field values.
  *
  * Supports two modes (priority order):
  * 1. Explicit definitions passed in by the caller
@@ -444,8 +445,6 @@ fun CustomFieldsInput(
     context: Context,
     newEntry: Boolean = false
 ) {
-    val s = Strings.`for`(context = context)
-
     // Resolve field definitions from metadata source
     val resolvedFields = resolveFieldDefinitions(
         toolInstanceId = toolInstanceId,
@@ -471,15 +470,9 @@ fun CustomFieldsInput(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Section title
-        UI.Text(
-            text = s.shared("custom_fields_section_title"),
-            type = TextType.SUBTITLE,
-            fillMaxWidth = true
-        )
-
-        // Render each field
-        resolvedFields.forEach { field ->
+        // Each field with its name small above its input, as in every form, a line between two
+        resolvedFields.forEachIndexed { index, field ->
+            if (index > 0) UI.Divider()
             FieldInput(
                 fieldDef = field,
                 value = values[field.name],
