@@ -42,7 +42,7 @@ val MutableStringListSaver: Saver<MutableList<String>, ArrayList<String>> = Save
 
 /** A message being composed, kept in its stored form (RichMessage JSON). */
 val MessageSegmentsSaver: Saver<List<com.assistant.core.ai.data.MessageSegment>, String> = Saver(
-    save = { com.assistant.core.ai.data.RichMessage(it, "", emptyList()).toJson() },
+    save = { com.assistant.core.ai.data.RichMessage(it).toJson() },
     restore = {
         com.assistant.core.ai.data.RichMessage.fromJson(it)?.segments
             ?: throw IllegalStateException("Saved message segments could not be parsed")

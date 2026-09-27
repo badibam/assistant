@@ -74,6 +74,7 @@
     <string name="pointer_summary_mention_entries">Mention: %1$s. Nothing is attached, the AI can ask for them</string>
     <string name="pointer_summary_attached">Attached: %1$s</string>
     <string name="pointer_prompt_query">entries not attached, read with: %1$s (add the fields you need)</string>
+    <string name="pointer_target_deleted">deleted</string>
     <string name="filter_between">%1$s between %2$s and %3$s</string>
     <string name="filter_low">From</string>
     <string name="filter_high">To</string>
@@ -116,8 +117,8 @@
 
     <string name="ai_enrichment_todo_implement">TODO: implement the %1$s configuration interface</string>
     <string name="ai_enrichment_invalid">invalid enrichment</string>
+    <string name="ai_enrichment_unreadable">names not readable</string>
     <string name="ai_schema_already_included">Schema %1$s already included earlier</string>
-    <string name="label_preview">Preview</string>
     <string name="label_coming_soon">Coming soon</string>
 
     <!-- AI Interface - Session Management -->

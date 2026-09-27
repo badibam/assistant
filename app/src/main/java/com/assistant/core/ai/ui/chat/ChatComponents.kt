@@ -47,9 +47,11 @@ fun ChatMessageBubble(
     val s = remember { Strings.`for`(context = context) }
 
     // Extract text content for clipboard copy
-    val textToCopy = remember(message) {
+    // A user message's blocks name their targets as they are now
+    val richText = message.richContent?.let { com.assistant.core.ai.ui.components.rememberDisplayText(it) }
+    val textToCopy = remember(message, richText) {
         when {
-            message.richContent != null -> message.richContent.toDisplayText()
+            richText != null -> richText
             message.textContent != null -> message.textContent
             message.aiMessage != null -> message.aiMessage.preText
             message.systemMessage != null -> message.systemMessage.summary
@@ -100,7 +102,7 @@ fun ChatMessageBubble(
                         message.richContent != null -> {
                             // Rich message with segments (use UI-friendly version without IDs)
                             UI.Text(
-                                text = message.richContent.toDisplayText(),
+                                text = richText ?: "",
                                 type = TextType.BODY
                             )
                         }

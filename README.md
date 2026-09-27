@@ -87,7 +87,7 @@ cd assistant
 - **Validation** : Hiérarchie App > Zone > Tool > Session > Request
 - **Communication** : questions de l'IA à l'utilisateur sous forme de champs (choix, texte, nombre, date…), ou simple confirmation
 - **Providers** : Abstraction extensible (Claude, OpenAI, DeepSeek)
-- **Composer** : Architecture multi-blocs avec enrichments alternés, double preview UI/Prompt
+- **Composer** : Architecture multi-blocs avec enrichments alternés ; un pointeur nomme sa cible comme elle s'appelle au moment où le message est lu, à l'écran comme pour l'IA
 
 ### Outils
 

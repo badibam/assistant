@@ -121,9 +121,7 @@ data class SessionMessage(
 ### RichMessage et AIMessage
 ```kotlin
 data class RichMessage(
-    val segments: List<MessageSegment>, // Text | EnrichmentBlock
-    val linearText: String, // Calculé avec promptPreview
-    val dataCommands: List<DataCommand> // Calculé
+    val segments: List<MessageSegment> // Text | EnrichmentBlock(type, config) : rien d'autre n'est stocké
 )
 
 data class AIMessage(
@@ -476,11 +474,10 @@ Event NetworkErrorOccurred:
 - ** CREATE** - Créer éléments (schemas pour tooltype)
 - ** MODIFY_CONFIG** - Modifier config outils (schema + config actuelle)
 
-### Double Preview
-**Séparation affichage UI et prompt** :
-- `preview` : Version courte pour UI ("Santé", "Tracking Poids")
-- `promptPreview` : Version détaillée avec IDs pour IA ("Santé (id = zones/zone_123)")
-- Format suppression : pastilles colorées et labels de type (Zone:, Outil:)
+### Texte d'un bloc
+Un bloc ne stocke que son type et sa config ; son texte s'écrit à chaque lecture du message (`EnrichmentText`), qui relit en deux lectures toutes les zones et tous les outils. Un pointeur nomme donc sa cible comme elle s'appelle aujourd'hui, et une cible supprimée se lit « supprimé » ; un échec de lecture s'affiche comme tel, jamais comme une suppression.
+- **À l'écran** (`display`, via `rememberDisplayText`) : « Outil : Poids (Suivi), données, période filtrée ».
+- **Pour l'IA** (`prompt`, dans `PromptManager` à chaque envoi) : le même texte avec l'id de la cible, et pour une mention d'entrées restreintes la requête qui les lit. Un message utilisateur part à l'IA comme texte ; une automation relit donc les noms à chaque exécution.
 
 ### EnrichmentProcessor
 ```kotlin

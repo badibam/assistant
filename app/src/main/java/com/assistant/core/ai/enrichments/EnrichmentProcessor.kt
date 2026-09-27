@@ -31,7 +31,8 @@ class EnrichmentProcessor(
     private val s = Strings.`for`(context = context)
 
     /**
-     * Generate human-readable summary for enrichment display in messages
+     * Generate human-readable summary for enrichment display in messages. A pointer names its
+     * target as it is now, which EnrichmentText reads: it has no summary here.
      */
     fun generateSummary(type: EnrichmentType, config: String): String {
         LogManager.aiEnrichment("EnrichmentProcessor.generateSummary() called with type=$type, config length=${config.length}", "DEBUG")
@@ -40,7 +41,7 @@ class EnrichmentProcessor(
             val configJson = JSONObject(config)
 
             val summary = when (type) {
-                EnrichmentType.POINTER -> generatePointerSummary(configJson)
+                EnrichmentType.POINTER -> throw IllegalArgumentException("a pointer's text is EnrichmentText's")
                 EnrichmentType.USE -> generateUseSummary(configJson)
                 EnrichmentType.CREATE -> generateCreateSummary(configJson)
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigSummary(configJson)
@@ -126,25 +127,6 @@ class EnrichmentProcessor(
     // ========================================================================================
     // Summary Generation
     // ========================================================================================
-
-    /** What a pointer designates and what of it goes with the message, without names. */
-    private fun generatePointerSummary(config: JSONObject): String {
-        val pointer = PointerConfig.fromJson(config)
-        val parts = mutableListOf(
-            when (pointer.target.kind) {
-                PointerKind.ZONE -> s.shared("ai_enrichment_pointer_zone")
-                PointerKind.TOOL -> s.shared("ai_enrichment_pointer_tool")
-                else -> s.shared("ai_enrichment_pointer_generic")
-            }
-        )
-        if (pointer.config) parts.add(s.shared("ai_enrichment_pointer_context_config"))
-        if (pointer.entries) parts.add(s.shared("ai_enrichment_pointer_context_data"))
-        // A period is a filter on timestamp; any other narrows the entries by their values
-        val filtered = (0 until pointer.filters.length()).map { pointer.filters.getJSONObject(it).optString("field") }
-        if ("timestamp" in filtered) parts.add(s.shared("ai_period_filtered"))
-        if (filtered.any { it != "timestamp" }) parts.add(s.shared("ai_values_filtered"))
-        return parts.joinToString(", ")
-    }
 
     private fun generateUseSummary(config: JSONObject): String {
         val toolInstanceId = config.optString("tool_instance_id", "")

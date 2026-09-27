@@ -295,11 +295,7 @@ object AIOrchestrator {
             ))
         }
 
-        // Check if message is empty (no text and no enrichments)
-        val hasText = richMessage.linearText.trim().isNotEmpty()
-        val hasEnrichments = richMessage.segments.any { it is MessageSegment.EnrichmentBlock }
-
-        if (!hasText && !hasEnrichments) {
+        if (richMessage.isEmpty) {
             // Empty message: don't store in history, but still call AI (like implicit "continue")
             LogManager.aiSession("sendMessage: Empty message, skipping storage but continuing sequence", "INFO")
             // Emit UserMessageSent event to trigger AI call without storing empty message

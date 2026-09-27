@@ -109,7 +109,7 @@ private val TextBlocksSaver: Saver<List<TextBlock>, String> = Saver(
             JSONObject()
                 .put("id", block.id)
                 .put("text", block.text)
-                .put("enrichments", RichMessage(block.enrichments, "", emptyList()).toJson())
+                .put("enrichments", RichMessage(block.enrichments).toJson())
         }).toString()
     },
     restore = { saved ->
@@ -135,7 +135,6 @@ private val NullableEnrichmentDialogStateSaver: Saver<EnrichmentDialogState?, St
                 .put("block_id", it.blockId)
                 .put("type", it.type.name)
                 .put("existing_config", it.existingConfig ?: JSONObject.NULL)
-                .put("existing_preview", it.existingPreview ?: JSONObject.NULL)
                 .toString()
         }
     },
@@ -144,8 +143,7 @@ private val NullableEnrichmentDialogStateSaver: Saver<EnrichmentDialogState?, St
         EnrichmentDialogState(
             blockId = json.getString("block_id"),
             type = EnrichmentType.valueOf(json.getString("type")),
-            existingConfig = if (json.isNull("existing_config")) null else json.getString("existing_config"),
-            existingPreview = if (json.isNull("existing_preview")) null else json.getString("existing_preview")
+            existingConfig = if (json.isNull("existing_config")) null else json.getString("existing_config")
         )
     }
 )
@@ -255,9 +253,7 @@ fun UI.RichComposer(
                             keyboardController?.hide()
 
                             LogManager.aiEnrichment("RichComposer Send button clicked with ${blocks.size} blocks")
-                            val richMessage = createRichMessage(context, blocksToSegments(blocks), sessionType)
-                            LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
-                            onSend(richMessage)
+                            onSend(RichMessage(blocksToSegments(blocks)))
                         }
                     ) {
                         UI.Text(
@@ -296,8 +292,7 @@ fun UI.RichComposer(
                     showEnrichmentDialog = EnrichmentDialogState(
                         blockId = block.id,
                         type = enrichment.type,
-                        existingConfig = enrichment.config,
-                        existingPreview = enrichment.preview
+                        existingConfig = enrichment.config
                     )
                 },
                 onEnrichmentRemove = { enrichment ->
@@ -349,8 +344,7 @@ fun UI.RichComposer(
                             showEnrichmentDialog = EnrichmentDialogState(
                                 blockId = activeBlockId,
                                 type = type,
-                                existingConfig = null,
-                                existingPreview = null
+                                existingConfig = null
                             )
                         }
                     )
@@ -382,35 +376,9 @@ fun UI.RichComposer(
             type = dialogState.type,
             existingConfig = dialogState.existingConfig,
             onDismiss = { showEnrichmentDialog = null },
-            onConfirm = { config, uiPreview, promptPreview ->
-                LogManager.aiEnrichment("RichComposer enrichment configured: type=${dialogState.type}, config length=${config.length}, uiPreview='$uiPreview', promptPreview='$promptPreview'")
-
-                // Use EnrichmentProcessor to generate proper summary if preview is empty or generic
-                val enrichmentProcessor = EnrichmentProcessor(context)
-                val finalUiPreview = if (uiPreview.isBlank()) {
-                    LogManager.aiEnrichment("Using EnrichmentProcessor to generate preview for ${dialogState.type}")
-                    enrichmentProcessor.generateSummary(dialogState.type, config)
-                } else {
-                    LogManager.aiEnrichment("Using provided uiPreview for ${dialogState.type}: '$uiPreview'")
-                    uiPreview
-                }
-
-                val finalPromptPreview = if (promptPreview.isBlank()) {
-                    LogManager.aiEnrichment("Using EnrichmentProcessor to generate promptPreview for ${dialogState.type}")
-                    enrichmentProcessor.generateSummary(dialogState.type, config)
-                } else {
-                    LogManager.aiEnrichment("Using provided promptPreview for ${dialogState.type}: '$promptPreview'")
-                    promptPreview
-                }
-
-                val newEnrichment = MessageSegment.EnrichmentBlock(
-                    type = dialogState.type,
-                    config = config,
-                    preview = finalUiPreview,
-                    promptPreview = finalPromptPreview
-                )
-
-                LogManager.aiEnrichment("Created EnrichmentBlock: type=${dialogState.type}, uiPreview='$finalUiPreview', promptPreview='$finalPromptPreview'")
+            onConfirm = { config ->
+                val newEnrichment = MessageSegment.EnrichmentBlock(type = dialogState.type, config = config)
+                LogManager.aiEnrichment("Created EnrichmentBlock: type=${dialogState.type}")
 
                 // Add or update enrichment in the target block, which must exist: a missing one
                 // would drop the enrichment without a word
@@ -453,8 +421,7 @@ fun UI.RichComposer(
 private data class EnrichmentDialogState(
     val blockId: String,
     val type: EnrichmentType,
-    val existingConfig: String?,
-    val existingPreview: String?
+    val existingConfig: String?
 )
 
 /**
@@ -577,7 +544,7 @@ private fun EnrichmentBlockPreview(
             ) {
                 UI.Icon(iconName = block.type.iconName, size = 20.dp)
                 UI.Text(
-                    text = block.preview,
+                    text = rememberDisplayText(block),
                     type = TextType.BODY
                 )
             }
@@ -604,44 +571,6 @@ private fun EnrichmentBlockPreview(
 }
 
 /**
- * Create RichMessage from segments with computed linearText
- * DataCommands are left empty and will be regenerated by AIEventProcessor during execution
- */
-private fun createRichMessage(context: Context, segments: List<MessageSegment>, sessionType: SessionType = SessionType.CHAT): RichMessage {
-    LogManager.aiEnrichment("RichComposer.createRichMessage() called with ${segments.size} segments, sessionType=$sessionType")
-
-    // Compute linearText by joining all content with structured format
-    // Text segments and enrichments previews on separate lines with brackets
-    val linearText = segments.joinToString("\n") { segment ->
-        when (segment) {
-            is MessageSegment.Text -> segment.content
-            is MessageSegment.EnrichmentBlock -> "[${segment.promptPreview}]"
-        }
-    }.trim()
-
-    LogManager.aiEnrichment("Generated linearText: '$linearText'")
-
-    // Count enrichment blocks for logging
-    val enrichmentBlocks = segments.filterIsInstance<MessageSegment.EnrichmentBlock>()
-    LogManager.aiEnrichment("Found ${enrichmentBlocks.size} enrichment blocks in message")
-
-    // DataCommands are always regenerated during prompt building by AIEventProcessor
-    // No need to generate them here for preview - they will be computed with fresh data and resolved schema IDs
-    val dataCommands = emptyList<DataCommand>()
-
-    val richMessage = RichMessage(
-        segments = segments,
-        linearText = linearText,
-        dataCommands = dataCommands
-    )
-
-    LogManager.aiEnrichment("Created RichMessage with linearText='$linearText', enrichments=${enrichmentBlocks.size}")
-    return richMessage
-}
-
-
-
-/**
  * Get button action for enrichment type
  */
 private fun getEnrichmentButtonAction(type: EnrichmentType): ButtonAction {
@@ -661,7 +590,7 @@ private fun EnrichmentConfigDialog(
     type: EnrichmentType,
     existingConfig: String?,
     onDismiss: () -> Unit,
-    onConfirm: (config: String, uiPreview: String, promptPreview: String) -> Unit,
+    onConfirm: (config: String) -> Unit,
     sessionType: SessionType = SessionType.CHAT
 ) {
     when (type) {
@@ -693,7 +622,7 @@ private fun EnrichmentConfigDialog(
 private fun PointerEnrichmentDialog(
     existingConfig: String?,
     onDismiss: () -> Unit,
-    onConfirm: (config: String, uiPreview: String, promptPreview: String) -> Unit,
+    onConfirm: (config: String) -> Unit,
     sessionType: SessionType = SessionType.CHAT
 ) {
     PointerSelector(
@@ -711,19 +640,17 @@ private fun PlaceholderEnrichmentDialog(
     type: EnrichmentType,
     existingConfig: String?,
     onDismiss: () -> Unit,
-    onConfirm: (config: String, uiPreview: String, promptPreview: String) -> Unit
+    onConfirm: (config: String) -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
     var config by rememberSaveable { mutableStateOf(existingConfig ?: "{}") }
-    var preview by rememberSaveable { mutableStateOf("") }
 
     UI.Dialog(
         type = DialogType.CONFIGURE,
         onConfirm = {
-            // For placeholder, use same preview for UI and prompt
-            onConfirm(config, preview, preview)
+            onConfirm(config)
         },
         onCancel = onDismiss
     ) {
@@ -739,14 +666,6 @@ private fun PlaceholderEnrichmentDialog(
             UI.Text(
                 text = s.shared("ai_enrichment_todo_implement").format(type.name),
                 type = TextType.BODY
-            )
-
-            UI.FormField(
-                required = false,
-                label = s.shared("label_preview"),
-                value = preview,
-                onChange = { preview = it },
-                fieldType = FieldType.TEXT
             )
         }
     }

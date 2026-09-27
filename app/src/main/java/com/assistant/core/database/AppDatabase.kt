@@ -34,6 +34,7 @@ import com.assistant.core.versioning.CatchUpAtV41
 import com.assistant.core.versioning.FormatNullsAtV42
 import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
+import com.assistant.core.versioning.EnrichmentTextAtV45
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -74,7 +75,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 44
+        const val VERSION = 45
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1361,6 +1362,27 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_44_45 = object : Migration(44, 45) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // A message stores its segments alone, their texts written when read: see EnrichmentTextAtV45
+                var rewritten = 0
+                database.query("SELECT id, rich_content_json FROM session_messages WHERE rich_content_json IS NOT NULL").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        // A message that cannot be read stays as it was and is logged
+                        try {
+                            val next = EnrichmentTextAtV45.richContent(cursor.getString(1)) ?: continue
+                            database.execSQL("UPDATE session_messages SET rich_content_json = ? WHERE id = ?", arrayOf<Any?>(next, id))
+                            rewritten++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 44->45: message $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 44->45: $rewritten message(s) without their stored texts", "INFO")
+            }
+        }
+
         private val MIGRATION_43_44 = object : Migration(43, 44) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // A pointer names its target by id and its period as filters: see PointerAtV44
@@ -1833,7 +1855,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_40_41,
                     MIGRATION_41_42,
                     MIGRATION_42_43,
-                    MIGRATION_43_44
+                    MIGRATION_43_44,
+                    MIGRATION_44_45
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

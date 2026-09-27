@@ -124,11 +124,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             // For SEED sessions, create an empty USER message as template placeholder
             if (type == "SEED") {
-                val emptyRichMessage = RichMessage(
-                    segments = emptyList(),
-                    linearText = "",
-                    dataCommands = emptyList()
-                )
+                val emptyRichMessage = RichMessage(segments = emptyList())
 
                 val messageEntity = SessionMessageEntity(
                     id = UUID.randomUUID().toString(),
@@ -960,7 +956,9 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             LogManager.aiSession("Found ${sessionEntities.size} CHAT sessions (total: $total, page: $page/$totalPages)", "DEBUG")
 
-            // Build session list with preview and message count
+            // Build session list with preview and message count; the previews' pointers are named
+            // as their targets are now, read once for the whole page
+            val enrichmentText = com.assistant.core.ai.enrichments.EnrichmentText.load(context)
             val sessions = sessionEntities.map { session ->
                 // Get message count
                 val messageCount = dao.getMessageCountForSession(session.id)
@@ -969,13 +967,12 @@ class AISessionService(private val context: Context) : ExecutableService {
                 val firstMessage = dao.getFirstUserMessage(session.id)
                 val preview = if (firstMessage?.richContentJson != null) {
                     try {
-                        val richMessageJson = JSONObject(firstMessage.richContentJson)
-                        val linearText = richMessageJson.optString("linear_text", "")
+                        val text = RichMessage.fromJson(firstMessage.richContentJson)?.let { enrichmentText.display(it) } ?: ""
                         // Truncate to 60 chars
-                        if (linearText.length > 60) {
-                            linearText.substring(0, 60) + "..."
+                        if (text.length > 60) {
+                            text.substring(0, 60) + "..."
                         } else {
-                            linearText
+                            text
                         }
                     } catch (e: Exception) {
                         LogManager.aiSession("Failed to parse richContentJson for preview: ${e.message}", "WARN")

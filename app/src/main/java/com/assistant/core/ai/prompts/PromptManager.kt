@@ -125,13 +125,20 @@ object PromptManager {
             LogManager.aiPrompt("Filtered $filtered messages from prompt", "DEBUG")
         }
 
+        // 7. A user message reaches the AI as text, its pointers naming their targets as they are
+        //    now, with their ids: a message only stores what the user chose (EnrichmentText)
+        val enrichmentText = com.assistant.core.ai.enrichments.EnrichmentText.load(context)
+        val promptMessages = sessionMessages.map { message ->
+            message.richContent?.let { rich -> message.copy(richContent = null, textContent = enrichmentText.prompt(rich)) } ?: message
+        }
+
         LogManager.aiPrompt("Prompt data built: L1=${estimateTokens(level1Content)} tokens, L2=${estimateTokens(level2Content)} tokens, L3=${estimateTokens(level3Content)} tokens, ${sessionMessages.size} messages", "INFO")
 
         return PromptData(
             level1Content = level1Content,
             level2Content = level2Content,
             level3Content = level3Content,
-            sessionMessages = sessionMessages,
+            sessionMessages = promptMessages,
             scheduledExecutionTime = if (sessionType == SessionType.AUTOMATION) {
                 sessionData["scheduled_execution_time"] as? Long
             } else {
@@ -200,21 +207,9 @@ object PromptManager {
         }
     }
 
-    /**
-     * Parse RichMessage from JSON
-     * TODO: Implement full deserialization when needed
-     */
-    private fun parseRichMessage(json: String): RichMessage {
-        // Stub for now - provider only needs linearText
-        val jsonObj = org.json.JSONObject(json)
-        val linearText = jsonObj.optString("linear_text", "")
-
-        return RichMessage(
-            segments = emptyList(), // Provider doesn't need segments
-            linearText = linearText,
-            dataCommands = emptyList() // Provider doesn't need dataCommands
-        )
-    }
+    /** A user message's segments, which step 7 turns into the text the AI reads. */
+    private fun parseRichMessage(json: String): RichMessage =
+        RichMessage.fromJson(json) ?: throw IllegalArgumentException("rich content does not read")
 
     /**
      * Parse AIMessage from JSON

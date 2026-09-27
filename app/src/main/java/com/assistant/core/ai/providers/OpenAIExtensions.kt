@@ -104,10 +104,8 @@ internal fun PromptData.toOpenAIJson(model: String, temperature: Double, maxOutp
  */
 private fun extractTextContent(message: SessionMessage): String? {
     return when {
-        // Rich content has priority (user messages with enrichments)
-        message.richContent != null -> message.richContent.linearText
-
-        // Simple text content
+        // Simple text content, a user message's included: PromptManager writes it from its
+        // segments, pointers named as they are now
         message.textContent != null -> message.textContent
 
         // AI message preText

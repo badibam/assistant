@@ -786,7 +786,7 @@ private fun SeedMode(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
                                         UI.Icon(iconName = block.type.iconName, size = 20.dp)
-                                        UI.Text(text = block.preview, type = TextType.BODY)
+                                        UI.Text(text = com.assistant.core.ai.ui.components.rememberDisplayText(block), type = TextType.BODY)
                                     }
                                 }
                             }
@@ -825,16 +825,7 @@ private fun SeedMode(
                                 }
 
                                 // Build RichMessage from segments
-                                val richMessage = com.assistant.core.ai.data.RichMessage(
-                                    segments = segments,
-                                    linearText = segments.joinToString(" ") { segment ->
-                                        when (segment) {
-                                            is MessageSegment.Text -> segment.content
-                                            is MessageSegment.EnrichmentBlock -> segment.preview
-                                        }
-                                    }.trim(),
-                                    dataCommands = emptyList() // Will be computed when automation executes
-                                )
+                                val richMessage = com.assistant.core.ai.data.RichMessage(segments)
 
                                 // Update message in DB
                                 val updateResult = coordinator.processUserAction(
@@ -865,16 +856,7 @@ private fun SeedMode(
                             try {
                                 // Step 1: Refresh message (update DB + reload)
                                 if (userMessageId != null) {
-                                    val richMessage = com.assistant.core.ai.data.RichMessage(
-                                        segments = segments,
-                                        linearText = segments.joinToString(" ") { segment ->
-                                            when (segment) {
-                                                is MessageSegment.Text -> segment.content
-                                                is MessageSegment.EnrichmentBlock -> segment.preview
-                                            }
-                                        }.trim(),
-                                        dataCommands = emptyList()
-                                    )
+                                    val richMessage = com.assistant.core.ai.data.RichMessage(segments)
 
                                     val updateMsgResult = coordinator.processUserAction(
                                         "ai_sessions.update_message",

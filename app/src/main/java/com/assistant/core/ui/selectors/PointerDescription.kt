@@ -2,6 +2,7 @@ package com.assistant.core.ui.selectors
 
 import com.assistant.core.ai.enrichments.PointerConfig
 import com.assistant.core.ai.enrichments.PointerKind
+import com.assistant.core.ai.enrichments.PointerPlace
 import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.Durations
 import com.assistant.core.fields.FieldDefinition
@@ -20,7 +21,8 @@ import org.json.JSONObject
 
 /**
  * A pointer in words: the sentence under the selector's boxes that says what will go, the text
- * of its block in the message, and what the AI reads of it.
+ * of its block in a message, and what the AI reads of it. The last two are written from the
+ * stored pointer each time a message is read (EnrichmentText).
  */
 object PointerDescription {
 
@@ -120,26 +122,36 @@ object PointerDescription {
         }
     }
 
-    /** The text of the pointer's block in the message: the place, and what goes with it. */
-    fun preview(selection: PointerSelection, s: StringsContext): String {
-        val kind = s.shared(if (selection.level == PointerKind.TOOL) "ai_enrichment_pointer_tool" else "ai_enrichment_pointer_zone")
-        val parts = listOfNotNull(
-            "$kind : ${targetName(selection)}",
-            s.shared("ai_enrichment_pointer_context_config").takeIf { selection.config },
-            s.shared("ai_enrichment_pointer_context_data").takeIf { selection.entries },
-            s.shared("ai_period_filtered").takeIf { periodFilters("timestamp", selection.period, { it.timestamp }, day = null).length() > 0 },
-            s.shared("ai_values_filtered").takeIf { selection.filters.length() > 0 }
-        )
-        return parts.joinToString(", ")
+    /**
+     * The text of a pointer's block: the kind and the name of its target as it is now ([place],
+     * null once deleted, a tool with its type), then what goes with it and what narrows it.
+     */
+    fun block(pointer: PointerConfig, place: PointerPlace?, s: StringsContext): String {
+        val kind = s.shared(if (pointer.target.kind == PointerKind.TOOL) "ai_enrichment_pointer_tool" else "ai_enrichment_pointer_zone")
+        val name = when {
+            place == null -> s.shared("pointer_target_deleted")
+            place.typeName != null -> "${place.name} (${place.typeName})"
+            else -> place.name
+        }
+        // A period is a filter on timestamp; any other narrows the entries by their values
+        val filtered = (0 until pointer.filters.length()).map { pointer.filters.getJSONObject(it).optString("field") }
+        return listOfNotNull(
+            "$kind : $name",
+            s.shared("ai_enrichment_pointer_context_config").takeIf { pointer.config },
+            s.shared("ai_enrichment_pointer_context_data").takeIf { pointer.entries },
+            s.shared("ai_period_filtered").takeIf { "timestamp" in filtered },
+            s.shared("ai_values_filtered").takeIf { filtered.any { it != "timestamp" } }
+        ).joinToString(", ")
     }
 
     /**
-     * What the AI reads of the pointer in the message: the place with its id, and, for entries
+     * What the AI reads of a pointer: the block's text with the target's id, and, for entries
      * narrowed but not attached, the query that reads them, for the AI to run if it needs to.
+     * [fields] are the tool's, which say how each filter's value is written for the AI.
      */
-    fun promptPreview(selection: PointerSelection, pointer: PointerConfig, fields: Map<String, FieldDefinition>, s: StringsContext): String {
-        val base = "${preview(selection, s)} (id = ${pointer.target.id})"
-        if (!selection.narrowed || selection.entries || selection.level != PointerKind.TOOL) return base
+    fun prompt(pointer: PointerConfig, place: PointerPlace?, fields: Map<String, FieldDefinition>, s: StringsContext): String {
+        val base = "${block(pointer, place, s)} (id = ${pointer.target.id})"
+        if (place == null || !pointer.isMention || pointer.filters.length() == 0 || pointer.target.kind != PointerKind.TOOL) return base
         val zone = AppConfigManager.getDateTimeConfig().getZoneId()
         // Instants and durations as the AI writes them, ISO 8601, by the type of their field
         fun model(type: FieldType?, value: Any?): Any? = when {

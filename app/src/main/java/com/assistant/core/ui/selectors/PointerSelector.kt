@@ -45,14 +45,13 @@ private val PointerSelectionSaver: Saver<PointerSelection, String> = Saver(
  *
  * @param relative Whether the pointer is replayed later (an automation's starting message): its
  *   period is then relative, resolved at each run
- * @param onConfirm The pointer's stored form, the text of its block in the message, and what the
- *   AI reads of it
+ * @param onConfirm The pointer's stored form, its text written each time the message is read
  */
 @Composable
 fun PointerSelector(
     relative: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (config: String, preview: String, promptPreview: String) -> Unit
+    onConfirm: (config: String) -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -101,12 +100,7 @@ fun PointerSelector(
         confirmEnabled = selection.complete,
         onCancel = onDismiss,
         onConfirm = {
-            val pointer = selection.pointer { getPeriodEndTimestamp(it) }
-            onConfirm(
-                pointer.toJson().toString(),
-                PointerDescription.preview(selection, s),
-                PointerDescription.promptPreview(selection, pointer, fields, s)
-            )
+            onConfirm(selection.pointer { getPeriodEndTimestamp(it) }.toJson().toString())
         }
     ) {
         Column(
