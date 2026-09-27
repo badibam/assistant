@@ -228,4 +228,13 @@ class FieldValueSchemaTest {
         assertEquals(mapOf("when" to listOf("am")), listOf(back, back.copy(name = "other", defaultValue = null)).defaultValues())
         assertEquals("am", FieldValueSchema.forReader(field) { it }.getJSONArray("default").getString(0))
     }
+
+    /** An update clears a value emptied in the form by sending it as null, and keeps the rest. */
+    @Test
+    fun anEmptiedValueIsSentAsNull() {
+        val sent = extraForUpdate(before = mapOf("mood" to 3, "place" to "home"), after = mapOf("place" to "work", "note" to null))
+        assertTrue(sent.isNull("mood"))
+        assertEquals("work", sent.getString("place"))
+        assertFalse("never held, nothing to clear", sent.has("note"))
+    }
 }

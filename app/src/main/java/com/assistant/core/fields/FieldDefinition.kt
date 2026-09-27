@@ -346,3 +346,13 @@ class ValidationException(message: String, cause: Throwable? = null) : Exception
  */
 fun List<FieldDefinition>.defaultValues(): Map<String, Any?> =
     mapNotNull { field -> field.defaultValue?.let { field.name to it } }.toMap()
+
+/**
+ * The user's fields an update of an entry sends: the values [after] holds, and null for each
+ * one [before] held that is now empty. The service keeps a key it is not sent and clears one sent
+ * as null, so a value emptied in a form must be sent as null to be cleared.
+ */
+fun extraForUpdate(before: Map<String, Any?>, after: Map<String, Any?>): JSONObject {
+    val kept = after.filterValues { it != null }
+    return com.assistant.core.utils.JsonUtils.toJSONObject(kept + (before.keys - kept.keys).associateWith { null })
+}

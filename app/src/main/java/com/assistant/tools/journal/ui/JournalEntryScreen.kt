@@ -68,6 +68,8 @@ fun JournalEntryScreen(
 
     // Custom fields values state (definitions loaded automatically by CustomFieldsInput/Display)
     var customFieldsValues by rememberSaveable(stateSaver = FieldValuesSaver) { mutableStateOf<Map<String, Any?>>(emptyMap()) }
+    // The user's fields as stored, for a save to clear those emptied since
+    var storedCustomFields by rememberSaveable(stateSaver = FieldValuesSaver) { mutableStateOf<Map<String, Any?>>(emptyMap()) }
 
     // Date/time picker states
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
@@ -105,6 +107,7 @@ fun JournalEntryScreen(
                 // Load custom fields values
                 @Suppress("UNCHECKED_CAST")
                 customFieldsValues = (data["extra"] as? Map<String, Any?>) ?: emptyMap()
+                storedCustomFields = customFieldsValues
                 LogManager.ui("Loaded ${customFieldsValues.size} custom field values")
 
                 LogManager.ui("Successfully loaded entry: title=$title")
@@ -195,15 +198,14 @@ fun JournalEntryScreen(
                         }
                     )
 
-                    // Add custom fields if any
-                    if (customFieldsValues.isNotEmpty()) {
-                        params["extra"] = JSONObject(customFieldsValues)
-                    }
+                    // The user's fields, those emptied sent as null to be cleared
+                    params["extra"] = com.assistant.core.fields.extraForUpdate(storedCustomFields, customFieldsValues)
 
                     val result = coordinator.processUserAction("tool_data.update", params)
                     if (result?.isSuccess == true) {
                         LogManager.ui("Successfully saved journal entry")
                         // Back to consultation mode; the entry now exists as saved
+                        storedCustomFields = customFieldsValues.filterValues { it != null }
                         isUnsaved = false
                         isEditing = false
                     } else {

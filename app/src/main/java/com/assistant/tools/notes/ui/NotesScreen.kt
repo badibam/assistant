@@ -392,10 +392,8 @@ private suspend fun updateNote(
         }
     )
 
-    // Add custom fields if any
-    if (customFields.isNotEmpty()) {
-        params["extra"] = JSONObject(customFields)
-    }
+    // The user's fields, those emptied sent as null to be cleared
+    params["extra"] = com.assistant.core.fields.extraForUpdate(note.extra, customFields)
 
     val result = coordinator.processUserAction("tool_data.update", params)
     if (result?.isSuccess == true) {

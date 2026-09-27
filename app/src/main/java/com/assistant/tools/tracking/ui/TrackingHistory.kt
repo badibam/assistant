@@ -198,7 +198,7 @@ fun TrackingHistory(
     }
     
     // Update entry: its name, moment, value and unit, and the user's fields
-    val updateEntry = { entryId: String, draft: TrackingEntryDraft ->
+    val updateEntry = { entryId: String, before: Map<String, Any?>, draft: TrackingEntryDraft ->
         scope.launch {
             try {
                 val params = mutableMapOf<String, Any>(
@@ -206,7 +206,7 @@ fun TrackingHistory(
                     "name" to draft.name,
                     "timestamp" to draft.timestamp,
                     "data" to TrackingConfig.entryData(draft.value, draft.unit),
-                    "extra" to JSONObject(draft.extra)
+                    "extra" to com.assistant.core.fields.extraForUpdate(before, draft.extra)
                 )
                 val result = coordinator.processUserAction("tool_data.update", params)
 
@@ -456,7 +456,7 @@ fun TrackingHistory(
                 nameEditable = true,
                 offerShortcut = false,
                 onConfirm = { draft ->
-                    updateEntry(entry.id, draft)
+                    updateEntry(entry.id, entry.extra?.let { JsonUtils.toMap(JSONObject(it)) } ?: emptyMap(), draft)
                     showEditDialog = false
                     editingEntryId = null
                 },
