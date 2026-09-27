@@ -4,7 +4,7 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 
 ## Tri (provisoire)
 
-- **Liste** : un outil. Une entrée : un nom, une case cochée dans `state`, une position tenue comme celle des notes.
+- **Liste** : un outil. Une entrée : un nom, une case cochée dans `state`, une position tenue comme l'ordre des notes (`settleEntries`).
 - **Objectif** : un outil ; ce qu'est une entrée reste à dire (critère, point d'étape, évaluation).
 - **Calcul** et **Graphique** : deux outils, pas un. Calcul est une source (ses résultats sont lus par les autres outils), Graphique une vue (sa sortie s'affiche). Ce qu'ils partagent vit au cœur : la désignation des entrées (le pointeur) et les agrégations.
 - **Alerte** : probablement pas un outil, mais un cas des événements du cœur (`NOTES.md`, « Events et badges ») — à confirmer.
