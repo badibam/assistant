@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
@@ -60,11 +61,13 @@ interface ReorderItemScope {
  * will land. Each column keeps its own order: a column nested in an item of another is dragged by
  * its own handles, and an item never leaves its column.
  *
- * The new order is given once, on release, by [onMove] — never while dragging. Until another
- * [items] comes, the column shows the moved order, so a list that is written and read back (the notes)
- * does not flash its old order. "Another" is by identity: a caller that derives [items] (sorts,
- * filters) remembers the result until its source changes, or the moved order is dropped at the
- * next recomposition and the old one flashes back until the reload.
+ * The new order is given once, on release, by [onMove] — never while dragging — always the
+ * [onMove] of the latest composition, so it reads the caller's list as it stands. Until [items]
+ * changes, the column shows the moved order, so a list that is written and read back (the notes,
+ * a list's items) does not flash its old order. "Changes" is by content: a list derived anew at
+ * every recomposition, equal to the one moved from, keeps the moved order. [items] must therefore
+ * change once a move is taken into account: a caller that orders positions rather than elements
+ * pairs each position with its element.
  *
  * Dragging near the edge of whatever scrolls around the column scrolls it. The handle also
  * carries "move up" and "move down" as accessibility actions.
@@ -88,10 +91,15 @@ fun <T> ReorderableColumn(
     // How far beyond the lifted item must stay in view: near an edge, the scroll around follows
     val scrollMarginPx = with(LocalDensity.current) { 48.dp.toPx() }
 
-    // The order shown: the moved one while [items] is still the list it was moved from, the
-    // given one as soon as another list comes (by identity: a list read back may be equal)
+    // A drag outlives the composition it started in: what it reads when released is the latest
+    val currentItems by rememberUpdatedState(items)
+    val currentOnMove by rememberUpdatedState(onMove)
+
+    // The order shown: the moved one while [items] is still equal to the list it was moved from,
+    // the given one as soon as a list with other content comes
     var moved by remember { mutableStateOf<Pair<List<T>, List<T>>?>(null) }
-    val shown = moved?.takeIf { it.first === items }?.second ?: items
+    fun shownNow(): List<T> = moved?.takeIf { it.first == currentItems }?.second ?: currentItems
+    val shown = shownNow()
 
     // Where each item sits in the column when nothing is dragged, by index
     val tops = remember { mutableStateMapOf<Int, Float>() }
@@ -109,7 +117,7 @@ fun <T> ReorderableColumn(
     fun offsetOf(index: Int): Float {
         val top = tops[index] ?: return 0f
         val height = heights[index] ?: return 0f
-        val lastBottom = shown.indices.maxOfOrNull { (tops[it] ?: 0f) + (heights[it] ?: 0f) } ?: 0f
+        val lastBottom = shownNow().indices.maxOfOrNull { (tops[it] ?: 0f) + (heights[it] ?: 0f) } ?: 0f
         // Where the item's top now is in the column, less where it rests
         return (fingerInRoot - columnTopInRoot - grabInItem - top).coerceIn(-top, lastBottom - height - top)
     }
@@ -120,7 +128,7 @@ fun <T> ReorderableColumn(
     fun targetOf(index: Int): Int {
         val top = (tops[index] ?: 0f) + offsetOf(index)
         val bottom = top + (heights[index] ?: 0f)
-        return shown.indices.count {
+        return shownNow().indices.count {
             val middle = (tops[it] ?: 0f) + (heights[it] ?: 0f) / 2
             when {
                 it < index -> top >= middle
@@ -131,9 +139,10 @@ fun <T> ReorderableColumn(
     }
 
     fun move(from: Int, to: Int) {
-        if (from == to || to !in shown.indices) return
-        moved = items to shown.toMutableList().apply { add(to, removeAt(from)) }
-        onMove(from, to)
+        val order = shownNow()
+        if (from == to || to !in order.indices) return
+        moved = currentItems to order.toMutableList().apply { add(to, removeAt(from)) }
+        currentOnMove(from, to)
     }
 
     val requester = remember { BringIntoViewRequester() }
@@ -155,6 +164,8 @@ fun <T> ReorderableColumn(
 
         shown.forEachIndexed { index, item ->
             key(key(item)) {
+                // The gesture runs as long as the item is there, its place changing under it
+                val currentIndex by rememberUpdatedState(index)
                 // The others open a gap where the lifted item would land
                 val step = (lifted?.let { heights[it] } ?: 0f) + spacingPx
                 val shift = when {
@@ -184,13 +195,13 @@ fun <T> ReorderableColumn(
                                             .takeIf { index < shown.size - 1 }
                                     )
                                 }
-                                .pointerInput(index, shown.size) {
+                                .pointerInput(Unit) {
                                     fun rootY(position: Offset) = handleCoordinates?.localToRoot(position)?.y ?: 0f
                                     detectDragGestures(
                                         onDragStart = { position ->
                                             fingerInRoot = rootY(position)
-                                            grabInItem = fingerInRoot - columnTopInRoot - (tops[index] ?: 0f)
-                                            dragged = index
+                                            grabInItem = fingerInRoot - columnTopInRoot - (tops[currentIndex] ?: 0f)
+                                            dragged = currentIndex
                                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                         },
                                         onDrag = { change, _ ->
@@ -198,9 +209,10 @@ fun <T> ReorderableColumn(
                                             fingerInRoot = rootY(change.position)
                                         },
                                         onDragEnd = {
-                                            val to = targetOf(index)
+                                            val from = currentIndex
+                                            val to = targetOf(from)
                                             dragged = null
-                                            move(index, to)
+                                            move(from, to)
                                         },
                                         onDragCancel = { dragged = null }
                                     )

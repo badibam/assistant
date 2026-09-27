@@ -193,10 +193,12 @@ private fun ListForm(
     // be open at once. Screen state only, never stored.
     var open by rememberSaveable { mutableStateOf(intArrayOf()) }
 
-    // Positions, not elements, are what the column orders: an edited element is a new object,
-    // and keying the items by it would rebuild the field being typed in at every keystroke
+    // Positions, not elements, key the column: an edited element is a new object, and keying the
+    // items by it would rebuild the field being typed in at every keystroke. Each position comes
+    // with its element, so a move taken into account is a list of other content
     UI.ReorderableColumn(
-        items = values.indices.toList(),
+        items = values.withIndex().toList(),
+        key = { it.index },
         onMove = { from, to ->
             // An element keeps its open state where it lands
             val order = values.indices.toMutableList().apply { add(to, removeAt(from)) }
@@ -204,8 +206,7 @@ private fun ListForm(
             publish(order.map { values[it] })
         },
         spacing = 8.dp
-    ) { _, index ->
-        val item = values[index]
+    ) { _, (index, item) ->
         fun remove() {
             open = open.filter { it != index }.map { if (it > index) it - 1 else it }.toIntArray()
             publish(values.toMutableList().also { it.removeAt(index) })
