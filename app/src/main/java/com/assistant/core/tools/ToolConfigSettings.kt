@@ -22,8 +22,8 @@ object ToolConfigSettings {
     /** Display modes a tool can be shown in, in a zone. */
     private val DISPLAY_MODES = listOf("ICON", "MINIMAL", "LINE", "CONDENSED", "EXTENDED", "SQUARE", "FULL")
 
-    /** The settings every tool has, whatever its type. */
-    fun commonNodes(toolType: ToolTypeContract, context: Context): List<SettingNode> {
+    /** The general settings every tool has, whatever its type. */
+    private fun generalNodes(toolType: ToolTypeContract, context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
         val text: (String) -> String = s::shared
         return listOf(
@@ -46,15 +46,23 @@ object ToolConfigSettings {
                 field("validate_config", text("tools_config_label_config_validation"), FieldType.BOOLEAN, text("tools_base_schema_config_validate_config"), default = false),
                 field("validate_data", text("tools_config_label_data_validation"), FieldType.BOOLEAN, text("tools_base_schema_config_validate_data"), default = false),
                 field("always_send", text("tools_config_label_always_send"), FieldType.BOOLEAN, text("tools_base_schema_config_always_send"), default = false)
-            )),
-            SettingNode.ListOf("extra_fields", text("custom_fields_section_title"),
-                SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true)
+            ))
         )
     }
 
-    /** The whole config of a tool of [toolType]: the common settings, then its type's. */
+    /** The user's own fields, which every tool can add to its entries. */
+    private fun extraFieldsNode(context: Context): SettingNode {
+        val text: (String) -> String = Strings.`for`(context = context)::shared
+        return SettingNode.ListOf("extra_fields", text("custom_fields_section_title"),
+            SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true)
+    }
+
+    /**
+     * The whole config of a tool of [toolType]: the general settings, its type's, then the user's
+     * own fields, which come after the entries' main field they add to.
+     */
     fun nodes(toolType: ToolTypeContract, context: Context): List<SettingNode> =
-        commonNodes(toolType, context) + toolType.getConfigSettings(context)
+        generalNodes(toolType, context) + toolType.getConfigSettings(context) + extraFieldsNode(context)
 
     /** What a new tool of [toolType] starts from: its declared defaults (SettingDefaults). */
     fun defaults(toolType: ToolTypeContract, context: Context): org.json.JSONObject =
