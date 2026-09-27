@@ -89,15 +89,6 @@ object NotesToolType : ToolTypeContract {
         )
     }
 
-    override fun getAvailableOperations(): List<String> {
-        return listOf(
-            "add_entry",
-            "get_entries",
-            "update_entry",
-            "delete_entry"
-        )
-    }
-
     override fun getDefaultIconName(): String {
         return "sticky-note"
     }

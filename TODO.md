@@ -11,7 +11,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## En attente d'un déclencheur
 
 - Une entrée précise comme cible du pointeur (conçue dans `docs/design/pointer.md` : étiquette par type d'outil, liste dans le sélecteur, relecture de l'entrée) — si le besoin apparaît : peut-être superflu, un pointeur d'outil filtré couvre la plupart des cas. La cible APP attend que l'IA sache lire les réglages de l'app.
-- `ToolTypeContract.getAvailableOperations` n'a aucun appelant (le tracking y liste des opérations qui n'existent pas) — à supprimer avec ses quatre implémentations au prochain passage sur le contrat.
 
 - Les exécutions d'une automation décrites comme des entrées (champs déclarés, schéma généré, dates en ISO par ce schéma) — le jour où l'IA les lit ; ce ne sont pas des réglages.
 - Une sauvegarde emporte-t-elle la clé d'API d'un fournisseur (réglage secret) ? — à trancher avant d'ouvrir l'export à un usage partagé.

@@ -72,12 +72,6 @@ object MessageToolType : ToolTypeContract {
         return listOf("bell", "bell-ring", "message-circle", "alarm-clock", "calendar-clock")
     }
 
-    override fun getAvailableOperations(): List<String> {
-        // Reading occurrences and flagging them read or archived go through tool_data, like
-        // any other entry. Sending now is the only thing that is not plain data editing.
-        return listOf("execute")
-    }
-
     override fun getDefaultDisplayMode(): String = "LINE"
 
     // ========================================

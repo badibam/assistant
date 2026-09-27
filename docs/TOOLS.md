@@ -50,7 +50,7 @@ Dossier tools/[type]/ contient :
 
 ### Interface ToolTypeContract
 Interface principale avec méthodes pour :
-- **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultIconName(), getDefaultDisplayMode(), getAvailableOperations()
+- **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultIconName(), getDefaultDisplayMode()
 - **Déclarations** : getEntryFields() (champs des entrées), getConfigSettings() (réglages propres, à côté de la partie commune `ToolConfigSettings`) ; schémas, config par défaut et lecture en sont générés ; configWithOptionsAdded() pour un type qui déclare un choix ouvert dans `data`
 - **Interface utilisateur** : getUsageScreen() @Composable ; l'écran de config est généré depuis la déclaration (`ToolConfigScreen`, `SettingsForm`), et getConfigEditors() y branche les parties qu'un type dessine lui-même, par nom de réglage (la planification de Messages)
 - **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations(), getScheduler()

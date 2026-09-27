@@ -164,13 +164,6 @@ object TrackingToolType : ToolTypeContract {
         return JSONObject(config.toString()).put("units", org.json.JSONArray(TrackingConfig.units(config) + added))
     }
 
-    override fun getAvailableOperations(): List<String> {
-        return listOf(
-            "add_entry", "get_entries", "update_entry", "delete_entry", "delete_all_entries",
-            "start_activity", "stop_activity", "stop_all"
-        )
-    }
-    
     override fun getDefaultIconName(): String {
         return "activity"
     }
