@@ -62,8 +62,12 @@ interface ReorderItemScope {
  *
  * The new order is given once, on release, by [onMove] — never while dragging. Until another
  * [items] comes, the column shows the moved order, so a list that is written and read back (the notes)
- * does not flash its old order. Dragging near the edge of whatever scrolls around the column
- * scrolls it. The handle also carries "move up" and "move down" as accessibility actions.
+ * does not flash its old order. "Another" is by identity: a caller that derives [items] (sorts,
+ * filters) remembers the result until its source changes, or the moved order is dropped at the
+ * next recomposition and the old one flashes back until the reload.
+ *
+ * Dragging near the edge of whatever scrolls around the column scrolls it. The handle also
+ * carries "move up" and "move down" as accessibility actions.
  *
  * @param key What identifies an item across orders, so its state follows it
  */

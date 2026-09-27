@@ -129,8 +129,10 @@ fun ListScreen(
     val settings = ToolConfigSettings.read(ListToolType, loadedConfig, context)
     val removeWhenChecked = settings.boolean(ListToolType.REMOVE_WHEN_CHECKED)
     val fields: List<FieldDefinition> = loadedConfig.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
-    val shown = ListItems.shown(loadedItems)
-    val (checked, left) = shown.partition { it.isChecked }
+    // Kept until the next load: the reorderable column holds a moved order for as long as it is
+    // handed the same list, and a list derived anew at every recomposition would drop it at once
+    val shown = remember(loadedItems) { ListItems.shown(loadedItems) }
+    val (checked, left) = remember(shown) { shown.partition { it.isChecked } }
 
     Column(
         modifier = Modifier
