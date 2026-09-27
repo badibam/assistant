@@ -444,6 +444,7 @@ object UI {
         onLongClick: () -> Unit = { }
     ) {
         // Content defined at core level + tool types with UI.*
+        val toolType = requireNotNull(ToolTypeManager.getToolType(tool.tooltype)) { "No tool type '${tool.tooltype}' for tool ${tool.id}" }
         CurrentTheme.current.ToolCardContainer(
             displayMode = displayMode,
             onClick = onClick, 
@@ -470,16 +471,11 @@ object UI {
                             ToolCardHeader(tool, context)
                         }
                         
-                        // Use Box + weight for text
+                        // Right half: what the tool type shows there
                         Box(
                             modifier = Modifier.weight(1f)
                         ) {
-                            UI.Text(
-                                text = ToolTypeManager.getToolTypeName(tool.tooltype, context),
-                                type = TextType.BODY,
-                                fillMaxWidth = true,
-                                textAlign = TextAlign.Center
-                            )
+                            toolType.TileContent(tool, displayMode)
                         }
                     }
                 }
@@ -493,9 +489,9 @@ object UI {
                                 // TODO: Top free content defined by tool type according to mode
                             }
                         }
-                        // Free zone below defined by tool type
+                        // Below the header: what the tool type shows there
                         Box {
-                            // TODO: Bottom free content defined by tool type according to mode
+                            toolType.TileContent(tool, displayMode)
                         }
                     }
                 }

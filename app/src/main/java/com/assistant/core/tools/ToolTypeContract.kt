@@ -91,6 +91,27 @@ interface ToolTypeContract {
     )
 
     /**
+     * What a tool of this type shows in its tile on a zone, beside the header UI.ToolCard draws:
+     * the right half of a LINE tile, the space under the header of a CONDENSED, EXTENDED, SQUARE
+     * or FULL one. The ICON and MINIMAL tiles have no room for it and never ask.
+     *
+     * A tile that shows something the tool's entries hold loads them itself and reloads on
+     * their change (DataChangeNotifier). By default, a LINE tile names the tool type and the
+     * larger ones show nothing more than their header.
+     */
+    @Composable
+    fun TileContent(tool: com.assistant.core.database.entities.ToolInstance, displayMode: com.assistant.core.ui.DisplayMode) {
+        if (displayMode == com.assistant.core.ui.DisplayMode.LINE) {
+            com.assistant.core.ui.UI.Text(
+                text = getDisplayName(androidx.compose.ui.platform.LocalContext.current),
+                type = com.assistant.core.ui.TextType.BODY,
+                fillMaxWidth = true,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
+
+    /**
      * The fields of this tool type's entries, for a tool instance whose config is [config]:
      * how it uses name and timestamp, its fixed fields in data, and the fields of their state.
      * The user's fields come from the config's extra_fields and are not declared here.
