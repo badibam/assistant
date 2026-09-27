@@ -59,28 +59,31 @@ fun FieldInput(
         }
 
         com.assistant.core.fields.FieldType.NUMERIC -> {
-            val numValue = (value as? Number)?.toDouble() ?: 0.0
             val config = fieldDef.config
 
             // Extract config
             val unit = config?.get("unit") as? String
-            val min = (config?.get("min") as? Number)?.toDouble()
-            val max = (config?.get("max") as? Number)?.toDouble()
             val decimals = (config?.get("decimals") as? Number)?.toInt() ?: 0
-            val step = (config?.get("step") as? Number)?.toDouble()
+
+            fun parse(text: String): Number? = if (decimals == 0) text.toLongOrNull() else text.toDoubleOrNull()
+            // A number reads as it is written: 16000 and 0.5, never 16000.0
+            fun format(number: Number?): String =
+                number?.let { java.math.BigDecimal(it.toString()).stripTrailingZeros().toPlainString() } ?: ""
+
+            // The text typed is kept as typed ("0.", "") while it is being written: rewritten from
+            // the number it parses to, it could not be emptied nor take a decimal point. It is
+            // replaced only when the value changes from outside.
+            var text by rememberSaveable { mutableStateOf(format(value as? Number)) }
+            if (parse(text)?.toDouble() != (value as? Number)?.toDouble()) text = format(value as? Number)
 
             // For now use FormField with NUMERIC type
             // TODO: Replace with dedicated NumericInput component with +/- buttons
             UI.FormField(
                 label = fieldDef.displayName + (unit?.let { " ($it)" } ?: ""),
-                // A whole number reads and writes as one: 16000, not 16000.0
-                value = when {
-                    value == null -> ""
-                    decimals == 0 -> numValue.toLong().toString()
-                    else -> numValue.toString()
-                },
+                value = text,
                 onChange = { newValue ->
-                    onChange(if (decimals == 0) newValue.toLongOrNull() else newValue.toDoubleOrNull())
+                    text = newValue
+                    onChange(parse(newValue))
                 },
                 fieldType = UIFieldType.NUMERIC,
                 required = required
