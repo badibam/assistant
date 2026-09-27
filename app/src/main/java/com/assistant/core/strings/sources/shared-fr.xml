@@ -260,6 +260,7 @@
     <string name="ai_data_field">champ données</string>
     <string name="ai_data_generic">données</string>
     <string name="ai_period_filtered">période filtrée</string>
+    <string name="ai_values_filtered">valeurs filtrées</string>
     <string name="ai_period_specific">période spécifique</string>
     <string name="ai_period_extended">période étendue</string>
 

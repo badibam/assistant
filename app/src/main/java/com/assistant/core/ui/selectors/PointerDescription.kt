@@ -127,7 +127,8 @@ object PointerDescription {
             "$kind : ${targetName(selection)}",
             s.shared("ai_enrichment_pointer_context_config").takeIf { selection.config },
             s.shared("ai_enrichment_pointer_context_data").takeIf { selection.entries },
-            s.shared("ai_period_filtered").takeIf { selection.narrowed }
+            s.shared("ai_period_filtered").takeIf { periodFilters("timestamp", selection.period, { it.timestamp }, day = null).length() > 0 },
+            s.shared("ai_values_filtered").takeIf { selection.filters.length() > 0 }
         )
         return parts.joinToString(", ")
     }

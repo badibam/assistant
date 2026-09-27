@@ -139,7 +139,10 @@ class EnrichmentProcessor(
         )
         if (pointer.config) parts.add(s.shared("ai_enrichment_pointer_context_config"))
         if (pointer.entries) parts.add(s.shared("ai_enrichment_pointer_context_data"))
-        if (pointer.filters.length() > 0) parts.add(s.shared("ai_period_filtered"))
+        // A period is a filter on timestamp; any other narrows the entries by their values
+        val filtered = (0 until pointer.filters.length()).map { pointer.filters.getJSONObject(it).optString("field") }
+        if ("timestamp" in filtered) parts.add(s.shared("ai_period_filtered"))
+        if (filtered.any { it != "timestamp" }) parts.add(s.shared("ai_values_filtered"))
         return parts.joinToString(", ")
     }
 
