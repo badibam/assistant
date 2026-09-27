@@ -13,7 +13,8 @@ import com.assistant.core.utils.LogManager
 
 /**
  * [message] as the user reads it, its blocks naming their targets as they are now
- * (EnrichmentText). Each block reads "…" while the names are read, and says so if they cannot be.
+ * (EnrichmentText): read again when a zone or a tool changes, a rename showing at once. Each
+ * block reads "…" while the names are read, and says so if they cannot be.
  */
 @Composable
 fun rememberDisplayText(message: RichMessage): String {
@@ -26,11 +27,13 @@ fun rememberDisplayText(message: RichMessage): String {
         }
     }.trim()
     val text by produceState(initialValue = withBlocks("…"), message) {
-        value = try {
-            EnrichmentText.load(context).display(message)
-        } catch (e: Exception) {
-            LogManager.aiUI("Enrichment texts not read: ${e.message}", "ERROR", e)
-            withBlocks(s.shared("ai_enrichment_unreadable"))
+        whileNamesHold {
+            value = try {
+                EnrichmentText.load(context).display(message)
+            } catch (e: Exception) {
+                LogManager.aiUI("Enrichment texts not read: ${e.message}", "ERROR", e)
+                withBlocks(s.shared("ai_enrichment_unreadable"))
+            }
         }
     }
     return text
@@ -42,12 +45,22 @@ fun rememberDisplayText(block: MessageSegment.EnrichmentBlock): String {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val text by produceState(initialValue = "…", block) {
-        value = try {
-            EnrichmentText.load(context).display(block)
-        } catch (e: Exception) {
-            LogManager.aiUI("Enrichment text not read: ${e.message}", "ERROR", e)
-            s.shared("ai_enrichment_unreadable")
+        whileNamesHold {
+            value = try {
+                EnrichmentText.load(context).display(block)
+            } catch (e: Exception) {
+                LogManager.aiUI("Enrichment text not read: ${e.message}", "ERROR", e)
+                s.shared("ai_enrichment_unreadable")
+            }
         }
     }
     return text
+}
+
+/** Runs [read] now, then again each time a zone or a tool changes: what a block may name. */
+private suspend fun whileNamesHold(read: suspend () -> Unit) {
+    read()
+    com.assistant.core.utils.DataChangeNotifier.changes.collect { change ->
+        if (change is com.assistant.core.utils.DataChangeEvent.ZonesChanged || change is com.assistant.core.utils.DataChangeEvent.ToolsChanged) read()
+    }
 }
