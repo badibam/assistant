@@ -5,7 +5,7 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 ## Tri (provisoire)
 
 - **Liste** : livrée (`docs/TOOLS.md`).
-- **Objectif** : un outil ; ce qu'est une entrée reste à dire (critère, point d'étape, évaluation).
+- **Objectif** : un outil (section plus bas).
 - **Calcul** et **Graphique** : deux outils, pas un. Calcul est une source (ses résultats sont lus par les autres outils), Graphique une vue (sa sortie s'affiche). Ce qu'ils partagent vit au cœur : la désignation des entrées (le pointeur) et les agrégations.
 - **Alerte** : probablement pas un outil, mais un cas des événements du cœur (`NOTES.md`, « Events et badges ») — à confirmer.
 - **Données structurées**, **questionnaire** : candidats au même rang.
@@ -35,3 +35,9 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 - **Il dessine, ne calcule pas** : aucun regroupement ni agrégation. Un total par jour est un Calcul découpé par jour, que le Graphique dessine ; un nombre n'a ainsi qu'une origine, lisible aussi par les alertes et l'IA.
 - **Grammaire** : un sous-ensemble de Vega-Lite, que l'IA connaît déjà, dessiné nativement en Compose (pas de vue web : le thème garde l'apparence). Deux écarts : les données viennent d'une sélection d'entrées de l'app, jamais recopiées dans la config ; une couleur est un nom de la palette (`TagColor`). La config reste déclarée en champs, pour que son formulaire soit généré comme les autres.
 - **Ouvert** : le sous-ensemble retenu (marques, couches, échelles, période affichée).
+
+## Objectif
+
+Sources : la spec d'origine (arbre objectif → sous-objectifs → items, poids relatifs, seuil de réussite, validation obligatoire en succès ou échec) et le cas « journée-type » testé pendant la refonte des exécutions, retrouvés dans l'historique (`documentation/1 - Synthèse.txt`, `SPECS_REFONTE_EXECUTIONS.md`).
+
+- **Une entrée est une tentative sur une période** : ouverte active, remplie au fil de la période, validée en succès ou échec avec son score. Un objectif ponctuel n'a qu'une tentative ; un objectif récurrent en a une par période, créée par la planification commune. La définition vit dans la config, et la tentative en garde une copie : modifier l'objectif ne change pas le jugement des tentatives passées.
