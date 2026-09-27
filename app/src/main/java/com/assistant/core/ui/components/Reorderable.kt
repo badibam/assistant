@@ -95,17 +95,19 @@ fun <T> ReorderableColumn(
 
     var columnTopInRoot by remember { mutableFloatStateOf(0f) }
 
-    // The drag: which item, and the finger in root coordinates. The item's offset is worked out
-    // from the finger and the column, so it stays under the finger when the column scrolls.
+    // The drag: which item, the finger in root coordinates, and where in the item it took hold.
+    // The item's offset is worked out from the finger and the column, so it stays under the
+    // finger when the column scrolls.
     var dragged by remember { mutableStateOf<Int?>(null) }
     var fingerInRoot by remember { mutableFloatStateOf(0f) }
-    var grabInColumn by remember { mutableFloatStateOf(0f) }
+    var grabInItem by remember { mutableFloatStateOf(0f) }
 
     fun offsetOf(index: Int): Float {
         val top = tops[index] ?: return 0f
         val height = heights[index] ?: return 0f
         val lastBottom = shown.indices.maxOfOrNull { (tops[it] ?: 0f) + (heights[it] ?: 0f) } ?: 0f
-        return (fingerInRoot - columnTopInRoot - grabInColumn).coerceIn(-top, lastBottom - height - top)
+        // Where the item's top now is in the column, less where it rests
+        return (fingerInRoot - columnTopInRoot - grabInItem - top).coerceIn(-top, lastBottom - height - top)
     }
 
     // The place the lifted item would take: after every other item whose middle is above its own
@@ -174,7 +176,7 @@ fun <T> ReorderableColumn(
                                     detectDragGestures(
                                         onDragStart = { position ->
                                             fingerInRoot = rootY(position)
-                                            grabInColumn = fingerInRoot - columnTopInRoot - (tops[index] ?: 0f)
+                                            grabInItem = fingerInRoot - columnTopInRoot - (tops[index] ?: 0f)
                                             dragged = index
                                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                         },
