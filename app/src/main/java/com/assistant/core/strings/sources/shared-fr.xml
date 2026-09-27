@@ -1085,7 +1085,8 @@
     <string name="field_type_schema_display_name_description">Nom affiché à l\'utilisateur pour ce champ personnalisé</string>
     <string name="field_type_schema_type_description">Type de champ personnalisé. Doit correspondre à l\'un des types disponibles (voir liste des field types supportés).</string>
     <string name="field_type_schema_always_visible_description">Si true, ce champ est toujours affiché dans l\'interface (même s\'il est vide). Si false, il n\'est affiché que lorsqu\'il contient une valeur.</string>
-    <string name="field_type_schema_default_value_description">Valeur par défaut optionnelle pour ce champ. Si fournie, sera automatiquement renseignée lors de la création de nouvelles entrées.</string>
+    <string name="field_default_value">Valeur par défaut</string>
+    <string name="field_type_schema_default_value_description">Une valeur de ce champ proposée pour une nouvelle entrée : le formulaire la préremplit et une saisie rapide l\'applique. L\'app ne l\'écrit jamais d\'elle-même ; absente, une nouvelle entrée part sans réponse.</string>
 
     <!-- CUSTOM FIELDS - Default labels for field types -->
     <string name="label_scale_bad">Mauvais</string>
@@ -1098,6 +1099,7 @@
     <string name="field_validation_name_format">Le nom technique doit être en format snake_case (lettres minuscules, chiffres, underscores)</string>
     <string name="field_validation_name_duplicate">Un champ avec le nom technique %1$s existe déjà</string>
     <string name="field_validation_display_name_empty">Le nom d\'affichage ne peut pas être vide</string>
+    <string name="field_validation_default_value">La valeur par défaut de « %1$s » n\'est pas une valeur du champ : %2$s</string>
     <string name="field_validation_config_not_null">Le type %1$s ne nécessite pas de configuration</string>
     <string name="field_validation_text_length_invalid">La longueur de texte \'%1$s\' est invalide. Valeurs possibles : SHORT, MEDIUM, LONG, UNLIMITED</string>
     <string name="field_validation_numeric_min_max">La valeur minimale doit être inférieure ou égale à la valeur maximale</string>

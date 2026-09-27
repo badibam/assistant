@@ -216,4 +216,16 @@ class FieldValueSchemaTest {
     fun anUnreadableField_fails() {
         JSONObject("""{ "name": "f", "display_name": "F", "type": "COLOR" }""").toFieldDefinition()
     }
+
+    /** A field's default value reaches its reader, as a default, and survives its JSON form. */
+    @Test
+    fun aDefaultValueReachesTheReaderAndSurvivesJson() {
+        val field = FieldDefinition("when", "When", null, FieldType.CHOICE, false,
+            mapOf("options" to listOf(mapOf("value" to "am"), mapOf("value" to "pm")), "multiple" to true), defaultValue = listOf("am"))
+
+        val back = field.toJson().toFieldDefinition()
+        assertEquals(listOf("am"), back.defaultValue)
+        assertEquals(mapOf("when" to listOf("am")), listOf(back, back.copy(name = "other", defaultValue = null)).defaultValues())
+        assertEquals("am", FieldValueSchema.forReader(field) { it }.getJSONArray("default").getString(0))
+    }
 }

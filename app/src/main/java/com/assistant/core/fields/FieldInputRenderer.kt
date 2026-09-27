@@ -431,6 +431,9 @@ private fun DurationInput(
  * @param values Current values map (fieldName -> value)
  * @param onValuesChange Callback when any value changes (receives updated full map)
  * @param context Android context for strings and formatting
+ * @param newEntry Whether the entry is being created: each field's default value is then filled
+ *   in once, when the fields are known, where no value is set; a value emptied after that stays
+ *   empty
  */
 @Composable
 fun CustomFieldsInput(
@@ -438,7 +441,8 @@ fun CustomFieldsInput(
     customFieldsMetadata: List<FieldDefinition>? = null,
     values: Map<String, Any?>,
     onValuesChange: (Map<String, Any?>) -> Unit,
-    context: Context
+    context: Context,
+    newEntry: Boolean = false
 ) {
     val s = Strings.`for`(context = context)
 
@@ -448,6 +452,15 @@ fun CustomFieldsInput(
         customFieldsMetadata = customFieldsMetadata,
         context = context
     )
+
+    // Once only, a rotation included: the defaults are a suggestion, not a value held
+    var defaultsApplied by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(resolvedFields) {
+        if (!newEntry || defaultsApplied || resolvedFields.isEmpty()) return@LaunchedEffect
+        defaultsApplied = true
+        val missing = resolvedFields.defaultValues().filterKeys { it !in values }
+        if (missing.isNotEmpty()) onValuesChange(values + missing)
+    }
 
     // Early return if no custom fields defined
     if (resolvedFields.isEmpty()) {

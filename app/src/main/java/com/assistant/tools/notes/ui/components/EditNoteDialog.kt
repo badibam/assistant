@@ -204,7 +204,8 @@ fun EditNoteDialog(
                             customFieldsValues = newValues
                             LogManager.ui("Custom fields values updated")
                         },
-                        context = context
+                        context = context,
+                        newEntry = isCreating
                     )
                 }
 

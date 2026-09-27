@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.CommunicationModule
 import com.assistant.core.ai.data.CommunicationModules
 import com.assistant.core.fields.FieldValue
+import com.assistant.core.fields.defaultValues
 import com.assistant.core.fields.settings.SettingsForm
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
@@ -46,8 +47,11 @@ fun CommunicationModuleCard(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // The answer as stored values, kept across a rotation as its JSON text
-    var answerJson by rememberSaveable { mutableStateOf("{}") }
+    // The answer as stored values, kept across a rotation as its JSON text; it starts with the
+    // default values the AI gave its fields, the answer it suggests
+    var answerJson by rememberSaveable {
+        mutableStateOf(JsonUtils.toJSONObject(module.fields.map { it.definition }.defaultValues()).toString())
+    }
     val answer = remember(answerJson) { JSONObject(answerJson) }
     val isComplete = remember(answerJson) { CommunicationModules.checkAnswer(module, answer, context).isValid }
     // The note added to the answer: null while the user has not asked for one

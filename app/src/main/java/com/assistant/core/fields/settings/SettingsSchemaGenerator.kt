@@ -1,5 +1,6 @@
 package com.assistant.core.fields.settings
 
+import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.FieldValueSchema
 import org.json.JSONArray
 import org.json.JSONObject
@@ -74,10 +75,32 @@ object SettingsSchemaGenerator {
     }
 
     private fun fieldSchema(field: SettingNode.Field, text: (String) -> String): JSONObject =
-        FieldValueSchema.forReader(field.definition, text).also { schema ->
+        valueOfDefinedSchema(field)
+            ?: FieldValueSchema.forReader(field.definition, text).also { schema ->
             field.default?.let { schema.put("default", it) }
             if (field.secret) schema.put(SECRET, true)
         }
+
+    /**
+     * A value of the field being defined, of its type whatever its config: a choice's options are
+     * set beside it, so either shape of choice is taken here and the service checks the value
+     * against the field itself (FieldConfigValidator).
+     */
+    private fun valueOfDefinedSchema(field: SettingNode.Field): JSONObject? {
+        if (!field.valueOfDefined) return null
+        val schema = if (field.definition.type == FieldType.CHOICE) {
+            // One option, or a list of them for a multiple choice or a ranking
+            JSONObject().put("type", org.json.JSONArray().put("string").put("array"))
+        } else {
+            // A number's decimals are a precision rounded at the write, which its schema does
+            // not hold: any will do to write it
+            val decimals = if (field.definition.type == FieldType.NUMERIC || field.definition.type == FieldType.RANGE) mapOf("decimals" to 0) else null
+            FieldValueSchema.of(field.definition.copy(description = null, config = decimals))
+        }
+        schema.put("title", field.definition.displayName)
+        field.definition.description?.let { schema.put("description", it) }
+        return schema
+    }
 
     private fun listSchema(list: SettingNode.ListOf, text: (String) -> String): JSONObject {
         val items = when (val item = list.item) {

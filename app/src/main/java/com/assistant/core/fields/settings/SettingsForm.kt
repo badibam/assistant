@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.FieldInput
+import com.assistant.core.fields.toFieldConfig
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -107,6 +108,18 @@ private fun NodeForm(
             val editor = editors[name]
             when {
                 editor != null -> editor.Edit(stored) { set(name, it) }
+                // A value of the field this object defines, entered as that field: its type, and
+                // the options or bounds set above it, read from the object as it is being edited
+                node.valueOfDefined -> {
+                    val defined = node.definition.copy(
+                        description = null,
+                        config = config.optJSONObject("config")?.toFieldConfig()
+                    )
+                    // A choice without options yet has nothing to offer
+                    val hasValues = defined.type != com.assistant.core.fields.FieldType.CHOICE ||
+                        com.assistant.core.fields.ChoiceSettings.fromConfig(defined.config).options.isNotEmpty()
+                    if (hasValues) FieldInput(defined, JsonUtils.toValue(stored), { set(name, it) }, context, required = false)
+                }
                 // A secret is entered masked, whatever its field type says of its length
                 node.secret -> UI.FormField(
                     label = node.definition.displayName,

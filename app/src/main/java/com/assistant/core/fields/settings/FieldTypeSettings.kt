@@ -51,11 +51,15 @@ object FieldTypeSettings {
     private fun caseNodes(type: FieldType, text: (String) -> String): List<SettingNode> {
         val settings = listOfNotNull(if (type == FieldType.NUMERIC || type == FieldType.RANGE) unit(text) else null) +
             configNodes(type, text)
-        if (settings.isEmpty()) return emptyList()
         // A number or a range needs its decimals, a scale its bounds and a choice its options:
         // their config is required
-        return listOf(SettingNode.Group("config", text("field_config_section_title"), settings,
-            required = type in setOf(FieldType.NUMERIC, FieldType.RANGE, FieldType.SCALE, FieldType.CHOICE)))
+        val config = if (settings.isEmpty()) null else SettingNode.Group("config", text("field_config_section_title"), settings,
+            required = type in setOf(FieldType.NUMERIC, FieldType.RANGE, FieldType.SCALE, FieldType.CHOICE))
+        // A fixed day or instant is hardly a suggestion for every new entry: dates have none
+        val default = if (type == FieldType.DATE || type == FieldType.DATETIME) null
+            else field("default_value", "field_default_value", type, text, description = "field_type_schema_default_value_description")
+                .copy(valueOfDefined = true)
+        return listOfNotNull(config, default)
     }
 
     /**

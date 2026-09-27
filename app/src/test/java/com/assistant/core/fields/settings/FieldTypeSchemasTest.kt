@@ -48,6 +48,21 @@ class FieldTypeSchemasTest {
             "config": { "options": [{ "value": "work" }] } }"""))
     }
 
+    /**
+     * A default value is of the field's type, whatever its config: its options and bounds are
+     * checked by the service against the field itself. A date or an instant has none.
+     */
+    @Test
+    fun aDefaultValueIsOfItsFieldsType() {
+        assertTrue(accepts("""{ "display_name": "Mood", "type": "SCALE", "config": { "min": 1, "max": 5 }, "default_value": 3 }"""))
+        assertTrue(accepts("""{ "display_name": "When", "type": "CHOICE", "config": { "options": [{ "value": "am" }, { "value": "pm" }] }, "default_value": "am" }"""))
+        assertTrue("a multiple choice's default is a list", accepts("""{ "display_name": "Tags", "type": "CHOICE",
+            "config": { "options": [{ "value": "a" }, { "value": "b" }], "multiple": true }, "default_value": ["a", "b"] }"""))
+        assertTrue(accepts("""{ "display_name": "Nap", "type": "DURATION", "default_value": 1800000 }"""))
+        assertFalse("a text for a scale", accepts("""{ "display_name": "Mood", "type": "SCALE", "config": { "min": 1, "max": 5 }, "default_value": "high" }"""))
+        assertFalse("a date has no default", accepts("""{ "display_name": "Due", "type": "DATE", "default_value": "2026-09-27" }"""))
+    }
+
     /** The schema of one type holds that type only. */
     @Test
     fun theSchemaOfOneTypeHoldsThatTypeOnly() {

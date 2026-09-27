@@ -26,10 +26,12 @@ object FieldValueSchema {
     /**
      * The schema of a field's value as a reader gets it -- the AI, an entry or a setting alike:
      * what it is held to, its label as the title, and in its description what the value means
-     * ([reading]) before what the field's own description says.
+     * ([reading]) before what the field's own description says, and its default value, which a
+     * reader proposes for a new entry and the service never writes.
      */
     fun forReader(field: FieldDefinition, text: (String) -> String): JSONObject {
         val schema = of(field).put("title", field.displayName)
+        field.defaultValue?.let { schema.put("default", JSONObject.wrap(it)) }
         val description = listOfNotNull(reading(field, text), field.description).joinToString(" ")
         if (description.isNotEmpty()) schema.put("description", description)
         return schema

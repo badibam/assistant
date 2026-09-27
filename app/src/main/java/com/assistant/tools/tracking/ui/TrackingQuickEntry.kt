@@ -25,6 +25,8 @@ import com.assistant.core.fields.CoreFields
 import com.assistant.core.fields.Durations
 import com.assistant.core.fields.FieldContainer
 import com.assistant.core.fields.FieldInput
+import com.assistant.core.fields.defaultValues
+import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.fields.RunningDurations
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.ButtonAction
@@ -110,8 +112,12 @@ fun TrackingQuickEntry(
         }
     }
 
+    // A new entry takes the default values of the user's fields: the dialog prefills them, a
+    // shortcut touched saves them
+    val extraDefaults = remember(config) { config.optJSONArray("extra_fields")?.toFieldDefinitions()?.defaultValues() ?: emptyMap() }
+
     /** Creates an entry; on success returns its id. */
-    suspend fun create(name: String, timestamp: Long, value: Any?, unit: String?, extra: Map<String, Any?> = emptyMap()): String? {
+    suspend fun create(name: String, timestamp: Long, value: Any?, unit: String?, extra: Map<String, Any?> = extraDefaults): String? {
         val params = mutableMapOf<String, Any>(
             "tool_instance_id" to toolInstanceId,
             "tooltype" to "tracking",
@@ -250,7 +256,7 @@ fun TrackingQuickEntry(
                 timestamp = dialogTimestamp,
                 value = dialogValues["value"],
                 unit = dialogValues["unit"] as? String,
-                extra = emptyMap()
+                extra = extraDefaults
             ),
             nameEditable = dialogFree,
             offerShortcut = dialogFree,

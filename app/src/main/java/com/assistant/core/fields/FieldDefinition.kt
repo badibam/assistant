@@ -19,6 +19,9 @@ import org.json.JSONObject
  * @property type Field type (immutable after creation)
  * @property alwaysVisible Whether to display the field in read mode even when empty
  * @property config Type-specific configuration (required for types like SCALE)
+ * @property defaultValue A value of this field, in its stored form, suggested for a new entry:
+ *   the form prefills it, a quick action applies it, the AI reads it in the schema. Never written
+ *   by the service on its own: an absent value means "no answer" (docs/DATA.md)
  */
 data class FieldDefinition(
     val name: String,
@@ -26,7 +29,8 @@ data class FieldDefinition(
     val description: String?,
     val type: FieldType,
     val alwaysVisible: Boolean,
-    val config: Map<String, Any>?
+    val config: Map<String, Any>?,
+    val defaultValue: Any? = null
 )
 
 /**
@@ -48,6 +52,7 @@ fun FieldDefinition.toJson(): JSONObject {
         if (config != null) {
             put("config", JSONObject(config))
         }
+        defaultValue?.let { put("default_value", JSONObject.wrap(it)) }
     }
 }
 
@@ -70,7 +75,8 @@ fun JSONObject.toFieldDefinition(): FieldDefinition {
                 )
             },
             alwaysVisible = optBoolean("always_visible", false),
-            config = optJSONObject("config")?.toFieldConfig()
+            config = optJSONObject("config")?.toFieldConfig(),
+            defaultValue = com.assistant.core.utils.JsonUtils.toValue(opt("default_value")?.takeIf { it != JSONObject.NULL })
         )
     } catch (e: ValidationException) {
         throw e
@@ -333,3 +339,10 @@ private fun formatDateTimeValue(value: Any?, config: Map<String, Any>?, s: Strin
  * Exception thrown when field definition validation fails.
  */
 class ValidationException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+/**
+ * The default values of these fields, by name, those that have one: what a new entry starts
+ * with when the one who creates it takes the suggestion (a form, a quick action).
+ */
+fun List<FieldDefinition>.defaultValues(): Map<String, Any?> =
+    mapNotNull { field -> field.defaultValue?.let { field.name to it } }.toMap()

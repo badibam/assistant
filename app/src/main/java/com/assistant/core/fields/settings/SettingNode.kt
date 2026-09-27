@@ -21,13 +21,18 @@ sealed class SettingNode {
      * @property secret Entered masked, never sent to the AI, never logged (an API key)
      * @property systemWritten Written by the app and sent back unchanged, never entered: the
      *   form does not show it (a field definition's name, made from its label)
+     * @property valueOfDefined A value of the field the object holding it defines (a field
+     *   definition's default value): [definition] gives its type, and the object its config —
+     *   options, bounds — which the form reads to enter it and the service to check it. Its
+     *   schema is its type's alone, the config being set beside it
      */
     data class Field(
         val definition: FieldDefinition,
         val required: Boolean = false,
         val default: Any? = null,
         val secret: Boolean = false,
-        val systemWritten: Boolean = false
+        val systemWritten: Boolean = false,
+        val valueOfDefined: Boolean = false
     ) : SettingNode()
 
     /** Settings stored together as one object under [name]. */

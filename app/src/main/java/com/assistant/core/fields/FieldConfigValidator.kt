@@ -57,8 +57,32 @@ object FieldConfigValidator {
             return configValidation
         }
 
+        // A default value is a value of the field itself: one of its options, within its bounds
+        fieldDef.defaultValue?.let { default ->
+            val schema = com.assistant.core.validation.Schema(
+                id = "default_value_${fieldDef.name}",
+                displayName = fieldDef.displayName,
+                description = "",
+                category = com.assistant.core.validation.SchemaCategory.TOOL_DATA,
+                content = org.json.JSONObject()
+                    .put("type", "object")
+                    .put("properties", org.json.JSONObject().put(DEFAULT_KEY, FieldValueSchema.of(fieldDef)))
+                    .toString()
+            )
+            val checked = com.assistant.core.validation.SchemaValidator.validate(schema, mapOf(DEFAULT_KEY to default), context)
+            if (!checked.isValid) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = s.shared("field_validation_default_value").format(fieldDef.displayName, checked.errorMessage ?: "")
+                )
+            }
+        }
+
         return ValidationResult(isValid = true)
     }
+
+    /** The key a default value is checked under, alone in its object. */
+    private const val DEFAULT_KEY = "default_value"
 
     /**
      * Validates the format of a field name.

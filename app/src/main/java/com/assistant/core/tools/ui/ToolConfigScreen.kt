@@ -200,6 +200,12 @@ fun ToolConfigScreen(
     pendingFill?.let { missing ->
         // The fields as the new config makes them, for their inputs
         val fields = remember(config) { toolType.getEntryFields(config, context).data.associateBy { it.definition.name } }
+        // A field's default value is proposed, once, for the entries that lack a value
+        LaunchedEffect(missing) {
+            val defaults = missing.keys.mapNotNull { name -> fields[name]?.definition?.defaultValue?.let { name to it } }
+                .filter { (name, _) -> !fill.has(name) }
+            if (defaults.isNotEmpty()) fill = JSONObject(fill.toString()).apply { defaults.forEach { (name, value) -> put(name, JSONObject.wrap(value)) } }
+        }
         UI.Dialog(
             type = com.assistant.core.ui.DialogType.CONFIRM,
             onConfirm = {

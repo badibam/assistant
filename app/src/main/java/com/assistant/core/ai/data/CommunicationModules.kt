@@ -91,7 +91,7 @@ object CommunicationModules {
      * settings that contradict each other).
      */
     fun check(declaration: JSONObject, context: Context): String? {
-        val result = SchemaValidator.validate(schema(context), JsonUtils.toMap(declaration), context)
+        val result = SchemaValidator.validate(schema(context), JsonUtils.toMap(storedForm(declaration)), context)
         if (!result.isValid) return result.errorMessage
 
         val definitions = fieldsOf(declaration).map { it.definition }
@@ -105,11 +105,29 @@ object CommunicationModules {
 
     /** The fields of a declaration, which [check] has found valid. */
     fun fieldsOf(declaration: JSONObject): List<SettingNode.Field> {
-        val list = declaration.optJSONArray("fields") ?: return emptyList()
+        val list = storedForm(declaration).optJSONArray("fields") ?: return emptyList()
         return (0 until list.length()).map { i ->
             val field = list.getJSONObject(i)
             SettingNode.Field(field.toFieldDefinition(), required = field.optBoolean("required", false))
         }
+    }
+
+    /**
+     * [declaration] with its values in the form the app stores: a field's default value that is
+     * a duration, which the AI writes in ISO 8601 like any duration, in milliseconds. One that
+     * does not read is left as written, for [check] to refuse.
+     */
+    private fun storedForm(declaration: JSONObject): JSONObject {
+        val stored = JSONObject(declaration.toString())
+        val list = stored.optJSONArray("fields") ?: return stored
+        for (i in 0 until list.length()) {
+            val field = list.optJSONObject(i) ?: continue
+            val default = field.opt("default_value")
+            if (field.optString("type") == FieldType.DURATION.name && default is String) {
+                runCatching { java.time.Duration.parse(default).toMillis() }.onSuccess { field.put("default_value", it) }
+            }
+        }
+        return stored
     }
 
     /** The schema of an answer to [module]: its fields, generated like any declaration's. */
