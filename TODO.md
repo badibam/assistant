@@ -22,7 +22,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Outils jamais livrés : conception en cours dans `docs/design/missing-tools.md` (tri fait, Liste livrée, Calcul et Graphique esquissés le 2026-09-27) ; prochaine étape : Objectif, ou REFERENCE (prérequis de Calcul).
 - L'écran d'une zone dessine toute tuile en LINE, quel que soit le mode d'affichage réglé (`ZoneScreen`) : la tuile d'une Liste en CONDENSED, EXTENDED, SQUARE ou FULL n'apparaîtra qu'avec la grille (`docs/design/grid-layout.md`).
 - Le Suivi (tableau de l'historique) et Messages (cartes des envois) n'affichent pas les champs personnalisés de leurs entrées, qu'on ne voit qu'en modification — à trancher : où, et dans quelle disposition (`CustomFieldsDisplay`, `docs/DATA.md`).
-- Les incarnations (`docs/design/incarnations.md`, identités de personae) — au premier export publié par personae ; reste ouvert ce qu'affiche la ligne en haut de la zone.
+- Les incarnations (`docs/design/incarnations.md`, identités de personae) — au premier export publié par personae.
 - Supprimer un fournisseur d'IA ne regarde ni les automations ni les sessions qui le nomment (`AIProviderConfigService.deleteProviderConfig`) : refuser tant qu'une automation l'utilise, en la nommant ; une session passée reste lisible mais ne peut plus continuer, message à l'appui — avec les identités incarnées, qui demandent le même contrôle, écrit une fois pour les deux.
 - Streaming des réponses IA (Claude et OpenAI), avec le TCP keep-alive — quand des messages « requête envoyée, réponse perdue » s'accumulent dans les sessions : le réseau coupe les connexions restées silencieuses pendant la génération.
 

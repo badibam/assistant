@@ -10,7 +10,7 @@ Conçu le 2026-09-27. Une incarnation, c'est l'IA de l'app qui parle en tant que
 
 ## Où elle intervient
 
-- **Associée à une zone**, dans les réglages de la zone. Une ligne en haut de la zone la montre et ouvre une session CHAT avec elle. L'ouverture ne joint pas les données de la zone : le chat ne se contextualise pas tout seul.
+- **Associée à une zone**, dans les réglages de la zone. Une ligne en haut de la zone la montre — une icône fixe, la même pour toute identité, son nom, un bouton de chat — et ouvre une session CHAT avec elle. L'ouverture ne joint pas les données de la zone : le chat ne se contextualise pas tout seul.
 - **Dans la barre du chat**, à droite des enrichissements : une puce montre l'identité de la session et permet de la choisir.
 - **Une automation** choisit son identité, comme toute session ; elle n'hérite pas de celle de la zone.
 - **L'identité se fixe au premier message** d'une session. Pour changer d'interlocuteur, on ouvre une autre session. Ce qui se fixe, c'est qui parle, pas une version : une identité réimportée vaut dès le tour suivant, dans les sessions en cours aussi.
@@ -40,7 +40,6 @@ Le prompt ne porte que la liste des ressources (titre + description neutre de l'
 - **Une session passée** reste lisible mais ne peut plus continuer, avec un message qui dit pourquoi. Jamais de reprise sans voix.
 - Le même contrôle manque aux fournisseurs d'IA (`TODO.md`) : il s'écrit une fois pour les deux.
 
-## Ouvert
+## Déclencheur
 
-- Ce qu'affiche la ligne en haut de la zone.
-- Déclencheur de l'implémentation : un premier export publié par personae (aucun n'existe au 2026-09-27).
+Un premier export publié par personae (aucun n'existe au 2026-09-27).
