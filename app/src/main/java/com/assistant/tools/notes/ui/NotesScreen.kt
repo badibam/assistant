@@ -244,8 +244,20 @@ fun NotesScreen(
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // All existing notes
-                        notes.forEach { note ->
+                        // All existing notes. The service keeps the order: a note written at the
+                        // position of another goes before it, so a note moved up takes the position
+                        // of the one it lands on, and a note moved down the position after it. The
+                        // data change notification reloads the list.
+                        UI.ReorderableColumn(
+                            items = notes,
+                            key = { it.id },
+                            spacing = 16.dp,
+                            onMove = { from, to ->
+                                val note = notes[from]
+                                val position = if (to < from) notes[to].position else notes[to].position + 1
+                                coroutineScope.launch { moveNote(coordinator, note, position) }
+                            }
+                        ) { _, note ->
                             NoteCard(
                                 note = note,
                                 toolInstanceId = toolInstanceId,
@@ -255,21 +267,7 @@ fun NotesScreen(
                                 onContextMenuChanged = { showMenu ->
                                     contextMenuNoteId = if (showMenu) note.id else null
                                 },
-                                // The service keeps the order: taking the position of the note above
-                                // puts this one before it; the position after the note below puts
-                                // it after that one. The data change notification reloads the list.
-                                onMoveUp = {
-                                    val above = notes.getOrNull(notes.indexOf(note) - 1)
-                                    if (above != null) coroutineScope.launch {
-                                        moveNote(coordinator, note, above.position)
-                                    }
-                                },
-                                onMoveDown = {
-                                    val below = notes.getOrNull(notes.indexOf(note) + 1)
-                                    if (below != null) coroutineScope.launch {
-                                        moveNote(coordinator, note, below.position + 1)
-                                    }
-                                },
+                                dragHandle = { DragHandle() },
                                 onAddAbove = {
                                     openCreateDialog(note.position)
                                 },

@@ -691,7 +691,11 @@ private fun ChoiceInput(
                 // before an option was added shows that option last. The first move records the
                 // whole order.
                 val ranking = selectedItems + settings.options.filter { it !in selectedItems }
-                ranking.forEachIndexed { index, option ->
+                UI.ReorderableColumn(
+                    items = ranking,
+                    onMove = { from, to -> onChange(ranking.toMutableList().apply { add(to, removeAt(from)) }) },
+                    spacing = 4.dp
+                ) { index, option ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -703,24 +707,7 @@ private fun ChoiceInput(
                                 type = TextType.BODY
                             )
                         }
-                        UI.ActionButton(
-                            action = com.assistant.core.ui.ButtonAction.UP,
-                            display = com.assistant.core.ui.ButtonDisplay.ICON,
-                            size = com.assistant.core.ui.Size.S,
-                            enabled = index > 0,
-                            onClick = {
-                                onChange(ranking.toMutableList().apply { add(index - 1, removeAt(index)) })
-                            }
-                        )
-                        UI.ActionButton(
-                            action = com.assistant.core.ui.ButtonAction.DOWN,
-                            display = com.assistant.core.ui.ButtonDisplay.ICON,
-                            size = com.assistant.core.ui.Size.S,
-                            enabled = index < ranking.size - 1,
-                            onClick = {
-                                onChange(ranking.toMutableList().apply { add(index + 1, removeAt(index)) })
-                            }
-                        )
+                        DragHandle()
                     }
                 }
             }

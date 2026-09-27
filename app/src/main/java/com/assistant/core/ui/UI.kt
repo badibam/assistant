@@ -516,6 +516,17 @@ object UI {
     ) = com.assistant.core.ui.components.IconSelector(current, suggested, onChange)
     
     
+    /** A column whose items are reordered by dragging their handle; see [com.assistant.core.ui.components.ReorderableColumn]. */
+    @Composable
+    fun <T> ReorderableColumn(
+        items: List<T>,
+        onMove: (from: Int, to: Int) -> Unit,
+        modifier: Modifier = Modifier,
+        spacing: Dp = 0.dp,
+        key: (T) -> Any = { it as Any },
+        itemContent: @Composable com.assistant.core.ui.components.ReorderItemScope.(index: Int, item: T) -> Unit
+    ) = com.assistant.core.ui.components.ReorderableColumn(items, onMove, modifier, spacing, key, itemContent)
+
     @Composable
     fun ToolConfigActions(
         isEditing: Boolean,

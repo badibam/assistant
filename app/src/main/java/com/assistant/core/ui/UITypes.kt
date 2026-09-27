@@ -149,7 +149,7 @@ enum class ButtonType {
 enum class ButtonAction(val iconName: String) {
     SAVE("check"), CREATE("plus"), UPDATE("pencil"), DELETE("trash"), CANCEL("x"), BACK("arrow-left"),
     CONFIGURE("settings"), ADD("plus"), EDIT("pencil"), REFRESH("refresh-cw"), SELECT("check"), CONFIRM("check"),
-    UP("chevron-up"), DOWN("chevron-down"), LEFT("chevron-left"), RIGHT("chevron-right"),
+    LEFT("chevron-left"), RIGHT("chevron-right"),
     AI_CHAT("message-circle"), RESET("rotate-ccw"), INTERRUPT("pause"), STOP("square"), PAUSE("pause"),
     RESUME("play"), START("play"), VIEW("eye")
 }

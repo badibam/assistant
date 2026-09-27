@@ -153,7 +153,14 @@ private fun ListForm(
     val values = (0 until items.length()).map { items.get(it) }
     fun publish(next: List<Any>) = onChange(JSONArray(next))
 
-    values.forEachIndexed { index, item ->
+    // Positions, not elements, are what the column orders: an edited element is a new object,
+    // and keying the items by it would rebuild the field being typed in at every keystroke
+    UI.ReorderableColumn(
+        items = values.indices.toList(),
+        onMove = { from, to -> publish(values.toMutableList().also { it.add(to, it.removeAt(from)) }) },
+        spacing = 8.dp
+    ) { _, index ->
+        val item = values[index]
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.weight(1f)) {
                 when (val shape = list.item) {
@@ -169,13 +176,8 @@ private fun ListForm(
                     }
                 }
             }
-            Column {
-                UI.ActionButton(action = ButtonAction.UP, display = ButtonDisplay.ICON, size = Size.S, enabled = index > 0, onClick = {
-                    publish(values.toMutableList().also { it.add(index - 1, it.removeAt(index)) })
-                })
-                UI.ActionButton(action = ButtonAction.DOWN, display = ButtonDisplay.ICON, size = Size.S, enabled = index < values.size - 1, onClick = {
-                    publish(values.toMutableList().also { it.add(index + 1, it.removeAt(index)) })
-                })
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                DragHandle()
                 UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = {
                     publish(values.toMutableList().also { it.removeAt(index) })
                 })

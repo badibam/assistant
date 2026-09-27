@@ -161,6 +161,8 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 
 **UI.SliderField** - Échelle ; sans réponse, pas de poignée et « — ».
 
+**UI.ReorderableColumn** - Une liste qu'on réordonne en glissant la poignée de chaque élément (`DragHandle()`, posée où l'élément le veut). Le geste, la place d'arrivée et le défilement près d'un bord sont au cœur ; la poignée et l'élément soulevé sont au thème (`ThemeContract.DragHandle`, `ReorderItem`). Chaque liste garde son ordre, imbriquée ou non : un élément ne quitte jamais sa liste. Le nouvel ordre part une seule fois, au lâcher (`onMove(from, to)`) ; « monter » et « descendre » restent des actions d'accessibilité de la poignée.
+
 **`required`** - Chaque saisie le reçoit, sans valeur par défaut : vrai pour un champ qui peut être vide et bloque la validation tant qu'il l'est ; un champ qui a toujours une valeur (filtre, sélecteur) ne l'est pas. Le thème le marque à sa façon (`FieldLabel`, un astérisque dans le thème par défaut) ; une saisie en plusieurs parties (plage, durée, choix multiple) marque son libellé commun.
 
 **UI.FormActions** - Container standardisé pour boutons de formulaire avec ActionButton (SAVE, CANCEL, DELETE conditionnel).

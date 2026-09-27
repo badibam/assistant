@@ -123,6 +123,20 @@ interface ThemeContract {
     fun Gauge(fraction: Float)
 
     /**
+     * The grip an item of a reorderable list is dragged by. Only its look: the gesture is the
+     * core's (`ReorderableColumn`), which wraps it.
+     */
+    @Composable
+    fun DragHandle()
+
+    /**
+     * An item of a reorderable list, [lifted] while it is being dragged. Only its look: where it
+     * sits, and the gap the others open, are the core's.
+     */
+    @Composable
+    fun ReorderItem(lifted: Boolean, content: @Composable () -> Unit)
+
+    /**
      * The actual color a tag color name takes in [paletteId], for the swatches a color is
      * chosen from. Every name of TagColor has one in every palette.
      */

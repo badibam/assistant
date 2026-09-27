@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -383,7 +384,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
 
             // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW -> ButtonType.DEFAULT
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW -> ButtonType.DEFAULT
         }
     }
     
@@ -406,8 +407,6 @@ object DefaultTheme : ThemeContract {
             ButtonAction.SELECT -> s.shared("action_select")
             ButtonAction.CONFIRM -> s.shared("action_confirm")
             ButtonAction.RESET -> s.shared("action_reset")
-            ButtonAction.UP -> s.shared("action_up")
-            ButtonAction.DOWN -> s.shared("action_down")
             ButtonAction.LEFT -> s.shared("action_left")
             ButtonAction.RIGHT -> s.shared("action_right")
             ButtonAction.AI_CHAT -> s.shared("action_ai_chat")
@@ -683,6 +682,40 @@ object DefaultTheme : ThemeContract {
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
             strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
         )
+    }
+
+    @Composable
+    override fun DragHandle() {
+        val context = LocalContext.current
+        val iconResource = requireNotNull(com.assistant.core.icons.Icons.drawable(context, "grip-vertical")) {
+            "No drawable for the icon grip-vertical"
+        }
+        // Padded to a finger's width: the grip is small, the place it is taken by is not
+        Icon(
+            painter = painterResource(iconResource),
+            contentDescription = null,
+            modifier = Modifier
+                .padding(8.dp)
+                .size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    @Composable
+    override fun ReorderItem(lifted: Boolean, content: @Composable () -> Unit) {
+        val elevation by animateDpAsState(if (lifted) 8.dp else 0.dp, label = "reorder_elevation")
+        Box(
+            modifier = Modifier.graphicsLayer {
+                shadowElevation = elevation.toPx()
+                shape = RoundedCornerShape(12.dp)
+                clip = false
+                val scale = if (lifted) 1.02f else 1f
+                scaleX = scale
+                scaleY = scale
+            }
+        ) {
+            content()
+        }
     }
 
     override fun getTagColor(color: com.assistant.core.themes.TagColor, paletteId: String): Color {

@@ -26,8 +26,7 @@ fun NoteCard(
     contextMenuNoteId: String? = null,
     onNoteClick: () -> Unit = {}, // Opens edit dialog
     onContextMenuChanged: (Boolean) -> Unit = {},
-    onMoveUp: () -> Unit = {},
-    onMoveDown: () -> Unit = {},
+    dragHandle: (@Composable () -> Unit)? = null, // The grip the note is reordered by
     onAddAbove: () -> Unit = {},
     onDelete: () -> Unit = {}
 ) {
@@ -40,75 +39,79 @@ fun NoteCard(
 
     UI.Card(type = CardType.DEFAULT) {
         Box {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .let { modifier ->
-                        if (isPlaceholder) {
-                            modifier.clickable { onAddAbove() } // Placeholder click creates note
-                        } else {
-                            modifier.combinedClickable(
-                                onClick = {
-                                    if (!isMoving && !showContextMenu) {
-                                        onNoteClick() // Open edit dialog
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .let { modifier ->
+                            if (isPlaceholder) {
+                                modifier.clickable { onAddAbove() } // Placeholder click creates note
+                            } else {
+                                modifier.combinedClickable(
+                                    onClick = {
+                                        if (!isMoving && !showContextMenu) {
+                                            onNoteClick() // Open edit dialog
+                                        }
+                                    },
+                                    onLongClick = {
+                                        if (!isMoving && note != null) {
+                                            onContextMenuChanged(true)
+                                        }
                                     }
-                                },
-                                onLongClick = {
-                                    if (!isMoving && note != null) {
-                                        onContextMenuChanged(true)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                    .padding(16.dp)
-            ) {
-                // Content display logic
-                when {
-                    isPlaceholder -> {
-                        // Placeholder display
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            UI.Icon("add", size = 48.dp)
-                        }
-                    }
-
-                    else -> {
-                        // Note content display
-                        val displayContent = note?.content?.trim() ?: ""
-
-                        if (displayContent.isBlank()) {
-                            // Empty note
-                            Box(
-                                modifier = Modifier.height(60.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                UI.Text(
-                                    text = s.tool("content_empty"),
-                                    type = TextType.CAPTION
                                 )
                             }
-                        } else {
-                            // Note with content
-                            UI.Text(
-                                text = displayContent,
-                                type = TextType.BODY
-                            )
+                        }
+                        .padding(16.dp)
+                ) {
+                    // Content display logic
+                    when {
+                        isPlaceholder -> {
+                            // Placeholder display
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(120.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                UI.Icon("add", size = 48.dp)
+                            }
+                        }
 
-                            // Custom fields display (always shown for alwaysVisible fields)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            CustomFieldsDisplay(
-                                toolInstanceId = toolInstanceId,
-                                values = note?.extra ?: emptyMap(),
-                                context = context
-                            )
+                        else -> {
+                            // Note content display
+                            val displayContent = note?.content?.trim() ?: ""
+
+                            if (displayContent.isBlank()) {
+                                // Empty note
+                                Box(
+                                    modifier = Modifier.height(60.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    UI.Text(
+                                        text = s.tool("content_empty"),
+                                        type = TextType.CAPTION
+                                    )
+                                }
+                            } else {
+                                // Note with content
+                                UI.Text(
+                                    text = displayContent,
+                                    type = TextType.BODY
+                                )
+
+                                // Custom fields display (always shown for alwaysVisible fields)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CustomFieldsDisplay(
+                                    toolInstanceId = toolInstanceId,
+                                    values = note?.extra ?: emptyMap(),
+                                    context = context
+                                )
+                            }
                         }
                     }
                 }
+
+                dragHandle?.invoke()
             }
 
             // Context menu overlay
@@ -119,26 +122,6 @@ fun NoteCard(
                         .padding(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    UI.ActionButton(
-                        action = ButtonAction.UP,
-                        display = ButtonDisplay.ICON,
-                        size = Size.S,
-                        onClick = {
-                            onMoveUp()
-                            // Keep context menu visible after move
-                        }
-                    )
-
-                    UI.ActionButton(
-                        action = ButtonAction.DOWN,
-                        display = ButtonDisplay.ICON,
-                        size = Size.S,
-                        onClick = {
-                            onMoveDown()
-                            // Keep context menu visible after move
-                        }
-                    )
-
                     UI.ActionButton(
                         action = ButtonAction.ADD,
                         display = ButtonDisplay.ICON,
