@@ -319,11 +319,16 @@ object UI {
         required: Boolean,
         trueLabel: String? = null,
         falseLabel: String? = null
-    ) = BooleanButtons(label, value, onValueChange, required, emptiable = !required, trueLabel, falseLabel)
+    ) {
+        val s = com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current)
+        CurrentTheme.current.BooleanField(label, value, onValueChange, trueLabel ?: s.shared("label_yes"), falseLabel ?: s.shared("label_no"),
+            required, emptiable = !required, compact = false)
+    }
 
     /**
-     * A yes/no state, which always is one or the other (an automation on or off): never marked,
-     * never emptied.
+     * A state that always is one or the other: never marked, never emptied. It reads "On" and
+     * "Off" and is compact, to sit beside what it switches (an automation on or off); named, it
+     * is a choice between two modes and takes the whole width.
      */
     @Composable
     fun BooleanField(
@@ -332,23 +337,10 @@ object UI {
         onValueChange: (Boolean) -> Unit,
         trueLabel: String? = null,
         falseLabel: String? = null
-    ) = BooleanButtons(label, value, { it?.let(onValueChange) }, required = false, emptiable = false, trueLabel, falseLabel)
-
-    @Composable
-    private fun BooleanButtons(
-        label: String,
-        value: Boolean?,
-        onValueChange: (Boolean?) -> Unit,
-        required: Boolean,
-        emptiable: Boolean,
-        trueLabel: String?,
-        falseLabel: String?
     ) {
-        val context = androidx.compose.ui.platform.LocalContext.current
-        val s = com.assistant.core.strings.Strings.`for`(context = context)
-        CurrentTheme.current.BooleanField(
-            label, value, onValueChange, trueLabel ?: s.shared("label_yes"), falseLabel ?: s.shared("label_no"), required, emptiable
-        )
+        val s = com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current)
+        CurrentTheme.current.BooleanField(label, value, { it?.let(onValueChange) }, trueLabel ?: s.shared("label_on"), falseLabel ?: s.shared("label_off"),
+            required = false, emptiable = false, compact = trueLabel == null && falseLabel == null)
     }
 
     /**

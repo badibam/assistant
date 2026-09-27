@@ -275,7 +275,8 @@ interface ThemeContract {
     /**
      * Yes or no: two buttons, [trueLabel] and [falseLabel]. [value] null is no answer yet, shown
      * with neither chosen. Touching the chosen button again empties it when [emptiable], and
-     * changes nothing otherwise. A blank [label] shows the buttons alone.
+     * changes nothing otherwise. A blank [label] shows the buttons alone. [compact] buttons take
+     * only the width of their labels, to sit beside other content (an on/off state on a card).
      */
     @Composable
     fun BooleanField(
@@ -285,7 +286,8 @@ interface ThemeContract {
         trueLabel: String,
         falseLabel: String,
         required: Boolean,
-        emptiable: Boolean
+        emptiable: Boolean,
+        compact: Boolean
     )
 
     /**

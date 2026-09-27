@@ -1138,11 +1138,12 @@ object DefaultTheme : ThemeContract {
         trueLabel: String,
         falseLabel: String,
         required: Boolean,
-        emptiable: Boolean
+        emptiable: Boolean,
+        compact: Boolean
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (label.isNotBlank()) FieldLabel(label, required)
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            SingleChoiceSegmentedButtonRow(modifier = if (compact) Modifier else Modifier.fillMaxWidth()) {
                 listOf(true to trueLabel, false to falseLabel).forEachIndexed { index, (answer, text) ->
                     SegmentedButton(
                         selected = value == answer,

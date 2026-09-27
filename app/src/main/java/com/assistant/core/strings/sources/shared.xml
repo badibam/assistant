@@ -456,8 +456,6 @@
     <string name="app_config_format_year_limit">Year limit</string>
 
     <!-- UI Component defaults -->
-    <string name="ui_toggle_enabled">Enabled</string>
-    <string name="ui_toggle_disabled">Disabled</string>
     
     <!-- Messages and feedback -->
     <string name="message_loading">Loading...</string>
@@ -1457,6 +1455,8 @@
     <string name="ai_error_load_seed">Unable to load the automation's starting message</string>
     <string name="label_ai_provider">AI provider</string>
     <string name="label_yes">Yes</string>
+    <string name="label_on">On</string>
+    <string name="label_off">Off</string>
     <string name="label_no">No</string>
     <string name="label_start">Start</string>
     <string name="label_end">End</string>
