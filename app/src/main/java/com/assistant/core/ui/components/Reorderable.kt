@@ -141,8 +141,7 @@ fun <T> ReorderableColumn(
 
         shown.forEachIndexed { index, item ->
             key(key(item)) {
-                // The others open a gap where the lifted item would land; on release they snap,
-                // since the column is then drawn in its new order
+                // The others open a gap where the lifted item would land
                 val step = (lifted?.let { heights[it] } ?: 0f) + spacingPx
                 val shift = when {
                     lifted == null || target == null || index == lifted -> 0f
@@ -207,7 +206,15 @@ fun <T> ReorderableColumn(
                             heights[index] = it.size.height.toFloat()
                         }
                         .zIndex(if (index == lifted) 1f else 0f)
-                        .graphicsLayer { translationY = if (index == lifted) offsetOf(index) else animatedShift }
+                        // Nothing lifted, nothing shifted: the animated shift only snaps back on
+                        // the next frame, and would show the old gaps over the new order for one
+                        .graphicsLayer {
+                            translationY = when {
+                                index == lifted -> offsetOf(index)
+                                lifted == null -> 0f
+                                else -> animatedShift
+                            }
+                        }
                         .let { if (index == lifted) it.bringIntoViewRequester(requester) else it }
                 ) {
                     CurrentTheme.current.ReorderItem(lifted = index == lifted) {
