@@ -49,9 +49,9 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
- * The screen of a list: a field at the top to add an item by its name; the items left,
- * reordered by their handle; the checked ones below, greyed, in the order they were checked, and
- * a button to uncheck them all. A list set to remove what is checked deletes an item checked.
+ * The screen of a list: the items left, reordered by their handle; the checked ones below, greyed, in the order they were checked, and
+ * a button to uncheck them all; last, the form adding an item. A list set to remove what is
+ * checked deletes an item checked.
  *
  * Touching an item's name opens it, for its name and the list's own fields.
  */
@@ -149,39 +149,6 @@ fun ListScreen(
             onRightClick = onConfigureClick
         )
 
-        // Adding an item, at the top: its name and the list's fields, which start at their default
-        // values and go back to them once it is added; a line parts it from the list
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(modifier = Modifier.weight(1f)) {
-                UI.FormField(
-                    label = s.tool("add_item_label"),
-                    value = typed,
-                    onChange = { typed = it },
-                    fieldType = FieldType.TEXT,
-                    required = false
-                )
-            }
-            UI.ActionButton(
-                action = ButtonAction.ADD,
-                display = ButtonDisplay.ICON,
-                size = Size.S,
-                enabled = typed.isNotBlank(),
-                onClick = {
-                    write({ ListItems.add(coordinator, toolInstanceId, typed, typedExtra.filterValues { it != null }) }) {
-                        typed = ""
-                        typedExtra = fields.defaultValues()
-                    }
-                }
-            )
-        }
-        com.assistant.core.fields.CustomFieldsInput(
-            customFieldsMetadata = fields,
-            values = typedExtra,
-            onValuesChange = { typedExtra = it },
-            context = context,
-            newEntry = true
-        )
-        UI.Divider()
 
         if (shown.isEmpty()) UI.Text(s.tool("list_empty"), TextType.CAPTION)
 
@@ -218,6 +185,40 @@ fun ListScreen(
                 UI.Text(s.tool("action_uncheck_all"), TextType.LABEL)
             }
         }
+
+        // Adding an item, last, parted from the list by a line: its name and the list's fields,
+        // which start at their default values and go back to them once it is added
+        UI.Divider()
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(modifier = Modifier.weight(1f)) {
+                UI.FormField(
+                    label = s.tool("add_item_label"),
+                    value = typed,
+                    onChange = { typed = it },
+                    fieldType = FieldType.TEXT,
+                    required = false
+                )
+            }
+            UI.ActionButton(
+                action = ButtonAction.ADD,
+                display = ButtonDisplay.ICON,
+                size = Size.S,
+                enabled = typed.isNotBlank(),
+                onClick = {
+                    write({ ListItems.add(coordinator, toolInstanceId, typed, typedExtra.filterValues { it != null }) }) {
+                        typed = ""
+                        typedExtra = fields.defaultValues()
+                    }
+                }
+            )
+        }
+        com.assistant.core.fields.CustomFieldsInput(
+            customFieldsMetadata = fields,
+            values = typedExtra,
+            onValuesChange = { typedExtra = it },
+            context = context,
+            newEntry = true
+        )
     }
 
     // The item open is kept by its id and found again in the items loaded, so the dialog comes
