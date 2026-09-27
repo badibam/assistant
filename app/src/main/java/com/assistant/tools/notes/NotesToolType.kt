@@ -53,7 +53,7 @@ object NotesToolType : ToolTypeContract {
     /**
      * A note: a text, without a name (none would say anything the text does not), kept in a
      * manual order. Its position is state: the app writes it when a note is moved, and the
-     * service keeps the order (NoteOrder).
+     * service keeps the order (ManualOrder).
      */
     override fun getEntryFields(config: JSONObject, context: Context): EntryFields {
         val s = Strings.`for`(tool = "notes", context = context)
@@ -102,7 +102,7 @@ object NotesToolType : ToolTypeContract {
     }
 
     override fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =
-        NoteOrder.settle(entries, writtenId)
+        com.assistant.core.tools.ManualOrder.settle(entries, writtenId)
 
     override fun getDao(context: Context): Any {
         val database = com.assistant.core.database.AppDatabase.getDatabase(context)
