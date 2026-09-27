@@ -4,12 +4,13 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — RÉFÉRENCE, qui attend le premier outil qui désigne autre chose (Données structurées, Graphique, Calcul, Alerte, Objectif). À vérifier sur l'appareil : le pointeur (chat et automation, zone et outil), les migrations v44 et v45 sur une base qui a des pointeurs, et le rejeu L1 (`docs/ai-prompt-replay.md`) après les changements de `keep_control` et des modules.
+- Rejeu du prompt L1 (`docs/ai-prompt-replay.md`) : adapter sa grille aux changements du 2026-09-27 (`keep_control` posé dès qu'il reste à faire, modules de communication, en-tête des données jointes, valeurs par défaut dans les schémas, `ids` rendus par une création), puis le lancer sur l'appareil.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur
 
+- Le type de champ RÉFÉRENCE (`docs/design/unified-fields.md`) — au premier outil qui désigne autre chose (Données structurées, Graphique, Calcul, Alerte, Objectif) ; le reste du système de champs est fait.
 - Une entrée précise comme cible du pointeur (conçue dans `docs/design/pointer.md` : étiquette par type d'outil, liste dans le sélecteur, relecture de l'entrée) — si le besoin apparaît : peut-être superflu, un pointeur d'outil filtré couvre la plupart des cas. La cible APP attend que l'IA sache lire les réglages de l'app.
 
 - Les exécutions d'une automation décrites comme des entrées (champs déclarés, schéma généré, dates en ISO par ce schéma) — le jour où l'IA les lit ; ce ne sont pas des réglages.
