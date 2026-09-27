@@ -102,7 +102,7 @@ You **must** answer with a valid JSON structure following this schema:
 - `pre_text` is **always required**: what you are about to do, or your answer
 - **Mutually exclusive**: only one of `data_commands`, `action_commands` or `communication_module` per answer
 - `validation_request`, `post_text` and `keep_control`: only together with `action_commands`
-- `keep_control`: `true` to get the hand back after your actions succeed, to carry on without the user writing again]]></string>
+- `keep_control`: `true` to keep control after your actions succeed: you receive their results and answer again, without the user writing. Set it **whenever something is left for you to do** once the actions have run: the next step of the task, reading back what you just wrote, a summary built on the results. Leave it out only when your next move is to wait for the user]]></string>
 
     <!-- B.3 ValidationRequest [DEGREE 1] -->
     <string name="ai_chunk_response_validation_request"><![CDATA[## validation_request - explicit validation
