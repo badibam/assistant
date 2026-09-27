@@ -29,3 +29,7 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 - **REFERENCE** (`unified-fields.md`) : sans lui, une entrée ne dit pas à quelle fiche elle correspond, et le calcul entrée par entrée (la nutrition) est impossible.
 - **Une sélection d'entrées au cœur** : un outil, des filtres (période comprise), des champs, avec sa forme enregistrée, sa partie d'écran et sa lecture. Le pointeur d'un message devient cette sélection plus ce qui ne regarde que l'IA (joindre ou mentionner, viser l'app ou une zone) ; Calcul utilise la sélection seule. Aujourd'hui `PointerConfig`, `PointerSelector` et `EnrichmentProcessor` mêlent les deux et vivent dans le code de l'IA.
 - **Une règle de rattrapage au cœur** : « fenêtre de retard admis + la plus récente seulement », sortie de `core/ai/scheduling/CatchUpPolicy` vers le planificateur du cœur, utilisée par les automations, Calcul et Messages (sa fenêtre, sans « la plus récente seulement »). Le réglage prend un seul nom, `catch_up_window` : `validity_window` des Messages migre (configs, sauvegardes à l'import, prompt L1 et son rejeu).
+
+## Graphique
+
+- **Il dessine, ne calcule pas** : aucun regroupement ni agrégation. Un total par jour est un Calcul découpé par jour, que le Graphique dessine ; un nombre n'a ainsi qu'une origine, lisible aussi par les alertes et l'IA.
