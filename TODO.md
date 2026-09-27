@@ -4,7 +4,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — RÉFÉRENCE, qui attend l'outil Données structurées. À vérifier sur l'appareil : le pointeur (chat et automation, zone et outil), les migrations v44 et v45 sur une base qui a des pointeurs, et le rejeu L1 (`docs/ai-prompt-replay.md`) après les changements de `keep_control` et des modules.
+- Un seul système de champs : blocs A à C faits, rejeu du prompt L1 passé le 2026-09-25 ; reste `docs/design/unified-fields.md` — RÉFÉRENCE, qui attend le premier outil qui désigne autre chose (Données structurées, Graphique, Calcul, Alerte, Objectif). À vérifier sur l'appareil : le pointeur (chat et automation, zone et outil), les migrations v44 et v45 sur une base qui a des pointeurs, et le rejeu L1 (`docs/ai-prompt-replay.md`) après les changements de `keep_control` et des modules.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
