@@ -110,10 +110,20 @@ fun <T> ReorderableColumn(
         return (fingerInRoot - columnTopInRoot - grabInItem - top).coerceIn(-top, lastBottom - height - top)
     }
 
-    // The place the lifted item would take: after every other item whose middle is above its own
+    // The place the lifted item would take. It passes an item below once its bottom edge is past
+    // that item's middle, and one above once its top edge is: an edge, not its own middle, which
+    // could never pass the middle of a last or first item shorter than itself.
     fun targetOf(index: Int): Int {
-        val middle = (tops[index] ?: 0f) + offsetOf(index) + (heights[index] ?: 0f) / 2
-        return shown.indices.count { it != index && (tops[it] ?: 0f) + (heights[it] ?: 0f) / 2 < middle }
+        val top = (tops[index] ?: 0f) + offsetOf(index)
+        val bottom = top + (heights[index] ?: 0f)
+        return shown.indices.count {
+            val middle = (tops[it] ?: 0f) + (heights[it] ?: 0f) / 2
+            when {
+                it < index -> top >= middle
+                it > index -> bottom > middle
+                else -> false
+            }
+        }
     }
 
     fun move(from: Int, to: Int) {
