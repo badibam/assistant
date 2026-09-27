@@ -74,8 +74,9 @@ fun ListScreen(
     var itemsVersion by remember { mutableIntStateOf(0) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // What the user produced: the name being typed, the item open
+    // What the user produced: the new item's name and fields, the item open
     var typed by rememberSaveable { mutableStateOf("") }
+    var typedExtra by rememberSaveable(stateSaver = com.assistant.core.ui.FieldValuesSaver) { mutableStateOf<Map<String, Any?>>(emptyMap()) }
     var openItemId by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(toolInstanceId, configVersion) {
@@ -148,7 +149,8 @@ fun ListScreen(
             onRightClick = onConfigureClick
         )
 
-        // Adding an item, at the top: its name; the list's fields take their default values
+        // Adding an item, at the top: its name and the list's fields, which start at their default
+        // values and go back to them once it is added; a line parts it from the list
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormField(
@@ -164,9 +166,22 @@ fun ListScreen(
                 display = ButtonDisplay.ICON,
                 size = Size.S,
                 enabled = typed.isNotBlank(),
-                onClick = { write({ ListItems.add(coordinator, toolInstanceId, typed, fields.defaultValues()) }) { typed = "" } }
+                onClick = {
+                    write({ ListItems.add(coordinator, toolInstanceId, typed, typedExtra.filterValues { it != null }) }) {
+                        typed = ""
+                        typedExtra = fields.defaultValues()
+                    }
+                }
             )
         }
+        com.assistant.core.fields.CustomFieldsInput(
+            customFieldsMetadata = fields,
+            values = typedExtra,
+            onValuesChange = { typedExtra = it },
+            context = context,
+            newEntry = true
+        )
+        UI.Divider()
 
         if (shown.isEmpty()) UI.Text(s.tool("list_empty"), TextType.CAPTION)
 

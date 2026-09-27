@@ -499,13 +499,15 @@ fun CustomFieldsInput(
     }
 }
 
-/** How a screen lays out the user's fields, by the room it has for them. */
+/** How a screen lays out the user's fields, by the room it has. */
 enum class FieldsLayout {
     /** Each field on its own, its name above its value, full width: an entry's own page. */
     EXPANDED,
+    /** One field per line, its name as large as a title, its value on the rest of the line: a summary. */
+    LINE,
     /**
-     * Two columns, each field on one line ("Mood: Calm"); a long value takes the whole width:
-     * a summary, a list item, a card.
+     * Two fields per line, each "Mood: Calm" with a small name; a long value takes the whole
+     * width: a list item, a card.
      */
     COMPACT
 }
@@ -529,8 +531,7 @@ fun CustomFieldsDisplay(
     layout: FieldsLayout,
     context: Context
 ) {
-    val fields = config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
-    val shown = fields.filter { values[it.name] != null || it.alwaysVisible }
+    val shown = shownCustomFields(config, values)
     if (shown.isEmpty()) return
     val showLabels = com.assistant.core.tools.ToolConfigSettings.read(toolType, config, context)
         .boolean(com.assistant.core.tools.ToolConfigSettings.SHOW_FIELD_LABELS)
@@ -549,12 +550,28 @@ fun CustomFieldsDisplay(
             }
         }
 
+        FieldsLayout.LINE -> Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            shown.forEach { field ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    if (showLabels) UI.Text(s.shared("field_label_inline").format(field.displayName), TextType.SUBTITLE)
+                    Box(modifier = Modifier.weight(1f)) { FieldValue(field, values[field.name], context) }
+                }
+            }
+        }
+
         // Rows of two short values, a long one alone on its row
         FieldsLayout.COMPACT -> Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            compactRows(shown).forEach { row ->
+            compactRows(shown, values).forEach { row ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     row.forEach { field ->
                         FlowRow(
@@ -566,8 +583,8 @@ fun CustomFieldsDisplay(
                             FieldValue(field, values[field.name], context)
                         }
                     }
-                    // A short field alone on its row keeps half the width, as in the rows above
-                    if (row.size == 1 && !row.single().isWide()) Spacer(modifier = Modifier.weight(1f))
+                    // A short value alone on its row keeps half the width, as in the rows above
+                    if (row.size == 1 && !isWide(row.single(), values[row.single().name])) Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -575,27 +592,40 @@ fun CustomFieldsDisplay(
 }
 
 /**
- * The rows of a compact layout, in the fields' order: two short fields side by side, a wide one
- * alone. A short field followed by a wide one stays alone on its row.
+ * The user's fields CustomFieldsDisplay shows for [values]: those holding a value and those set
+ * to show always. For a screen that draws something around them only when there are some.
  */
-internal fun compactRows(fields: List<FieldDefinition>): List<List<FieldDefinition>> {
+fun shownCustomFields(config: org.json.JSONObject, values: Map<String, Any?>): List<FieldDefinition> =
+    (config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList())
+        .filter { values[it.name] != null || it.alwaysVisible }
+
+/** The longest text that still shares its row in a compact layout, in characters. */
+private const val SHORT_TEXT_CHARS = 30
+
+/**
+ * The rows of a compact layout, in the fields' order: two short values side by side, a wide one
+ * alone. A short value followed by a wide one stays alone on its row.
+ */
+internal fun compactRows(fields: List<FieldDefinition>, values: Map<String, Any?>): List<List<FieldDefinition>> {
     val rows = mutableListOf<List<FieldDefinition>>()
+    fun wide(field: FieldDefinition) = isWide(field, values[field.name])
     fields.forEach { field ->
         val last = rows.lastOrNull()
-        if (!field.isWide() && last != null && last.size == 1 && !last.single().isWide()) rows[rows.lastIndex] = last + field
+        if (!wide(field) && last != null && last.size == 1 && !wide(last.single())) rows[rows.lastIndex] = last + field
         else rows.add(listOf(field))
     }
     return rows
 }
 
 /**
- * Whether a field's value needs a whole row in a compact layout: a text longer than a short one,
- * a scale's gauge, a ranking's numbered options.
+ * Whether a value needs a whole row in a compact layout, by the value itself: a text longer than
+ * a few words or on several lines, a scale's gauge, a ranking's numbered options. A text field
+ * is unlimited unless set otherwise, so its declared length says nothing of the value.
  */
-internal fun FieldDefinition.isWide(): Boolean = when (type) {
-    FieldType.TEXT -> config?.get("length") != TextLength.SHORT.name
+internal fun isWide(field: FieldDefinition, value: Any?): Boolean = when (field.type) {
+    FieldType.TEXT -> value is String && (value.length > SHORT_TEXT_CHARS || '\n' in value)
     FieldType.SCALE -> true
-    FieldType.CHOICE -> ChoiceSettings.fromConfig(config).shape == ChoiceShape.ORDERED
+    FieldType.CHOICE -> ChoiceSettings.fromConfig(field.config).shape == ChoiceShape.ORDERED
     else -> false
 }
 

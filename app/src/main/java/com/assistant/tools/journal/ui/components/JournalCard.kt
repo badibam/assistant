@@ -17,7 +17,7 @@ import com.assistant.tools.journal.utils.DateFormatUtils
  * - Date/time (formatted with formatJournalDate)
  * - Title (entry name)
  * - Content preview (first 150 characters)
- * - The user's fields, compact (CustomFieldsDisplay)
+ * - The user's fields, one per line (CustomFieldsDisplay), parted from the text by a line
  *
  * @param entryId Entry ID
  * @param timestamp Entry timestamp
@@ -86,13 +86,17 @@ fun JournalCard(
             )
         }
 
-        // The user's fields, compact: a summary, where they are read at a glance
-        com.assistant.core.fields.CustomFieldsDisplay(
-            toolType = com.assistant.tools.journal.JournalToolType,
-            config = config,
-            values = extra,
-            layout = com.assistant.core.fields.FieldsLayout.COMPACT,
-            context = context
-        )
+        // The user's fields, one per line under a line parting them from the text: a summary,
+        // where they are read at a glance
+        if (com.assistant.core.fields.shownCustomFields(config, extra).isNotEmpty()) {
+            UI.Divider()
+            com.assistant.core.fields.CustomFieldsDisplay(
+                toolType = com.assistant.tools.journal.JournalToolType,
+                config = config,
+                values = extra,
+                layout = com.assistant.core.fields.FieldsLayout.LINE,
+                context = context
+            )
+        }
     }
 }
