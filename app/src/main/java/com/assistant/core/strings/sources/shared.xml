@@ -452,6 +452,15 @@
     <string name="label_no_value">No value</string>
     <string name="list_item_untitled">Untitled</string>
     <string name="list_item_summary_separator">·</string>
+    <string name="tag_color_red">Red</string>
+    <string name="tag_color_orange">Orange</string>
+    <string name="tag_color_yellow">Yellow</string>
+    <string name="tag_color_green">Green</string>
+    <string name="tag_color_teal">Teal</string>
+    <string name="tag_color_blue">Blue</string>
+    <string name="tag_color_purple">Purple</string>
+    <string name="tag_color_pink">Pink</string>
+    <string name="tag_color_grey">Grey</string>
 
     <!-- App Config - Format Settings labels -->
     <string name="app_config_format_week_start_day">Day the week starts on</string>

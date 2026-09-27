@@ -89,7 +89,9 @@ object FieldTypeSettings {
                     label("label", "field_config_option_label", text),
                     // Each color is its own swatch, wherever the value shows
                     field("color", "field_config_option_color", FieldType.CHOICE, text,
-                        config = choice(TagColor.entries.map { it.name }, colors = TagColor.entries.associateBy { it.name }))
+                        config = choice(TagColor.entries.map { it.name },
+                            labels = TagColor.entries.associate { it.name to text("tag_color_${it.name.lowercase()}") },
+                            colors = TagColor.entries.associateBy { it.name }))
                 )),
                 required = true,
                 minItems = 2,
