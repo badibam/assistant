@@ -506,8 +506,8 @@ enum class FieldsLayout {
     /** One field per line, its name as large as a title, its value on the rest of the line: a summary. */
     LINE,
     /**
-     * Two fields per line, each "Mood: Calm" with a small name; a long text or a ranking takes the
-     * whole width: a list item, a card.
+     * Two fields per line, each "Mood: Calm" with a small name, a long value wrapping within its
+     * half: a list item, a card.
      */
     COMPACT
 }
@@ -566,12 +566,12 @@ fun CustomFieldsDisplay(
             }
         }
 
-        // Rows of two short values, a long one alone on its row
+        // Two fields per row, the last one alone keeping half the width
         FieldsLayout.COMPACT -> Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            compactRows(shown, values).forEach { row ->
+            shown.chunked(2).forEach { row ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     row.forEach { field ->
                         FlowRow(
@@ -583,8 +583,7 @@ fun CustomFieldsDisplay(
                             FieldValue(field, values[field.name], context)
                         }
                     }
-                    // A short value alone on its row keeps half the width, as in the rows above
-                    if (row.size == 1 && !isWide(row.single(), values[row.single().name])) Spacer(modifier = Modifier.weight(1f))
+                    if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -598,35 +597,6 @@ fun CustomFieldsDisplay(
 fun shownCustomFields(config: org.json.JSONObject, values: Map<String, Any?>): List<FieldDefinition> =
     (config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList())
         .filter { values[it.name] != null || it.alwaysVisible }
-
-/** The longest text that still shares its row in a compact layout, in characters. */
-private const val SHORT_TEXT_CHARS = 30
-
-/**
- * The rows of a compact layout, in the fields' order: two short values side by side, a wide one
- * alone. A short value followed by a wide one stays alone on its row.
- */
-internal fun compactRows(fields: List<FieldDefinition>, values: Map<String, Any?>): List<List<FieldDefinition>> {
-    val rows = mutableListOf<List<FieldDefinition>>()
-    fun wide(field: FieldDefinition) = isWide(field, values[field.name])
-    fields.forEach { field ->
-        val last = rows.lastOrNull()
-        if (!wide(field) && last != null && last.size == 1 && !wide(last.single())) rows[rows.lastIndex] = last + field
-        else rows.add(listOf(field))
-    }
-    return rows
-}
-
-/**
- * Whether a value needs a whole row in a compact layout, by the value itself: a text longer than
- * a few words or on several lines, a ranking's numbered options. A text field is unlimited unless
- * set otherwise, so its declared length says nothing of the value. A scale's gauge fits in half.
- */
-internal fun isWide(field: FieldDefinition, value: Any?): Boolean = when (field.type) {
-    FieldType.TEXT -> value is String && (value.length > SHORT_TEXT_CHARS || '\n' in value)
-    FieldType.CHOICE -> ChoiceSettings.fromConfig(field.config).shape == ChoiceShape.ORDERED
-    else -> false
-}
 
 /**
  * Resolves field definitions from the appropriate metadata source.
