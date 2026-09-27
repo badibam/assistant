@@ -52,6 +52,14 @@ fun ZoneScreen(
     // Load automations for this zone
     var automations by remember { mutableStateOf<List<com.assistant.core.ai.data.Automation>>(emptyList()) }
     var isLoadingAutomations by remember { mutableStateOf(true) }
+
+    // The zone shows "loading" until its tools and automations are first read. A later reload
+    // (an automation switched on, a tool changed or duplicated) keeps the content on screen and
+    // updates it when the new data arrives: replaced by "loading", the whole screen would blink.
+    var loadedOnce by remember { mutableStateOf(false) }
+    LaunchedEffect(isLoading, isLoadingAutomations) {
+        if (!isLoading && !isLoadingAutomations) loadedOnce = true
+    }
     
     // State for showing/hiding available tools list - persiste orientation changes
     var showAvailableToolsForGroup by rememberSaveable { mutableStateOf<String?>(null) } // null = hidden, "" = ungrouped, "group_name" = specific group
@@ -275,7 +283,7 @@ fun ZoneScreen(
         )
 
         // Display sections by group
-        if (isLoading || isLoadingAutomations) {
+        if (!loadedOnce) {
             UI.Text(
                 text = s.shared("message_loading"),
                 type = TextType.BODY,
