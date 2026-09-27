@@ -19,8 +19,9 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Seuil de taille des données par automation — quand une automation légitime montre un `DATA_REFUSED` dans son historique d'exécution ; la valeur globale deviendra la valeur par défaut.
 - Marquer les lignes que les migrations 13→14 et 14→15 n'ont pas su transformer, et le dire une fois au démarrage (jamais les supprimer) — si des lignes `MIGRATION` apparaissent en « Error » dans l'écran des journaux.
 - Validation désactivée par défaut, que l'IA contourne donc sans rien demander (`docs/design/architecture-audit-debt.md`) — décision reportée le 2026-09-22.
-- Outils jamais livrés : conception en cours dans `docs/design/missing-tools.md` (tri fait le 2026-09-27).
+- Outils jamais livrés : conception en cours dans `docs/design/missing-tools.md` (tri fait, Liste livrée, Calcul et Graphique esquissés le 2026-09-27) ; prochaine étape : Objectif, ou REFERENCE (prérequis de Calcul).
 - L'écran d'une zone dessine toute tuile en LINE, quel que soit le mode d'affichage réglé (`ZoneScreen`) : la tuile d'une Liste en CONDENSED, EXTENDED, SQUARE ou FULL n'apparaîtra qu'avec la grille (`docs/design/grid-layout.md`).
+- Le Suivi (tableau de l'historique) et Messages (cartes des envois) n'affichent pas les champs personnalisés de leurs entrées, qu'on ne voit qu'en modification — à trancher : où, et dans quelle disposition (`CustomFieldsDisplay`, `docs/DATA.md`).
 - Streaming des réponses IA (Claude et OpenAI), avec le TCP keep-alive — quand des messages « requête envoyée, réponse perdue » s'accumulent dans les sessions : le réseau coupe les connexions restées silencieuses pendant la génération.
 
 ## Recette sur l'appareil
