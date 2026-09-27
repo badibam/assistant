@@ -44,7 +44,7 @@ La config n'est jamais filtrée. Une **mention d'entrées filtrées** transmet �
   | tous | sans réponse, avec réponse |
 
 - **Combinaison** : tous les filtres doivent être vrais (ET). Le OU n'existe qu'à l'intérieur d'un champ (« est l'une de », « entre ») ; un OU entre champs se fait avec deux pointeurs.
-- **Saisie de la valeur** : le composant de saisie du champ (`FieldInput`) ; pour TEXT et CHOICE, la liste des valeurs présentes (`DataNavigator.getDistinctValues`) en plus.
+- **Saisie de la valeur** : le composant de saisie du champ (`FieldInput`) ; pour TEXT, la liste des valeurs présentes (`tool_data.values`) en plus ; un CHOICE a déjà ses options.
 - **Dates** : tout filtre sur une DATE ou un DATETIME prend le sélecteur de période — dates fixes dans le chat, valeurs relatives dans une automation, recalculées à chaque exécution (« échéance dans les 7 prochains jours »). Une TIME prend un choix d'heure.
 
 ## Le côté IA
@@ -67,10 +67,9 @@ Changer de niveau efface ce qui n'y a plus de sens, et le résumé le montre. La
 
 ## Fait
 
-Le 2026-09-26 : `filters` dans `tool_data.get`, la forme enregistrée (`PointerConfig`, migration v44) et l'écran (`PointerSelector`) pour une zone (config ou mention) et un outil (config, entrées, période, filtres, champs, mention d'entrées restreintes). Le code et `docs/DATA.md` en sont le registre. Le 2026-09-27 : les noms relus à chaque lecture, à l'écran comme pour l'IA (`EnrichmentText`, migration v45).
+Le 2026-09-26 : `filters` dans `tool_data.get`, la forme enregistrée (`PointerConfig`, migration v44) et l'écran (`PointerSelector`) pour une zone (config ou mention) et un outil (config, entrées, période, filtres, champs, mention d'entrées restreintes). Le code et `docs/DATA.md` en sont le registre. Le 2026-09-27 : les noms relus à chaque lecture, à l'écran comme pour l'IA (`EnrichmentText`, migration v45), et les valeurs présentes d'un champ texte proposées dans ses filtres (`tool_data.values`).
 
 ## Reste
 
 - **L'app et l'entrée comme cibles**, et les entrées d'une zone : elles demandent une lecture sur plusieurs outils (requête neuve ou plusieurs `tool_data.get`), les réglages de l'app comme config, et une étiquette par entrée que chaque type d'outil fournit (une note n'a pas de nom). La liste des entrées d'un outil dans le sélecteur : ordre, recherche.
-- **Les valeurs présentes** proposées pour un filtre TEXT (`DataNavigator.getDistinctValues`).
 - Les libellés relatifs complets dans les automations (« le jour même », « début / fin du jour même »).

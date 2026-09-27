@@ -65,6 +65,7 @@
     <string name="pointer_filters_title">Filtres et champs</string>
     <string name="pointer_filter_new">Nouveau filtre</string>
     <string name="pointer_filter_field">Champ</string>
+    <string name="pointer_filter_present_values">Valeurs déjà saisies</string>
     <string name="pointer_filter_condition">Condition</string>
     <string name="pointer_choose_fields">Choisir les champs</string>
     <string name="pointer_part_config">la config de %1$s</string>
@@ -203,6 +204,7 @@
     <string name="service_error_param_unknown">Paramètre \'%1$s\' inconnu. Paramètres : %2$s</string>
     <string name="service_error_filter_unreadable">Filtre illisible : %1$s. Un filtre s\'écrit {\"field\": \"data.value\", \"op\": \"&lt;\", \"value\": 10}.</string>
     <string name="service_error_filter_unknown_field">Filtre sur \'%1$s\' : les entrées de cet outil n\'ont pas ce champ à filtrer. Champs : %2$s</string>
+    <string name="service_error_values_not_text">« %1$s » n\'est pas un champ texte : seul un texte a des valeurs à proposer</string>
     <string name="service_error_filter_operator">Filtre sur \'%1$s\' : la condition \'%2$s\' ne s\'applique pas à un champ %3$s. Conditions : %4$s</string>
     <string name="service_error_filter_value">Filtre sur \'%1$s\' avec \'%2$s\' : valeur %3$s illisible, attendu %4$s</string>
     <string name="filter_value_none">aucune valeur</string>

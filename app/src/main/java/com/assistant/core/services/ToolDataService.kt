@@ -46,6 +46,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
     companion object {
         /** The parameters of tool_data.get, and the phase the coordinator adds to every call. */
         private val GET_PARAMS = setOf("tool_instance_id", "fields", "filters", "limit", "page", "running", "phase")
+        private val VALUES_PARAMS = setOf("tool_instance_id", "field", "limit", "phase")
+        /** How many values a text field offers at most, the most frequent. */
+        private const val VALUES_LIMIT = 20
     }
 
     private val s = Strings.`for`(context = context)
@@ -59,6 +62,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "update" -> updateEntry(params, token)
                 "delete" -> deleteEntry(params, token)
                 "get" -> getEntries(params, token)       // Standard REST GET
+                "values" -> getValues(params, token)     // The values a text field holds, to pick one in a filter
                 "get_single" -> getSingleEntry(params, token)  // GET single entry by ID
                 "stats" -> getStats(params, token)       // GET /tool_data/stats
                 "delete_all" -> deleteAllEntries(params, token)  // POST /tool_data/delete_all
@@ -414,6 +418,37 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 }
             )
         )
+    }
+
+    /**
+     * The values a text field holds among a tool's entries, the most frequent first: what a filter
+     * on it offers to pick, besides typing. Params: tool_instance_id, field (a path, as in
+     * filters), limit (default [VALUES_LIMIT]).
+     */
+    private suspend fun getValues(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        params.keys().asSequence().firstOrNull { it !in VALUES_PARAMS }?.let { param ->
+            return OperationResult.error(s.shared("service_error_param_unknown").format(param, (VALUES_PARAMS - "phase").joinToString(", ")))
+        }
+        val toolInstanceId = params.optString("tool_instance_id")
+        if (toolInstanceId.isEmpty()) return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
+        val path = params.optString("field")
+
+        val target = when (val loaded = loadWriteTarget(toolInstanceId)) {
+            is WriteTarget.Refused -> return OperationResult.error(loaded.error)
+            is WriteTarget.Ready -> loaded
+        }
+        val declared = ToolTypeManager.getToolType(target.tool.tooltype)?.getEntryFields(target.config, context)
+            ?: return OperationResult.error(s.shared("service_error_data_schema_not_found").format("", target.tool.tooltype))
+        val fields = EntryFilters.filterableFields(declared, userFields(target)) { s.shared(it) }
+        val field = fields[path]
+            ?: return OperationResult.error(s.shared("service_error_filter_unknown_field").format(path, fields.keys.joinToString(", ")))
+        // A number, a date or a choice is entered with its own input: only a text has values to offer
+        if (field.type != FieldType.TEXT) return OperationResult.error(s.shared("service_error_values_not_text").format(field.displayName))
+
+        val query = EntryFilters.values(toolInstanceId, path, params.optInt("limit", VALUES_LIMIT))
+        val values = getToolDataDao().distinctValues(SimpleSQLiteQuery(query.clause, query.args.toTypedArray()))
+        return OperationResult.success(mapOf("values" to values))
     }
 
     private suspend fun getSingleEntry(params: JSONObject, token: CancellationToken): OperationResult {

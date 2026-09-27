@@ -185,6 +185,18 @@ class EntryFiltersTest {
     }
 
     @Test
+    fun `a text field's values are the tool's own, most frequent first, without no answer nor empty text`() {
+        entry("d", 4000, "Morning", "{}", """{"note": "Tired"}""", null)
+        entry("e", 5000, "Night", "{}", """{"note": "Tired"}""", null)
+
+        // Tired twice, Felt Great once; entry b's empty note and entry c's missing one are left out
+        assertEquals(listOf("Tired", "Felt Great"), run(EntryFilters.values("t1", "extra.note", 20)))
+        // A column reads as itself, and entry other, of another tool, is not counted
+        assertEquals(listOf("Morning", "Evening", "Night"), run(EntryFilters.values("t1", "name", 20)))
+        assertEquals(listOf("Morning"), run(EntryFilters.values("t1", "name", 1)))
+    }
+
+    @Test
     fun `a filter that is not an object is refused`() {
         assertTrue(refused("""["timestamp > 3"]""").startsWith("service_error_filter_unreadable"))
     }

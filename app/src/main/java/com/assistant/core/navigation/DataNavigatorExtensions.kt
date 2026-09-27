@@ -41,62 +41,6 @@ fun DataNavigator.getPathDisplayName(path: String): String {
     }
 }
 
-/**
- * Extension building the filter criteria a context implies
- */
-suspend fun DataNavigator.buildFilterCriteria(
-    selectedPath: String,
-    filterType: FilterType = FilterType.ALL
-): FilterCriteria {
-    return when (filterType) {
-        FilterType.DISTINCT_VALUES -> {
-            val result = getDistinctValues(selectedPath)
-            FilterCriteria(
-                path = selectedPath,
-                availableValues = result.data.map { it.toString() },
-                resultStatus = result.status
-            )
-        }
-        FilterType.STATS_SUMMARY -> {
-            val result = getStatsSummary(selectedPath)
-            FilterCriteria(
-                path = selectedPath,
-                statsInfo = result.data.map { it.toString() },
-                resultStatus = result.status
-            )
-        }
-        FilterType.ALL -> {
-            val distinctResult = getDistinctValues(selectedPath)
-            val statsResult = getStatsSummary(selectedPath)
-            FilterCriteria(
-                path = selectedPath,
-                availableValues = distinctResult.data.map { it.toString() },
-                statsInfo = statsResult.data.map { it.toString() },
-                resultStatus = distinctResult.status
-            )
-        }
-    }
-}
-
-/**
- * Types de filtrage disponibles
- */
-enum class FilterType {
-    DISTINCT_VALUES,  // Valeurs distinctes uniquement
-    STATS_SUMMARY,    // Résumé statistique uniquement
-    ALL              // Tout ce qui est disponible
-}
-
-/**
- * Filter criteria built for one path
- */
-data class FilterCriteria(
-    val path: String,
-    val availableValues: List<String> = emptyList(),
-    val statsInfo: List<String> = emptyList(),
-    val resultStatus: com.assistant.core.navigation.data.DataResultStatus
-)
-
 // Tool Instance Resolution
 
 /**

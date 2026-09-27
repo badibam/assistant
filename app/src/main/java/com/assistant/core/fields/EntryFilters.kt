@@ -200,6 +200,25 @@ object EntryFilters {
         return SqlCondition("SELECT COUNT(*) FROM tool_data WHERE ${where.clause}", where.args)
     }
 
+    /**
+     * The values [path] holds among the entries of [toolInstanceId], the most frequent first, at
+     * most [limit]: what a filter on a text field offers to pick. No answer and empty text are
+     * left out.
+     */
+    fun values(toolInstanceId: String, path: String, limit: Int): SqlCondition {
+        val (expr, exprArgs) = valueExpr(path)
+        return SqlCondition(
+            "SELECT $expr AS value FROM tool_data WHERE tool_instance_id = ? GROUP BY value " +
+                "HAVING value IS NOT NULL AND value <> '' ORDER BY COUNT(*) DESC, value LIMIT ?",
+            exprArgs + toolInstanceId + limit
+        )
+    }
+
+    /** A field's value as SQL, with the arguments it binds: a column, or a path read through json_extract. */
+    private fun valueExpr(path: String): Pair<String, List<Any>> =
+        if (path in COLUMNS) path to emptyList()
+        else "json_extract(${path.substringBefore('.', "")}, ?)" to listOf("$.\"${path.substringAfter('.')}\"")
+
     private fun where(toolInstanceId: String, filters: List<EntryFilter>, fields: Map<String, FieldDefinition>): SqlCondition {
         val conditions = listOf(SqlCondition("tool_instance_id = ?", listOf(toolInstanceId))) +
             filters.map { condition(it, fields.getValue(it.field)) }
@@ -218,10 +237,7 @@ object EntryFilters {
         val isList = field.type == FieldType.CHOICE && ChoiceSettings.fromConfig(field.config).shape.isList
 
         // The value as SQL, with the arguments it binds itself
-        val (expr, exprArgs) = when {
-            filter.field in COLUMNS -> filter.field to emptyList()
-            else -> "json_extract($container, ?)" to listOf(jsonPath)
-        }
+        val (expr, exprArgs) = valueExpr(filter.field)
 
         // An hour is compared as minutes since midnight: "9:05" is stored as well as "09:05"
         fun minutes(sql: String) = "(CAST(substr($sql, 1, instr($sql, ':') - 1) AS INTEGER) * 60 + CAST(substr($sql, instr($sql, ':') + 1) AS INTEGER))"

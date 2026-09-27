@@ -65,6 +65,7 @@
     <string name="pointer_filters_title">Filters and fields</string>
     <string name="pointer_filter_new">New filter</string>
     <string name="pointer_filter_field">Field</string>
+    <string name="pointer_filter_present_values">Values already entered</string>
     <string name="pointer_filter_condition">Condition</string>
     <string name="pointer_choose_fields">Choose the fields</string>
     <string name="pointer_part_config">the config of %1$s</string>
@@ -203,6 +204,7 @@
     <string name="service_error_param_unknown">Unknown parameter \'%1$s\'. Parameters: %2$s</string>
     <string name="service_error_filter_unreadable">Unreadable filter: %1$s. A filter is {\"field\": \"data.value\", \"op\": \"&lt;\", \"value\": 10}.</string>
     <string name="service_error_filter_unknown_field">Filter on \'%1$s\': the entries of this tool have no such field to filter on. Fields: %2$s</string>
+    <string name="service_error_values_not_text">'%1$s' is not a text field: only a text has values to offer</string>
     <string name="service_error_filter_operator">Filter on \'%1$s\': the condition \'%2$s\' does not apply to a %3$s field. Conditions: %4$s</string>
     <string name="service_error_filter_value">Filter on \'%1$s\' with \'%2$s\': value %3$s unreadable, expected %4$s</string>
     <string name="filter_value_none">no value</string>

@@ -14,7 +14,6 @@ Architecture pour navigation dans les données via schémas avec chargement à l
 class DataNavigator(private val context: Context) {
     suspend fun getRootNodes(): List<SchemaNode>
     suspend fun getChildren(path: String): List<SchemaNode>
-    suspend fun getDistinctValues(path: String): ContextualDataResult
 }
 ```
 
@@ -40,6 +39,7 @@ Toute valeur de l'app est un champ d'un type de champ (`core/fields`, `FieldType
 - **Unité** : l'unité fixe (`unit`, « km ») n'est pas un réglage de la valeur mais un réglage à part (`FieldTypeSettings.unit`), qu'ajoute qui déclare la valeur quand toutes ses valeurs la partagent : un nombre ou une plage de l'utilisateur, un compteur. Un suivi numérique n'en a pas : chaque entrée porte la sienne (`data.unit`), un choix ouvert sur la liste `units`.
 - **DURÉE** : des millisecondes ; la précision et la forme de la config ne décident que de la saisie et de l'affichage.
 - **Lire des entrées filtrées** : `tool_data.get` prend des `filters`, `{field, op, value}`, qui doivent tous être vrais. Le champ est un chemin du schéma (`timestamp`, `data.x`, `extra.x`, une clé d'état filtrable) ; les conditions dépendent de son type (`EntryFilters.operatorsFor`), et `absent` / `present` disent s'il a une réponse. Une période est un filtre sur `timestamp`. Les filtres s'exécutent en SQL (`json_extract`), donc une page et son décompte sont ceux des entrées filtrées.
+- **Valeurs d'un champ texte** : `tool_data.values` (`tool_instance_id`, `field`, `limit` à 20 par défaut) rend les valeurs qu'un champ texte prend dans les entrées d'un outil, les plus fréquentes d'abord, sans les réponses absentes ni vides (`EntryFilters.values`). C'est ce qu'un filtre propose de choisir au lieu de taper ; un champ d'un autre type est refusé, sa saisie ayant déjà ses valeurs.
 
 Un réglage se déclare avec les mêmes champs, assemblés par un ensemble fixe de formes (`SettingNode`) : champ, groupe, liste, variante (des réglages selon la valeur d'un CHOICE, stockés à plat à côté de lui) et section (de l'affichage seul). Un réglage déclare sa valeur par défaut, qui est aussi le sens de son absence ; il peut être secret (saisi masqué, jamais envoyé à l'IA ni journalisé). L'écran d'une config est le formulaire de sa déclaration (`SettingsForm`), où un type d'outil peut brancher son propre éditeur sur un réglage. Une liste de groupes déclare son résumé (`summary`), les réglages d'un élément qui le représentent : le formulaire montre chaque élément fermé, sur une ligne de ces valeurs, et l'ouvre au toucher de cette ligne ; plusieurs peuvent être ouverts, un élément ajouté s'ouvre.
 

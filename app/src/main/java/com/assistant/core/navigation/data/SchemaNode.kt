@@ -20,24 +20,3 @@ enum class NodeType {
     TOOL,   // Instance d'outil
     FIELD   // Champ de données
 }
-
-/**
- * Result of a contextual data lookup
- */
-data class ContextualDataResult(
-    val status: DataResultStatus,
-    val data: List<Any> = emptyList(),
-    val message: String? = null,
-    val totalCount: Int = 0
-)
-
-/**
- * Status of a data lookup result
- */
-enum class DataResultStatus {
-    OK,              // Données complètes retournées
-    TRUNCATED,       // Données partielles (trop nombreuses)
-    FALLBACK,        // Stats/résumé au lieu des valeurs
-    TIMEOUT,         // Calcul trop long
-    ERROR            // Erreur technique
-}

@@ -84,6 +84,10 @@ abstract class BaseToolDataDao {
     @RawQuery
     abstract suspend fun getFiltered(query: SupportSQLiteQuery): List<ToolDataEntity>
 
+    /** The values a query built by EntryFilters.values returns. */
+    @RawQuery
+    abstract suspend fun distinctValues(query: SupportSQLiteQuery): List<String>
+
     /** The count a query built by EntryFilters.count returns. */
     @RawQuery
     abstract suspend fun countFiltered(query: SupportSQLiteQuery): Int

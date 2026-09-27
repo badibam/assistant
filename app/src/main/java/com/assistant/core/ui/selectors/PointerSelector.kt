@@ -130,6 +130,7 @@ fun PointerSelector(
 
     if (showFilters && selection.tool != null) {
         PointerFiltersDialog(
+            toolInstanceId = selection.tool!!.id,
             fields = fields,
             filters = selection.filters,
             chosenFields = selection.fields,

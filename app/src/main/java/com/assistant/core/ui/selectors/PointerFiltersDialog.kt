@@ -16,6 +16,13 @@ import com.assistant.core.fields.FieldInput
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.FilterOperator
 import com.assistant.core.strings.Strings
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.ui.ButtonType
+import com.assistant.core.ui.Size
+import com.assistant.core.utils.LogManager
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
 import com.assistant.core.ui.DialogType
@@ -36,12 +43,17 @@ import java.time.Instant
  * is filtered as the period is, with the period editor: its start and its end, relative in an
  * automation. The period itself is not here: it has its place on the selector.
  *
+ * A text field also offers the values its entries hold, the most frequent first, to pick one
+ * rather than type it.
+ *
+ * @param toolInstanceId The tool whose entries are filtered
  * @param relative Whether a date is relative, the pointer being replayed later
  * @param fields The tool's fields a filter may name, by path
  * @param chosenFields The fields to attach, all of them when null
  */
 @Composable
 fun PointerFiltersDialog(
+    toolInstanceId: String,
     fields: Map<String, FieldDefinition>,
     filters: JSONArray,
     chosenFields: List<String>?,
@@ -152,8 +164,12 @@ fun PointerFiltersDialog(
                     draft = "{}"
                 })
             } else if (draftField != null && draftOp != null) {
-                FilterValueInput(draftField, draftOp, if (draftJson.isNull("value")) null else draftJson.opt("value")) { value ->
+                fun setValue(value: Any?) {
                     draft = JSONObject(draft).apply { if (value == null) remove("value") else put("value", value) }.toString()
+                }
+                FilterValueInput(draftField, draftOp, if (draftJson.isNull("value")) null else draftJson.opt("value"), ::setValue)
+                if (draftField.type == FieldType.TEXT && (draftOp == FilterOperator.CONTAINS || draftOp == FilterOperator.EQUAL)) {
+                    PresentValues(toolInstanceId, draftJson.getString("field"), ::setValue)
                 }
                 UI.ActionButton(action = ButtonAction.ADD, enabled = draftValid, onClick = {
                     current = withDraft().toString()
@@ -183,6 +199,39 @@ private const val PERIOD = "period"
 private fun day(field: FieldDefinition?): ((Long) -> String)? =
     if (field?.type != FieldType.DATE) null
     else { millis -> Instant.ofEpochMilli(millis).atZone(AppConfigManager.getDateTimeConfig().getZoneId()).toLocalDate().toString() }
+
+/** The values [path] holds among the tool's entries, each a button that picks it. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PresentValues(toolInstanceId: String, path: String, onPick: (String) -> Unit) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    // null while they are read; a read that fails says so
+    var values by remember(path) { mutableStateOf<List<String>?>(null) }
+    var failed by remember(path) { mutableStateOf(false) }
+    LaunchedEffect(toolInstanceId, path) {
+        val result = Coordinator(context).processUserAction("tool_data.values", mapOf("tool_instance_id" to toolInstanceId, "field" to path))
+        if (result.isSuccess) {
+            values = (result.data?.get("values") as? List<*>)?.map { it.toString() } ?: emptyList()
+        } else {
+            LogManager.ui("PointerFiltersDialog: values of $path not read: ${result.error}", "ERROR")
+            failed = true
+        }
+    }
+    when {
+        failed -> UI.Text(text = s.shared("error_loading_options"), type = TextType.CAPTION)
+        !values.isNullOrEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            UI.Text(text = s.shared("pointer_filter_present_values"), type = TextType.CAPTION)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                values!!.forEach { value ->
+                    UI.Button(type = ButtonType.DEFAULT, size = Size.S, onClick = { onPick(value) }) {
+                        UI.Text(text = value, type = TextType.CAPTION)
+                    }
+                }
+            }
+        }
+    }
+}
 
 /**
  * The value of a filter, entered as its field is: none for "no answer" and "answered", two for
