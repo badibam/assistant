@@ -38,6 +38,7 @@ object ScheduleSettings {
                     ),
                     "WeeklyCustom" to listOf(
                         SettingNode.ListOf("moments", text("schedule_weekly_custom_label"), minItems = 1, required = true,
+                            summary = listOf("day_of_week", "time"),
                             item = SettingNode.Item.Of(listOf(
                                 SettingNode.Field(dayOfWeek(text), required = true),
                                 timeField(text)
@@ -45,6 +46,7 @@ object ScheduleSettings {
                     ),
                     "YearlyRecurrent" to listOf(
                         SettingNode.ListOf("dates", text("schedule_yearly_recurrent_label"), minItems = 1, required = true,
+                            summary = listOf("day", "month", "time"),
                             item = SettingNode.Item.Of(listOf(
                                 SettingNode.Field(month(text), required = true),
                                 field("day", text("schedule_day_label"), FieldType.NUMERIC, required = true, config = whole(1, 31)),

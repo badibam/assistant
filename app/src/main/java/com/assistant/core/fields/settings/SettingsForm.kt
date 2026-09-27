@@ -11,6 +11,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.FieldInput
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import com.assistant.core.fields.FieldValue
+import com.assistant.core.strings.Strings
 import com.assistant.core.utils.JsonUtils
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
@@ -153,45 +162,102 @@ private fun ListForm(
     val values = (0 until items.length()).map { items.get(it) }
     fun publish(next: List<Any>) = onChange(JSONArray(next))
 
+    // The elements open, by position: every one starts closed, a new one opens, and several may
+    // be open at once. Screen state only, never stored.
+    var open by rememberSaveable { mutableStateOf(intArrayOf()) }
+
     // Positions, not elements, are what the column orders: an edited element is a new object,
     // and keying the items by it would rebuild the field being typed in at every keystroke
     UI.ReorderableColumn(
         items = values.indices.toList(),
-        onMove = { from, to -> publish(values.toMutableList().also { it.add(to, it.removeAt(from)) }) },
+        onMove = { from, to ->
+            // An element keeps its open state where it lands
+            val order = values.indices.toMutableList().apply { add(to, removeAt(from)) }
+            open = order.indices.filter { order[it] in open }.toIntArray()
+            publish(order.map { values[it] })
+        },
         spacing = 8.dp
     ) { _, index ->
         val item = values[index]
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.weight(1f)) {
-                when (val shape = list.item) {
-                    is SettingNode.Item.Value -> FieldInput(shape.definition, item.takeIf { it != JSONObject.NULL }, { value ->
+        fun remove() {
+            open = open.filter { it != index }.map { if (it > index) it - 1 else it }.toIntArray()
+            publish(values.toMutableList().also { it.removeAt(index) })
+        }
+        when (val shape = list.item) {
+            is SettingNode.Item.Value -> Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.weight(1f)) {
+                    FieldInput(shape.definition, item.takeIf { it != JSONObject.NULL }, { value ->
                         publish(values.toMutableList().also { it[index] = value ?: JSONObject.NULL })
                     }, context)
-                    is SettingNode.Item.Of -> UI.Card(type = CardType.DEFAULT) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            SettingsForm(shape.nodes, item as? JSONObject ?: JSONObject(), { element ->
-                                publish(values.toMutableList().also { it[index] = element })
+                }
+                DragHandle()
+                UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = { remove() })
+            }
+            is SettingNode.Item.Of -> UI.Card(type = CardType.DEFAULT) {
+                val element = item as? JSONObject ?: JSONObject()
+                val isOpen = index in open
+                Column {
+                    // The summary line opens and closes the element; the handle and the bin keep
+                    // their own gestures
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { open = if (isOpen) open.filter { it != index }.toIntArray() else open + index }
+                                .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(modifier = Modifier.weight(1f)) { Summary(list.summary, shape.nodes, element, context) }
+                            UI.Icon(if (isOpen) "chevron-up" else "chevron-down", size = 20.dp)
+                        }
+                        DragHandle()
+                        UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = { remove() })
+                    }
+                    if (isOpen) {
+                        Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
+                            SettingsForm(shape.nodes, element, { changed ->
+                                publish(values.toMutableList().also { it[index] = changed })
                             }, context)
                         }
                     }
                 }
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                DragHandle()
-                UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = {
-                    publish(values.toMutableList().also { it.removeAt(index) })
-                })
-            }
         }
     }
     UI.ActionButton(action = ButtonAction.ADD, display = ButtonDisplay.ICON, size = Size.S, onClick = {
-        // A new element starts from its defaults; a value starts empty, to be filled in
+        // A new element starts from its defaults, open to be filled in; a value starts empty
         val fresh: Any = when (val shape = list.item) {
             is SettingNode.Item.Of -> SettingDefaults.of(shape.nodes)
             is SettingNode.Item.Value -> JSONObject.NULL
         }
+        open = open + values.size
         publish(values + fresh)
     })
+}
+
+/**
+ * The line that stands for a closed element: the values of its [summary] settings, each shown by
+ * its field type, those without a value left out; an element with none of them says it is
+ * untitled.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Summary(summary: List<String>, nodes: List<SettingNode>, element: JSONObject, context: Context) {
+    val shown = summary.mapNotNull { key ->
+        val value = JsonUtils.toValue(element.opt(key)?.takeIf { it != JSONObject.NULL })
+            ?.takeIf { it.toString().isNotEmpty() } ?: return@mapNotNull null
+        requireNotNull(nodes.storedField(key)) to value
+    }
+    if (shown.isEmpty()) {
+        UI.Text(Strings.`for`(context = context).shared("list_item_untitled"), TextType.CAPTION)
+        return
+    }
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        shown.forEach { (definition, value) -> FieldValue(definition, value, context) }
+    }
 }
 
 /** A card with [label] as its title, over [content]. */

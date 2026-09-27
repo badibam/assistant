@@ -23,7 +23,7 @@ class SettingVariantsTest {
             field("name", FieldType.TEXT),
             if (withValue) field("value", FieldType.NUMERIC) else null,
             if (withUnit) field("unit", FieldType.TEXT) else null
-        )))
+        )), summary = listOf("name"))
     }
 
     private val variant = SettingNode.Variant(

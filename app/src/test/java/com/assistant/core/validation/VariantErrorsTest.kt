@@ -27,7 +27,8 @@ class VariantErrorsTest {
     /** A config shaped like a tool's: shared settings, a list of field definitions, a variant on "type". */
     private val schema = SettingsSchemaGenerator.generate(listOf(
         SettingNode.Field(field("name", FieldType.TEXT), required = true),
-        SettingNode.ListOf("extra_fields", "Fields", SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true),
+        SettingNode.ListOf("extra_fields", "Fields", SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true,
+                summary = listOf("display_name")),
         SettingNode.Variant(
             selector = SettingNode.Field(field("type", FieldType.CHOICE,
                 mapOf("options" to listOf(mapOf("value" to "numeric"), mapOf("value" to "text"))))),

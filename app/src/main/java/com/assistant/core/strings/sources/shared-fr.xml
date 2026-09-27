@@ -447,6 +447,7 @@
     <string name="label_zone">Zone</string>
     <string name="label_tool">Outil</string>
     <string name="label_no_value">Aucune valeur</string>
+    <string name="list_item_untitled">Sans nom</string>
 
     <!-- App Config - Format Settings labels -->
     <string name="app_config_format_week_start_day">Jour de début de semaine</string>

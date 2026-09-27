@@ -447,6 +447,7 @@
     <string name="label_zone">Zone</string>
     <string name="label_tool">Tool</string>
     <string name="label_no_value">No value</string>
+    <string name="list_item_untitled">Untitled</string>
 
     <!-- App Config - Format Settings labels -->
     <string name="app_config_format_week_start_day">Day the week starts on</string>

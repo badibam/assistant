@@ -87,11 +87,14 @@ object FieldTypeSettings {
                     field("value", "field_config_option_value", FieldType.TEXT, text, required = true,
                         config = mapOf("length" to TextLength.SHORT.name)),
                     label("label", "field_config_option_label", text),
-                    field("color", "field_config_option_color", FieldType.CHOICE, text, config = choice(TagColor.entries.map { it.name }))
+                    // Each color is its own swatch, wherever the value shows
+                    field("color", "field_config_option_color", FieldType.CHOICE, text,
+                        config = choice(TagColor.entries.map { it.name }, colors = TagColor.entries.associateBy { it.name }))
                 )),
                 required = true,
                 minItems = 2,
-                distinct = true
+                distinct = true,
+                summary = listOf("value", "label", "color")
             ),
             flag("multiple", "field_config_multiple", "field_type_choice_multiple_description", text),
             flag("ordered", "field_config_ordered", "field_type_choice_ordered_description", text),
@@ -133,8 +136,8 @@ object FieldTypeSettings {
         default = default
     )
 
-    private fun choice(values: List<String>, labels: Map<String, String> = emptyMap()): Map<String, Any> =
-        mapOf("options" to ChoiceSettings.storedOptions(values, labels))
+    private fun choice(values: List<String>, labels: Map<String, String> = emptyMap(), colors: Map<String, TagColor> = emptyMap()): Map<String, Any> =
+        mapOf("options" to ChoiceSettings.storedOptions(values, labels, colors))
 
     /** A setting that is a number, a bound or a step, with the decimals a setting may need. */
     private fun number(name: String, labelKey: String, text: (String) -> String, required: Boolean = false, default: Any? = null) =

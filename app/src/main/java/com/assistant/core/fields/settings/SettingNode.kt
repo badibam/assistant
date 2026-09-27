@@ -45,6 +45,10 @@ sealed class SettingNode {
      * @property distinct Whether two elements may be equal
      * @property fieldDefinitions Whether its elements are field definitions, which the model
      *   reads once in its prompt rather than in every schema holding such a list
+     * @property summary For a list of groups, the settings of an element that stand for it when
+     *   it is closed, in the order shown: a form shows every element closed, one line of these
+     *   values, and opens it on demand. Required for such a list, and each name is a setting
+     *   stored in the element itself.
      */
     data class ListOf(
         val name: String,
@@ -53,8 +57,20 @@ sealed class SettingNode {
         val required: Boolean = false,
         val minItems: Int = 0,
         val distinct: Boolean = false,
-        val fieldDefinitions: Boolean = false
-    ) : SettingNode()
+        val fieldDefinitions: Boolean = false,
+        val summary: List<String> = emptyList()
+    ) : SettingNode() {
+        init {
+            if (item is Item.Of) {
+                require(summary.isNotEmpty()) { "The list '$name' has groups for elements, and no summary" }
+                summary.forEach { key ->
+                    requireNotNull(item.nodes.storedField(key)) { "The summary of the list '$name' names '$key', which its elements do not store" }
+                }
+            } else {
+                require(summary.isEmpty()) { "The list '$name' has single values for elements: they are their own summary" }
+            }
+        }
+    }
 
     /** What one element of a [ListOf] is. */
     sealed class Item {
@@ -78,6 +94,25 @@ sealed class SettingNode {
         val label: String,
         val nodes: List<SettingNode>
     ) : SettingNode()
+}
+
+/**
+ * The field stored under [name] in the object these nodes describe: a field of its own, a
+ * variant's selector or one of its cases, a field of a section — not one inside a group or a list,
+ * which is stored in an object of its own.
+ */
+fun List<SettingNode>.storedField(name: String): FieldDefinition? {
+    for (node in this) {
+        val found = when (node) {
+            is SettingNode.Field -> node.definition.takeIf { it.name == name }
+            is SettingNode.Variant -> node.selector.definition.takeIf { it.name == name }
+                ?: node.cases.values.firstNotNullOfOrNull { it.storedField(name) }
+            is SettingNode.Section -> node.nodes.storedField(name)
+            is SettingNode.Group, is SettingNode.ListOf -> null
+        }
+        if (found != null) return found
+    }
+    return null
 }
 
 /**

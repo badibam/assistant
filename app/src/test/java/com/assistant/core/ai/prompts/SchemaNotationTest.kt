@@ -64,7 +64,8 @@ class SchemaNotationTest {
         val settings = listOf(
             SettingNode.Field(field("api_key", FieldType.TEXT), required = true, secret = true),
             SettingNode.Field(field("window", FieldType.DURATION), default = 3_600_000L),
-            SettingNode.ListOf("extra_fields", "Fields", SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true),
+            SettingNode.ListOf("extra_fields", "Fields", SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true,
+                summary = listOf("display_name")),
             SettingNode.Group("schedule", "Schedule", ScheduleSettings.nodes(text))
         ) + FieldType.entries.flatMap { FieldTypeSettings.configNodes(it, text) }.distinctBy { (it as? SettingNode.Field)?.definition?.name ?: it.hashCode().toString() }
         mapOf(

@@ -54,7 +54,8 @@ object ToolConfigSettings {
     private fun extraFieldsNode(context: Context): SettingNode {
         val text: (String) -> String = Strings.`for`(context = context)::shared
         return SettingNode.ListOf("extra_fields", text("custom_fields_section_title"),
-            SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true)
+            SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true,
+            summary = listOf("display_name", "type"))
     }
 
     /**

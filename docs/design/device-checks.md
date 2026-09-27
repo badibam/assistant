@@ -64,6 +64,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Réglages nombre (bornes et pas d'une échelle, d'un nombre) : « 0 » s'affiche « 0 », un champ se vide entièrement, « 0.5 » se tape point compris.
 - Config d'un outil : ses champs personnalisés viennent après ses réglages propres (valeur principale, unités, raccourcis).
 - Glisser-déposer par la poignée : les notes (la position tient après rechargement, pas de retour visible à l'ancien ordre au lâcher), les champs personnalisés d'une config et les options d'un de ces champs (la liste imbriquée bouge seule, l'autre ne suit pas), un classement ; la page défile quand on tient un élément près du bord haut ou bas ; la saisie d'un champ de la config garde le focus pendant qu'on tape ; TalkBack propose « Monter » et « Descendre » sur la poignée.
+- Listes de blocs dans une config (champs personnalisés, options d'un choix avec leur pastille, raccourcis d'un suivi, moments d'une récurrence) : fermées à l'ouverture de l'écran, une ligne de résumé chacune (« Sans nom » si vide) ; toucher la ligne ouvre et referme, plusieurs ouvertes à la fois ; un bloc ajouté s'ouvre ; un bloc déplacé ou une suppression au-dessus garde ouverts les bons blocs ; la rotation garde ce qui est ouvert.
 
 ## Réglages et affichage
 

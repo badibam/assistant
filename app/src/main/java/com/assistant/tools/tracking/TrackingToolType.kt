@@ -96,7 +96,8 @@ object TrackingToolType : ToolTypeContract {
                         field("allow_decrement", s.tool("field_allow_decrement"), s.tool("schema_config_counter_allow_decrement"),
                             FieldType.BOOLEAN, default = true)
                     else null,
-                    SettingNode.ListOf("items", s.tool("field_items"), SettingNode.Item.Of(item))
+                    SettingNode.ListOf("items", s.tool("field_items"), SettingNode.Item.Of(item),
+                        summary = item.map { it.definition.name })
                 )
             }
         ))
