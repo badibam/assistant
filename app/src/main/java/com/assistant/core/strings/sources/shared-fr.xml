@@ -1338,7 +1338,6 @@
     <string name="settings_logs_description">Consulter les logs d'erreurs pour debug</string>
 
     <!-- AI Data Headers (CommandExecutor prompt formatting) -->
-    <string name="ai_data_header_trusted">DONNÉES FIABLES</string>
     <string name="ai_data_header_tool">Outil \'%1$s\'</string>
     <string name="ai_data_result_count">Nombre de résultats : %1$d enregistrements</string>
     <string name="ai_data_filters">Filtres : %1$s</string>
@@ -1348,8 +1347,8 @@
     <string name="ai_data_template_filter">Filtre template : %1$s</string>
     <string name="ai_data_fields">Champs inclus : %1$s</string>
     <string name="ai_data_fields_all">tous</string>
-    <string name="ai_data_no_results_warning">⚠️ AUCUNE DONNÉE TROUVÉE - Ceci est le résultat complet. NE PAS refaire la requête.</string>
-    <string name="ai_data_complete_dataset">✓ Jeu de données complet pour les critères spécifiés - Utiliser directement, NE PAS refaire la requête.</string>
+    <string name="ai_data_no_results_warning">Aucune entrée ne répond à ces critères.</string>
+    <string name="ai_data_user_summary">« %1$s » : %2$d entrée(s) lue(s)</string>
 
     <!-- AI Enrichment - POINTER inline summaries -->
     <string name="ai_enrichment_pointer_zone">Zone</string>

@@ -305,8 +305,7 @@ class CommandExecutor(private val context: Context) {
                         LogManager.aiPrompt("Query succeeded but returned empty data", "WARN")
 
                         // Generate description for empty query result
-                        val dataTitle = generateDataTitle(command, data)
-                        val description = dataTitle.ifEmpty { s.shared("ai_system_query_no_data") }
+                        val description = userDetails(command, data).ifEmpty { s.shared("ai_system_query_no_data") }
 
                         return@withContext InternalCommandResult(
                             promptResult = PromptCommandResult("", ""),
@@ -342,7 +341,7 @@ class CommandExecutor(private val context: Context) {
 
                     // Get verbalized description for all commands
                     // - Action commands: use service verbalization (e.g., "Création de la zone \"Santé\"")
-                    // - Query commands: use generated data title (e.g., "Data from tool 'Poids' (5 records)")
+                    // - Query commands: a line for the user (userDetails), the data's header being the AI's
                     val verbalizedDescription = if (command.isActionCommand) {
                         // Enrich params with name from result for delete operations
                         // This allows verbalize() to access the name even after the entity is deleted
@@ -353,7 +352,7 @@ class CommandExecutor(private val context: Context) {
                         }
                         getVerbalizedDescription(enrichedCommand)
                     } else {
-                        dataTitle.ifEmpty { null }
+                        userDetails(command, data).ifEmpty { null }
                     }
 
                     // Store data appropriately based on command type:
@@ -587,12 +586,25 @@ class CommandExecutor(private val context: Context) {
     }
 
     /**
+     * What the user reads of a query in the chat: for entries, the tool and how many were read;
+     * otherwise the data's header. The header of entries is written for the AI (filters, fields)
+     * and stays in the prompt.
+     */
+    private suspend fun userDetails(command: ExecutableCommand, data: Map<String, Any>): String {
+        if (command.resource != "tool_data") return generateDataTitle(command, data)
+        val toolInstanceId = command.params["tool_instance_id"] as? String ?: command.params["id"] as? String
+            ?: return generateDataTitle(command, data)
+        val count = data["count"] as? Int ?: (data["entries"] as? List<*>)?.size ?: 0
+        return s.shared("ai_data_user_summary").format(resolveToolInstanceName(toolInstanceId), count)
+    }
+
+    /**
      * Generate title/header for data section in prompt
      * Creates descriptive title with context (tool name, filters, period, etc.)
      * Returns empty string for action commands
      *
-     * IMPORTANT: Always indicates result count (even if 0) and exact query parameters
-     * for AI to trust the data and avoid redundant queries
+     * Always states the result count (even if 0) and the exact query (filters, fields): the AI
+     * knows what the data covers, and has no reason to ask for it again
      */
     private suspend fun generateDataTitle(command: ExecutableCommand, data: Map<String, Any>): String {
         // No title needed for action commands
@@ -630,7 +642,7 @@ class CommandExecutor(private val context: Context) {
                     val headerParts = mutableListOf<String>()
 
                     // Main title with result count (ALWAYS shown, even if 0)
-                    headerParts.add("=== ${s.shared("ai_data_header_trusted")}: ${s.shared("ai_data_header_tool").format(toolName)} ===")
+                    headerParts.add("=== ${s.shared("ai_data_header_tool").format(toolName)} ===")
                     headerParts.add(s.shared("ai_data_result_count").format(count))
 
                     // The filters, a period included, written as the model writes them
@@ -656,12 +668,8 @@ class CommandExecutor(private val context: Context) {
                     }
                     headerParts.add(s.shared("ai_data_fields").format(fieldsDisplay))
 
-                    // Confidence message
-                    if (count == 0) {
-                        headerParts.add(s.shared("ai_data_no_results_warning"))
-                    } else {
-                        headerParts.add(s.shared("ai_data_complete_dataset"))
-                    }
+                    // An empty result says so, so that it does not read as a failure
+                    if (count == 0) headerParts.add(s.shared("ai_data_no_results_warning"))
 
                     headerParts.joinToString("\n")
                 }

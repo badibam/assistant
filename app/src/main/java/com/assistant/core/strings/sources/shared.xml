@@ -1338,7 +1338,6 @@
     <string name="settings_logs_description">Read the error logs for debugging</string>
 
     <!-- AI Data Headers (CommandExecutor prompt formatting) -->
-    <string name="ai_data_header_trusted">TRUSTED DATA</string>
     <string name="ai_data_header_tool">Tool \'%1$s\'</string>
     <string name="ai_data_result_count">Number of results: %1$d records</string>
     <string name="ai_data_filters">Filters: %1$s</string>
@@ -1348,8 +1347,8 @@
     <string name="ai_data_template_filter">Template filter: %1$s</string>
     <string name="ai_data_fields">Fields included: %1$s</string>
     <string name="ai_data_fields_all">all</string>
-    <string name="ai_data_no_results_warning">⚠️ NO DATA FOUND - This is the complete result. DO NOT make the request again.</string>
-    <string name="ai_data_complete_dataset">✓ Complete dataset for the criteria given - Use it directly, DO NOT make the request again.</string>
+    <string name="ai_data_no_results_warning">No entry matches these criteria.</string>
+    <string name="ai_data_user_summary">'%1$s': %2$d entries read</string>
 
     <!-- AI Enrichment - POINTER inline summaries -->
     <string name="ai_enrichment_pointer_zone">Zone</string>
