@@ -13,7 +13,7 @@ Conçu le 2026-09-27. Une incarnation, c'est l'IA de l'app qui parle en tant que
 - **Associée à une zone**, dans les réglages de la zone. Une ligne en haut de la zone la montre et ouvre une session CHAT avec elle. L'ouverture ne joint pas les données de la zone : le chat ne se contextualise pas tout seul.
 - **Dans la barre du chat**, à droite des enrichissements : une puce montre l'identité de la session et permet de la choisir.
 - **Une automation** choisit son identité, comme toute session ; elle n'hérite pas de celle de la zone.
-- **L'identité se fixe au premier message** d'une session. Pour changer d'interlocuteur, on ouvre une autre session.
+- **L'identité se fixe au premier message** d'une session. Pour changer d'interlocuteur, on ouvre une autre session. Ce qui se fixe, c'est qui parle, pas une version : une identité réimportée vaut dès le tour suivant, dans les sessions en cours aussi.
 
 ## Ce qu'elle peut faire
 
@@ -39,6 +39,5 @@ Le prompt ne porte que la liste des ressources (titre + description neutre de l'
 ## Ouvert
 
 - Ce qu'affiche la ligne en haut de la zone.
-- Réimporter une identité pendant qu'une session l'utilise : la session prend-elle la nouvelle version ?
 - La place du portrait dans le prompt.
 - Déclencheur de l'implémentation : un premier export publié par personae (aucun n'existe au 2026-09-27).
