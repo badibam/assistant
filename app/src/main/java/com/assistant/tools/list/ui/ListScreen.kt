@@ -243,8 +243,8 @@ fun ListScreen(
 }
 
 /**
- * One item: its box, its name and, compact below it, the list's fields it shows; the name opens
- * it. A checked item is greyed.
+ * One item: its box, its name and, compact below it under a line, the list's fields it shows;
+ * the name opens it. A checked item is greyed.
  */
 @Composable
 private fun ItemRow(
@@ -264,6 +264,8 @@ private fun ItemRow(
                 .padding(vertical = 8.dp)
         ) {
             UI.Text(item.name, if (item.isChecked) TextType.CAPTION else TextType.BODY)
+            // A line between the content and the fields, when the item shows some
+            if (com.assistant.core.fields.shownCustomFields(config, item.extra).isNotEmpty()) UI.Divider()
             com.assistant.core.fields.CustomFieldsDisplay(ListToolType, config, item.extra, com.assistant.core.fields.FieldsLayout.COMPACT, context)
         }
         trailing()
