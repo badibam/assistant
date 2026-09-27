@@ -33,3 +33,4 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 ## Graphique
 
 - **Il dessine, ne calcule pas** : aucun regroupement ni agrégation. Un total par jour est un Calcul découpé par jour, que le Graphique dessine ; un nombre n'a ainsi qu'une origine, lisible aussi par les alertes et l'IA.
+- **Grammaire** : un sous-ensemble de Vega-Lite, que l'IA connaît déjà, dessiné nativement en Compose (pas de vue web : le thème garde l'apparence). Deux écarts : les données viennent d'une sélection d'entrées de l'app, jamais recopiées dans la config ; une couleur est un nom de la palette (`TagColor`). La config reste déclarée en champs, pour que son formulaire soit généré comme les autres.
