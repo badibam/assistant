@@ -191,17 +191,9 @@ fun ListScreen(
         // Adding an item, last, parted from the list by a line: its name and the list's fields,
         // which start at their default values and go back to them once it is added
         UI.Divider()
-        UI.Text(s.tool("add_item_title"), TextType.SUBTITLE)
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(modifier = Modifier.weight(1f)) {
-                UI.FormField(
-                    label = s.tool("field_content"),
-                    value = typed,
-                    onChange = { typed = it },
-                    fieldType = FieldType.TEXT,
-                    required = false
-                )
-            }
+        // The title, with the button adding the item on its line
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.weight(1f)) { UI.Text(s.tool("add_item_title"), TextType.SUBTITLE) }
             UI.ActionButton(
                 action = ButtonAction.ADD,
                 display = ButtonDisplay.ICON,
@@ -215,6 +207,13 @@ fun ListScreen(
                 }
             )
         }
+        UI.FormField(
+            label = s.tool("field_content"),
+            value = typed,
+            onChange = { typed = it },
+            fieldType = FieldType.TEXT,
+            required = false
+        )
         com.assistant.core.fields.CustomFieldsInput(
             customFieldsMetadata = fields,
             values = typedExtra,
