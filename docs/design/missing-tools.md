@@ -35,3 +35,11 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 - **Il dessine, ne calcule pas** : aucun regroupement ni agrégation. Un total par jour est un Calcul découpé par jour, que le Graphique dessine ; un nombre n'a ainsi qu'une origine, lisible aussi par les alertes et l'IA.
 - **Grammaire** : un sous-ensemble de Vega-Lite, que l'IA connaît déjà, dessiné nativement en Compose (pas de vue web : le thème garde l'apparence). Deux écarts : les données viennent d'une sélection d'entrées de l'app, jamais recopiées dans la config ; une couleur est un nom de la palette (`TagColor`). La config reste déclarée en champs, pour que son formulaire soit généré comme les autres.
 - **Ouvert** : le sous-ensemble retenu (marques, couches, échelles, période affichée).
+
+## Liste
+
+- **Un outil simple** : l'état présent de ce qui reste à faire (courses, tâches, check-list), sans historique.
+- **Une case cochée est une date** (`state`) : cochée le 12 à 18h ; décochée, pas de date.
+- **Deux actions sur la liste**, sans mode : « retirer les cochés » (supprime les éléments) et « tout décocher » (efface les dates, qui sont perdues). L'historique de ce qui a été fait est le rôle d'un suivi « occurrence » ; les lier (cocher écrit une occurrence) viendra avec les événements.
+- **Ordre** : les éléments non cochés dans l'ordre du glisser-déposer, les cochés en bas, grisés, dans l'ordre où ils l'ont été.
+- **Plus tard** : la remise à zéro planifiée (« tout décocher chaque matin »), avec les événements.
