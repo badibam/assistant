@@ -236,8 +236,11 @@ class EnrichmentProcessor(
                         isRelative = isRelative
                     ))
                 }
-                // The entries of every tool of a zone need a read across tools, which does not exist yet
-                if (pointer.entries) LogManager.aiEnrichment("POINTER: the entries of a zone cannot be read yet", "WARN")
+                // The entries of a zone: those of each of its tools over the period, one read per
+                // tool with its schema, as a tool's pointer sends them
+                if (pointer.entries) {
+                    for (toolInstanceId in zoneToolIds(id!!)) addAll(entriesQueries(toolInstanceId, pointer, isRelative))
+                }
             }
             PointerKind.TOOL -> buildList {
                 val toolInstanceId = id!!
@@ -251,19 +254,7 @@ class EnrichmentProcessor(
                     ))
                     add(configSchemaQuery(resolveTooltype(toolInstanceId), isRelative))
                 }
-                if (pointer.entries) {
-                    val params = mutableMapOf<String, Any>("id" to toolInstanceId)
-                    if (pointer.filters.length() > 0) params["filters"] = JsonUtils.toList(pointer.filters)
-                    // The id always goes, for the AI to act on an entry it is shown
-                    pointer.fields?.let { params["fields"] = (listOf("id") + it).distinct() }
-                    add(DataCommand(
-                        id = buildQueryId("tool_data", params),
-                        type = "TOOL_DATA",
-                        params = params,
-                        isRelative = isRelative
-                    ))
-                    add(entriesSchemaQuery(toolInstanceId, isRelative))
-                }
+                if (pointer.entries) addAll(entriesQueries(toolInstanceId, pointer, isRelative))
             }
             // No selector designates them yet
             PointerKind.APP, PointerKind.ENTRY -> {
@@ -271,6 +262,31 @@ class EnrichmentProcessor(
                 emptyList()
             }
         }
+    }
+
+    /** The entries of [toolInstanceId] with the pointer's filters and fields, then their schema. */
+    private fun entriesQueries(toolInstanceId: String, pointer: PointerConfig, isRelative: Boolean): List<DataCommand> {
+        val params = mutableMapOf<String, Any>("id" to toolInstanceId)
+        if (pointer.filters.length() > 0) params["filters"] = JsonUtils.toList(pointer.filters)
+        // The id always goes, for the AI to act on an entry it is shown
+        pointer.fields?.let { params["fields"] = (listOf("id") + it).distinct() }
+        return listOf(
+            DataCommand(id = buildQueryId("tool_data", params), type = "TOOL_DATA", params = params, isRelative = isRelative),
+            entriesSchemaQuery(toolInstanceId, isRelative)
+        )
+    }
+
+    /**
+     * The tools of the zone [zoneId], in their order.
+     *
+     * @throws IllegalStateException if they cannot be read
+     */
+    private suspend fun zoneToolIds(zoneId: String): List<String> {
+        val coordinator = coordinator ?: throw IllegalStateException("Cannot read the tools of a zone: coordinator not available")
+        val result = coordinator.processUserAction("tools.list", mapOf("zone_id" to zoneId))
+        if (!result.isSuccess) throw IllegalStateException("Tools of zone $zoneId not read: ${result.error}")
+        return (result.data?.get("tool_instances") as? List<*> ?: emptyList<Any>())
+            .filterIsInstance<Map<*, *>>().map { it["id"] as String }
     }
 
     private suspend fun generateUseQueries(

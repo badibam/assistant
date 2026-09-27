@@ -56,8 +56,8 @@ class EnrichmentText private constructor(
     }
 
     /**
-     * A block's text for the AI. A mention of narrowed entries carries the query that reads
-     * them, its values written by the types of the tool's fields.
+     * A block's text for the AI. A mention of narrowed entries carries how to read them, a
+     * tool's values written by the types of its fields.
      */
     suspend fun prompt(block: MessageSegment.EnrichmentBlock): String = when (block.type) {
         EnrichmentType.POINTER -> {

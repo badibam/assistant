@@ -75,6 +75,7 @@
     <string name="pointer_summary_mention_entries">Mention : %1$s. Rien n\'est joint, l\'IA peut les demander</string>
     <string name="pointer_summary_attached">Joint : %1$s</string>
     <string name="pointer_prompt_query">entrées non jointes, à lire avec : %1$s (ajoute les champs utiles)</string>
+    <string name="pointer_prompt_zone_filters">entrées non jointes, à lire outil par outil avec ces filtres : %1$s</string>
     <string name="pointer_target_deleted">supprimé</string>
     <string name="filter_between">%1$s entre %2$s et %3$s</string>
     <string name="filter_low">De</string>

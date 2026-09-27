@@ -67,9 +67,10 @@ data class TimestampSelection(
  * What the pointer selector holds while a pointer is built: where the user went (a zone, a tool
  * in it), what is attached, and what narrows the tool's entries.
  *
- * The target is the deepest place reached. A zone offers its config; a tool its config and its
- * entries, with a period, value filters and a choice of fields, which narrow the entries whether
- * they are attached or only mentioned.
+ * The target is the deepest place reached. A zone offers its config and the entries of its tools
+ * over a period; a tool its config and its entries, with a period, value filters and a choice of
+ * fields, which narrow the entries whether they are attached or only mentioned. Value filters and
+ * fields are a tool's own: they have no sense across the tools of a zone.
  *
  * @property filters The value filters, as tool_data.get takes them; the period apart
  * @property fields The fields of the entries to attach, all of them when null
@@ -96,16 +97,16 @@ data class PointerSelection(
     /** Whether the entries are narrowed, by a period or a value filter. */
     val narrowed: Boolean get() = periodFilters("timestamp", period, { it.timestamp }, day = null).length() > 0 || filters.length() > 0
 
-    /** Into [zone]: what only a tool offers goes, and so does anything chosen in another zone. */
-    fun intoZone(zone: Named): PointerSelection = PointerSelection(zone = zone, config = config)
+    /** Into [zone]: the boxes and the period stay, which a zone offers as well. */
+    fun intoZone(zone: Named): PointerSelection = PointerSelection(zone = zone, config = config, entries = entries, period = period)
 
-    /** Into [tool]: its entries' period, filters and fields start empty. */
-    fun intoTool(tool: Named): PointerSelection = copy(tool = tool, period = TimestampSelection(), filters = JSONArray(), fields = null)
+    /** Into [tool]: the period stays; its filters and fields, a tool's own, start empty. */
+    fun intoTool(tool: Named): PointerSelection = copy(tool = tool, filters = JSONArray(), fields = null)
 
     /** Back up to the app, or to the zone: what the level left offered goes with it. */
     fun upTo(level: PointerKind): PointerSelection = when (level) {
         PointerKind.APP -> PointerSelection()
-        PointerKind.ZONE -> PointerSelection(zone = zone, config = config)
+        PointerKind.ZONE -> PointerSelection(zone = zone, config = config, entries = entries, period = period)
         else -> this
     }
 
@@ -120,15 +121,15 @@ data class PointerSelection(
             else -> throw IllegalStateException("a pointer needs a zone or a tool")
         }
         val all = JSONArray()
+        val bounds = periodFilters("timestamp", period, periodEnd, day = null)
+        for (i in 0 until bounds.length()) all.put(bounds.get(i))
         if (level == PointerKind.TOOL) {
-            val bounds = periodFilters("timestamp", period, periodEnd, day = null)
-            for (i in 0 until bounds.length()) all.put(bounds.get(i))
             for (i in 0 until filters.length()) all.put(filters.get(i))
         }
         return PointerConfig(
             target = target,
             config = config,
-            entries = entries && level == PointerKind.TOOL,
+            entries = entries,
             filters = all,
             fields = fields.takeIf { level == PointerKind.TOOL }
         )

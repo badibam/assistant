@@ -194,8 +194,8 @@ private fun Places(places: List<SchemaNode>?, level: PointerKind, onSelect: (Sch
 }
 
 /**
- * What goes with the pointer: the two boxes, and for a tool what narrows its entries, then the
- * sentence that says what will go.
+ * What goes with the pointer: the two boxes and the period, for a tool its filters and fields,
+ * then the sentence that says what will go.
  */
 @Composable
 private fun AttachPanel(
@@ -212,15 +212,13 @@ private fun AttachPanel(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             UI.Checkbox(checked = selection.config, onCheckedChange = { onChange(selection.copy(config = it)) }, label = s.shared("pointer_attach_config"))
-            if (isTool) {
-                UI.Checkbox(checked = selection.entries, onCheckedChange = { onChange(selection.copy(entries = it)) }, label = s.shared("pointer_attach_entries"))
-            }
+            UI.Checkbox(checked = selection.entries, onCheckedChange = { onChange(selection.copy(entries = it)) }, label = s.shared("pointer_attach_entries"))
         }
 
-        if (isTool) {
-            UI.Text(text = s.shared("pointer_period"), type = TextType.SUBTITLE)
-            PeriodEditor(selection.period, relative) { onChange(selection.copy(period = it)) }
+        UI.Text(text = s.shared("pointer_period"), type = TextType.SUBTITLE)
+        PeriodEditor(selection.period, relative) { onChange(selection.copy(period = it)) }
 
+        if (isTool) {
             UI.Button(type = ButtonType.DEFAULT, onClick = onOpenFilters) {
                 UI.Text(text = s.shared("pointer_filters_and_fields"), type = TextType.BODY)
             }

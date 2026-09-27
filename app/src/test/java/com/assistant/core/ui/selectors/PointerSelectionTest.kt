@@ -60,13 +60,15 @@ class PointerSelectionTest {
     }
 
     @Test
-    fun `a zone is pointed at for its config alone`() {
-        val pointer = PointerSelection().intoZone(health).copy(config = true, entries = true).pointer(end)
+    fun `a zone attaches its config and its tools' entries over a period`() {
+        val pointer = PointerSelection().intoZone(health)
+            .copy(config = true, entries = true, period = TimestampSelection(maxIsNow = true)).pointer(end)
         assertEquals(PointerKind.ZONE, pointer.target.kind)
         assertEquals("z1", pointer.target.id)
         assertTrue(pointer.config)
-        assertFalse(pointer.entries)
-        assertEquals(0, pointer.filters.length())
+        assertTrue(pointer.entries)
+        assertEquals(1, pointer.filters.length())
+        assertEquals("timestamp", pointer.filters.getJSONObject(0).getString("field"))
     }
 
     @Test
@@ -79,21 +81,23 @@ class PointerSelectionTest {
     @Test
     fun `going back up to the zone drops what only the tool offered`() {
         val up = PointerSelection().intoZone(health).intoTool(sleep)
-            .copy(config = true, entries = true, filters = shortNights, fields = listOf("data.duration"))
+            .copy(config = true, entries = true, filters = shortNights, fields = listOf("data.duration"), period = TimestampSelection(maxIsNow = true))
             .upTo(PointerKind.ZONE)
         assertEquals(PointerKind.ZONE, up.level)
         assertTrue(up.config)
-        assertFalse(up.entries)
+        assertTrue(up.entries)
+        assertTrue(up.period.maxIsNow)
         assertEquals(0, up.filters.length())
         assertNull(up.fields)
     }
 
     @Test
-    fun `another tool starts with its entries not narrowed`() {
+    fun `another tool keeps the period but not the filters`() {
         val other = PointerSelection().intoZone(health).intoTool(sleep)
             .copy(filters = shortNights, period = TimestampSelection(maxIsNow = true))
             .intoTool(Named("t2", "Mood", "tracking"))
-        assertFalse(other.narrowed)
+        assertEquals(0, other.filters.length())
+        assertTrue(other.period.maxIsNow)
     }
 
     @Test

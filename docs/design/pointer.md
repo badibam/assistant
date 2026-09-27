@@ -67,13 +67,12 @@ Changer de niveau efface ce qui n'y a plus de sens, et le résumé le montre. La
 
 ## Fait
 
-Le 2026-09-26 : `filters` dans `tool_data.get`, la forme enregistrée (`PointerConfig`, migration v44) et l'écran (`PointerSelector`) pour une zone (config ou mention) et un outil (config, entrées, période, filtres, champs, mention d'entrées restreintes). Le code et `docs/DATA.md` en sont le registre. Le 2026-09-27 : les noms relus à chaque lecture, à l'écran comme pour l'IA (`EnrichmentText`, migration v45), les valeurs présentes d'un champ texte proposées dans ses filtres (`tool_data.values`), et chaque borne d'une période dite par son côté (« entre le début de « 2 jours avant » et la fin de « le jour-même » »).
+Le 2026-09-26 : `filters` dans `tool_data.get`, la forme enregistrée (`PointerConfig`, migration v44) et l'écran (`PointerSelector`) pour une zone (config ou mention) et un outil (config, entrées, période, filtres, champs, mention d'entrées restreintes). Le code et `docs/DATA.md` en sont le registre. Le 2026-09-27 : les noms relus à chaque lecture, à l'écran comme pour l'IA (`EnrichmentText`, migration v45), les valeurs présentes d'un champ texte proposées dans ses filtres (`tool_data.values`), chaque borne d'une période dite par son côté (« entre le début de « 2 jours avant » et la fin de « le jour-même » »), et les entrées d'une zone : tous ses outils sur la seule période, une lecture `tool_data.get` par outil avec son schéma ; une zone mentionnée avec une période donne à l'IA ses filtres, à appliquer outil par outil.
 
 ## Reste
 
 Conçu le 2026-09-27 :
 
-- **Les entrées d'une zone** : tous ses outils, filtrés par la seule période, une lecture `tool_data.get` par outil avec son schéma — ce qu'un pointeur d'outil fait déjà, répété. Ni filtre par valeur ni choix des champs, qui n'ont de sens que dans un outil : pour viser certains outils, des pointeurs d'outil. Le seuil des données volumineuses porte sur le total. Le tableau des cibles s'en tient là pour la zone : « entrées de ses outils ».
 - **Une entrée** : la cible `{"kind": "ENTRY", "id": …}`, lue par `tool_data.get_single` ; joint l'entrée et son schéma, la config de son outil en option, décochée. Supprimée, elle se lit « supprimé » comme toute cible (`EnrichmentText` relit les entrées pointées).
 - **Son étiquette** : une règle commune — la date et l'heure, puis le nom de l'entrée, sinon le début de son premier champ texte — qu'un type d'outil peut remplacer par une fonction de son contrat. Le suivi la remplace pour montrer sa valeur : « 26/09 08:12 — Pesée : 72,4 kg ».
 - **La choisir** : au niveau d'un outil, « Une entrée précise… » ouvre la liste de ses entrées, les plus récentes d'abord, 30 par 30 (« Voir plus »), restreinte à la période du sélecteur quand il en a une. Pas de recherche texte : elle demande un « ou » entre champs que les filtres n'ont pas ; à reprendre si le besoin se confirme.

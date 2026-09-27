@@ -75,6 +75,7 @@
     <string name="pointer_summary_mention_entries">Mention: %1$s. Nothing is attached, the AI can ask for them</string>
     <string name="pointer_summary_attached">Attached: %1$s</string>
     <string name="pointer_prompt_query">entries not attached, read with: %1$s (add the fields you need)</string>
+    <string name="pointer_prompt_zone_filters">entries not attached, to read tool by tool with these filters: %1$s</string>
     <string name="pointer_target_deleted">deleted</string>
     <string name="filter_between">%1$s between %2$s and %3$s</string>
     <string name="filter_low">From</string>

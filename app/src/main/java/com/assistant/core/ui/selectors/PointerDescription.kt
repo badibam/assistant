@@ -178,12 +178,14 @@ object PointerDescription {
 
     /**
      * What the AI reads of a pointer: the block's text with the target's id, and, for entries
-     * narrowed but not attached, the query that reads them, for the AI to run if it needs to.
-     * [fields] are the tool's, which say how each filter's value is written for the AI.
+     * narrowed but not attached, how to read them, for the AI to run if it needs to: a tool's
+     * query, or the filters of a zone's period, to read each of its tools with. [fields] are the
+     * tool's, which say how each filter's value is written for the AI; a zone's filters are on
+     * timestamp alone.
      */
     fun prompt(pointer: PointerConfig, place: PointerPlace?, fields: Map<String, FieldDefinition>, s: StringsContext): String {
         val base = "${block(pointer, place, s)} (id = ${pointer.target.id})"
-        if (place == null || !pointer.isMention || pointer.filters.length() == 0 || pointer.target.kind != PointerKind.TOOL) return base
+        if (place == null || !pointer.isMention || pointer.filters.length() == 0) return base
         val zone = AppConfigManager.getDateTimeConfig().getZoneId()
         // Instants and durations as the AI writes them, ISO 8601, by the type of their field
         fun model(type: FieldType?, value: Any?): Any? = when {
@@ -194,9 +196,12 @@ object PointerDescription {
         }
         val filters = JSONArray((0 until pointer.filters.length()).map { i ->
             val filter = JSONObject(pointer.filters.getJSONObject(i).toString())
-            if (filter.has("value")) filter.put("value", model(fields[filter.optString("field")]?.type, filter.get("value")))
+            val path = filter.optString("field")
+            val type = fields[path]?.type ?: FieldType.DATETIME.takeIf { path == "timestamp" }
+            if (filter.has("value")) filter.put("value", model(type, filter.get("value")))
             filter
         })
+        if (pointer.target.kind == PointerKind.ZONE) return "$base — ${s.shared("pointer_prompt_zone_filters").format(filters.toString())}"
         val query = JSONObject().put("type", "TOOL_DATA").put("params", JSONObject().apply {
             put("id", pointer.target.id)
             put("filters", filters)
