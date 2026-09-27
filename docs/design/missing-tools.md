@@ -18,6 +18,7 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 - **Même période de découpage = même résultat** : une nouvelle exécution le remplace. Rattraper une saisie tardive, c'est une portée plus large que le découpage ; recalculer un historique, une exécution à la main sur une portée élargie. Pas de recalcul automatique quand une source change : il pourra s'ajouter sans migrer les résultats.
 - Un remplacement qui change la valeur d'un résultat garde la trace de l'ancienne — à préciser.
 - **Ce qu'il calcule** : des entrées nommées et une formule arithmétique sur ces noms (`mange - depense`). Une entrée nommée agrège (somme, moyenne, minimum, maximum, nombre) une expression calculée pour chaque entrée d'un outil désigné ; une constante est une entrée nommée. L'expression peut suivre une référence (`data.value × ref(extra.aliment).kcal_100g ÷ 100`).
+- **Plusieurs sorties nommées** : chacune sa formule sur les mêmes entrées nommées, et son unité. Une exécution écrit une entrée de résultat qui porte toutes les sorties, chacune un champ de `data` (`data.kcal`, `data.proteines`), lu et filtré comme un champ de suivi.
 
 ## Prérequis de Calcul
 
