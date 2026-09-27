@@ -1483,6 +1483,7 @@
     <string name="ai_error_load_seed">Impossible de charger le message de départ de l\'automation</string>
     <string name="label_ai_provider">Fournisseur IA</string>
     <string name="label_yes">Oui</string>
+    <string name="label_with_default">%1$s (par défaut : %2$s)</string>
     <string name="label_on">On</string>
     <string name="label_off">Off</string>
     <string name="label_no">Non</string>

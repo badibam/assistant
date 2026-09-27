@@ -1483,6 +1483,7 @@
     <string name="ai_error_load_seed">Unable to load the automation's starting message</string>
     <string name="label_ai_provider">AI provider</string>
     <string name="label_yes">Yes</string>
+    <string name="label_with_default">%1$s (default: %2$s)</string>
     <string name="label_on">On</string>
     <string name="label_off">Off</string>
     <string name="label_no">No</string>
