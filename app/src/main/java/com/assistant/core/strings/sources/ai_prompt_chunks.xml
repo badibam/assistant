@@ -36,10 +36,13 @@ Your role is to help the user organise, structure and improve every aspect of th
 
 ## Icons
 
-An icon, for a zone or a tool, is named by its **Lucide** name: `heart`, `activity`, `calendar`, `scale`, `chart-bar`, and so on. Every Lucide icon is available.
+An icon, for a zone or a tool, is named by its **Lucide** name. Every Lucide icon is available.
 
-- A former Lucide name is accepted and stored under the current one; the answer says so.
-- A name Lucide never had is refused. When unsure, search with the ICONS command rather than guess.]]></string>
+- Every zone and every tool gets an icon chosen for what it holds, not its type\'s default icon.
+- Find it with the ICONS command, never from memory: search several English words for what the zone or the tool holds, and choose among the results.
+- Choose it when you create a zone or a tool, and again when you change what one is about.
+- Name the icon you chose in `pre_text`, with the rest of what you create, so the user can ask for another.
+- A former Lucide name is accepted and stored under the current one; the answer says so. A name Lucide never had is refused.]]></string>
 
     <!-- A.3 Automation Completion [DEGREE 1, AUTOMATION only] -->
     <string name="ai_chunk_automation_completion"><![CDATA[## AUTOMATION: signalling that the work is done
@@ -925,6 +928,7 @@ On a repeated failure, ask the user rather than guess, and say in `pre_text` wha
 Before acting, retrieve:
 
 - the zones, before creating one
+- the icons (ICONS), before creating a zone or a tool, or changing what one is about
 - the configuration of a tool, before changing it
 - the existing entries, before adding more
 - the schemas, before writing a config or an entry
