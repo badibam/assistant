@@ -71,4 +71,10 @@ Le 2026-09-26 : `filters` dans `tool_data.get`, la forme enregistrée (`PointerC
 
 ## Reste
 
-- **L'app et l'entrée comme cibles**, et les entrées d'une zone : elles demandent une lecture sur plusieurs outils (requête neuve ou plusieurs `tool_data.get`), les réglages de l'app comme config, et une étiquette par entrée que chaque type d'outil fournit (une note n'a pas de nom). La liste des entrées d'un outil dans le sélecteur : ordre, recherche.
+Conçu le 2026-09-27 :
+
+- **Les entrées d'une zone** : tous ses outils, filtrés par la seule période, une lecture `tool_data.get` par outil avec son schéma — ce qu'un pointeur d'outil fait déjà, répété. Ni filtre par valeur ni choix des champs, qui n'ont de sens que dans un outil : pour viser certains outils, des pointeurs d'outil. Le seuil des données volumineuses porte sur le total. Le tableau des cibles s'en tient là pour la zone : « entrées de ses outils ».
+- **Une entrée** : la cible `{"kind": "ENTRY", "id": …}`, lue par `tool_data.get_single` ; joint l'entrée et son schéma, la config de son outil en option, décochée. Supprimée, elle se lit « supprimé » comme toute cible (`EnrichmentText` relit les entrées pointées).
+- **Son étiquette** : une règle commune — la date et l'heure, puis le nom de l'entrée, sinon le début de son premier champ texte — qu'un type d'outil peut remplacer par une fonction de son contrat. Le suivi la remplace pour montrer sa valeur : « 26/09 08:12 — Pesée : 72,4 kg ».
+- **La choisir** : au niveau d'un outil, « Une entrée précise… » ouvre la liste de ses entrées, les plus récentes d'abord, 30 par 30 (« Voir plus »), restreinte à la période du sélecteur quand il en a une. Pas de recherche texte : elle demande un « ou » entre champs que les filtres n'ont pas ; à reprendre si le besoin se confirme.
+- **L'app** : ni ses entrées (tout l'historique de tous les outils), ni ses réglages tant que l'IA ne sait pas les lire — ils n'ont ni commande ni schéma. La cible APP attend ce chantier-là.
