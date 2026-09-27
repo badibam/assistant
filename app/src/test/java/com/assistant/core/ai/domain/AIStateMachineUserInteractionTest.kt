@@ -143,6 +143,22 @@ class AIStateMachineUserInteractionTest {
         assertNull(state.waitingContext)
     }
 
+    /** Answered by a message instead: the message goes as any other, and the question is dropped. */
+    @Test
+    fun messageSentInsteadOfAnswer_dropsTheQuestion() {
+        val state = AIStateMachine.transition(
+            state = chatAt(Phase.WAITING_COMMUNICATION_RESPONSE, roundtrips = 1, waitingContext = someWaitingContext()),
+            event = AIEvent.UserMessageSent,
+            limits = testLimits,
+            currentTime = T1
+        )
+
+        assertEquals(Phase.EXECUTING_ENRICHMENTS, state.phase)
+        assertEquals(0, state.totalRoundtrips)
+        assertNull(state.waitingContext)
+        assertEquals(T1, state.lastUserInteractionTime)
+    }
+
     // ==================== Interruption ====================
 
     /**

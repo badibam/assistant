@@ -31,13 +31,17 @@ import kotlinx.coroutines.launch
  * Click on message copies content to clipboard
  *
  * @param previousAIMessage Optional previous AI message for displaying communication module question with response
+ * @param freeReply Whether the user chose to answer the pending module by message
+ * @param onFreeReply Frees the composer for that message
  */
 @Composable
 fun ChatMessageBubble(
     message: SessionMessage,
     aiState: com.assistant.core.ai.domain.AIState,
     isLastAIMessage: Boolean = false,
-    previousAIMessage: SessionMessage? = null
+    previousAIMessage: SessionMessage? = null,
+    freeReply: Boolean = false,
+    onFreeReply: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -145,12 +149,14 @@ fun ChatMessageBubble(
                                     Spacer(modifier = Modifier.height(8.dp))
                                     com.assistant.core.ai.ui.components.CommunicationModuleCard(
                                         module = module,
-                                        onResponse = { response ->
-                                            AIOrchestrator.resumeWithResponse(response)
+                                        onResponse = { response, note ->
+                                            AIOrchestrator.resumeWithResponse(response, note)
                                         },
                                         onCancel = {
                                             AIOrchestrator.cancelCommunication()
-                                        }
+                                        },
+                                        freeReply = freeReply,
+                                        onFreeReply = onFreeReply
                                     )
                                 }
                             }

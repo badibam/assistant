@@ -153,6 +153,12 @@
     <string name="ai_module_validation_title">Confirmation</string>
     <string name="ai_module_cancelled">Module de communication annulé par l\'utilisateur</string>
     <string name="ai_module_response_prefix">Réponse :</string>
+    <string name="ai_module_free_reply">Répondre par un message</string>
+    <string name="ai_module_free_reply_hint">Écrivez votre réponse en bas : l\'envoyer remplace ce formulaire.</string>
+    <string name="ai_module_add_note">Ajouter une précision</string>
+    <string name="ai_module_note">Précision</string>
+    <string name="ai_module_note_prefix">Précision de l\'utilisateur :</string>
+    <string name="ai_module_replaced_by_message">Module de communication remplacé par un message de l\'utilisateur</string>
     <string name="ai_module_question_title">Question</string>
     <string name="ai_module_confirmed">Confirmé</string>
     <string name="ai_module_fields">Champs</string>

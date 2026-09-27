@@ -326,6 +326,14 @@ private fun ChatMode(
         Phase.CLOSED
     )
 
+    // A pending communication module the user chose to answer by message frees the composer;
+    // the choice lasts while the module waits
+    var freeReply by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(aiState.phase) {
+        if (aiState.phase != Phase.WAITING_COMMUNICATION_RESPONSE) freeReply = false
+    }
+    val composerEnabled = isComposerEnabled || (freeReply && aiState.phase == Phase.WAITING_COMMUNICATION_RESPONSE)
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -359,7 +367,9 @@ private fun ChatMode(
         ) {
             ChatMessageList(
                 aiState = aiState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                freeReply = freeReply,
+                onFreeReply = { freeReply = true }
             )
         }
 
@@ -384,7 +394,7 @@ private fun ChatMode(
                         }
                     },
                     placeholder = s.shared("ai_composer_placeholder"),
-                    enabled = isComposerEnabled,
+                    enabled = composerEnabled,
                     statusContent = {
                         // Status bar inline with Send button
                         SessionStatusBar(
@@ -1352,7 +1362,9 @@ private fun AutomationHeader(
 @Composable
 fun ChatMessageList(
     aiState: com.assistant.core.ai.domain.AIState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    freeReply: Boolean = false,
+    onFreeReply: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -1441,7 +1453,9 @@ fun ChatMessageList(
                     message = message,
                     aiState = aiState,
                     isLastAIMessage = index == lastAIMessageIndex,
-                    previousAIMessage = previousAIMessage
+                    previousAIMessage = previousAIMessage,
+                    freeReply = freeReply,
+                    onFreeReply = onFreeReply
                 )
             }
 

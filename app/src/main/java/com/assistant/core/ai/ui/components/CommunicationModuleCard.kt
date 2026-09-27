@@ -25,15 +25,23 @@ import org.json.JSONObject
  * answer, its dates and durations in the form the AI reads; it is possible once every field
  * the module needs has a value its field takes. A module without fields is a confirmation.
  *
+ * Below the form, two ways out of it: a note added to the answer, sent with it; and a reply by
+ * message, which frees the composer while the form stays answerable. Sending that message is
+ * what replaces the form, so choosing it costs nothing.
+ *
  * @param module Communication module to display, checked when the AI's answer was parsed
- * @param onResponse Receives the answer as the AI will read it
+ * @param onResponse Receives the answer as the AI will read it, and the note added, if any
  * @param onCancel Callback when user cancels the module
+ * @param freeReply Whether the user chose to reply by message
+ * @param onFreeReply Frees the composer for that message
  */
 @Composable
 fun CommunicationModuleCard(
     module: CommunicationModule,
-    onResponse: (String) -> Unit,
-    onCancel: () -> Unit
+    onResponse: (answer: String, note: String?) -> Unit,
+    onCancel: () -> Unit,
+    freeReply: Boolean,
+    onFreeReply: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -42,6 +50,8 @@ fun CommunicationModuleCard(
     var answerJson by rememberSaveable { mutableStateOf("{}") }
     val answer = remember(answerJson) { JSONObject(answerJson) }
     val isComplete = remember(answerJson) { CommunicationModules.checkAnswer(module, answer, context).isValid }
+    // The note added to the answer: null while the user has not asked for one
+    var note by rememberSaveable { mutableStateOf<String?>(null) }
 
     UI.InteractionCard(
         title = s.shared(if (module.fields.isEmpty()) "ai_module_validation_title" else "ai_module_question_title"),
@@ -56,6 +66,16 @@ fun CommunicationModuleCard(
                         config = answer,
                         onChange = { answerJson = it.toString() },
                         context = context
+                    )
+                }
+
+                note?.let { text ->
+                    UI.FormField(
+                        label = s.shared("ai_module_note"),
+                        value = text,
+                        onChange = { note = it },
+                        fieldType = FieldType.TEXT_MEDIUM,
+                        required = false
                     )
                 }
 
@@ -81,11 +101,33 @@ fun CommunicationModuleCard(
                             onClick = {
                                 onResponse(
                                     if (module.fields.isEmpty()) CONFIRMED
-                                    else CommunicationModules.answerForModel(module, answer, context).toString()
+                                    else CommunicationModules.answerForModel(module, answer, context).toString(),
+                                    note?.trim()?.takeIf { it.isNotEmpty() }
                                 )
                             }
                         )
                     }
+                }
+
+                // The other ways to answer
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (note == null) {
+                        UI.Button(type = ButtonType.DEFAULT, size = Size.S, onClick = { note = "" }) {
+                            UI.Text(text = s.shared("ai_module_add_note"), type = TextType.CAPTION)
+                        }
+                    }
+                    if (!freeReply) {
+                        UI.Button(type = ButtonType.DEFAULT, size = Size.S, onClick = onFreeReply) {
+                            UI.Text(text = s.shared("ai_module_free_reply"), type = TextType.CAPTION)
+                        }
+                    }
+                }
+                if (freeReply) {
+                    UI.Text(text = s.shared("ai_module_free_reply_hint"), type = TextType.CAPTION)
                 }
             }
         },

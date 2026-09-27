@@ -211,10 +211,11 @@ object AIStateMachine {
             }
 
             is AIEvent.UserMessageSent -> {
-                // User sent message - transition to EXECUTING_ENRICHMENTS
-                // Only valid from IDLE phase
+                // User sent message - transition to EXECUTING_ENRICHMENTS, from IDLE or from a
+                // communication module the message replaces, whose waiting ends here
                 state.copy(
                     phase = Phase.EXECUTING_ENRICHMENTS,
+                    waitingContext = null,
                     totalRoundtrips = 0, // The user acted: the count starts over
                     lastEventTime = currentTime,
                     lastUserInteractionTime = currentTime

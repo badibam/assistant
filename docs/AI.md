@@ -30,7 +30,7 @@ L'orchestrateur IA fonctionne comme une machine à états pilotée par événeme
 - `stopActiveSession()` : Arrêter avec CANCELLED
 - `resumeActiveSession()` : Reprendre la session
 - `resumeWithValidation(approved)` : Répondre à validation
-- `resumeWithResponse(response)` : Répondre à communication module
+- `resumeWithResponse(response, note)` : Répondre à communication module, avec la précision ajoutée
 
 ### Phase et AIState
 
@@ -614,6 +614,8 @@ Un module est une liste de champs déclarée par l'IA : `{"fields": [...]}`, cha
 
 **Réponse** : la carte dessine les champs avec `SettingsForm` ; Confirmer n'est possible que quand la réponse tient au schéma généré depuis les champs (`checkAnswer`). La réponse part à l'IA en objet de valeurs, dates et durées en ISO 8601 (`answerForModel`), une confirmation en `confirmed` ; le fil la réaffiche par les composants d'affichage des champs (`CommunicationAnswer`).
 
+**Deux autres sorties**, sous le formulaire : « Ajouter une précision » ouvre un texte libre, envoyé après la réponse en message système (`ai_module_note_prefix`) ; « Répondre par un message » débloque le composeur, le formulaire restant répondable. C'est l'envoi du message qui remplace le module : `sendMessage` écrit d'abord le message système `ai_module_replaced_by_message`, et `UserMessageSent` quitte l'attente comme depuis IDLE.
+
 ### Flow de réponse utilisateur
 ```kotlin
 // Pattern UI
@@ -624,10 +626,12 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
     val ctx = aiState.waitingContext as WaitingContext.Communication
     CommunicationModuleCard(
         module = ctx.communicationModule,
-        onResponse = { response ->
-            AIOrchestrator.resumeWithResponse(response)
+        onResponse = { response, note ->
+            AIOrchestrator.resumeWithResponse(response, note)
         },
-        onCancel = { AIOrchestrator.cancelCommunication() }
+        onCancel = { AIOrchestrator.cancelCommunication() },
+        freeReply = freeReply,
+        onFreeReply = { freeReply = true }
     )
 }
 ```

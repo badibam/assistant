@@ -151,10 +151,13 @@ The whole schema: `SCHEMA` with the ID `communication_module`.
 
 An object of values under the names of your fields, dates and durations in ISO 8601 (Part E): `{"zone": "work", "why": "Done with it"}`. A field left empty is absent. A confirmation answers `confirmed`. If the user cancels, a system message says so.
 
+The user may also add a note to the answer, which follows it as a system message, or answer with a message of their own instead of the form: a system message says the module was replaced, and their message follows. Read either as the answer.
+
 ### Important rules
 
 - A communication module **replaces** data_commands and action_commands entirely
-- CHAT sessions only]]></string>
+- CHAT sessions only
+- Use a module only for what fits its fields. When you expect the user to write freely or to attach something (a pointer to a zone or a tool), ask in `pre_text` alone and end your turn: a module would stand between them and the message they have to write]]></string>
 
     <!-- B.6 Complete examples [DEGREE 3] -->
     <string name="ai_chunk_response_examples"><![CDATA[## Examples of complete answers

@@ -212,6 +212,14 @@ class AIEventProcessor(
                     )
 
                     messageRepository.storeMessage(sessionId, responseMessage)
+                    // The note comes after the answer it qualifies
+                    event.note?.let { note ->
+                        messageRepository.storeMessage(sessionId, responseMessage.copy(
+                            id = java.util.UUID.randomUUID().toString(),
+                            timestamp = responseMessage.timestamp + 1,
+                            textContent = "${s.shared("ai_module_note_prefix")} $note"
+                        ))
+                    }
                     LogManager.aiSession("Communication response message created for session $sessionId", "DEBUG")
                 }
             }

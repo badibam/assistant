@@ -276,6 +276,25 @@ object AIOrchestrator {
             return
         }
 
+        // A message sent while a communication module waits replaces its answer: the AI is told
+        // so before it reads the message
+        val now = System.currentTimeMillis()
+        if (stateRepository.state.value.phase == com.assistant.core.ai.domain.Phase.WAITING_COMMUNICATION_RESPONSE) {
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+            messageRepository.storeMessage(sessionId, SessionMessage(
+                id = java.util.UUID.randomUUID().toString(),
+                timestamp = now,
+                sender = MessageSender.SYSTEM,
+                richContent = null,
+                textContent = s.shared("ai_module_replaced_by_message"),
+                aiMessage = null,
+                aiMessageJson = null,
+                systemMessage = null,
+                executionMetadata = null,
+                excludeFromPrompt = false
+            ))
+        }
+
         // Check if message is empty (no text and no enrichments)
         val hasText = richMessage.linearText.trim().isNotEmpty()
         val hasEnrichments = richMessage.segments.any { it is MessageSegment.EnrichmentBlock }
@@ -291,7 +310,7 @@ object AIOrchestrator {
         // Store USER message (non-empty)
         val userMessage = SessionMessage(
             id = java.util.UUID.randomUUID().toString(),
-            timestamp = System.currentTimeMillis(),
+            timestamp = now + 1,
             sender = MessageSender.USER,
             richContent = richMessage,
             textContent = null,
@@ -624,14 +643,14 @@ object AIOrchestrator {
     }
 
     /**
-     * Resume execution after communication module response.
+     * Resume execution after communication module response, with the note the user added.
      */
-    fun resumeWithResponse(response: String) {
+    fun resumeWithResponse(response: String, note: String? = null) {
         LogManager.aiSession("resumeWithResponse: $response", "INFO")
 
         // Emit response event asynchronously
         orchestratorScope.launch {
-            eventProcessor.emit(AIEvent.CommunicationResponseReceived(response))
+            eventProcessor.emit(AIEvent.CommunicationResponseReceived(response, note))
         }
     }
 

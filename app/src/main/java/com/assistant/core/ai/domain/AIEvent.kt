@@ -122,8 +122,9 @@ sealed class AIEvent {
      * User responded to communication module (CHAT only).
      *
      * @param response User's text response
+     * @param note A note the user added to the answer, sent after it
      */
-    data class CommunicationResponseReceived(val response: String) : AIEvent()
+    data class CommunicationResponseReceived(val response: String, val note: String? = null) : AIEvent()
 
     /**
      * User cancelled communication module (CHAT only).
@@ -148,7 +149,8 @@ sealed class AIEvent {
     object InterruptionRecorded : AIEvent()
 
     /**
-     * User message sent (triggers enrichment execution).
+     * User message sent (triggers enrichment execution), from IDLE or in place of the answer to
+     * a pending communication module.
      *
      * First step of user message processing flow.
      */
