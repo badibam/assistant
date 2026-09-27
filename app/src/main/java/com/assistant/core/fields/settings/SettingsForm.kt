@@ -237,7 +237,7 @@ private fun ListForm(
 
 /**
  * The line that stands for a closed element: the values of its [summary] settings, each shown by
- * its field type, those without a value left out; an element with none of them says it is
+ * its field type and parted by a separator, those without a value left out; an element with none of them says it is
  * untitled.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -256,7 +256,11 @@ private fun Summary(summary: List<String>, nodes: List<SettingNode>, element: JS
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        shown.forEach { (definition, value) -> FieldValue(definition, value, context) }
+        shown.forEachIndexed { i, (definition, value) ->
+            // Values side by side would read as one phrase ("Weighed on Date and time")
+            if (i > 0) UI.Text(Strings.`for`(context = context).shared("list_item_summary_separator"), TextType.BODY)
+            FieldValue(definition, value, context)
+        }
     }
 }
 
