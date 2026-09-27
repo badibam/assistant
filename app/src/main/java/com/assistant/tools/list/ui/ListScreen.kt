@@ -50,8 +50,8 @@ import org.json.JSONObject
 
 /**
  * The screen of a list: a field at the top to add an item by its name; the items left,
- * reordered by their handle; the checked ones below, greyed, in the order they were checked; and,
- * once something is checked, the two actions on the checked items.
+ * reordered by their handle; the checked ones below, greyed, in the order they were checked, and
+ * a button to uncheck them all. A list set to remove what is checked deletes an item checked.
  *
  * Touching an item's name opens it, for its name and the list's own fields.
  */
@@ -74,10 +74,9 @@ fun ListScreen(
     var itemsVersion by remember { mutableIntStateOf(0) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // What the user produced: the name being typed, the item open, the confirmation shown
+    // What the user produced: the name being typed, the item open
     var typed by rememberSaveable { mutableStateOf("") }
     var openItemId by rememberSaveable { mutableStateOf<String?>(null) }
-    var confirmingRemoval by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(toolInstanceId, configVersion) {
         val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
@@ -127,6 +126,7 @@ fun ListScreen(
     }
 
     val settings = ToolConfigSettings.read(ListToolType, loadedConfig, context)
+    val removeWhenChecked = settings.boolean(ListToolType.REMOVE_WHEN_CHECKED)
     val fields: List<FieldDefinition> = loadedConfig.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
     val shown = ListItems.shown(loadedItems)
     val (checked, left) = shown.partition { it.isChecked }
@@ -180,7 +180,7 @@ fun ListScreen(
                 write({ ListItems.move(coordinator, left[from], ListItems.positionForMove(left, from, to)) })
             }
         ) { _, item ->
-            ItemRow(item, fields, onCheck = { write({ ListItems.setChecked(coordinator, item, it) }) }, onOpen = { openItemId = item.id }) {
+            ItemRow(item, fields, onCheck = { write({ ListItems.setChecked(coordinator, item, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id }) {
                 DragHandle()
             }
         }
@@ -191,34 +191,18 @@ fun ListScreen(
             if (left.isNotEmpty()) UI.Divider()
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 checked.forEach { item ->
-                    ItemRow(item, fields, onCheck = { write({ ListItems.setChecked(coordinator, item, it) }) }, onOpen = { openItemId = item.id })
+                    ItemRow(item, fields, onCheck = { write({ ListItems.setChecked(coordinator, item, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id })
                 }
             }
         }
 
-        // The actions on the checked items, while there are some
+        // Unchecking them all, while some are checked: in a list that removes what is checked,
+        // there never are
         if (checked.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                UI.Button(type = ButtonType.DEFAULT, onClick = { write({ ListItems.uncheckAll(coordinator, checked) }) }) {
-                    UI.Text(s.tool("action_uncheck_all"), TextType.LABEL)
-                }
-                UI.Button(type = ButtonType.DANGER, onClick = { confirmingRemoval = true }) {
-                    UI.Text(s.tool("action_remove_checked"), TextType.LABEL)
-                }
+            UI.Button(type = ButtonType.DEFAULT, onClick = { write({ ListItems.uncheckAll(coordinator, checked) }) }) {
+                UI.Text(s.tool("action_uncheck_all"), TextType.LABEL)
             }
         }
-    }
-
-    if (confirmingRemoval) {
-        UI.ConfirmDialog(
-            title = s.tool("action_remove_checked"),
-            message = if (checked.size == 1) s.tool("remove_checked_one") else s.tool("remove_checked_many").format(checked.size.toString()),
-            onConfirm = {
-                confirmingRemoval = false
-                write({ ListItems.removeChecked(coordinator, checked) })
-            },
-            onDismiss = { confirmingRemoval = false }
-        )
     }
 
     // The item open is kept by its id and found again in the items loaded, so the dialog comes

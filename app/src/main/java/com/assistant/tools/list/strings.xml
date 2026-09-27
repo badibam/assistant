@@ -10,15 +10,16 @@
     <string name="field_position">Position</string>
     <string name="field_checked_at">Checked on</string>
     <string name="schema_data_position">Place in the list, 0 at the top, among every item, checked or not. A position already taken puts the item there and moves the following ones down; without a position the item goes last. Positions stay 0, 1, 2… with no gap</string>
-    <string name="schema_data_checked_at">When the item was checked; absent while it is not. Unchecking removes it, and when it was checked is forgotten</string>
+    <string name="schema_data_checked_at">When the item was checked; absent while it is not. Unchecking removes it, and when it was checked is forgotten. In a list set to remove what is checked (remove_when_checked), an item is deleted instead of checked</string>
+
+    <!-- Setting -->
+    <string name="field_remove_when_checked">A checked item is removed at once</string>
+    <string name="schema_config_remove_when_checked">Whether checking an item deletes it at once, for a list whose done items have nothing left to say (shopping). In such a list, delete an item rather than set its checked_at</string>
 
     <!-- Screen -->
     <string name="list_empty">The list is empty</string>
     <string name="add_item_label">Add an item</string>
     <string name="action_uncheck_all">Uncheck all</string>
-    <string name="action_remove_checked">Remove checked</string>
-    <string name="remove_checked_one">Remove the checked item?</string>
-    <string name="remove_checked_many">Remove the %1$s checked items?</string>
     <string name="edit_item_title">Item</string>
     <string name="delete_item_confirm">Delete \"%1$s\"?</string>
 

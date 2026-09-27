@@ -49,8 +49,22 @@ object ListToolType : ToolTypeContract {
         }
     }
 
-    /** A list has no setting of its own: what an item carries beyond its name is the user's fields. */
-    override fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode> = emptyList()
+    /** The setting under which checking an item deletes it, for a list whose done items have nothing left to say. */
+    const val REMOVE_WHEN_CHECKED = "remove_when_checked"
+
+    /**
+     * Whether checking an item deletes it at once (shopping: what is bought goes). What an item
+     * carries beyond its name is the user's fields, not a setting.
+     */
+    override fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode> {
+        val s = Strings.`for`(tool = "list", context = context)
+        return listOf(com.assistant.core.fields.settings.SettingNode.Field(
+            FieldDefinition(REMOVE_WHEN_CHECKED, s.tool("field_remove_when_checked"), s.tool("schema_config_remove_when_checked"),
+                FieldType.BOOLEAN, false, null),
+            required = true,
+            default = false
+        ))
+    }
 
     /**
      * An item: its name, required; the moment it was added, as any entry; nothing of the tool
@@ -124,6 +138,6 @@ object ListToolType : ToolTypeContract {
 
     @Composable
     override fun TileContent(tool: ToolInstance, displayMode: DisplayMode) {
-        ListTile(toolInstanceId = tool.id, displayMode = displayMode)
+        ListTile(tool = tool, displayMode = displayMode)
     }
 }

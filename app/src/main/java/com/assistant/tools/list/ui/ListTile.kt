@@ -19,6 +19,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.tools.ToolConfigSettings
+import com.assistant.tools.list.ListToolType
+import org.json.JSONObject
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.DisplayMode
@@ -43,11 +47,16 @@ private const val MEDIUM_TILE_ROWS = 2
  * one all of them, scrolling inside it; a FULL one every item, the checked ones greyed below.
  */
 @Composable
-fun ListTile(toolInstanceId: String, displayMode: DisplayMode) {
+fun ListTile(tool: ToolInstance, displayMode: DisplayMode) {
+    val toolInstanceId = tool.id
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     val s = remember { Strings.`for`(tool = "list", context = context) }
     val scope = rememberCoroutineScope()
+    // The tile is drawn anew with the tool when its config is saved, so it reads the setting here
+    val removeWhenChecked = remember(tool.config_json) {
+        ToolConfigSettings.read(ListToolType, JSONObject(tool.config_json), context).boolean(ListToolType.REMOVE_WHEN_CHECKED)
+    }
 
     var items by remember { mutableStateOf<List<ListItem>?>(null) }
     var version by remember { mutableIntStateOf(0) }
@@ -69,7 +78,7 @@ fun ListTile(toolInstanceId: String, displayMode: DisplayMode) {
     // A refusal is said, as on the list's screen: a box that does not stay checked needs a reason
     fun check(item: ListItem, checked: Boolean) {
         scope.launch {
-            val result = ListItems.setChecked(coordinator, item, checked)
+            val result = ListItems.setChecked(coordinator, item, checked, removeWhenChecked)
             if (!result.isSuccess) UI.Toast(context, result.error ?: s.shared("message_error_simple"), Duration.LONG)
         }
     }

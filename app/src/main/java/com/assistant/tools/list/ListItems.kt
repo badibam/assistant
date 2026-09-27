@@ -83,9 +83,13 @@ object ListItems {
             "extra" to com.assistant.core.fields.extraForUpdate(item.extra, extra)
         ))
 
-    /** Checks [item] now, or unchecks it, which forgets when it was checked. */
-    suspend fun setChecked(coordinator: Coordinator, item: ListItem, checked: Boolean) =
-        coordinator.processUserAction("tool_data.update", mapOf(
+    /**
+     * Checks [item] now, or unchecks it, which forgets when it was checked. In a list set to
+     * remove what is checked ([removeWhenChecked]), checking deletes the item instead.
+     */
+    suspend fun setChecked(coordinator: Coordinator, item: ListItem, checked: Boolean, removeWhenChecked: Boolean) =
+        if (checked && removeWhenChecked) delete(coordinator, item)
+        else coordinator.processUserAction("tool_data.update", mapOf(
             "id" to item.id,
             "state" to JSONObject().put(ListToolType.CHECKED_AT, if (checked) System.currentTimeMillis() else JSONObject.NULL)
         ))
@@ -99,12 +103,6 @@ object ListItems {
 
     suspend fun delete(coordinator: Coordinator, item: ListItem) =
         coordinator.processUserAction("tool_data.delete", mapOf("id" to item.id))
-
-    /** Deletes every checked item, in one write. */
-    suspend fun removeChecked(coordinator: Coordinator, items: List<ListItem>) =
-        coordinator.processUserAction("tool_data.batch_delete", mapOf(
-            "ids" to JSONArray(items.filter { it.isChecked }.map { it.id })
-        ))
 
     /** Unchecks every checked item, in one write: when they were checked is forgotten. */
     suspend fun uncheckAll(coordinator: Coordinator, items: List<ListItem>) =

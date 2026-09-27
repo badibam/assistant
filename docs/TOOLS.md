@@ -162,8 +162,8 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
 ### Liste (List)
 **Usage** : L'état présent de ce qui reste à faire (courses, tâches, check-list), sans historique : ce qui a été fait et quand relève d'un suivi « occurrence »
-**Configuration** : Aucun réglage propre ; ce qu'un élément porte au-delà de son nom (quantité, échéance) est un champ personnalisé
-**Données** : Une entrée par élément : son nom, et dans `state` sa position (`ManualOrder`) et `checked_at`, l'instant où il a été coché, absent sinon ; décocher l'efface. L'écran montre les non cochés dans l'ordre manuel, réordonnés en glissant, puis les cochés grisés dans l'ordre où ils l'ont été ; « Tout décocher » et « Retirer les cochés » agissent en un lot. La tuile se coche sans ouvrir l'outil (`ListTile`)
+**Configuration** : `remove_when_checked`, un élément coché est supprimé aussitôt (les courses) ; ce qu'un élément porte au-delà de son nom (quantité, échéance) est un champ personnalisé
+**Données** : Une entrée par élément : son nom, et dans `state` sa position (`ManualOrder`) et `checked_at`, l'instant où il a été coché, absent sinon ; décocher l'efface. L'écran montre les non cochés dans l'ordre manuel, réordonnés en glissant, puis les cochés grisés dans l'ordre où ils l'ont été ; « Tout décocher » agit en un lot. La tuile se coche sans ouvrir l'outil (`ListTile`)
 
 ### Note (Note)
 **Usage** : Titre et contenu libre
