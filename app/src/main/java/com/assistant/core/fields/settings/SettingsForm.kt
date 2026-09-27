@@ -128,14 +128,19 @@ private fun NodeForm(
                     fieldType = com.assistant.core.ui.FieldType.PASSWORD,
                     required = node.required
                 )
-                // A typed setting (a number, a text) left absent shows empty, its label saying what
-                // absence means: shown in the input, the default would come back as soon as it is
-                // erased, and the input could never be emptied to type another value
-                stored == null && node.default != null &&
+                // A typed setting (a number, a text) with a default shows it until the user types in
+                // it; from then on it shows what is typed, empty included, the label saying what
+                // empty means. Shown again once emptied, the default would come back at once, and
+                // the input could never be emptied to type another value.
+                node.default != null &&
                     (node.definition.type == com.assistant.core.fields.FieldType.NUMERIC || node.definition.type == com.assistant.core.fields.FieldType.TEXT) -> {
-                    val shownDefault = (node.default as? Number)?.let { java.math.BigDecimal(it.toString()).stripTrailingZeros().toPlainString() } ?: node.default.toString()
-                    val label = Strings.`for`(context = context).shared("label_with_default").format(node.definition.displayName, shownDefault)
-                    FieldInput(node.definition.copy(displayName = label), null, { set(name, it) }, context, required = node.required)
+                    var typed by rememberSaveable { mutableStateOf(false) }
+                    val shown = if (stored == null && !typed) node.default else JsonUtils.toValue(stored)
+                    val definition = if (stored == null && typed) {
+                        val shownDefault = (node.default as? Number)?.let { java.math.BigDecimal(it.toString()).stripTrailingZeros().toPlainString() } ?: node.default.toString()
+                        node.definition.copy(displayName = Strings.`for`(context = context).shared("label_with_default").format(node.definition.displayName, shownDefault))
+                    } else node.definition
+                    FieldInput(definition, shown, { typed = true; set(name, it) }, context, required = node.required)
                 }
                 // An absent setting shows the value its absence means. The input takes the Kotlin
                 // form of a value: a list of options, not the JSONArray they are stored as
