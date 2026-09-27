@@ -42,10 +42,15 @@ class CompactRowsTest {
         assertEquals(listOf(listOf("a"), listOf("b")), rowsOf(mapOf("a" to "one\ntwo", "b" to "x"), field("a", FieldType.TEXT), field("b", FieldType.TEXT)))
     }
 
+    /** A yes/no and a scale share a row: the scale's gauge fits in half the width. */
     @Test
-    fun aScaleAndARankingAreWide() {
+    fun aScaleSharesItsRowAndARankingDoesNot() {
+        val yes = field("done", FieldType.BOOLEAN)
         val scale = field("mood", FieldType.SCALE, mapOf("min" to 1, "max" to 5))
         val ranking = field("rank", FieldType.CHOICE, mapOf("options" to ChoiceSettings.storedOptions(listOf("x", "y")), "ordered" to true))
-        assertEquals(listOf(listOf("mood"), listOf("rank")), rowsOf(mapOf("mood" to 3, "rank" to listOf("x", "y")), scale, ranking))
+        assertEquals(
+            listOf(listOf("done", "mood"), listOf("rank")),
+            rowsOf(mapOf("done" to true, "mood" to 3, "rank" to listOf("x", "y")), yes, scale, ranking)
+        )
     }
 }

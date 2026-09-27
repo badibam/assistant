@@ -506,8 +506,8 @@ enum class FieldsLayout {
     /** One field per line, its name as large as a title, its value on the rest of the line: a summary. */
     LINE,
     /**
-     * Two fields per line, each "Mood: Calm" with a small name; a long value takes the whole
-     * width: a list item, a card.
+     * Two fields per line, each "Mood: Calm" with a small name; a long text or a ranking takes the
+     * whole width: a list item, a card.
      */
     COMPACT
 }
@@ -619,12 +619,11 @@ internal fun compactRows(fields: List<FieldDefinition>, values: Map<String, Any?
 
 /**
  * Whether a value needs a whole row in a compact layout, by the value itself: a text longer than
- * a few words or on several lines, a scale's gauge, a ranking's numbered options. A text field
- * is unlimited unless set otherwise, so its declared length says nothing of the value.
+ * a few words or on several lines, a ranking's numbered options. A text field is unlimited unless
+ * set otherwise, so its declared length says nothing of the value. A scale's gauge fits in half.
  */
 internal fun isWide(field: FieldDefinition, value: Any?): Boolean = when (field.type) {
     FieldType.TEXT -> value is String && (value.length > SHORT_TEXT_CHARS || '\n' in value)
-    FieldType.SCALE -> true
     FieldType.CHOICE -> ChoiceSettings.fromConfig(field.config).shape == ChoiceShape.ORDERED
     else -> false
 }
