@@ -263,7 +263,7 @@ private fun ItemRow(
                 .clickable(onClick = onOpen)
                 .padding(vertical = 8.dp)
         ) {
-            UI.Text(item.name, if (item.isChecked) TextType.CAPTION else TextType.BODY)
+            UI.Text(item.name, if (item.isChecked) TextType.CAPTION else TextType.SUBTITLE)
             // A line between the content and the fields, when the item shows some
             if (com.assistant.core.fields.shownCustomFields(config, item.extra).isNotEmpty()) UI.Divider()
             com.assistant.core.fields.CustomFieldsDisplay(ListToolType, config, item.extra, com.assistant.core.fields.FieldsLayout.COMPACT, context)
