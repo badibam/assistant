@@ -4,6 +4,7 @@ import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.tools.notes.NotesToolType
 import com.assistant.tools.journal.JournalToolType
 import com.assistant.tools.messages.MessageToolType
+import com.assistant.tools.list.ListToolType
 
 /**
  * Simple registry that lists known tool types
@@ -16,7 +17,8 @@ object ToolTypeScanner {
             "tracking" to TrackingToolType,
             "notes" to NotesToolType,
             "journal" to JournalToolType,
-            "messages" to MessageToolType
+            "messages" to MessageToolType,
+            "list" to ListToolType
         )
     }
 }

@@ -29,7 +29,7 @@ Your role is to help the user organise, structure and improve every aspect of th
 ## Your environment
 
 - **Zones**: containers that organise the tools (e.g. Health, Productivity)
-- **Tools**: tool instances inside the zones, each of a tool type (tracking, journal, notes, messages)
+- **Tools**: tool instances inside the zones, each of a tool type (tracking, journal, notes, messages, list)
 - **Entries**: what a tool records, each a set of values
 - **Fields**: every value is a field of a field type (TEXT, NUMERIC, CHOICE, DURATION, and so on). The same field types describe the entries, the user\'s extra fields, the settings of a tool and the questions you ask the user
 - **Schemas**: every config and every entry is checked against a JSON schema generated from its fields; the schema also tells you what each value means

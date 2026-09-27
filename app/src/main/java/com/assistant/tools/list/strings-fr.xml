@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings du tooltype liste -->
+
+    <!-- Métadonnées -->
+    <string name="display_name">Liste</string>
+    <string name="description">Ce qui reste à faire, coché au fur et à mesure : courses, tâches, check-list</string>
+
+    <!-- Champs d'un élément -->
+    <string name="field_position">Position</string>
+    <string name="field_checked_at">Coché le</string>
+    <string name="schema_data_position">Place dans la liste, 0 en haut, parmi tous les éléments, cochés ou non. Une position déjà prise y place l\'élément et décale les suivants ; sans position, l\'élément va en dernier. Les positions restent 0, 1, 2… sans trou</string>
+    <string name="schema_data_checked_at">Quand l\'élément a été coché ; absent tant qu\'il ne l\'est pas. Le décocher l\'efface, et le moment où il avait été coché est oublié</string>
+
+    <!-- Écran -->
+    <string name="list_empty">La liste est vide</string>
+    <string name="add_item_label">Ajouter un élément</string>
+    <string name="action_uncheck_all">Tout décocher</string>
+    <string name="action_remove_checked">Retirer les cochés</string>
+    <string name="remove_checked_one">Retirer l\'élément coché ?</string>
+    <string name="remove_checked_many">Retirer les %1$s éléments cochés ?</string>
+    <string name="edit_item_title">Élément</string>
+    <string name="delete_item_confirm">Supprimer « %1$s » ?</string>
+
+    <!-- Tuile sur une zone -->
+    <string name="tile_empty">Liste vide</string>
+    <string name="tile_all_checked">Tout est coché</string>
+    <string name="tile_unchecked_one">1 non coché</string>
+    <string name="tile_unchecked_many">%1$s non cochés</string>
+    <string name="tile_more_unchecked_one">+ 1 autre non coché</string>
+    <string name="tile_more_unchecked_many">+ %1$s autres non cochés</string>
+</resources>

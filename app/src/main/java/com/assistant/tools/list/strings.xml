@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings of the list tooltype -->
+
+    <!-- Metadata -->
+    <string name="display_name">List</string>
+    <string name="description">What is left to do, checked off as it is done: shopping, tasks, a checklist</string>
+
+    <!-- Fields of an item -->
+    <string name="field_position">Position</string>
+    <string name="field_checked_at">Checked on</string>
+    <string name="schema_data_position">Place in the list, 0 at the top, among every item, checked or not. A position already taken puts the item there and moves the following ones down; without a position the item goes last. Positions stay 0, 1, 2… with no gap</string>
+    <string name="schema_data_checked_at">When the item was checked; absent while it is not. Unchecking removes it, and when it was checked is forgotten</string>
+
+    <!-- Screen -->
+    <string name="list_empty">The list is empty</string>
+    <string name="add_item_label">Add an item</string>
+    <string name="action_uncheck_all">Uncheck all</string>
+    <string name="action_remove_checked">Remove checked</string>
+    <string name="remove_checked_one">Remove the checked item?</string>
+    <string name="remove_checked_many">Remove the %1$s checked items?</string>
+    <string name="edit_item_title">Item</string>
+    <string name="delete_item_confirm">Delete \"%1$s\"?</string>
+
+    <!-- Tile on a zone -->
+    <string name="tile_empty">Empty list</string>
+    <string name="tile_all_checked">All checked</string>
+    <string name="tile_unchecked_one">1 unchecked</string>
+    <string name="tile_unchecked_many">%1$s unchecked</string>
+    <string name="tile_more_unchecked_one">+ 1 more unchecked</string>
+    <string name="tile_more_unchecked_many">+ %1$s more unchecked</string>
+</resources>

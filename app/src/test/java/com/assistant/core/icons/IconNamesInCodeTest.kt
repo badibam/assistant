@@ -1,11 +1,8 @@
 package com.assistant.core.icons
 
 import com.assistant.core.ai.data.EnrichmentType
+import com.assistant.core.tools.ToolTypeScanner
 import com.assistant.core.ui.ButtonAction
-import com.assistant.tools.journal.JournalToolType
-import com.assistant.tools.messages.MessageToolType
-import com.assistant.tools.notes.NotesToolType
-import com.assistant.tools.tracking.TrackingToolType
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -23,7 +20,8 @@ class IconNamesInCodeTest {
         val names = mutableListOf<Pair<String, String>>()
         ButtonAction.entries.forEach { names.add("ButtonAction.$it" to it.iconName) }
         EnrichmentType.entries.forEach { names.add("EnrichmentType.$it" to it.iconName) }
-        listOf(JournalToolType, MessageToolType, NotesToolType, TrackingToolType).forEach { toolType ->
+        // Every registered tool type, so a new one is checked without being listed here
+        ToolTypeScanner.scanForToolTypes().values.forEach { toolType ->
             val owner = toolType::class.simpleName
             names.add("$owner default" to toolType.getDefaultIconName())
             toolType.getSuggestedIcons().forEach { names.add("$owner suggested" to it) }

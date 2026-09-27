@@ -94,6 +94,7 @@ cd assistant
 - **Tracking** : Suivi avec 7 types de données (numeric, text, scale, choice, timer, audio, multi-audio)
 - **Journal** : Entrées textuelles/audio avec templates
 - **Note** : Notes individuelles avec titre et contenu
+- **Liste** : Ce qui reste à faire (courses, tâches, check-list) : un élément est un nom et les champs de la liste, coché avec sa date, réordonné en glissant ; les cochés se retirent ou se décochent d'un geste
 - **Messages** : Une instance = un message. Sa config porte la part commune de chaque envoi et sa récurrence ; ses entrées sont les envois (à venir, partis, expirés, annulés)
 
 
