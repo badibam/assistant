@@ -71,27 +71,59 @@ object PointerDescription {
                 s.shared("filter_between").format(label, low, high)
             }
             FilterOperator.IN -> "$label ${operator(op, s)} ${value(field, (raw as? JSONArray)?.let { a -> (0 until a.length()).map { a.get(it) } }, s)}"
-            else -> "$label ${operator(op, s)} ${value(field, raw, s)}"
+            else -> dateBound(field, op, raw, s)?.let { "$label $it" } ?: "$label ${operator(op, s)} ${value(field, raw, s)}"
         }
     }
 
-    /** The period in words, or null when it has no bound. */
+    /**
+     * The period in words, or null when it has no bound. A bound that is a period, relative or
+     * picked, says which side of it: "between the start of “2 days before” and the end of “the
+     * same day”". Now and a date are said as they are.
+     */
     fun period(period: TimestampSelection, s: StringsContext): String? {
-        fun bound(isNow: Boolean, relative: com.assistant.core.ui.components.RelativePeriod?, custom: Long?, picked: com.assistant.core.ui.components.Period?): String? = when {
-            isNow -> s.shared("period_now_label")
-            relative != null -> generateRelativePeriodLabel(relative, s)
+        fun bound(end: Boolean, isNow: Boolean, relative: RelativePeriod?, custom: Long?, picked: com.assistant.core.ui.components.Period?): String? = when {
+            isNow -> s.shared("period_now_label").lowercase()
+            relative != null -> side(generateRelativePeriodLabel(relative, s), end, s)
             custom != null -> DateUtils.formatFullDateTime(custom)
-            picked != null -> generatePeriodLabel(picked, AppConfigManager.getDayStartHour(), AppConfigManager.getWeekStartDay(), s)
+            picked != null -> side(generatePeriodLabel(picked, AppConfigManager.getDayStartHour(), AppConfigManager.getWeekStartDay(), s), end, s)
             else -> null
         }
-        val start = bound(period.minIsNow, period.minRelativePeriod, period.minCustomDateTime, period.minPeriod)
-        val end = bound(period.maxIsNow, period.maxRelativePeriod, period.maxCustomDateTime, period.maxPeriod)
+        val start = bound(false, period.minIsNow, period.minRelativePeriod, period.minCustomDateTime, period.minPeriod)
+        val end = bound(true, period.maxIsNow, period.maxRelativePeriod, period.maxCustomDateTime, period.maxPeriod)
         return when {
             start != null && end != null -> s.shared("ai_enrichment_pointer_period_range").format(start, end)
-            start != null -> s.shared("ai_enrichment_pointer_period_from").format(start)
-            end != null -> s.shared("ai_enrichment_pointer_period_until").format(end)
+            start != null -> s.shared("filter_date_from").format(start)
+            end != null -> s.shared("filter_date_until").format(end)
             else -> null
         }
+    }
+
+    /** One side of a period named by [label]: its start, or its end. */
+    private fun side(label: String, end: Boolean, s: StringsContext): String =
+        s.shared(if (end) "period_bound_end" else "period_bound_start").format(label.replaceFirstChar { it.lowercase() })
+
+    /**
+     * A date filter's bound in words, or null when the filter is not one. A relative period is
+     * read at its start for ≥ and <, at its end for > and ≤, as FilterValues resolves it.
+     */
+    private fun dateBound(field: FieldDefinition, op: FilterOperator, raw: Any?, s: StringsContext): String? {
+        val key = when (op) {
+            FilterOperator.GREATER_OR_EQUAL -> "filter_date_from"
+            FilterOperator.LESS -> "filter_date_before"
+            FilterOperator.GREATER -> "filter_date_after"
+            FilterOperator.LESS_OR_EQUAL -> "filter_date_until"
+            else -> return null
+        }
+        if (!isDate(field) || raw == null) return null
+        val bound = when {
+            raw == "NOW" -> s.shared("period_now_label").lowercase()
+            raw is String && RELATIVE.matches(raw) -> raw.split("_").let { (offset, type) ->
+                side(generateRelativePeriodLabel(RelativePeriod(offset.toInt(), PeriodType.valueOf(type)), s),
+                    end = op == FilterOperator.GREATER || op == FilterOperator.LESS_OR_EQUAL, s)
+            }
+            else -> value(field, raw, s)
+        }
+        return s.shared(key).format(bound)
     }
 
     /** What narrows the entries, in words: the period, then each filter, then the fields kept. */

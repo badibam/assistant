@@ -1365,9 +1365,13 @@
     <string name="ai_enrichment_pointer_generic">Data</string>
     <string name="ai_enrichment_pointer_context_config">configuration</string>
     <string name="ai_enrichment_pointer_context_data">data</string>
-    <string name="ai_enrichment_pointer_period_range">%1$s to %2$s</string>
-    <string name="ai_enrichment_pointer_period_from">from %1$s</string>
-    <string name="ai_enrichment_pointer_period_until">until %1$s</string>
+    <string name="ai_enrichment_pointer_period_range">between %1$s and %2$s</string>
+    <string name="period_bound_start">the start of “%1$s”</string>
+    <string name="period_bound_end">the end of “%1$s”</string>
+    <string name="filter_date_from">since %1$s</string>
+    <string name="filter_date_before">before %1$s</string>
+    <string name="filter_date_after">after %1$s</string>
+    <string name="filter_date_until">until %1$s</string>
     <string name="period_days">days</string>
     <string name="period_weeks">weeks</string>
     <string name="period_months">months</string>
