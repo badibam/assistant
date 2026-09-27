@@ -9,7 +9,7 @@ import org.json.JSONObject
  * entry may carry is decided here and nowhere else. A key left out of this copy is dropped
  * without a word: the single operation never sees it, and the batch still reports success.
  * That is how custom_fields went missing from every entry the AI created in a batch, while
- * the batch update carried them all along.
+ * the batch update carried them all along; state was dropped the same way from both.
  */
 internal object BatchEntryParams {
 
@@ -22,6 +22,7 @@ internal object BatchEntryParams {
             put("tool_instance_id", toolInstanceId)
             put("data", entry.optJSONObject("data") ?: JSONObject())
             if (entry.has("extra")) put("extra", entry.getJSONObject("extra"))
+            if (entry.has("state")) put("state", entry.getJSONObject("state"))
             if (entry.has("timestamp")) put("timestamp", entry.getLong("timestamp"))
             if (entry.has("name")) put("name", entry.getString("name"))
         }
@@ -32,6 +33,7 @@ internal object BatchEntryParams {
             put("id", entryId)
             if (entry.has("data")) put("data", entry.getJSONObject("data"))
             if (entry.has("extra")) put("extra", entry.getJSONObject("extra"))
+            if (entry.has("state")) put("state", entry.getJSONObject("state"))
             if (entry.has("timestamp")) put("timestamp", entry.getLong("timestamp"))
             if (entry.has("name")) put("name", entry.getString("name"))
         }

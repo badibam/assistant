@@ -62,4 +62,17 @@ class BatchEntryParamsTest {
         assertFalse(params.has("name"))
         assertFalse(params.has("timestamp"))
     }
+
+    /**
+     * State reaches the single operation, as it does when written alone: unchecking every item
+     * of a list is one batch update of their state, and a note created in a batch keeps its place.
+     */
+    @Test
+    fun stateReachesTheSingleOperation() {
+        val created = BatchEntryParams.forCreate(JSONObject(entry.toString()).put("state", JSONObject().put("position", 2)), "tool-1")
+        assertEquals(2, created.getJSONObject("state").getInt("position"))
+
+        val cleared = BatchEntryParams.forUpdate(JSONObject("""{ "state": { "checked_at": null } }"""), "entry-1")
+        assertEquals(JSONObject.NULL, cleared.getJSONObject("state").get("checked_at"))
+    }
 }
