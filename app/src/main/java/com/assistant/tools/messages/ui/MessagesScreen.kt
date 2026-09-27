@@ -210,18 +210,21 @@ private fun ReceivedTab(
     val scope = rememberCoroutineScope()
 
     var filter by rememberSaveable { mutableStateOf(ReceivedFilter.UNREAD) }
-    var occurrences by remember { mutableStateOf<List<Occurrence>>(emptyList()) }
+    // null while read; a read that fails is said, never shown as an empty inbox
+    var occurrences by remember { mutableStateOf<List<Occurrence>?>(null) }
+    var failed by remember { mutableStateOf(false) }
 
     // Expired and cancelled are two different facts, so they are loaded together only under the
     // filter that asks for "what never reached me" — never merged into the inbox itself.
     LaunchedEffect(toolInstanceId, refreshTrigger, filter) {
-        occurrences = if (filter == ReceivedFilter.NOT_DELIVERED) {
-            (loadByStatus(context, coordinator, toolInstanceId, "expired", onError) +
-                loadByStatus(context, coordinator, toolInstanceId, "cancelled", onError))
-                .sortedByDescending { it.dueAt }
+        val loaded = if (filter == ReceivedFilter.NOT_DELIVERED) {
+            val expired = loadByStatus(context, coordinator, toolInstanceId, "expired", onError)
+            val cancelled = loadByStatus(context, coordinator, toolInstanceId, "cancelled", onError)
+            if (expired == null || cancelled == null) null
+            else (expired + cancelled).sortedByDescending { it.dueAt }
         } else {
             loadByStatus(context, coordinator, toolInstanceId, "sent", onError)
-                .filter { occurrence ->
+                ?.filter { occurrence ->
                     when (filter) {
                         ReceivedFilter.UNREAD -> !occurrence.read && !occurrence.archived
                         ReceivedFilter.READ -> occurrence.read && !occurrence.archived
@@ -229,8 +232,10 @@ private fun ReceivedTab(
                         ReceivedFilter.NOT_DELIVERED -> false
                     }
                 }
-                .sortedByDescending { it.dueAt }
+                ?.sortedByDescending { it.dueAt }
         }
+        failed = loaded == null
+        occurrences = loaded ?: emptyList()
     }
 
     Column(
@@ -268,9 +273,14 @@ private fun ReceivedTab(
         // No early return here: Column's content lambda is inline, so a non-local return skips
         // the rest of the lambda and leaves the composition groups unbalanced — it crashes on
         // the next recomposition rather than where the mistake is.
-        if (occurrences.isEmpty()) {
+        val shown = occurrences
+        if (failed) {
+            UI.Text(s.tool("error_load_occurrences"), TextType.CAPTION, fillMaxWidth = true)
+        } else if (shown == null) {
+            UI.LoadingIndicator()
+        } else if (shown.isEmpty()) {
             UI.Text(s.tool("empty_received_messages"), TextType.CAPTION, fillMaxWidth = true)
-        } else occurrences.forEach { occurrence ->
+        } else shown.forEach { occurrence ->
             ReceivedCard(
                 occurrence = occurrence,
                 s = s,
@@ -356,14 +366,18 @@ private fun UpcomingTab(
     val s = remember { Strings.`for`(tool = "messages", context = context) }
     val scope = rememberCoroutineScope()
 
-    var occurrences by remember { mutableStateOf<List<Occurrence>>(emptyList()) }
+    // null while read; a read that fails is said, never shown as nothing planned
+    var occurrences by remember { mutableStateOf<List<Occurrence>?>(null) }
+    var failed by remember { mutableStateOf(false) }
     // The occurrence being edited is kept by id and resolved from the loaded list, so the
     // edit dialog survives a rotation
     var editingId by rememberSaveable { mutableStateOf<String?>(null) }
-    val editing = editingId?.let { id -> occurrences.find { it.id == id } }
+    val editing = editingId?.let { id -> occurrences?.find { it.id == id } }
 
     LaunchedEffect(toolInstanceId, refreshTrigger) {
-        occurrences = loadByStatus(context, coordinator, toolInstanceId, "pending", onError).sortedBy { it.dueAt }
+        val loaded = loadByStatus(context, coordinator, toolInstanceId, "pending", onError)
+        failed = loaded == null
+        occurrences = loaded?.sortedBy { it.dueAt } ?: emptyList()
     }
 
     Column(
@@ -373,9 +387,14 @@ private fun UpcomingTab(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (occurrences.isEmpty()) {
+        val shown = occurrences
+        if (failed) {
+            UI.Text(s.tool("error_load_occurrences"), TextType.CAPTION, fillMaxWidth = true)
+        } else if (shown == null) {
+            UI.LoadingIndicator()
+        } else if (shown.isEmpty()) {
             UI.Text(s.tool("empty_upcoming"), TextType.CAPTION, fillMaxWidth = true)
-        } else occurrences.forEach { occurrence ->
+        } else shown.forEach { occurrence ->
             UI.Card(type = CardType.DEFAULT) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -450,7 +469,7 @@ private suspend fun loadByStatus(
     toolInstanceId: String,
     status: String,
     onError: (String) -> Unit
-): List<Occurrence> {
+): List<Occurrence>? {
     val result = coordinator.processUserAction(
         "tool_data.get",
         mapOf(
@@ -462,7 +481,7 @@ private suspend fun loadByStatus(
     if (!result.isSuccess) {
         LogManager.ui("Failed to load $status occurrences: ${result.error}", "ERROR")
         onError(result.error ?: Strings.`for`(tool = "messages", context = context).tool("error_load_occurrences"))
-        return emptyList()
+        return null
     }
 
     @Suppress("UNCHECKED_CAST")
