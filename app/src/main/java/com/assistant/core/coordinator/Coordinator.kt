@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
-import java.util.UUID
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +22,6 @@ import java.util.ArrayDeque
  */
 data class QueuedOperation(
     val command: DispatchCommand,
-    val operationId: String = UUID.randomUUID().toString(),
     val phase: Int = 1
 )
 
@@ -120,12 +118,9 @@ class Coordinator(context: Context) {
         _state.value = CoordinatorState.OPERATION_IN_PROGRESS
         
         return try {
-            val command = queuedOp.command.copy(
-                params = queuedOp.command.params + mapOf(
-                    "operation_id" to queuedOp.operationId,
-                    "phase" to queuedOp.phase
-                )
-            )
+            // Services receive only the command's own params, plus the phase set in executeServiceOperation:
+            // a read that refuses unknown params (tool_data.get) would refuse anything else added here
+            val command = queuedOp.command
             
             // New unified dispatch logic
             val result = try {
