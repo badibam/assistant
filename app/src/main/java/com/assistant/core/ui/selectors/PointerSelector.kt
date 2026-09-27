@@ -161,7 +161,7 @@ private fun Breadcrumb(selection: PointerSelection, onUp: (PointerKind) -> Unit)
     )
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         steps.forEachIndexed { i, (level, name) ->
-            if (i > 0) UI.Text(text = "›", type = TextType.BODY)
+            if (i > 0) UI.Icon(iconName = "chevron-right", size = 20.dp)
             val last = i == steps.lastIndex
             Box(modifier = if (last) Modifier else Modifier.clickable { onUp(level) }) {
                 UI.Text(text = name, type = if (last) TextType.SUBTITLE else TextType.BODY)

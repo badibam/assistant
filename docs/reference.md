@@ -38,4 +38,5 @@ Application Android native (Kotlin + Jetpack Compose, persistance Room) : un ass
 ## Icônes
 
 - Le vocabulaire est Lucide, en entier : un nom d'icône est un nom Lucide. La source est copiée dans `third_party/lucide/` (SVG, métadonnées, `LICENSE`, `VERSION`). `scripts/generate_icons.py` en tire les drawables `lucide_*`, l'index `assets/icons/index.json` (tags, catégories, anciens noms) et la licence embarquée ; sa sortie est commitée, le build ne génère rien. Mettre Lucide à jour = remplacer `third_party/lucide/`, relancer le script, commiter.
+- Toute icône à l'écran est un nom de ce vocabulaire, affiché par `UI.Icon` ou par le thème — jamais un glyphe ni un emoji écrit dans un texte. `IconNamesInCodeTest` vérifie que chaque nom écrit dans le code existe.
 - Un thème déclare `iconSource` : `LUCIDE`, ou `OWN` s'il dessine lui-même **toutes** les icônes dans son dossier `icons/` — le script refuse un thème incomplet. `Icons.drawable()` trouve l'image d'un nom, ancien nom compris ; un nom introuvable s'affiche en deux lettres.

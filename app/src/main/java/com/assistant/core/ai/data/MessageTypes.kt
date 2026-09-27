@@ -55,9 +55,12 @@ enum class ExecutionTrigger {
     EVENT       // Triggered by event (future use)
 }
 
-enum class EnrichmentType {
-    POINTER,     // 🔍 Pointer/Référencer - read-only data references
-    USE,         // 📝 Utiliser - actions on existing tool data
-    CREATE,      // ✨ Créer - new elements (tools, zones)
-    MODIFY_CONFIG // 🔧 Modifier Config - tool configuration changes
+/**
+ * The kinds of enrichment a message carries. [iconName] is the Lucide icon that shows it.
+ */
+enum class EnrichmentType(val iconName: String) {
+    POINTER("search"),          // read-only data references
+    USE("file-pen"),            // actions on existing tool data
+    CREATE("sparkles"),         // new elements (tools, zones)
+    MODIFY_CONFIG("wrench")     // tool configuration changes
 }

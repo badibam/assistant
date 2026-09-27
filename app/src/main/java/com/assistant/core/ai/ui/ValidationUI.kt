@@ -6,9 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,11 +95,10 @@ private fun ActionItem(
         ) {
             // Warning icon si action sensible (config)
             if (showWarning) {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Action sensible",
-                    tint = Color(0xFFFF9800),  // Orange
-                    modifier = Modifier.size(20.dp)
+                UI.Icon(
+                    iconName = "triangle-alert",
+                    size = 20.dp,
+                    tint = Color(0xFFFF9800)  // Orange
                 )
             }
 

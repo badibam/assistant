@@ -74,10 +74,7 @@ fun AutomationEditorFooter(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        UI.Text(
-                            text = "⏰", // Clock icon
-                            type = TextType.BODY
-                        )
+                        UI.Icon(iconName = "clock", size = 20.dp)
                         UI.Text(
                             text = scheduleConfig?.let {
                                 generateScheduleLabel(context, it)
@@ -97,10 +94,7 @@ fun AutomationEditorFooter(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        UI.Text(
-                            text = "⚡", // Lightning icon for triggers
-                            type = TextType.BODY
-                        )
+                        UI.Icon(iconName = "zap", size = 20.dp)
                         UI.Text(
                             text = if (triggersCount > 0) {
                                 s.shared("automation_triggers_count").format(triggersCount)

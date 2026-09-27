@@ -327,9 +327,17 @@ object DefaultTheme : ThemeContract {
             }
         ) {
             if (display == ButtonDisplay.ICON) {
-                androidx.compose.material3.Text(
-                    getButtonIcon(action),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                // Every action's icon is in the index (ButtonAction's test), so a missing
+                // drawable is a broken build, not a case to draw around.
+                val context = LocalContext.current
+                val iconResource = requireNotNull(com.assistant.core.icons.Icons.drawable(context, action.iconName)) {
+                    "No drawable for the icon ${action.iconName} of $action"
+                }
+                // No tint given: the icon takes the button's content colour, as its text would
+                Icon(
+                    painter = painterResource(iconResource),
+                    contentDescription = getButtonText(action),
+                    modifier = Modifier.size(getButtonIconSize(size))
                 )
             } else {
                 androidx.compose.material3.Text(
@@ -412,36 +420,15 @@ object DefaultTheme : ThemeContract {
         }
     }
 
-    private fun getButtonIcon(action: ButtonAction): String {
-        // Unicode symbols for readability and consistency
-        return when (action) {
-            ButtonAction.SAVE -> "✓"      // Check mark
-            ButtonAction.CREATE -> "+"    // Plus
-            ButtonAction.UPDATE -> "✎"    // Pencil
-            ButtonAction.DELETE -> "✕"    // X mark
-            ButtonAction.CANCEL -> "✕"    // X mark
-            ButtonAction.BACK -> "◀"      // Triangle gauche
-            ButtonAction.CONFIGURE -> "⚙" // Gear
-            ButtonAction.ADD -> "+"       // Plus
-            ButtonAction.EDIT -> "✎"      // Pencil
-            ButtonAction.REFRESH -> "↻"   // Circular arrow
-            ButtonAction.SELECT -> "✓"    // Check mark
-            ButtonAction.CONFIRM -> "✓"   // Check mark
-            ButtonAction.RESET -> "↺"     // Reset arrow
-            ButtonAction.UP -> "▲"        // Triangle haut
-            ButtonAction.DOWN -> "▼"      // Triangle bas
-            ButtonAction.LEFT -> "◀"      // Triangle gauche
-            ButtonAction.RIGHT -> "▶"     // Triangle droite
-            ButtonAction.AI_CHAT -> "💬"   // Chat bubble
-            ButtonAction.INTERRUPT -> "⏸"  // Pause symbol
-            ButtonAction.STOP -> "⏹"      // Stop symbol
-            ButtonAction.PAUSE -> "⏸"     // Pause symbol
-            ButtonAction.RESUME -> "▶"    // Play symbol
-            ButtonAction.START -> "▶"     // Play symbol
-            ButtonAction.VIEW -> "👁"      // Eye symbol
-        }
+    /** The size of an action's icon in a button of [size]. */
+    private fun getButtonIconSize(size: Size): Dp = when (size) {
+        Size.XS -> 16.dp
+        Size.S, Size.M -> 20.dp
+        Size.L -> 24.dp
+        Size.XL -> 28.dp
+        Size.XXL -> 32.dp
     }
-    
+
     @Composable
     private fun getDefaultConfirmMessage(action: ButtonAction): String {
         val context = androidx.compose.ui.platform.LocalContext.current

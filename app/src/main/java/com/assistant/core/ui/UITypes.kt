@@ -141,12 +141,17 @@ enum class ButtonType {
 }
 
 /**
- * Predefined actions for standardized buttons
+ * Predefined actions for standardized buttons.
+ *
+ * [iconName] is the icon an action shows as a button in ButtonDisplay.ICON: a Lucide name, which
+ * the theme draws. Which icon means an action is the app's vocabulary, shared by every theme.
  */
-enum class ButtonAction {
-    SAVE, CREATE, UPDATE, DELETE, CANCEL, BACK,
-    CONFIGURE, ADD, EDIT, REFRESH, SELECT, CONFIRM, UP, DOWN, LEFT, RIGHT,
-    AI_CHAT, RESET, INTERRUPT, STOP, PAUSE, RESUME, START, VIEW
+enum class ButtonAction(val iconName: String) {
+    SAVE("check"), CREATE("plus"), UPDATE("pencil"), DELETE("trash"), CANCEL("x"), BACK("arrow-left"),
+    CONFIGURE("settings"), ADD("plus"), EDIT("pencil"), REFRESH("refresh-cw"), SELECT("check"), CONFIRM("check"),
+    UP("chevron-up"), DOWN("chevron-down"), LEFT("chevron-left"), RIGHT("chevron-right"),
+    AI_CHAT("message-circle"), RESET("rotate-ccw"), INTERRUPT("pause"), STOP("square"), PAUSE("pause"),
+    RESUME("play"), START("play"), VIEW("eye")
 }
 
 /**

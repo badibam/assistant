@@ -1,7 +1,9 @@
 package com.assistant.core.ai.ui.components
 
 import android.content.Context
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -44,10 +46,17 @@ fun SessionStatusBar(
             .padding(vertical = 8.dp, horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {
-        UI.Text(
-            text = statusText,
-            type = TextType.CAPTION
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // The countdown before closing shows a timer beside its text
+            if (phase == Phase.AWAITING_SESSION_CLOSURE) UI.Icon(iconName = "timer", size = 16.dp)
+            UI.Text(
+                text = statusText,
+                type = TextType.CAPTION
+            )
+        }
     }
 }
 
@@ -113,7 +122,7 @@ private fun getStatusText(
         }
 
         Phase.AWAITING_SESSION_CLOSURE -> {
-            s.shared("ai_phase_awaiting_closure") // "⏱ Fermeture dans 5s..."
+            s.shared("ai_phase_awaiting_closure")
         }
 
         Phase.CLOSED -> {

@@ -72,7 +72,7 @@ Row avec fillMaxWidth, padding vertical 4dp, espacement 8dp entre colonnes.
 
 **UI.Button** - Générique et flexible avec type (PRIMARY/SECONDARY/DEFAULT), size (XS à XXL), state et content personnalisé.
 
-**UI.ActionButton** - Actions standardisées avec action prédéfinie, display (ICON/LABEL), size et confirmation optionnelle.
+**UI.ActionButton** - Actions standardisées avec action prédéfinie, display (ICON/LABEL), size et confirmation optionnelle. En ICON, le bouton montre l'icône Lucide que porte l'action (`ButtonAction.iconName`), dessinée par le thème.
 
 ### Actions Disponibles
 - **Principales** : SAVE, CREATE, UPDATE, DELETE, CANCEL, CONFIRM

@@ -785,7 +785,7 @@ private fun SeedMode(
                                         modifier = Modifier.padding(12.dp),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        UI.Text(text = getEnrichmentIcon(block.type), type = TextType.BODY)
+                                        UI.Icon(iconName = block.type.iconName, size = 20.dp)
                                         UI.Text(text = block.preview, type = TextType.BODY)
                                     }
                                 }
@@ -928,18 +928,6 @@ private fun SeedMode(
             UI.Toast(context, message, Duration.LONG)
             errorMessage = null
         }
-    }
-}
-
-/**
- * Get icon for enrichment type (helper for preview)
- */
-private fun getEnrichmentIcon(type: com.assistant.core.ai.data.EnrichmentType): String {
-    return when (type) {
-        com.assistant.core.ai.data.EnrichmentType.POINTER -> "🔍"
-        com.assistant.core.ai.data.EnrichmentType.USE -> "📝"
-        com.assistant.core.ai.data.EnrichmentType.CREATE -> "✨"
-        com.assistant.core.ai.data.EnrichmentType.MODIFY_CONFIG -> "🔧"
     }
 }
 

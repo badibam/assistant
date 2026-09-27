@@ -304,11 +304,7 @@ fun AIProvidersScreen(
                                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                                     ) {
                                         // Active indicator
-                                        val indicator = if (provider.isActive) "●" else "○"
-                                        UI.Text(
-                                            text = indicator,
-                                            type = TextType.TITLE
-                                        )
+                                        UI.Icon(iconName = if (provider.isActive) "circle-dot" else "circle")
 
                                         UI.Text(
                                             text = provider.displayName,

@@ -211,9 +211,9 @@ fun ChatMessageBubble(
                                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                                     verticalAlignment = Alignment.Top
                                                 ) {
-                                                    UI.Text(
-                                                        text = if (commandResult.status == CommandStatus.SUCCESS) "✓" else "✗",
-                                                        type = TextType.BODY
+                                                    UI.Icon(
+                                                        iconName = if (commandResult.status == CommandStatus.SUCCESS) "check" else "x",
+                                                        size = 20.dp
                                                     )
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         // Verbalized description

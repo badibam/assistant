@@ -157,20 +157,14 @@ fun DuplicateSelector(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    UI.Text(
-                        text = if (currentStep == DuplicateStep.ZONE) {
-                            "► ${s.shared("duplicate_select_zone")}"
-                        } else {
-                            selectedZoneName
-                        },
-                        type = TextType.BODY
-                    )
-                    if (currentStep == DuplicateStep.INSTANCE) {
-                        UI.Text(text = " > ", type = TextType.BODY)
-                        UI.Text(
-                            text = "► ${s.shared("duplicate_select_instance")}",
-                            type = TextType.BODY
-                        )
+                    // The step being chosen is the last one of the path, after a chevron
+                    if (currentStep == DuplicateStep.ZONE) {
+                        UI.Icon(iconName = "chevron-right", size = 20.dp)
+                        UI.Text(text = s.shared("duplicate_select_zone"), type = TextType.BODY)
+                    } else {
+                        UI.Text(text = selectedZoneName, type = TextType.BODY)
+                        UI.Icon(iconName = "chevron-right", size = 20.dp)
+                        UI.Text(text = s.shared("duplicate_select_instance"), type = TextType.BODY)
                     }
                 }
 

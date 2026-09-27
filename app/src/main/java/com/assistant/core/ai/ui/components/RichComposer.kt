@@ -387,7 +387,7 @@ fun UI.RichComposer(
 
                 // Use EnrichmentProcessor to generate proper summary if preview is empty or generic
                 val enrichmentProcessor = EnrichmentProcessor(context)
-                val finalUiPreview = if (uiPreview.isBlank() || uiPreview == "${getEnrichmentIcon(dialogState.type)} Configuration") {
+                val finalUiPreview = if (uiPreview.isBlank()) {
                     LogManager.aiEnrichment("Using EnrichmentProcessor to generate preview for ${dialogState.type}")
                     enrichmentProcessor.generateSummary(dialogState.type, config)
                 } else {
@@ -395,7 +395,7 @@ fun UI.RichComposer(
                     uiPreview
                 }
 
-                val finalPromptPreview = if (promptPreview.isBlank() || promptPreview == "${getEnrichmentIcon(dialogState.type)} Configuration") {
+                val finalPromptPreview = if (promptPreview.isBlank()) {
                     LogManager.aiEnrichment("Using EnrichmentProcessor to generate promptPreview for ${dialogState.type}")
                     enrichmentProcessor.generateSummary(dialogState.type, config)
                 } else {
@@ -575,10 +575,7 @@ private fun EnrichmentBlockPreview(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                UI.Text(
-                    text = getEnrichmentIcon(block.type),
-                    type = TextType.BODY
-                )
+                UI.Icon(iconName = block.type.iconName, size = 20.dp)
                 UI.Text(
                     text = block.preview,
                     type = TextType.BODY
@@ -649,22 +646,10 @@ private fun createRichMessage(context: Context, segments: List<MessageSegment>, 
  */
 private fun getEnrichmentButtonAction(type: EnrichmentType): ButtonAction {
     return when (type) {
-        EnrichmentType.POINTER -> ButtonAction.SELECT // 🔍
-        EnrichmentType.USE -> ButtonAction.EDIT       // 📝
-        EnrichmentType.CREATE -> ButtonAction.ADD     // ✨
-        EnrichmentType.MODIFY_CONFIG -> ButtonAction.CONFIGURE // 🔧
-    }
-}
-
-/**
- * Get icon for enrichment type
- */
-private fun getEnrichmentIcon(type: EnrichmentType): String {
-    return when (type) {
-        EnrichmentType.POINTER -> "🔍"
-        EnrichmentType.USE -> "📝"
-        EnrichmentType.CREATE -> "✨"
-        EnrichmentType.MODIFY_CONFIG -> "🔧"
+        EnrichmentType.POINTER -> ButtonAction.SELECT
+        EnrichmentType.USE -> ButtonAction.EDIT
+        EnrichmentType.CREATE -> ButtonAction.ADD
+        EnrichmentType.MODIFY_CONFIG -> ButtonAction.CONFIGURE
     }
 }
 
@@ -732,7 +717,7 @@ private fun PlaceholderEnrichmentDialog(
     val s = remember { Strings.`for`(context = context) }
 
     var config by rememberSaveable { mutableStateOf(existingConfig ?: "{}") }
-    var preview by rememberSaveable { mutableStateOf("${getEnrichmentIcon(type)} Configuration") }
+    var preview by rememberSaveable { mutableStateOf("") }
 
     UI.Dialog(
         type = DialogType.CONFIGURE,

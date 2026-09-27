@@ -375,7 +375,7 @@
     <string name="ai_phase_idle_automation">Prêt</string>
     <string name="ai_phase_executing">Traitement...</string>
     <string name="ai_phase_preparing_continuation">Préparation continuation...</string>
-    <string name="ai_phase_awaiting_closure">⏱ Fermeture dans 5s...</string>
+    <string name="ai_phase_awaiting_closure">Fermeture dans 5s...</string>
     <string name="ai_phase_closed">Session terminée</string>
 
     <!-- AI Session End Reasons -->

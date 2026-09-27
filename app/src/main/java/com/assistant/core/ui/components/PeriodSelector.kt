@@ -258,7 +258,7 @@ fun normalizeTimestampWithConfig(
 }
 
 /**
- * Single period selector with navigation arrows (◀▶).
+ * Single period selector with navigation arrows (the LEFT and RIGHT action buttons).
  * Displays relative labels (Today, This week, etc.) with navigation arrows
  * and ability to click to open date selector. Loads its own temporal configuration.
  */
@@ -720,7 +720,7 @@ private fun getWeekStart(timestamp: Long, weekStartDay: String): Long {
 }
 
 /**
- * Single relative period selector with navigation arrows (◀▶)
+ * Single relative period selector with navigation arrows (the LEFT and RIGHT action buttons)
  * Works directly with RelativePeriod for AUTOMATION contexts
  * Displays truly relative labels ("Le jour-même", "La veille", "Il y a 2 jours")
  *
