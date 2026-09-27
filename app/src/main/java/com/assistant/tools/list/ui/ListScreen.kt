@@ -191,10 +191,11 @@ fun ListScreen(
         // Adding an item, last, parted from the list by a line: its name and the list's fields,
         // which start at their default values and go back to them once it is added
         UI.Divider()
+        UI.Text(s.tool("add_item_title"), TextType.SUBTITLE)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormField(
-                    label = s.tool("add_item_label"),
+                    label = s.tool("field_content"),
                     value = typed,
                     onChange = { typed = it },
                     fieldType = FieldType.TEXT,

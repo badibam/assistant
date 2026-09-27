@@ -7,6 +7,7 @@
     <string name="description">Ce qui reste à faire, coché au fur et à mesure : courses, tâches, check-list</string>
 
     <!-- Champs d'un élément -->
+    <string name="field_content">Contenu</string>
     <string name="field_position">Position</string>
     <string name="field_checked_at">Coché le</string>
     <string name="schema_data_position">Place dans la liste, 0 en haut, parmi tous les éléments, cochés ou non. Une position déjà prise y place l\'élément et décale les suivants ; sans position, l\'élément va en dernier. Les positions restent 0, 1, 2… sans trou</string>
@@ -18,7 +19,7 @@
 
     <!-- Écran -->
     <string name="list_empty">La liste est vide</string>
-    <string name="add_item_label">Ajouter un élément</string>
+    <string name="add_item_title">Ajouter un élément</string>
     <string name="action_uncheck_all">Tout décocher</string>
     <string name="edit_item_title">Élément</string>
     <string name="delete_item_confirm">Supprimer « %1$s » ?</string>

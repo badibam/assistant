@@ -7,6 +7,7 @@
     <string name="description">What is left to do, checked off as it is done: shopping, tasks, a checklist</string>
 
     <!-- Fields of an item -->
+    <string name="field_content">Content</string>
     <string name="field_position">Position</string>
     <string name="field_checked_at">Checked on</string>
     <string name="schema_data_position">Place in the list, 0 at the top, among every item, checked or not. A position already taken puts the item there and moves the following ones down; without a position the item goes last. Positions stay 0, 1, 2… with no gap</string>
@@ -18,7 +19,7 @@
 
     <!-- Screen -->
     <string name="list_empty">The list is empty</string>
-    <string name="add_item_label">Add an item</string>
+    <string name="add_item_title">Add an item</string>
     <string name="action_uncheck_all">Uncheck all</string>
     <string name="edit_item_title">Item</string>
     <string name="delete_item_confirm">Delete \"%1$s\"?</string>

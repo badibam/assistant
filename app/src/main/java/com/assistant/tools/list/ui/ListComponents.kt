@@ -58,7 +58,7 @@ internal fun ListItemDialog(
         ) {
             UI.Text(s.tool("edit_item_title"), TextType.SUBTITLE)
             UI.FormField(
-                label = s.shared("label_name"),
+                label = s.tool("field_content"),
                 value = name,
                 onChange = { name = it },
                 fieldType = FieldType.TEXT,

@@ -46,6 +46,8 @@ object ListToolType : ToolTypeContract {
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(tool = "list", context = context)
         return when (fieldName) {
+            // An item's name is what it says: its content, on screen and in an error
+            "name" -> s.tool("field_content")
             ManualOrder.POSITION -> s.tool("field_position")
             CHECKED_AT -> s.tool("field_checked_at")
             else -> BaseSchemas.getCommonFieldName(fieldName, context) ?: fieldName
