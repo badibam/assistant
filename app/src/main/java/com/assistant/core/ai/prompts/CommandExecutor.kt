@@ -456,10 +456,12 @@ class CommandExecutor(private val context: Context) {
                 if (filtered.isEmpty()) null else filtered
             }
             "batch_create", "batch_update", "batch_delete" -> {
-                // Batch operations: keep only count fields
+                // Batch operations: their counts, and the ids of the entries created, for the AI
+                // to act on what it just wrote without reading it back
                 val filtered = mutableMapOf<String, Any>()
 
                 data["created_count"]?.let { filtered["created_count"] = it }
+                if (operation == "batch_create") data["ids"]?.let { filtered["ids"] = it }
                 data["failed_count"]?.let { filtered["failed_count"] = it }
                 data["updated_count"]?.let { filtered["updated_count"] = it }
                 data["deleted_count"]?.let { filtered["deleted_count"] = it }

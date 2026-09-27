@@ -484,7 +484,7 @@ Queries return a system message of type `DATA_ADDED` holding:
 
 Actions return a system message of type `ACTIONS_EXECUTED` holding:
 
-- `command_results`: a status and details for each action
+- `command_results`: a status and details for each action, and what it returns: the id of what it created, and for entries created the `ids`, in the order they were sent
 - `summary`: the actions carried out, in words
 
 Actions run in order and stop at the first failure: the ones after it are cancelled. If every action succeeds, your `post_text` is shown.]]></string>
