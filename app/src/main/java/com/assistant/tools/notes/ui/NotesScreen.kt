@@ -228,6 +228,7 @@ fun NotesScreen(
                         NoteCard(
                             note = null, // Placeholder mode
                             toolInstanceId = toolInstanceId,
+                            config = config,
                             contextMenuNoteId = contextMenuNoteId,
                             onNoteClick = { }, // Placeholder doesn't have click
                             onContextMenuChanged = { },
@@ -261,6 +262,7 @@ fun NotesScreen(
                             NoteCard(
                                 note = note,
                                 toolInstanceId = toolInstanceId,
+                                config = config,
                                 showContextMenu = contextMenuNoteId == note.id,
                                 contextMenuNoteId = contextMenuNoteId,
                                 onNoteClick = { openEditDialog(note) },
@@ -283,6 +285,7 @@ fun NotesScreen(
                         NoteCard(
                             note = null, // Placeholder mode
                             toolInstanceId = toolInstanceId,
+                            config = config,
                             contextMenuNoteId = contextMenuNoteId,
                             onNoteClick = { }, // Placeholder doesn't have click
                             onContextMenuChanged = { },

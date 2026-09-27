@@ -74,6 +74,9 @@ object MessageToolType : ToolTypeContract {
 
     override fun getDefaultDisplayMode(): String = "LINE"
 
+
+    override fun getDefaultShowFieldLabels(): Boolean = true
+
     // ========================================
     // Schemas (SchemaProvider interface)
     // ========================================

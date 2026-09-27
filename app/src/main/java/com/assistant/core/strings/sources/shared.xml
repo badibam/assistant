@@ -454,6 +454,7 @@
     <string name="label_no_value">No value</string>
     <string name="list_item_untitled">Untitled</string>
     <string name="list_item_summary_separator">·</string>
+    <string name="field_label_inline">%1$s:</string>
     <string name="tag_color_red">Red</string>
     <string name="tag_color_orange">Orange</string>
     <string name="tag_color_yellow">Yellow</string>
@@ -682,6 +683,7 @@
     <string name="tools_config_label_config_validation">Config validation by the AI</string>
     <string name="tools_config_label_data_validation">Data validation by the AI</string>
     <string name="tools_config_label_always_send">Always send to the AI</string>
+    <string name="tools_config_label_show_field_labels">Show field names</string>
     <string name="tools_config_label_validate_config">Config validation</string>
     <string name="tools_config_label_validate_data">Data validation</string>
 
@@ -727,6 +729,7 @@
     <string name="tools_base_schema_config_display_mode">How the tool is drawn in its zone, from the smallest (ICON) to the largest (FULL)</string>
     <string name="tools_base_schema_config_icon_name">Name of the tool\'s icon (a Lucide icon name)</string>
     <string name="tools_base_schema_config_always_send">Always send the data to the AI (Level 2)</string>
+    <string name="tools_base_schema_config_show_field_labels">Whether the user\'s fields show their names beside their values, wherever they are shown</string>
     <string name="tools_base_schema_config_validate_config">Requires user validation before a configuration change</string>
     <string name="tools_base_schema_config_validate_data">Requires user validation before a data change</string>
 

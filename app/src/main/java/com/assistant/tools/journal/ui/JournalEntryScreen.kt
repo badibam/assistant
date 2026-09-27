@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.utils.JsonUtils
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.DateUtils
@@ -70,6 +71,15 @@ fun JournalEntryScreen(
     var customFieldsValues by rememberSaveable(stateSaver = FieldValuesSaver) { mutableStateOf<Map<String, Any?>>(emptyMap()) }
     // The user's fields as stored, for a save to clear those emptied since
     var storedCustomFields by rememberSaveable(stateSaver = FieldValuesSaver) { mutableStateOf<Map<String, Any?>>(emptyMap()) }
+
+    // The tool's config, reloaded, never saved: how the user's fields show
+    var toolConfig by remember { mutableStateOf<org.json.JSONObject?>(null) }
+    LaunchedEffect(toolInstanceId) {
+        val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
+        if (!result.isSuccess) { errorMessage = result.error ?: s.shared("message_error_simple"); return@LaunchedEffect }
+        @Suppress("UNCHECKED_CAST")
+        toolConfig = JsonUtils.toJSONObject((result.data?.get("tool_instance") as Map<*, *>)["config"] as Map<String, Any?>)
+    }
 
     // Date/time picker states
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
@@ -411,11 +421,15 @@ fun JournalEntryScreen(
                     // Custom fields display (if any)
                     // Custom fields display (definitions loaded automatically from toolInstanceId)
                     Spacer(modifier = Modifier.height(16.dp))
-                    CustomFieldsDisplay(
-                        toolInstanceId = toolInstanceId,
-                        values = customFieldsValues,
-                        context = context
-                    )
+                    toolConfig?.let { config ->
+                        CustomFieldsDisplay(
+                            toolType = com.assistant.tools.journal.JournalToolType,
+                            config = config,
+                            values = customFieldsValues,
+                            layout = com.assistant.core.fields.FieldsLayout.EXPANDED,
+                            context = context
+                        )
+                    }
                 }
             }
 

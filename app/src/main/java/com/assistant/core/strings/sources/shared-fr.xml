@@ -454,6 +454,7 @@
     <string name="label_no_value">Aucune valeur</string>
     <string name="list_item_untitled">Sans nom</string>
     <string name="list_item_summary_separator">·</string>
+    <string name="field_label_inline">%1$s :</string>
     <string name="tag_color_red">Rouge</string>
     <string name="tag_color_orange">Orange</string>
     <string name="tag_color_yellow">Jaune</string>
@@ -682,6 +683,7 @@
     <string name="tools_config_label_config_validation">Validation config par IA</string>
     <string name="tools_config_label_data_validation">Validation données par IA</string>
     <string name="tools_config_label_always_send">Toujours envoyer à l\'IA</string>
+    <string name="tools_config_label_show_field_labels">Afficher le nom des champs</string>
     <string name="tools_config_label_validate_config">Validation config</string>
     <string name="tools_config_label_validate_data">Validation données</string>
 
@@ -727,6 +729,7 @@
     <string name="tools_base_schema_config_display_mode">Forme de l\'outil dans sa zone, de la plus petite (ICON) à la plus grande (FULL)</string>
     <string name="tools_base_schema_config_icon_name">Nom de l\'icône de l\'outil (un nom d\'icône Lucide)</string>
     <string name="tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
+    <string name="tools_base_schema_config_show_field_labels">Si les champs de l\'utilisateur montrent leur nom à côté de leur valeur, partout où ils s\'affichent</string>
     <string name="tools_base_schema_config_validate_config">Requiert validation utilisateur avant modification configuration</string>
     <string name="tools_base_schema_config_validate_data">Requiert validation utilisateur avant modification données</string>
 

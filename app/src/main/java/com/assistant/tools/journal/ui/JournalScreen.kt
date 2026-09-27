@@ -30,7 +30,8 @@ data class JournalEntry(
     val id: String,
     val title: String,  // name field
     val content: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val extra: Map<String, Any?> = emptyMap()
 )
 
 /**
@@ -101,8 +102,12 @@ fun JournalScreen(
 
                         val content = parsedData["content"] as? String ?: ""
 
+                        // The user's fields come from their own column, not from the data object
+                        @Suppress("UNCHECKED_CAST")
+                        val extra = (map["extra"] as? Map<String, Any?>) ?: emptyMap()
+
                         LogManager.ui("Parsing journal entry: id=$id, title=$title, timestamp=$timestamp")
-                        JournalEntry(id, title, content, timestamp)
+                        JournalEntry(id, title, content, timestamp, extra)
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing journal entry: ${e.message}", "ERROR")
                         null
@@ -241,6 +246,8 @@ fun JournalScreen(
                                     timestamp = entry.timestamp,
                                     title = entry.title,
                                     content = entry.content,
+                                    config = config,
+                                    extra = entry.extra,
                                     onClick = {
                                         navigateToEntryId = entry.id
                                         navigateIsCreating = false

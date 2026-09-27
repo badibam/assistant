@@ -40,6 +40,9 @@ object JournalToolType : ToolTypeContract {
 
     override fun getDefaultDisplayMode(): String = "EXTENDED"
 
+
+    override fun getDefaultShowFieldLabels(): Boolean = true
+
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(tool = "journal", context = context)
         return when (fieldName) {

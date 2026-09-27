@@ -38,6 +38,9 @@ object NotesToolType : ToolTypeContract {
 
     override fun getDefaultDisplayMode(): String = "EXTENDED"
 
+
+    override fun getDefaultShowFieldLabels(): Boolean = true
+
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(tool = "notes", context = context)
         return when (fieldName) {

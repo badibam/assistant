@@ -36,6 +36,12 @@ interface ToolTypeContract {
 
     /** The display mode a new tool of this type is shown in, in its zone. */
     fun getDefaultDisplayMode(): String
+
+    /**
+     * Whether the user's fields show their names beside their values, until the tool's config
+     * says otherwise (show_field_labels): where values speak for themselves, a list item's, no.
+     */
+    fun getDefaultShowFieldLabels(): Boolean
     
     // Schema Provider Implementation
     // SchemaProvider methods are inherited from SchemaProvider interface

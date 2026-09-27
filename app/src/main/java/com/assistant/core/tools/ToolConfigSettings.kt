@@ -50,20 +50,30 @@ object ToolConfigSettings {
         )
     }
 
-    /** The user's own fields, which every tool can add to its entries. */
-    private fun extraFieldsNode(context: Context): SettingNode {
+    /**
+     * The user's own fields, which every tool can add to its entries, and whether their names
+     * show beside their values wherever they are shown (CustomFieldsDisplay).
+     */
+    private fun extraFieldsNodes(toolType: ToolTypeContract, context: Context): List<SettingNode> {
         val text: (String) -> String = Strings.`for`(context = context)::shared
-        return SettingNode.ListOf("extra_fields", text("custom_fields_section_title"),
-            SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true,
-            summary = listOf("display_name", "type"))
+        return listOf(
+            field(SHOW_FIELD_LABELS, text("tools_config_label_show_field_labels"), FieldType.BOOLEAN,
+                text("tools_base_schema_config_show_field_labels"), required = true, default = toolType.getDefaultShowFieldLabels()),
+            SettingNode.ListOf("extra_fields", text("custom_fields_section_title"),
+                SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true,
+                summary = listOf("display_name", "type"))
+        )
     }
+
+    /** The setting that says whether the user's fields show their names. */
+    const val SHOW_FIELD_LABELS = "show_field_labels"
 
     /**
      * The whole config of a tool of [toolType]: the general settings, its type's, then the user's
      * own fields, which come after the entries' main field they add to.
      */
     fun nodes(toolType: ToolTypeContract, context: Context): List<SettingNode> =
-        generalNodes(toolType, context) + toolType.getConfigSettings(context) + extraFieldsNode(context)
+        generalNodes(toolType, context) + toolType.getConfigSettings(context) + extraFieldsNodes(toolType, context)
 
     /** What a new tool of [toolType] starts from: its declared defaults (SettingDefaults). */
     fun defaults(toolType: ToolTypeContract, context: Context): org.json.JSONObject =

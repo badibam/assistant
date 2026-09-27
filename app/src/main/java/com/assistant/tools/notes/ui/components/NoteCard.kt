@@ -22,6 +22,7 @@ import com.assistant.tools.notes.ui.NoteEntry
 fun NoteCard(
     note: NoteEntry? = null, // null = placeholder mode
     toolInstanceId: String,
+    config: org.json.JSONObject, // The tool's config, for how its fields show
     showContextMenu: Boolean = false,
     contextMenuNoteId: String? = null,
     onNoteClick: () -> Unit = {}, // Opens edit dialog
@@ -102,8 +103,10 @@ fun NoteCard(
                                 // Custom fields display (always shown for alwaysVisible fields)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 CustomFieldsDisplay(
-                                    toolInstanceId = toolInstanceId,
+                                    toolType = com.assistant.tools.notes.NotesToolType,
+                                    config = config,
                                     values = note?.extra ?: emptyMap(),
+                                    layout = com.assistant.core.fields.FieldsLayout.COMPACT,
                                     context = context
                                 )
                             }

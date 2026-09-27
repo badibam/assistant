@@ -499,69 +499,104 @@ fun CustomFieldsInput(
     }
 }
 
+/** How a screen lays out the user's fields, by the room it has for them. */
+enum class FieldsLayout {
+    /** Each field on its own, its name above its value, full width: an entry's own page. */
+    EXPANDED,
+    /**
+     * Two columns, each field on one line ("Mood: Calm"); a long value takes the whole width:
+     * a summary, a list item, a card.
+     */
+    COMPACT
+}
+
 /**
- * Renders all custom fields in read-only display mode.
+ * The user's fields of an entry, the one way every tool shows them: those holding a value, and
+ * those set to show always ("no value" when empty); their names beside their values unless the
+ * tool's config says not to (show_field_labels). Nothing when no field is to be shown.
  *
- * This component displays the formatted values of custom fields. Fields with no value
- * are either hidden or shown with "No value" text depending on the alwaysVisible flag.
- *
- * Supports two modes (priority order):
- * 1. Explicit definitions passed in by the caller
- * 2. ConfigBased: Load field definitions from tool instance config
- *
- * @param toolInstanceId Tool instance ID to load config from (ConfigBased mode)
- * @param customFieldsMetadata Field definitions supplied directly by the caller
- * @param values Current values map (fieldName -> value)
- * @param context Android context for strings and formatting
+ * @param toolType The tool's type, for its config's defaults
+ * @param config The tool's config: its fields and whether they show their names
+ * @param values The entry's values of the user's fields
+ * @param layout Chosen by the screen, by the room it has
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CustomFieldsDisplay(
-    toolInstanceId: String? = null,
-    customFieldsMetadata: List<FieldDefinition>? = null,
+    toolType: com.assistant.core.tools.ToolTypeContract,
+    config: org.json.JSONObject,
     values: Map<String, Any?>,
+    layout: FieldsLayout,
     context: Context
 ) {
+    val fields = config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
+    val shown = fields.filter { values[it.name] != null || it.alwaysVisible }
+    if (shown.isEmpty()) return
+    val showLabels = com.assistant.core.tools.ToolConfigSettings.read(toolType, config, context)
+        .boolean(com.assistant.core.tools.ToolConfigSettings.SHOW_FIELD_LABELS)
     val s = Strings.`for`(context = context)
 
-    // Resolve field definitions from metadata source
-    val resolvedFields = resolveFieldDefinitions(
-        toolInstanceId = toolInstanceId,
-        customFieldsMetadata = customFieldsMetadata,
-        context = context
-    )
+    when (layout) {
+        FieldsLayout.EXPANDED -> Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            shown.forEach { field ->
+                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (showLabels) UI.Text(text = field.displayName, type = TextType.SUBTITLE, fillMaxWidth = true)
+                    FieldValue(field, values[field.name], context)
+                }
+            }
+        }
 
-    // Filter fields to display: either has value OR alwaysVisible is true
-    val fieldsToDisplay = resolvedFields.filter { field ->
-        values[field.name] != null || field.alwaysVisible
-    }
-
-    // Early return if no fields to display
-    if (fieldsToDisplay.isEmpty()) {
-        return
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Display each field with its own title
-        fieldsToDisplay.forEach { field ->
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // Field title (display name as subtitle)
-                UI.Text(
-                    text = field.displayName,
-                    type = TextType.SUBTITLE,
-                    fillMaxWidth = true
-                )
-
-                // Field value, drawn by its type
-                FieldValue(field, values[field.name], context)
+        // Rows of two short values, a long one alone on its row
+        FieldsLayout.COMPACT -> Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            compactRows(shown).forEach { row ->
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { field ->
+                        FlowRow(
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            if (showLabels) UI.Text(s.shared("field_label_inline").format(field.displayName), TextType.LABEL)
+                            FieldValue(field, values[field.name], context)
+                        }
+                    }
+                    // A short field alone on its row keeps half the width, as in the rows above
+                    if (row.size == 1 && !row.single().isWide()) Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
+}
+
+/**
+ * The rows of a compact layout, in the fields' order: two short fields side by side, a wide one
+ * alone. A short field followed by a wide one stays alone on its row.
+ */
+internal fun compactRows(fields: List<FieldDefinition>): List<List<FieldDefinition>> {
+    val rows = mutableListOf<List<FieldDefinition>>()
+    fields.forEach { field ->
+        val last = rows.lastOrNull()
+        if (!field.isWide() && last != null && last.size == 1 && !last.single().isWide()) rows[rows.lastIndex] = last + field
+        else rows.add(listOf(field))
+    }
+    return rows
+}
+
+/**
+ * Whether a field's value needs a whole row in a compact layout: a text longer than a short one,
+ * a scale's gauge, a ranking's numbered options.
+ */
+internal fun FieldDefinition.isWide(): Boolean = when (type) {
+    FieldType.TEXT -> config?.get("length") != TextLength.SHORT.name
+    FieldType.SCALE -> true
+    FieldType.CHOICE -> ChoiceSettings.fromConfig(config).shape == ChoiceShape.ORDERED
+    else -> false
 }
 
 /**

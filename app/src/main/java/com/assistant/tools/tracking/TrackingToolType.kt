@@ -46,6 +46,9 @@ object TrackingToolType : ToolTypeContract {
 
     override fun getDefaultDisplayMode(): String = "LINE"
 
+
+    override fun getDefaultShowFieldLabels(): Boolean = true
+
     /**
      * A tracking tool's settings: what it follows ("type"), and for that type
      * - value: the settings of the entries' main field, those of its field type (FieldTypeSettings),

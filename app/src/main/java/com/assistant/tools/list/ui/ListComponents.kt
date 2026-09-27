@@ -1,10 +1,7 @@
 package com.assistant.tools.list.ui
 
-import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -17,7 +14,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.CustomFieldsInput
 import com.assistant.core.fields.FieldDefinition
-import com.assistant.core.fields.FieldValue
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
@@ -27,24 +23,6 @@ import com.assistant.core.ui.FieldValuesSaver
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
 import com.assistant.tools.list.ListItem
-
-/**
- * The values an item holds for the list's own fields, on one line, each drawn by its field type
- * and parted by a separator: those it has, and those always shown ("no value" when empty).
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun ItemValues(fields: List<FieldDefinition>, extra: Map<String, Any?>, context: Context) {
-    val held = fields.filter { extra[it.name] != null || it.alwaysVisible }.map { it to extra[it.name] }
-    if (held.isEmpty()) return
-    val separator = Strings.`for`(context = context).shared("list_item_summary_separator")
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        held.forEachIndexed { i, (field, value) ->
-            if (i > 0) UI.Text(separator, TextType.CAPTION)
-            FieldValue(field, value, context)
-        }
-    }
-}
 
 /**
  * An item opened: its name, required, and the list's own fields; it can be deleted from here.

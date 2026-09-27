@@ -40,6 +40,9 @@ object ListToolType : ToolTypeContract {
 
     override fun getDefaultDisplayMode(): String = "EXTENDED"
 
+
+    override fun getDefaultShowFieldLabels(): Boolean = false
+
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(tool = "list", context = context)
         return when (fieldName) {

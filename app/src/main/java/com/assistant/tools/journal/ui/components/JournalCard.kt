@@ -17,11 +17,14 @@ import com.assistant.tools.journal.utils.DateFormatUtils
  * - Date/time (formatted with formatJournalDate)
  * - Title (entry name)
  * - Content preview (first 150 characters)
+ * - The user's fields, compact (CustomFieldsDisplay)
  *
  * @param entryId Entry ID
  * @param timestamp Entry timestamp
  * @param title Entry title (name field)
  * @param content Entry content text
+ * @param config The tool's config, for how its fields show
+ * @param extra The entry's values of the user's fields
  * @param onClick Callback when card is clicked
  */
 @Composable
@@ -30,6 +33,8 @@ fun JournalCard(
     timestamp: Long,
     title: String,
     content: String,
+    config: org.json.JSONObject,
+    extra: Map<String, Any?>,
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
@@ -80,5 +85,14 @@ fun JournalCard(
                 type = TextType.BODY
             )
         }
+
+        // The user's fields, compact: a summary, where they are read at a glance
+        com.assistant.core.fields.CustomFieldsDisplay(
+            toolType = com.assistant.tools.journal.JournalToolType,
+            config = config,
+            values = extra,
+            layout = com.assistant.core.fields.FieldsLayout.COMPACT,
+            context = context
+        )
     }
 }
