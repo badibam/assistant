@@ -293,11 +293,7 @@ class ValidationResolver(private val context: Context) {
     }
 
     /** The entries [action] proposes to write, read with the fields of its tool. */
-    private suspend fun proposedEntries(action: DataCommand): List<ProposedEntry> {
-        if (action.params["entries"] == null) return emptyList()
-        val (tooltype, config) = loadTool(extractToolInstanceId(action))
-        return ProposedEntries.of(action, tooltype, config, context)
-    }
+    private suspend fun proposedEntries(action: DataCommand): List<ProposedEntry> = ProposedEntries.read(action, context)
 
     /**
      * The tooltype and stored config of the tool [toolInstanceId].

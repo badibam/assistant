@@ -3,6 +3,8 @@ package com.assistant.core.ai.validation
 import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.prompts.ModelValues
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.CoreFieldUsage
 import com.assistant.core.fields.CoreFields
 import com.assistant.core.fields.EntryFields
@@ -54,6 +56,26 @@ object ProposedEntries {
             val stored = JsonUtils.toMap(ModelValues.fromModel(entry, schema, zone))
             ProposedEntry(valuesOf(stored, declared, extra, s::shared))
         }
+    }
+
+    /**
+     * The entries [action] writes, read with the fields of its tool as it is now: what a
+     * validation request proposes, and what the chat shows an action wrote.
+     *
+     * @throws IllegalStateException when the tool cannot be read
+     */
+    suspend fun read(action: DataCommand, context: Context): List<ProposedEntry> {
+        if (action.type !in WRITES || action.params["entries"] == null) return emptyList()
+        val toolInstanceId = action.params["tool_instance_id"] as? String ?: action.params["id"] as? String ?: ""
+        val result = Coordinator(context).processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
+        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+        @Suppress("UNCHECKED_CAST")
+        val config = (toolInstance?.get("config") as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
+        val tooltype = toolInstance?.get("tooltype") as? String
+        if (!result.isSuccess || config == null || tooltype == null) {
+            throw IllegalStateException("Tool $toolInstanceId not read for the entries it is written: ${result.error}")
+        }
+        return of(action, tooltype, config, context)
     }
 
     /** The values of one entry: the core's fields, then the tool type's, then the user's. */

@@ -1410,14 +1410,15 @@ fun ChatMessageList(
             }
         } else {
             itemsIndexed(messages) { index, message ->
-                // Find previous AI message with communication module for response messages
-                val previousAIMessage = if (message.sender == MessageSender.SYSTEM &&
-                    message.textContent?.startsWith(s.shared("ai_module_response_prefix")) == true) {
-                    // Look backwards for the last AI message with a communication module
-                    messages.subList(0, index).lastOrNull {
-                        it.sender == MessageSender.AI && it.aiMessage?.communicationModule != null
-                    }
-                } else null
+                // The AI message a system message answers: the question of a module's response,
+                // the commands of the results of its actions
+                val previousAIMessage = when {
+                    message.sender == MessageSender.SYSTEM && message.textContent?.startsWith(s.shared("ai_module_response_prefix")) == true ->
+                        messages.subList(0, index).lastOrNull { it.sender == MessageSender.AI && it.aiMessage?.communicationModule != null }
+                    message.systemMessage?.type == com.assistant.core.ai.data.SystemMessageType.ACTIONS_EXECUTED ->
+                        messages.subList(0, index).lastOrNull { it.sender == MessageSender.AI && it.aiMessage?.actionCommands != null }
+                    else -> null
+                }
 
                 com.assistant.core.ai.ui.chat.ChatMessageBubble(
                     message = message,

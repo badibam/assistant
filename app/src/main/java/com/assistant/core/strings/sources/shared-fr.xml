@@ -321,6 +321,7 @@
     <string name="service_error_ai_session">Erreur AISessionService: %1$s</string>
     <string name="error_not_implemented">Pas encore implémenté</string>
     <string name="ai_error_label">Erreur : %1$s</string>
+    <string name="ai_written_entries_unreadable">Les valeurs écrites ne peuvent plus s\'afficher : leur outil est illisible</string>
 
     <!-- Action verbalization (substantive form for validation + SystemMessage) -->
     <string name="action_verbalize_create_zone">Création de la zone \"%1$s\"</string>

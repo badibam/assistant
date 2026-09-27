@@ -16,6 +16,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.LogManager
 import com.assistant.core.ui.*
 import kotlinx.coroutines.launch
 
@@ -202,7 +203,19 @@ fun ChatMessageBubble(
                                 if (message.systemMessage.commandResults.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(4.dp))
 
-                                    message.systemMessage.commandResults.forEach { commandResult ->
+                                    // The AI's commands these results answer, one per action result, in
+                                    // order: an action that wrote entries shows them by their fields
+                                    val results = message.systemMessage.commandResults
+                                    val commands = previousAIMessage?.aiMessage?.actionCommands.orEmpty()
+                                    val actionCount = results.count { it.isActionCommand }
+                                    val commandOf: Map<com.assistant.core.ai.data.CommandResult, com.assistant.core.ai.data.DataCommand> =
+                                        if (commands.size == actionCount) results.filter { it.isActionCommand }.zip(commands).toMap()
+                                        else {
+                                            if (actionCount > 0 && previousAIMessage != null) LogManager.aiUI("Action results ($actionCount) do not match the AI's commands (${commands.size})", "WARN")
+                                            emptyMap()
+                                        }
+
+                                    results.forEach { commandResult ->
                                         UI.Card(type = CardType.DEFAULT) {
                                             Column(
                                                 modifier = Modifier.padding(8.dp),
@@ -226,9 +239,15 @@ fun ChatMessageBubble(
                                                             )
                                                         }
 
-                                                        // Data (only for action commands)
-                                                        // Query data is filtered and not displayed (already in formattedData)
-                                                        if (commandResult.isActionCommand) {
+                                                        // What an action wrote: its entries by their fields, or else
+                                                        // the little it returns (an id, a name). Query data is filtered
+                                                        // and not displayed (already in formattedData)
+                                                        val written = commandOf[commandResult]?.takeIf {
+                                                            commandResult.status == CommandStatus.SUCCESS && it.params["entries"] != null
+                                                        }
+                                                        if (written != null) {
+                                                            WrittenEntries(written)
+                                                        } else if (commandResult.isActionCommand) {
                                                             commandResult.data?.let { data ->
                                                                 if (data.isNotEmpty()) {
                                                                     val dataText = data.entries.joinToString(", ") { (k, v) ->
@@ -518,5 +537,33 @@ private fun DataConfirmationCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * The entries an action of the AI wrote, each value shown by its field as in the validation
+ * request (ProposedEntries), read from the command with its tool's fields as they are now.
+ */
+@Composable
+private fun WrittenEntries(action: com.assistant.core.ai.data.DataCommand) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    // null while read; a tool that cannot be read (deleted since) says so
+    var failed by remember(action) { mutableStateOf(false) }
+    val entries by produceState<List<com.assistant.core.ai.validation.ProposedEntry>?>(initialValue = null, action) {
+        value = try {
+            com.assistant.core.ai.validation.ProposedEntries.read(action, context)
+        } catch (e: Exception) {
+            LogManager.aiUI("Written entries not read: ${e.message}", "WARN")
+            failed = true
+            emptyList()
+        }
+    }
+    if (failed) {
+        UI.Text(text = s.shared("ai_written_entries_unreadable"), type = TextType.CAPTION)
+        return
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        entries?.forEach { entry -> com.assistant.core.ai.ui.ProposedEntryItem(entry) }
     }
 }

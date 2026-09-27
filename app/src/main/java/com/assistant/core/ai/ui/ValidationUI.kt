@@ -128,7 +128,7 @@ private fun ActionItem(
  * type's display, as everywhere else in the app.
  */
 @Composable
-private fun ProposedEntryItem(entry: com.assistant.core.ai.validation.ProposedEntry) {
+fun ProposedEntryItem(entry: com.assistant.core.ai.validation.ProposedEntry) {
     val context = LocalContext.current
     UI.Card(type = com.assistant.core.ui.CardType.DEFAULT) {
         Column(

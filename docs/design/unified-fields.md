@@ -5,7 +5,6 @@ Conception commencée le 2026-09-25. Les blocs A à C sont en place : le modèle
 ## À mettre en œuvre
 
 - **D. Le pointeur** : fait pour une zone et un outil (`docs/DATA.md`) ; l'entrée comme cible attend un besoin (`pointer.md`).
-- **Détails des commandes dans le chat** : les valeurs qu'une commande a écrites s'y affichent par les composants de leurs champs, comme dans la demande de validation (`ProposedEntries`).
 - **RÉFÉRENCE**, un type de champ dont la valeur est l'identifiant d'une autre chose de l'app, jamais son nom : renommer la cible ne casse rien, et l'affichage comme la vue de l'IA montrent son nom actuel. Cas d'origine : une entrée « Pomme, 150 g » du suivi Alimentation mène à la fiche « Pomme » des Données structurées pour en calculer les calories. À spécifier : l'adresse est celle du pointeur (`pointer.md`, `{kind, id}`) ; la saisie par sélecteur ; une cible supprimée (l'identifiant reste, affiché « supprimé »).
 
 ## Ouvert

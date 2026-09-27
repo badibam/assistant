@@ -657,6 +657,7 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
 **Générés par** : CommandExecutor après chaque série de commandes. **Stockés comme** : SessionMessage sender=SYSTEM. **Point unique** : CommandExecutor seul responsable (User et AI).
 
 ### Types et placement
+**Actions dans le fil** : sous chaque commande d'écriture réussie d'un message ACTIONS_EXECUTED, le fil montre les entrées écrites champ par champ, comme la demande de validation (`ProposedEntries.read`, cartes `ProposedEntryItem`). Rien n'est stocké pour ça : elles se lisent dans les commandes du message de l'IA qui précède, un résultat d'action par commande, dans l'ordre, avec les champs de l'outil tel qu'il est aujourd'hui.
 **Enrichments user** : Générés après exécution enrichments, stockés après message USER, type DATA_ADDED avec formattedData.
 **AI queries** : Générés après exécution dataCommands IA, stockés après réponse AI, type DATA_ADDED avec formattedData.
 **AI actions** : Générés après exécution actionCommands IA, stockés après réponse AI, type ACTIONS_EXECUTED sans formattedData.
