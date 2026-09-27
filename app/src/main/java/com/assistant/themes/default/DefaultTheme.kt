@@ -885,14 +885,15 @@ object DefaultTheme : ThemeContract {
         confirmEnabled: Boolean,
         content: @Composable () -> Unit
     ) {
+        val s = com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current)
+        val cancel = s.shared("action_cancel")
         val (confirmText, cancelText) = when (type) {
-            DialogType.CONFIGURE -> "Confirm" to "Cancel"
-            DialogType.CREATE -> "Create" to "Cancel"
-            DialogType.EDIT -> "Save" to "Cancel"
-            DialogType.CONFIRM -> "Confirmer" to "Annuler"
-            DialogType.DANGER -> "Delete" to "Cancel"
-            DialogType.SELECTION -> null to "Annuler"
-            DialogType.INFO -> "OK" to null
+            DialogType.CONFIGURE, DialogType.CONFIRM -> s.shared("action_confirm") to cancel
+            DialogType.CREATE -> s.shared("action_create") to cancel
+            DialogType.EDIT -> s.shared("action_save") to cancel
+            DialogType.DANGER -> s.shared("action_delete") to cancel
+            DialogType.SELECTION -> null to cancel
+            DialogType.INFO -> s.shared("action_ok") to null
         }
         
         AlertDialog(
@@ -1312,7 +1313,7 @@ object DefaultTheme : ThemeContract {
                     },
                     shape = ButtonTextShape
                 ) {
-                    androidx.compose.material3.Text("OK")
+                    androidx.compose.material3.Text(com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current).shared("action_ok"))
                 }
             },
             dismissButton = {
@@ -1320,7 +1321,7 @@ object DefaultTheme : ThemeContract {
                     onClick = onDismiss,
                     shape = ButtonTextShape
                 ) {
-                    androidx.compose.material3.Text("Annuler")
+                    androidx.compose.material3.Text(com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current).shared("action_cancel"))
                 }
             }
         ) {
@@ -1365,7 +1366,7 @@ object DefaultTheme : ThemeContract {
                     },
                     shape = ButtonTextShape
                 ) {
-                    androidx.compose.material3.Text("OK")
+                    androidx.compose.material3.Text(com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current).shared("action_ok"))
                 }
             },
             dismissButton = {
@@ -1373,7 +1374,7 @@ object DefaultTheme : ThemeContract {
                     onClick = onDismiss,
                     shape = ButtonTextShape
                 ) {
-                    androidx.compose.material3.Text("Annuler")
+                    androidx.compose.material3.Text(com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current).shared("action_cancel"))
                 }
             },
             text = {
