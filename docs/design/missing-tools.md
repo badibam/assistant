@@ -37,7 +37,7 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
   Pas de moyenne d'une heure : 23:30 et 00:30 donneraient 12:00.
 - **Test** : les conditions que le type du résultat déclare pour les filtres (`EntryFilters.operatorsFor`).
 - **Période vide** : `somme` et `compte` valent 0 ; les autres sont sans valeur, et un critère sans valeur n'est pas rempli.
-- **La frontière avec le Calcul** : une source et la période de qui lit, c'est la lecture du cœur ; plusieurs sources combinées, ou une période propre (glissante, par tranche), c'est un Calcul. Un terme de Calcul est une lecture du cœur sans test, avec sa plage, et du type que lui donne sa réduction : la formule vérifie que les types se combinent (durée ÷ durée donne un nombre). Ouvert, pour la spec de Calcul : diviser par une durée (une vitesse, km ÷ durée), qui demanderait de choisir l'unité de la durée, le résultat étant un nombre.
+- **La frontière avec le Calcul** : une source et la période de qui lit, c'est la lecture du cœur ; plusieurs sources combinées, ou une période propre (glissante, par tranche), c'est un Calcul. Un terme de Calcul est une lecture du cœur sans test, avec sa plage, et du type que lui donne sa réduction : la formule vérifie que les types se combinent (durée ÷ durée donne un nombre).
 
 ## L'import
 
@@ -65,7 +65,7 @@ Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout
 - **La même formule à deux échelles, deux Calculs** (« bilan du jour », « bilan du mois »).
 - **Une tentative à cheval sur deux tranches** n'est pas un trou : l'utilisateur fait lire à son Objectif un Calcul dont le découpage lui correspond.
 - **Ce qu'il calcule** : des termes nommés, chacun une lecture du cœur sans test avec sa plage, ou une constante, et des formules sur ces noms (`mange - depense`), chacune une valeur exposée avec son unité. Un terme peut suivre une référence entrée par entrée (`data.value × ref(extra.aliment).kcal_100g ÷ 100`) : à reprendre à la spec.
-- **La formule s'écrit en texte** (`(mange - depense) / 7`), avec des boutons qui insèrent les noms et une vérification à chaque frappe qui nomme l'erreur, types compris. `+ - × ÷`, parenthèses, nombres ; une fonction ne s'ajoute que pour un cas réel. L'app lit la formule, ne l'exécute jamais comme du code.
+- **La formule s'écrit en texte** (`(mange - depense) / 7`), avec des boutons qui insèrent les noms et une vérification à chaque frappe qui nomme l'erreur, types compris. `+ - × ÷`, parenthèses, nombres ; une fonction ne s'ajoute que pour un cas réel. Premier cas : `heures()`, `minutes()`, `secondes()` changent une durée en nombre, pour diviser par elle (vitesse = `km / heures(temps)`, quand l'allure `temps / km` reste une durée) ; `km / temps` est refusé en proposant `heures(temps)`. L'app lit la formule, ne l'exécute jamais comme du code.
 - **Données manquantes** : un terme sans valeur ou une division par zéro laisse la valeur sans valeur, jamais 0, et la lecture dit pourquoi. Une entrée dont la référence ne mène nulle part est écartée, et comptée.
 - **Garder une valeur dans le temps** : un Suivi ordinaire, alimenté par une automation qui écrit `data.value = {Santé → imc}` sur un instant relatif à son heure prévue. Manquent une automation sans IA et une écriture qui accepte une valeur lue à l'exécution (`TODO.md`).
 
