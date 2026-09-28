@@ -39,6 +39,19 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 - **Période vide** : `somme` et `compte` valent 0 ; les autres sont sans valeur, et un critère sans valeur n'est pas rempli.
 - **La frontière avec le Calcul** : une source et la période de qui lit, c'est la lecture du cœur ; plusieurs sources combinées, ou une période propre (glissante, par tranche), c'est un Calcul. Un terme de Calcul est une lecture du cœur sans test, avec sa plage, et du type que lui donne sa réduction : la formule vérifie que les types se combinent (durée ÷ durée donne un nombre). Ouvert, pour la spec de Calcul : diviser par une durée (une vitesse, km ÷ durée), qui demanderait de choisir l'unité de la durée, le résultat étant un nombre.
 
+## L'import
+
+Conçu le 2026-09-28, pour les Données structurées d'abord ; au cœur, parce que le futur outil API écrira par le même chemin, dans tout outil.
+
+- **Un format commun : des lignes de valeurs texte nommées par leur colonne.** Seule la lecture de la source lui est propre : un CSV le donne presque tel quel (en-tête et lignes), une API l'obtiendra par sa config côté app. Tout le reste est commun.
+- **Le service n'applique qu'une déclaration complète.** Pour chaque colonne : sa cible (la clé qui reconnaît une entrée existante, le nom pour les Données structurées ; un champ existant ; un nouveau champ, avec son type et sa config ; ou ignorée) et son écriture. Il refuse une déclaration incomplète en nommant ce qui manque. Une entrée reconnue par sa clé est mise à jour, les autres sont créées ; un doublon de clé dans le fichier est refusé.
+- **Une cellule vide est une absence de réponse**, jamais 0 ni faux. Une cellule qui ne se lit pas refuse sa ligne, avec la raison ; les autres lignes passent. Le compte-rendu dit : créées, mises à jour, refusées ligne par ligne.
+- **Les nouveaux champs se créent dans l'ordre des colonnes**, dans la même transaction que les entrées : un échec n'écrit rien.
+- **Chaque type de champ porte la liste fermée et nommée de ses écritures** (NUMERIC : décimale virgule, décimale point ; DATE : jour/mois/année, mois/jour/année, ISO ; DURÉE : h:min, min:s, h:min:s, `1h25`, `85 min`, ISO ; BOOLEAN : oui/non, true/false, 1/0, x/vide ; CHOICE : une valeur, ou plusieurs séparées par `;` ou `,`…). Il sait **lire** une cellule dans une écriture donnée (la valeur, ou une erreur qui dit pourquoi), et **reconnaître** une colonne : les écritures qui en lisent toutes les cellules. Une écriture absente de la liste n'est acceptée nulle part ; elle s'ajoute au type le jour où un vrai fichier la porte.
+- **La détection est une opération à part, qui propose.** Pour une colonne qui correspond à un champ existant, elle cherche l'écriture ; pour une nouvelle, aussi le type, en interrogeant les types du plus exigeant au plus permissif (TEXT en dernier, qui lit tout) ; CHOICE se propose quand les valeurs différentes sont peu nombreuses, ses options tirées du fichier. Elle lit tout le fichier : une seule ligne `28/09` tranche jour/mois. Si plusieurs écritures lisent tout avec des résultats différents, elle ne choisit pas. Un en-tête `kcal [NUMERIC]` fixe le type (les noms des types de l'app), l'écriture restant détectée.
+- **Trois chemins, une porte.** L'écran appelle la détection et montre la déclaration à confirmer : une ligne par colonne (cible, type, écriture, un exemple choisi pour montrer la lecture : « 03/04/2026 → 3 avril 2026 »), l'ordre des nouveaux champs, les ambiguïtés à trancher, les lignes qui seraient refusées ; tout se corrige avant d'importer. L'IA écrit la déclaration elle-même, écritures comprises, et peut partir de la détection. L'API aura la sienne dans sa config.
+- **Une nouvelle table** est une table vide où toutes les colonnes sont nouvelles ; « créer depuis un fichier » enchaîne la création de l'outil et l'import.
+
 ## Calcul
 
 Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout outil lit d'une seule source est la lecture du cœur (plus haut).
@@ -69,6 +82,7 @@ Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout
 - **Une fiche a son écran**, ouvert au toucher d'une ligne : tous ses champs en `EXPANDED`, et un glissement mène aux fiches voisines.
 - **Un en-tête de filtre commun aux deux vues** : recherche par nom, filtres (le composant du pointeur) et tri, replié en une ligne qui les résume avec la position (« catégorie = fruit · kcal ↑ · 12 / 48 »), déplié au toucher. On ne parcourt que les fiches filtrées. Il vit le temps de la visite de l'outil : il survit aux allers-retours entre les vues et à la rotation, et repart à zéro quand on quitte l'outil. Une fiche modifiée qui sort du filtre reste affichée jusqu'à ce qu'on la quitte.
 - **L'édition se fait dans l'écran de la fiche**, comme `JournalEntryScreen` : « Modifier » passe toute la fiche en saisie, « Enregistrer » l'écrit en une fois ; le glissement est coupé pendant l'édition. « + » sur le tableau ouvre une fiche vide en édition, et rien n'est écrit avant « Enregistrer » (le nom obligatoire et unique interdit l'entrée créée d'avance du Journal). Supprimer, depuis la fiche, après confirmation. Aucune modification dans les cellules du tableau.
+- **Remplir en masse** : l'import du cœur (plus haut), le nom servant de clé.
 
 ## Graphique
 
