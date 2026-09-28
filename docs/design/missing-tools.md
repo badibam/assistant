@@ -85,6 +85,14 @@ Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout
 - **Remplir en masse** : l'import du cœur (plus haut), le nom servant de clé.
 - **La tuile**, une ligne pour l'instant : le nom de la table et son nombre de fiches.
 
+## Questionnaire
+
+- **Ses questions sont les champs de l'utilisateur** d'une entrée datée ; ce qui en fait un outil : la passation, une question par écran avec « suivant » ; l'invitation planifiée ; et, presque gratuite, la passation par l'IA en CHAT, par les modules de communication, qui parlent les mêmes types de champs. Pas de question conditionnelle au départ.
+- **À la demande ou planifié, comme Messages.** Planifié, par `ScheduleConfig` et `CoreScheduler` : à l'heure prévue, l'app crée l'entrée « à remplir », sans réponse, datée de cette heure, et notifie ; la notification ouvre la passation. Rempli le lendemain, il reste daté du moment qu'il décrit ; l'instant où il a été rempli s'enregistre dans l'état. À la demande, rien n'est écrit avant la fin de la passation.
+- **États** : à remplir, remplie, ignorée — ignorée à la main, un trou assumé qui reste dans l'historique. Aucun délai : planifié, il est censé être rempli.
+- **Un onglet « À remplir (n) »**, présent tant qu'il y en a, comme celui d'Objectif, avec « Tout ignorer » pour le retour d'une absence.
+- **Son titre** : le nom du questionnaire et le moment prévu en relatif (« il y a 13 h », `FormatUtils.formatRelativeTimePast`), calculé à l'affichage, jamais enregistré.
+
 ## Graphique
 
 - **Il dessine, ne calcule pas** : aucun regroupement ni agrégation. Un total par jour est un Calcul découpé par jour, que le Graphique dessine ; un nombre n'a ainsi qu'une origine, lisible aussi par les alertes et l'IA.
