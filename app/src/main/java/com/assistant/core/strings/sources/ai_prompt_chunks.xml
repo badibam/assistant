@@ -93,7 +93,9 @@ You **must** answer with a valid JSON structure following this schema:
 
 **Your answer IS the JSON documented above, directly. NO TEXT OUTSIDE THE JSON.**
 
-❌ **FORBIDDEN**: adding text before or after the JSON
+**Your answer starts with `{`**: its very first character, before any word, reasoning or tag. What you would say goes in `pre_text`.
+
+❌ **FORBIDDEN**: adding text before or after the JSON, reasoning (`<thinking>…</thinking>`) included
 ❌ **FORBIDDEN**: using markdown code blocks (```json)
 ❌ **FORBIDDEN**: adding explanations around the JSON
 

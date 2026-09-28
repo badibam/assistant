@@ -962,6 +962,17 @@ class AIEventProcessor(
                     "DEBUG"
                 )
 
+                // Text ahead of the JSON (a sentence, a <thinking> block) is the usual cause:
+                // the error quotes it, so the AI sees what it wrote instead of a bare "invalid format"
+                val jsonStart = cleanedJson.indexOf('{')
+                val formatErrorSummary = if (jsonStart != 0) {
+                    val leadingText = (if (jsonStart < 0) cleanedJson else cleanedJson.substring(0, jsonStart)).trim()
+                    val excerpt = if (leadingText.length > 120) leadingText.take(120) + "…" else leadingText
+                    s.shared("ai_error_format_text_before_json").format(excerpt)
+                } else {
+                    s.shared("ai_error_format_invalid_json")
+                }
+
                 // Create FORMAT_ERROR system message for AI to see and fix
                 val formatErrorMessage = SessionMessage(
                     id = java.util.UUID.randomUUID().toString(),
@@ -974,7 +985,7 @@ class AIEventProcessor(
                     systemMessage = com.assistant.core.ai.data.SystemMessage(
                         type = SystemMessageType.FORMAT_ERROR,
                         commandResults = emptyList(),
-                        summary = "Échec parsing JSON : format invalide. Tu dois répondre avec un JSON valide selon le schéma AIMessage.",
+                        summary = formatErrorSummary,
                         formattedData = null
                     ),
                     executionMetadata = null,

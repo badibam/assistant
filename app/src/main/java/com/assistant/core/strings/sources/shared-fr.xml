@@ -191,6 +191,8 @@
 
     <!-- AI Response Parsing -->
     <string name="ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>
+    <string name="ai_error_format_text_before_json">Ta réponse commence par du texte au lieu de `{` : « %1$s ». Réponds à nouveau en commençant par `{` : rien avant le JSON, ni raisonnement, ni balise.</string>
+    <string name="ai_error_format_invalid_json">Ta réponse n\'est pas un JSON valide selon le schéma AIMessage. Réponds à nouveau avec ce JSON seul.</string>
 
     <!-- AI Response Validation Errors -->
     <string name="ai_error_validation_multiple_action_types">Plusieurs types de commandes présents: %1$s. Un seul type autorisé par réponse.</string>

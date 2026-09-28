@@ -191,6 +191,8 @@
 
     <!-- AI Response Parsing -->
     <string name="ai_response_invalid_format">Answer format not respected by the AI - raw text:</string>
+    <string name="ai_error_format_text_before_json">Your answer starts with text instead of `{`: "%1$s". Answer again, starting with `{`: nothing before the JSON, no reasoning, no tag.</string>
+    <string name="ai_error_format_invalid_json">Your answer is not valid JSON following the AIMessage schema. Answer again with that JSON alone.</string>
 
     <!-- AI Response Validation Errors -->
     <string name="ai_error_validation_multiple_action_types">Several command types present: %1$s. Only one type is allowed per answer.</string>
