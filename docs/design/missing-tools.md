@@ -12,6 +12,14 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 
 ## Calcul
 
+Revu le 2026-09-28 ; les puces qui suivent ce bloc datent d'avant, et ce bloc les remplace là où ils se contredisent (outil actif, planification, résultats enregistrés, recalcul). Le reste se reprend à la spec de Calcul.
+
+- **Lu à la demande, rien d'enregistré** : un Calcul ne garde que ses formules, dans sa config. Chacune est une valeur que l'instance expose, comme elle expose ses opérations (`getOperations`) : un Objectif, un Graphique ou l'IA la choisit (« Calcul Santé, lu en imc ») sans cas particulier pour le type Calcul.
+- **Le lecteur donne un instant t, le Calcul porte les périodes** : son découpage (jour, semaine, mois) dit quelle tranche répond à t, et un réglage choisit laquelle — la tranche qui contient t, partielle si elle n'est pas finie, ou la dernière tranche finie avant t (un bilan). Chaque terme de la formule se situe dans cette tranche (somme des repas dans la tranche, dernière pesée valable à sa fin, taille sans limite) : l'état dans une formule se règle là.
+- **La même formule à deux échelles, deux Calculs** (« bilan du jour », « bilan du mois »).
+- **Une tentative à cheval sur deux tranches** n'est plus un trou : l'utilisateur fait lire à son Objectif un Calcul dont le découpage lui correspond.
+- **Garder une valeur dans le temps** : un Suivi ordinaire, alimenté par une automation qui écrit `data.value = {Santé → imc}` sur un instant relatif à son heure prévue. Manquent une automation sans IA (des commandes que l'app exécute elle-même, sans doute la brique des events du cœur) et une écriture qui accepte une valeur lue à l'exécution. À trancher avec elles : la date de l'entrée écrite, et le doublon quand une exécution est relancée sur la même période.
+
 - **Outil actif** (`docs/TOOLS.md`) : il s'exécute selon sa planification (celle des Messages et des automations, rattrapage compris) et écrit ses résultats comme des entrées ordinaires, datées, lisibles par `tool_data.get`, le pointeur, les graphiques, les alertes et l'IA.
 - **Trois périodes indépendantes** : la fréquence d'exécution (la planification), la portée (ce qu'une exécution lit : les 30 derniers jours, la semaine écoulée, tout l'historique) et le découpage (un résultat pour toute la portée, ou un par jour, semaine, mois).
 - **Un résultat porte la période qu'il couvre** quand sa formule lit une période : sa période de découpage, ou sa portée sans découpage. Un calcul qui lit un état n'a qu'une date.
