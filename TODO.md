@@ -8,7 +8,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En attente d'un déclencheur
 
-- Le type de champ RÉFÉRENCE (`docs/design/unified-fields.md`) — au premier outil qui désigne autre chose (Données structurées, Graphique, Calcul, Alerte, Objectif) ; le reste du système de champs est fait.
+- Le type de champ RÉFÉRENCE (`docs/design/unified-fields.md`) — au premier outil qui désigne autre chose (Données structurées, Graphique, Calcul, Alerte, Objectif) ; le reste du système de champs est fait. La cible du pointeur devient alors une RÉFÉRENCE, `TOOL` y devenant `TOOL_INSTANCE`.
 - Une entrée précise comme cible du pointeur (conçue dans `docs/design/pointer.md` : étiquette par type d'outil, liste dans le sélecteur, relecture de l'entrée) — si le besoin apparaît : peut-être superflu, un pointeur d'outil filtré couvre la plupart des cas. La cible APP attend que l'IA sache lire les réglages de l'app.
 
 - Les exécutions d'une automation décrites comme des entrées (champs déclarés, schéma généré, dates en ISO par ce schéma) — le jour où l'IA les lit ; ce ne sont pas des réglages.
@@ -17,7 +17,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Seuil de taille des données par automation — quand une automation légitime montre un `DATA_REFUSED` dans son historique d'exécution ; la valeur globale deviendra la valeur par défaut.
 - Marquer les lignes que les migrations 13→14 et 14→15 n'ont pas su transformer, et le dire une fois au démarrage (jamais les supprimer) — si des lignes `MIGRATION` apparaissent en « Error » dans l'écran des journaux.
 - Validation désactivée par défaut, que l'IA contourne donc sans rien demander (`docs/design/architecture-audit-debt.md`) — décision reportée le 2026-09-22.
-- Outils jamais livrés : conception en cours dans `docs/design/missing-tools.md` (Liste livrée, Calcul et Graphique esquissés, Objectif spécifié le 2026-09-27) ; restent Alerte (outil ou event du cœur), Données structurées, questionnaire, RÉFÉRENCE et le sous-ensemble du Graphique.
+- Outils jamais livrés : conception en cours dans `docs/design/missing-tools.md` (Liste livrée, Objectif spécifié le 2026-09-27, la lecture du cœur et le Calcul lu à la demande le 2026-09-28, Graphique esquissé) ; restent Alerte (outil ou event du cœur, sans doute une lecture du cœur qui passe son test), Données structurées, questionnaire, la spec de Calcul (points ouverts dans sa section) et le sous-ensemble du Graphique.
 - Une automation sans IA : des commandes que l'app exécute elle-même, dont une écriture qui accepte une valeur lue à l'exécution (un Suivi qui garde un chiffre de Calcul, `docs/design/missing-tools.md`) ; à trancher avec : la date de l'entrée écrite, le doublon d'une exécution relancée. Au premier besoin de garder un chiffre dans le temps ; sans doute la brique des events du cœur (`NOTES.md`, « Events et badges »).
 - L'IA crée et modifie des automations — aujourd'hui seul l'utilisateur le peut ; l'historique des exécutions est à trancher avec (`NOTES.md`, « Automations et planification »).
 - L'écran d'une zone dessine toute tuile en LINE, quel que soit le mode d'affichage réglé (`ZoneScreen`) : la tuile d'une Liste en CONDENSED, EXTENDED, SQUARE ou FULL n'apparaîtra qu'avec la grille (`docs/design/grid-layout.md`).
