@@ -521,13 +521,13 @@ class EnrichmentProcessor {
 **Enrichments** : Stockés comme SessionMessage sender=SYSTEM, inclus dans l'historique.
 **RichComposer UI** : Architecture multi-blocs (TextBlock = texte + enrichments), navigation focus-based avec highlight visuel.
 
-### Le L1 est un contrat, à retester à chaque modification
+### Le L1 est un contrat, vérifié sur ce qui change
 
 `ai_prompt_chunks.xml` est la seule description que l'IA reçoit de l'API de commandes. Rien ne le compile ni ne le teste : une divergence avec le code ne produit aucune erreur, juste un paramètre ignoré en silence et un résultat faux côté IA.
 
-Règle : **chaque exemple de requête présent dans le L1 doit être exécutable tel quel et produire ce qu'il annonce.** À toute modification du L1 ou du pipeline qui le sert (`AICommandProcessor`, `CommandTransformer`, `CommandExecutor.formatResultData`), rejouer les exemples concernés dans une session CHAT réelle.
+Règle : **chaque exemple de requête présent dans le L1 doit être exécutable tel quel et produire ce qu'il annonce.**
 
-Le filet a deux mailles, et elles ne prennent pas la même chose. `scripts/check_prompt_examples.py`, lancé à chaque `./run test`, confronte les exemples JSON du prompt au code, et `FieldTypeSchemasTest` et `CommunicationModulesTest` valident ses définitions de champ et ses modules contre les schémas générés (le prompt est une entrée de la tâche de test, qu'il relance) : ils disent que le prompt ne promet rien que le code ne tienne. Le rejeu en session dit ce que l'IA fait du prompt — s'il l'amène à demander un schéma avant d'agir, à poser une période où le code l'attend, à répondre dans la langue de l'utilisateur. La procédure et sa grille de lecture sont dans `docs/ai-prompt-replay.md`, à tenir à jour quand le L1 bouge.
+Le filet a deux mailles, et elles ne prennent pas la même chose. `scripts/check_prompt_examples.py`, lancé à chaque `./run test`, confronte les exemples JSON du prompt au code, et `FieldTypeSchemasTest` et `CommunicationModulesTest` valident ses définitions de champ et ses modules contre les schémas générés (le prompt est une entrée de la tâche de test, qu'il relance) : ils disent que le prompt ne promet rien que le code ne tienne. Ce que l'IA fait du prompt, lui, se voit en session CHAT réelle. Après une modification du L1 ou du pipeline qui le sert (`AICommandProcessor`, `CommandTransformer`, `CommandExecutor`), un test ad hoc couvre ce changement-là et rien d'autre : quelques étapes écrites pour l'occasion, dans une zone créée pour lui, avec ce qu'il faut y lire. Il n'existe pas de test fixe du prompt entier, qui coûterait une heure et des appels pour revérifier ce qui n'a pas bougé.
 
 ### PromptManager.buildPromptData()
 ```kotlin

@@ -32,7 +32,6 @@ Application Android native (Kotlin + Jetpack Compose, persistance Room) : un ass
 - `docs/UI.md` — composants d'interface, formulaires, thèmes, patterns Compose.
 - `docs/TOOLS.md` — architecture des outils (tooltypes), extension sans toucher au core.
 - `docs/AI.md` — système IA : machine à états, sessions, prompts, automations, providers.
-- `docs/ai-prompt-replay.md` — la procédure de rejeu du prompt L1 sur l'appareil : le prompt à coller dans une session CHAT et ce qu'il faut y lire. À lancer après toute modification du L1, comme `docs/AI.md` l'exige.
 - `docs/design/` — conception transitoire, écrite pour être implémentée puis élaguée. Le code et les commits deviennent le registre.
 
 ## Icônes
