@@ -70,10 +70,7 @@ class MessageService(private val context: Context) : ExecutableService {
      * An optional title and content can be supplied for this one send; without them the
      * template's common part goes out on its own, which is all a fixed reminder needs.
      *
-     * Params:
-     * - tool_instance_id: String (required)
-     * - title: String (optional) — title for this send only
-     * - content: String (optional) — body for this send only
+     * Its parameters beside tool_instance_id are declared in MessageToolType.getOperations.
      */
     private suspend fun executeNow(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -83,8 +80,12 @@ class MessageService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("tool_instance_id"))
         }
 
+        // An occurrence is named after its template, as the scheduler names the ones it creates
+        val toolResult = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
+        val name = (toolResult.data?.get("tool_instance") as? Map<*, *>)?.get("name") as? String
+            ?: return OperationResult.error(toolResult.error ?: s.shared("service_error_tool_instance_not_found"))
+
         val now = System.currentTimeMillis()
-        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
         val state = JSONObject().apply {
             put("status", "pending")
@@ -98,7 +99,7 @@ class MessageService(private val context: Context) : ExecutableService {
         val createResult = coordinator.processUserAction("tool_data.create", mapOf(
             "tool_instance_id" to toolInstanceId,
             "tooltype" to "messages",
-            "name" to params.optString("name", ""),
+            "name" to name,
             "timestamp" to now,
             "data" to data,
             "state" to state

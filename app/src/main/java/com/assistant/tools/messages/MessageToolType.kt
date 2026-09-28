@@ -136,6 +136,19 @@ object MessageToolType : ToolTypeContract {
     override fun getConfigEditors(context: Context): Map<String, com.assistant.core.fields.settings.SettingEditor> =
         mapOf("schedule" to com.assistant.tools.messages.ui.ScheduleSettingEditor(Strings.`for`(tool = "messages", context = context)))
 
+    /** Send now: an occurrence due at once, which the scheduler sends as it sends the others. */
+    override fun getOperations(context: Context): List<com.assistant.core.tools.ToolOperation> {
+        val s = Strings.`for`(tool = "messages", context = context)
+        fun param(name: String, length: TextLength) = SettingNode.Field(FieldDefinition(
+            name, s.tool("field_$name"), s.tool("schema_data_$name"), FieldType.TEXT, false,
+            mapOf("length" to length.name)))
+        return listOf(com.assistant.core.tools.ToolOperation(
+            name = "execute",
+            description = s.tool("operation_execute"),
+            params = listOf(param("title", TextLength.SHORT), param("content", TextLength.LONG))
+        ))
+    }
+
     /**
      * One occurrence of a message: one send.
      *

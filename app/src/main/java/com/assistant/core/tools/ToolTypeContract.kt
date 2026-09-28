@@ -140,6 +140,13 @@ interface ToolTypeContract {
     fun getConfigEditors(context: Context): Map<String, com.assistant.core.fields.settings.SettingEditor> = emptyMap()
 
     /**
+     * The operations this tool type's service runs on its entries beside the generic writes
+     * (ToolOperation). The AI receives them with a tool's entries schema and calls them with
+     * TOOL_OPERATION; a type that declares none offers only the generic writes.
+     */
+    fun getOperations(context: Context): List<ToolOperation> = emptyList()
+
+    /**
      * [config] once [added] have joined the options of the CHOICE field [field] this tool type
      * declares in data, for a field whose vocabulary is open. Only a tool type that declares an
      * open CHOICE in data keeps its options in its config and answers; the service asks no other.

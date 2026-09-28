@@ -103,6 +103,9 @@
     <string name="occurrence_due_at">Due on %1$s</string>
     <string name="occurrence_nothing_written">Nothing written for this sending: only the common part will go out</string>
 
+    <!-- OPERATIONS - What the AI reads of each operation -->
+    <string name="operation_execute">Sends the message now, with a title and content for this sending alone; without them only the common part goes out.</string>
+
     <!-- VERBALIZE - Action descriptions for validation and feedback -->
     <string name="verbalize_execute">Immediate sending of the message</string>
 
