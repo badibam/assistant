@@ -10,6 +10,35 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 - **Alerte** : probablement pas un outil, mais un cas des événements du cœur (`NOTES.md`, « Events et badges ») — à confirmer.
 - **Données structurées**, **questionnaire** : candidats au même rang.
 
+## La lecture du cœur
+
+Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la période que donne l'outil qui lit ; utilisable par tout outil, d'abord par le critère mesuré d'Objectif.
+
+```
+[ instance › champ ]  où [ filtres ]  [ réduction ]  [ test ]
+[ Poids › poids ]                     [ dernière ]   [ ≤ 80 ]
+[ Sport ]  où [ durée ≥ 30 min ]      [ compte ]     [ ≥ 3 ]
+```
+
+- **Instance › champ** : pas de champ pour `compte`, qui compte des entrées.
+- **Filtres**, facultatifs : ceux du pointeur, avec leur composant, qui passent au cœur avec la sélection d'entrées (prérequis de Calcul).
+- **Période** : celle de l'outil qui lit (la tentative d'un Objectif), jamais configurée par la lecture ; ce sont les entrées dont le `timestamp` y tombe. `dernière` est la dernière dans la période, pas la dernière connue.
+- **Réductions** : dernière · somme · moyenne · min · max · compte.
+
+  | Type | Réductions | Résultat |
+  |---|---|---|
+  | NUMERIC, DURÉE | dernière, somme, moyenne, min, max | son type |
+  | SCALE | dernière, moyenne, min, max | nombre |
+  | BOOLEAN, CHOICE, TEXT | dernière | son type |
+  | DATE, DATETIME, TIME | dernière, la plus tôt, la plus tard | son type |
+  | RANGE | aucune | – |
+  | sans champ | compte | nombre |
+
+  Pas de moyenne d'une heure : 23:30 et 00:30 donneraient 12:00.
+- **Test** : les conditions que le type du résultat déclare pour les filtres (`EntryFilters.operatorsFor`).
+- **Période vide** : `somme` et `compte` valent 0 ; les autres sont sans valeur, et un critère sans valeur n'est pas rempli.
+- **La frontière avec le Calcul** : une source et la période de qui lit, c'est la lecture du cœur ; plusieurs sources combinées, ou une période propre (glissante, par tranche), c'est un Calcul. Un terme de Calcul est une lecture du cœur sans test, avec sa plage, et du type que lui donne sa réduction : la formule vérifie que les types se combinent (durée ÷ durée donne un nombre). Ouvert, pour la spec de Calcul : diviser par une durée (une vitesse, km ÷ durée), qui demanderait de choisir l'unité de la durée, le résultat étant un nombre.
+
 ## Calcul
 
 Revu le 2026-09-28 ; les puces qui suivent ce bloc datent d'avant, et ce bloc les remplace là où ils se contredisent (outil actif, planification, résultats enregistrés, recalcul). Le reste se reprend à la spec de Calcul.
@@ -54,7 +83,7 @@ Revu le 2026-09-28 ; les puces qui suivent ce bloc datent d'avant, et ce bloc le
 Sources : la spec d'origine (arbre objectif → sous-objectifs → items, poids relatifs, seuil de réussite, validation obligatoire en succès ou échec) et le cas « journée-type » testé pendant la refonte des exécutions, retrouvés dans l'historique (`documentation/1 - Synthèse.txt`, `SPECS_REFONTE_EXECUTIONS.md`).
 
 - **Une entrée est une tentative sur une période** : ouverte active, remplie au fil de la période, validée en succès ou échec avec son score. Un objectif ponctuel n'a qu'une tentative ; un objectif récurrent en a une par période, créée par la planification commune. La définition vit dans la config, et la tentative en garde une copie : modifier l'objectif ne change pas le jugement des tentatives passées.
-- **Deux types de critère, selon qui décide de sa valeur.** *Déclaré* : l'utilisateur ou l'IA le juge et le coche, à l'écran, en CHAT ou par une automation (le chemin de l'IA qui juge sans qu'on le lui demande : planifiée en fin de période, un pointeur vers les données à lire) ; il peut porter un texte « comment le juger », lu par qui juge. *Mesuré* : l'app le coche en lisant une seule valeur, sans rien calculer — la dernière valeur d'un champ de suivi dans la période de la tentative, ou le résultat d'un Calcul dont la période est la sienne. Compter ou faire une moyenne reste le travail d'un Calcul.
+- **Deux types de critère, selon qui décide de sa valeur.** *Déclaré* : l'utilisateur ou l'IA le juge et le coche, à l'écran, en CHAT ou par une automation (le chemin de l'IA qui juge sans qu'on le lui demande : planifiée en fin de période, un pointeur vers les données à lire) ; il peut porter un texte « comment le juger », lu par qui juge. *Mesuré* : l'app le coche par une lecture du cœur sur la période de la tentative (« poids, dernière, ≤ 80 »), ou par une valeur qu'expose un Calcul, testée de même.
 - **Deux niveaux au plus** : des critères, ou des sous-objectifs qui en contiennent. Un sous-objectif regroupe à l'affichage et a son propre score, que l'objectif combine avec celui des autres. Aucune dépendance entre critères.
 - **Le score** : un critère est rempli ou non, mesuré compris (pas de réussite partielle). Critères et sous-objectifs ont un poids parmi trois niveaux nommés (secondaire 1, normal 2, important 3). Le score d'un sous-objectif est la part pondérée de ses critères remplis ; celui de l'objectif, la moyenne pondérée de ses sous-objectifs et de ses critères directs, de 0 à 100 %. Le seuil de réussite est un pourcentage réglable, 100 % par défaut. Seule la tentative a un verdict : un critère **indispensable** non rempli la fait échouer quel que soit le score, où qu'il soit rangé.
 - **La vie d'une tentative** : `active` → `à valider` → `réussie` ou `échouée`, ou `expirée`. Un objectif ponctuel a un début et une échéance facultative : sans échéance, sa tentative reste active jusqu'à ce qu'on la valide et n'expire pas. Pendant la période, les critères déclarés se cochent, les mesurés se mettent à jour, et on peut valider avant l'échéance. À l'échéance, l'app montre le verdict calculé, qui attend d'être confirmé : un critère oublié se rattrape là, au lieu de devenir un faux échec. Sans validation après un délai réglable, la tentative devient `expirée`, distincte d'un échec. Valide l'utilisateur ou l'IA ; le verdict se réserve à l'utilisateur par le réglage de champ (`unified-fields.md`).
@@ -66,8 +95,7 @@ Sources : la spec d'origine (arbre objectif → sous-objectifs → items, poids 
 - **Ce qu'une tentative enregistre** : la copie de la définition ; pour chaque critère, rempli ou non, et pour un déclaré qui l'a coché, quand, et une justification facultative (l'IA en écrit toujours une), pour un mesuré la dernière valeur lue et l'instant de la lecture ; pour la tentative, sa période, son état, et à la validation le score, le verdict, qui a validé et quand. Les scores des sous-objectifs et celui d'une tentative active se dérivent des critères, jamais enregistrés ; le score final l'est, il fait partie du jugement verrouillé.
 - **Des opérations dédiées, pour l'écran comme pour l'IA** : `goal.check` (cocher ou décocher un critère déclaré, justification facultative), `goal.validate`, `goal.reopen`. Chacune porte une règle que la modification générique ignore (un critère mesuré ne se coche pas à la main, une tentative verrouillée ne change pas, qui et quand s'enregistrent d'office, valider calcule et fige le score) : `tool_data.update` sur une tentative est refusé, avec une erreur qui renvoie à elles. Un `goal.check` de l'IA sans justification est refusé. L'automation qui évalue un objectif est créée par l'utilisateur : l'IA ne crée pas encore d'automations.
 - **Prévenir** : une notification quand une tentative passe `à valider`, par le canal des Messages, une seule par tentative, coupable par un réglage (une automation qui valide à la place de l'utilisateur). Le délai avant expiration est un réglage de l'objectif, 7 jours par défaut.
-- **Ouvert** : un critère mesuré qui lit un Calcul quand la période de la tentative ne tombe sur aucun découpage du Calcul.
 
 ## Prérequis d'Objectif
 
-- **RÉFÉRENCE** (`unified-fields.md`), à l'adresse d'un champ : un critère mesuré désigne un champ d'un outil, le poids d'un suivi ou une sortie d'un Calcul.
+- **La lecture du cœur**, et donc la sélection d'entrées sortie du pointeur (prérequis de Calcul).
