@@ -15,7 +15,11 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 Revu le 2026-09-28 ; les puces qui suivent ce bloc datent d'avant, et ce bloc les remplace là où ils se contredisent (outil actif, planification, résultats enregistrés, recalcul). Le reste se reprend à la spec de Calcul.
 
 - **Lu à la demande, rien d'enregistré** : un Calcul ne garde que ses formules, dans sa config. Chacune est une valeur que l'instance expose, comme elle expose ses opérations (`getOperations`) : un Objectif, un Graphique ou l'IA la choisit (« Calcul Santé, lu en imc ») sans cas particulier pour le type Calcul.
-- **Le lecteur donne un instant t, le Calcul porte les périodes** : son découpage (jour, semaine, mois) dit quelle tranche répond à t, et un réglage choisit laquelle — la tranche qui contient t, partielle si elle n'est pas finie, ou la dernière tranche finie avant t (un bilan). Chaque terme de la formule se situe dans cette tranche (somme des repas dans la tranche, dernière pesée valable à sa fin, taille sans limite) : l'état dans une formule se règle là.
+- **Le lecteur donne un instant t, le Calcul porte les périodes**, et chaque terme de sa formule a sa plage, relative à un ancrage :
+  - **sans tranche** (le glissant), l'ancrage est t : les N jours finissant à t, valable à t, sans limite ;
+  - **avec tranche** (le calendaire : jour, semaine, mois, dont le début est fixé dans l'absolu), t tombe toujours au milieu d'une tranche, et un réglage choisit celle qui répond : la tranche qui contient t, partielle, ou la dernière finie avant t (un bilan). L'ancrage est cette tranche : dans la tranche, valable à sa fin, les N jours finissant à sa fin, sans limite.
+  
+  L'état dans une formule se règle là : la taille se lit sans limite, la pesée valable à l'ancrage.
 - **La même formule à deux échelles, deux Calculs** (« bilan du jour », « bilan du mois »).
 - **Une tentative à cheval sur deux tranches** n'est plus un trou : l'utilisateur fait lire à son Objectif un Calcul dont le découpage lui correspond.
 - **Garder une valeur dans le temps** : un Suivi ordinaire, alimenté par une automation qui écrit `data.value = {Santé → imc}` sur un instant relatif à son heure prévue. Manquent une automation sans IA (des commandes que l'app exécute elle-même, sans doute la brique des events du cœur) et une écriture qui accepte une valeur lue à l'exécution. À trancher avec elles : la date de l'entrée écrite, et le doublon quand une exécution est relancée sur la même période.
