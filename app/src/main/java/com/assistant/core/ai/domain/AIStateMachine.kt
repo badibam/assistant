@@ -233,6 +233,15 @@ object AIStateMachine {
                 )
             }
 
+            is AIEvent.SchemaRequired -> {
+                // Writes held back for their schemas: the AI reads them and sends its writes again
+                state.copy(
+                    phase = Phase.CALLING_AI,
+                    totalRoundtrips = state.totalRoundtrips + 1,
+                    lastEventTime = currentTime
+                )
+            }
+
             is AIEvent.ActionsExecuted -> {
                 handleActionsExecuted(state, event, limits, currentTime)
             }

@@ -103,61 +103,23 @@ class CommandExecutor(private val context: Context) {
         // Track schemas executed in current batch (for intra-batch deduplication)
         val currentBatchSchemas = mutableSetOf<String>()
 
-        // LOGIQUE 1: Verify data schemas before first queries
+        // A query waits on the entries schema of the tool it reads, unless a SCHEMA command of
+        // the same batch asks for it. Those keys are only looked at here: the batch tracker
+        // fills as the SCHEMA commands run, so that they run rather than being taken as cached.
         if (sessionId != null) {
-            val missingSchemas = checkRequiredDataSchemas(commands, historicalSchemas, currentBatchSchemas)
+            val queriedTools = commands
+                .filter { it.resource == "tool_data" && it.operation == "get" }
+                .mapNotNull { it.params["tool_instance_id"] as? String ?: it.params["id"] as? String }
+            val askedInBatch = commands
+                .filter { it.resource == "schemas" && it.operation == "get" }
+                .mapNotNull { requestedSchemaKey(it.params) }
+            val missingSchemas = missingEntrySchemas(queriedTools, historicalSchemas + askedInBatch)
 
             if (missingSchemas.isNotEmpty()) {
                 LogManager.aiPrompt("Schema verification failed: ${missingSchemas.size} schemas missing", "WARN")
-
-                // Build summary message listing all missing schemas
-                val schemaSummary = missingSchemas.joinToString("\n") { schema ->
-                    "- ${schema.schemaId} (tool instance: ${schema.toolInstanceId})"
-                }
-                val summary = s.shared("ai_schema_required_summary").format(missingSchemas.size, schemaSummary)
-
-                // Build formatted data with all schema contents
-                val schemasJson = StringBuilder()
-                for (schema in missingSchemas) {
-                    schemasJson.appendLine("## Schema: ${schema.schemaId}")
-                    schemasJson.appendLine("Tool Instance: ${schema.toolInstanceId}")
-                    schemasJson.appendLine()
-                    schemasJson.appendLine(schemaForModel(schema.schemaContent))
-                    schemasJson.appendLine()
-                }
-
-                // Return SCHEMA_REQUIRED message without executing tool_data commands
-                val formattedDataContent = schemasJson.toString()
-                LogManager.aiPrompt("SCHEMA_REQUIRED formattedData length: ${formattedDataContent.length}", "DEBUG")
-
-                // Create CommandResults for each schema provided (for deduplication tracking)
-                // Get verbalization from SchemaService for consistency with DATA_ADDED
-                val schemaService = com.assistant.core.services.SchemaService(context)
-                val schemaCommandResults = missingSchemas.map { schema ->
-                    val params = org.json.JSONObject().put("tool_instance_id", schema.toolInstanceId)
-                    val details = schemaService.verbalize("get", params, context)
-
-                    com.assistant.core.ai.data.CommandResult(
-                        command = "schemas.get",
-                        status = com.assistant.core.ai.data.CommandStatus.SUCCESS,
-                        details = details,
-                        data = mapOf(
-                            "schema_id" to schema.schemaId,
-                            "tool_instance_id" to schema.toolInstanceId
-                        ),
-                        error = null,
-                        isActionCommand = false
-                    )
-                }
-
                 return CommandExecutionResult(
                     promptResults = emptyList(),
-                    systemMessage = SystemMessage(
-                        type = SystemMessageType.SCHEMA_REQUIRED,
-                        commandResults = schemaCommandResults,  // Track schemas for deduplication
-                        summary = summary,
-                        formattedData = formattedDataContent
-                    )
+                    systemMessage = schemaRequiredMessage(missingSchemas, "ai_schema_required_summary")
                 )
             }
         }
@@ -924,59 +886,80 @@ class CommandExecutor(private val context: Context) {
     )
 
     /**
-     * Check if required data schemas are available before executing TOOL_DATA commands
+     * The SCHEMA_REQUIRED message for the AI's writes: the entries schemas of the tools among
+     * [toolInstanceIds] the model has not received in [sessionId], or null when it holds them all.
      *
-     * For each tool_data command, the entries schema of its tool ("entries:<id>") must already be
-     * in historicalSchemas or currentBatchSchemas; one that is not is fetched here.
-     *
-     * Returns list of missing schemas that need to be fetched before data queries
-     *
-     * @param commands All commands to execute
-     * @param historicalSchemas Schemas already fetched in previous messages
-     * @param currentBatchSchemas Schemas fetched in current batch (will be updated)
-     * @return List of missing schema info (empty if all schemas available)
+     * A write waits on the schema as a query does. A value that fits the schema can still be
+     * wrong in meaning — a unit, the ends of a scale, what an option stands for — and only the
+     * schema tells it. The caller checks before the user is asked to validate the writes.
      */
-    private suspend fun checkRequiredDataSchemas(
-        commands: List<ExecutableCommand>,
-        historicalSchemas: Set<String>,
-        currentBatchSchemas: MutableSet<String>
+    suspend fun schemaRequiredForWrites(toolInstanceIds: Collection<String>, sessionId: String): SystemMessage? {
+        val missingSchemas = missingEntrySchemas(toolInstanceIds, loadHistoricalSchemas(sessionId))
+        if (missingSchemas.isEmpty()) return null
+        LogManager.aiPrompt("Writes held back: ${missingSchemas.size} entries schemas missing", "WARN")
+        return schemaRequiredMessage(missingSchemas, "ai_schema_required_for_writes_summary")
+    }
+
+    /**
+     * The SCHEMA_REQUIRED message holding [missingSchemas], its summary worded by [summaryKey].
+     * Each schema is recorded as a schemas.get result, so the session counts it as sent.
+     */
+    private suspend fun schemaRequiredMessage(missingSchemas: List<MissingSchemaInfo>, summaryKey: String): SystemMessage {
+        val schemaSummary = missingSchemas.joinToString("\n") { schema ->
+            "- ${schema.schemaId} (tool instance: ${schema.toolInstanceId})"
+        }
+        val summary = s.shared(summaryKey).format(missingSchemas.size, schemaSummary)
+
+        val schemasText = StringBuilder()
+        for (schema in missingSchemas) {
+            schemasText.appendLine("## Schema: ${schema.schemaId}")
+            schemasText.appendLine("Tool Instance: ${schema.toolInstanceId}")
+            schemasText.appendLine()
+            schemasText.appendLine(schemaForModel(schema.schemaContent))
+            schemasText.appendLine()
+        }
+        LogManager.aiPrompt("SCHEMA_REQUIRED formattedData length: ${schemasText.length}", "DEBUG")
+
+        // Verbalized by SchemaService, as a SCHEMA command's result is
+        val schemaService = com.assistant.core.services.SchemaService(context)
+        val schemaCommandResults = missingSchemas.map { schema ->
+            val params = JSONObject().put("tool_instance_id", schema.toolInstanceId)
+            com.assistant.core.ai.data.CommandResult(
+                command = "schemas.get",
+                status = CommandStatus.SUCCESS,
+                details = schemaService.verbalize("get", params, context),
+                data = mapOf(
+                    "schema_id" to schema.schemaId,
+                    "tool_instance_id" to schema.toolInstanceId
+                ),
+                error = null,
+                isActionCommand = false
+            )
+        }
+
+        return SystemMessage(
+            type = SystemMessageType.SCHEMA_REQUIRED,
+            commandResults = schemaCommandResults,
+            summary = summary,
+            formattedData = schemasText.toString()
+        )
+    }
+
+    /**
+     * The entries schemas of the tools among [toolInstanceIds] whose key ("entries:<id>") is not
+     * in [knownSchemas], fetched: the schemas a command on those tools waits on.
+     */
+    private suspend fun missingEntrySchemas(
+        toolInstanceIds: Collection<String>,
+        knownSchemas: Set<String>
     ): List<MissingSchemaInfo> {
         val missingSchemas = mutableListOf<MissingSchemaInfo>()
-        val checkedInstances = mutableSetOf<String>() // Avoid checking same instance multiple times
 
-        // Find all tool_data commands
-        val toolDataCommands = commands.filter { it.resource == "tool_data" && it.operation == "get" }
-
-        if (toolDataCommands.isEmpty()) {
-            return emptyList() // No tool_data commands, no verification needed
-        }
-
-        LogManager.aiPrompt("Checking data schemas for ${toolDataCommands.size} TOOL_DATA commands", "DEBUG")
-
-        // IMPORTANT: Pre-populate currentBatchSchemas with SCHEMA commands from current batch
-        // This allows detecting schemas that will be fetched in the same batch
-        val schemaCommands = commands.filter { it.resource == "schemas" && it.operation == "get" }
-        for (schemaCommand in schemaCommands) {
-            requestedSchemaKey(schemaCommand.params)?.let { key ->
-                currentBatchSchemas.add(key)
-                LogManager.aiPrompt("Pre-added schema $key from current batch SCHEMA command", "DEBUG")
-            }
-        }
-
-        for (command in toolDataCommands) {
-            val toolInstanceId = command.params["tool_instance_id"] as? String
-                ?: command.params["id"] as? String
-
-            if (toolInstanceId == null || toolInstanceId in checkedInstances) {
-                continue // Skip if already checked
-            }
-
-            checkedInstances.add(toolInstanceId)
-
+        for (toolInstanceId in toolInstanceIds.distinct()) {
             try {
                 // The entries schema of this tool, its user's fields included
                 val deduplicationKey = "entries:$toolInstanceId"
-                val isAvailable = deduplicationKey in historicalSchemas || deduplicationKey in currentBatchSchemas
+                val isAvailable = deduplicationKey in knownSchemas
                 LogManager.aiPrompt("Schema availability for $deduplicationKey: $isAvailable", "DEBUG")
 
                 if (!isAvailable) {

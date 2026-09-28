@@ -168,6 +168,14 @@ sealed class AIEvent {
     data class DataQueriesExecuted(val results: List<CommandResult>) : AIEvent()
 
     /**
+     * The AI's writes touch tools whose entries schema it has not received in the session.
+     *
+     * Nothing was carried out and the user was asked nothing: the schemas go back to the AI,
+     * which sends its writes again.
+     */
+    object SchemaRequired : AIEvent()
+
+    /**
      * Action commands executed (successfully or with failures).
      *
      * If all successful and keepControl=true (or AUTOMATION), AI continues.

@@ -763,7 +763,7 @@ A schema is written one value per line, what a value holds indented under it:
     <!-- D.2 Usage strategy [DEGREE 1] -->
     <string name="ai_chunk_validation_strategy"><![CDATA[## Validation strategy
 
-**Act only once you hold the schema concerned. Ask for it when you do not.**
+**Act only once you hold the schema concerned. Ask for it when you do not.** A query or a write on a tool's entries whose data schema you have not received in the session is not carried out: the app sends you the schema, and you send the command again.
 
 1. Understand what the user needs
 2. Retrieve the right schema with `SCHEMA`

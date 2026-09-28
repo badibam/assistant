@@ -154,6 +154,7 @@ enum class SystemMessageType {
     ACTIONS_EXECUTED, // Résultats actions → envoyé au prompt
     LIMIT_REACHED, // Limite atteinte → envoyé au prompt
     FORMAT_ERROR, // Erreur de format réponse IA → envoyé au prompt pour correction
+    SCHEMA_REQUIRED, // Schémas des entrées qu'une requête ou une écriture attend → envoyé au prompt, commandes non exécutées
     NETWORK_ERROR, // Erreurs réseau/HTTP → filtré du prompt, visible UI (audit + transparence)
     PROVIDER_ERROR, // Provider non configuré/invalide → filtré du prompt, visible UI (audit + transparence)
     SESSION_TIMEOUT // Timeout watchdog session → filtré du prompt, visible UI (audit + transparence)
@@ -392,6 +393,10 @@ Event AIResponseParsed:
 
 Event DataQueriesExecuted:
   → transition CALLING_AI, emit nouveau round
+
+Event SchemaRequired (écritures sur un outil dont l'IA n'a pas reçu le schéma des entrées dans la session) :
+  → émis par parseAIResponse, avant la validation : rien n'est exécuté ni soumis à l'utilisateur
+  → message SCHEMA_REQUIRED avec les schémas manquants, transition CALLING_AI
 
 Event DataConfirmationRequested (CHAT, données au-delà du seuil):
   → transition WAITING_DATA_CONFIRMATION

@@ -19,6 +19,9 @@ import kotlinx.coroutines.*
 import org.json.JSONObject
 import java.util.UUID
 
+/** The AI's commands that write values into a tool's entries, and so wait on its entries schema. */
+private val WRITES_READING_SCHEMA = setOf("CREATE_DATA", "UPDATE_DATA", "START_DURATION", "STOP_DURATION")
+
 /**
  * Event processor with side effects for AI execution.
  *
@@ -930,6 +933,9 @@ class AIEventProcessor(
                 val updatedMessage = lastAIMessage.copy(aiMessage = cleanedAIMessage)
                 messageRepository.updateMessage(sessionId, updatedMessage)
 
+                // Writes on tools whose schema the AI lacks go no further, not even to validation
+                if (holdWritesForSchemas(sessionId, cleanedAIMessage)) return
+
                 // Emit success with cleanedAIMessage (postText removed if no actionCommands)
                 emit(AIEvent.AIResponseParsed(cleanedAIMessage))
 
@@ -1503,6 +1509,40 @@ class AIEventProcessor(
         messageRepository.storeMessage(sessionId, message)
 
         LogManager.aiSession("Interruption message created for session $sessionId", "DEBUG")
+    }
+
+    /**
+     * Hold back the writes of [message] when they touch a tool whose entries schema the AI has
+     * not received in the session: a SCHEMA_REQUIRED message brings the missing schemas, and
+     * SchemaRequired sends the AI back to its writes. Checked before validation, so the user
+     * never approves writes that were worded without their schema.
+     *
+     * Deleting needs no schema: it reads no value. The schemas are stored whatever their size —
+     * the threshold guards the user's data, and a schema refused would leave the AI stuck.
+     *
+     * @return true when the writes were held back, so the caller must not carry on
+     */
+    private suspend fun holdWritesForSchemas(sessionId: String, message: AIMessage): Boolean {
+        val writtenTools = message.actionCommands.orEmpty()
+            .filter { it.type in WRITES_READING_SCHEMA }
+            .mapNotNull { it.params["tool_instance_id"] as? String }
+        if (writtenTools.isEmpty()) return false
+
+        val systemMessage = commandExecutor.schemaRequiredForWrites(writtenTools, sessionId) ?: return false
+        messageRepository.storeMessage(sessionId, SessionMessage(
+            id = java.util.UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            sender = MessageSender.SYSTEM,
+            richContent = null,
+            textContent = null,
+            aiMessage = null,
+            aiMessageJson = null,
+            systemMessage = systemMessage,
+            executionMetadata = null,
+            excludeFromPrompt = false
+        ))
+        emit(AIEvent.SchemaRequired)
+        return true
     }
 
     /**

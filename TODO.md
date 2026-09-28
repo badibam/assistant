@@ -4,7 +4,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Rejeu du prompt L1 (`docs/ai-prompt-replay.md`) : adapter sa grille aux changements du 2026-09-27 (`keep_control` posé dès qu'il reste à faire, modules de communication, en-tête des données jointes, valeurs par défaut dans les schémas, `ids` rendus par une création), puis le lancer sur l'appareil.
+- Rejeu du prompt L1 (`docs/ai-prompt-replay.md`) : adapter sa grille aux changements du 2026-09-27 (`keep_control` posé dès qu'il reste à faire, modules de communication, en-tête des données jointes, valeurs par défaut dans les schémas, `ids` rendus par une création, écritures retenues tant que le schéma des entrées n'a pas été reçu), puis le lancer sur l'appareil.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 

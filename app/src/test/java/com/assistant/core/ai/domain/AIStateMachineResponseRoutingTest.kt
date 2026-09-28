@@ -7,7 +7,8 @@ import org.junit.Test
 
 /**
  * Covers AIResponseParsed, which is where the machine decides what the AI's answer means,
- * and DataQueriesExecuted, which brings a query round back to the provider.
+ * DataQueriesExecuted, which brings a query round back to the provider, and SchemaRequired,
+ * which sends writes back to it for want of their schema.
  *
  * The routing is a priority list: the completed flag first (AUTOMATION only), then a
  * question for the user (CHAT only), then queries, then actions, then an answer that is
@@ -224,6 +225,39 @@ class AIStateMachineResponseRoutingTest {
         val state = AIStateMachine.transition(
             state = automationAt(Phase.EXECUTING_DATA_QUERIES, roundtrips = testLimits.maxAutonomousRoundtrips),
             event = AIEvent.DataQueriesExecuted(results = emptyList()),
+            limits = testLimits,
+            currentTime = T1
+        )
+
+        assertEquals(com.assistant.core.ai.data.SessionEndReason.LIMIT_REACHED, state.endReason)
+        assertEquals(Phase.AWAITING_SESSION_CLOSURE, state.phase)
+    }
+
+    // ==================== SchemaRequired ====================
+
+    /**
+     * Writes held back for their schema go back to the provider, never to validation: the
+     * user is not asked to approve writes the AI worded without knowing what the values mean.
+     */
+    @Test
+    fun schemaRequired_callsBackWithoutValidationAndCountsARoundtrip() {
+        val state = AIStateMachine.transition(
+            state = chatAt(Phase.PARSING_AI_RESPONSE, roundtrips = 1),
+            event = AIEvent.SchemaRequired,
+            limits = testLimits,
+            currentTime = T1
+        )
+
+        assertEquals(Phase.CALLING_AI, state.phase)
+        assertEquals(2, state.totalRoundtrips)
+    }
+
+    /** An AI that keeps writing without reading the schemas it gets is stopped by the limit. */
+    @Test
+    fun schemaRequired_isStoppedOnceTheLimitIsReached() {
+        val state = AIStateMachine.transition(
+            state = automationAt(Phase.PARSING_AI_RESPONSE, roundtrips = testLimits.maxAutonomousRoundtrips),
+            event = AIEvent.SchemaRequired,
             limits = testLimits,
             currentTime = T1
         )
