@@ -65,6 +65,8 @@ Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout
 
 - **Ses colonnes sont des champs de l'utilisateur** (`extra`), déclarés dans la config de l'instance ; le type d'outil n'en déclare aucun, `data` reste vide. Le nom est obligatoire, la date absente. Ce qui en fait un outil est ailleurs : son écran et ses façons rapides de créer des entrées.
 - **Le nom est unique dans l'instance**, sans compter la casse ni les espaces autour : c'est par lui qu'on retrouve une fiche (l'IA, le choix d'une RÉFÉRENCE, un import relancé qui met à jour au lieu de dupliquer). Le type d'outil le déclare dans `getEntryFields`, à côté de l'usage du nom ; `ToolDataService` refuse le doublon à toute écriture, dans sa transaction, en nommant l'entrée existante, et le filtre sur `name` compare de la même façon. Une mécanique du cœur : un service propre au type d'outil ne voit pas `tool_data.*`.
+- **La vue d'ensemble est un tableau** : le nom puis les N premiers champs de la config (réglage, 2 par défaut ; les choisir, c'est les ranger dans l'éditeur des champs), leurs noms une fois dans l'en-tête fixe, les lignes ne portant que les valeurs, chacune affichée par son type de champ. Une cellule longue revient à la ligne, un champ vide la laisse vide. Toucher un en-tête trie par sa colonne ; recherche par nom et filtres au-dessus.
+- **Une fiche a son écran**, ouvert au toucher d'une ligne : tous ses champs en `EXPANDED`, et un glissement mène aux fiches voisines dans l'ordre et le filtre du tableau.
 
 ## Graphique
 
