@@ -6,7 +6,7 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 
 - **Liste** : livrée (`docs/TOOLS.md`).
 - **Objectif** : un outil (section plus bas).
-- **Calcul** et **Graphique** : deux outils, pas un. Calcul est une source (ses résultats sont lus par les autres outils), Graphique une vue (sa sortie s'affiche). Ce qu'ils partagent vit au cœur : la désignation des entrées (le pointeur) et les agrégations.
+- **Calcul** et **Graphique** : deux outils, pas un. Calcul est une source (ses valeurs sont lues par les autres outils), Graphique une vue (sa sortie s'affiche). Ce qu'ils partagent vit au cœur : la sélection d'entrées et la lecture du cœur.
 - **Alerte** : probablement pas un outil, mais un cas des événements du cœur (`NOTES.md`, « Events et badges ») — à confirmer.
 - **Données structurées**, **questionnaire** : candidats au même rang.
 
@@ -41,36 +41,25 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 
 ## Calcul
 
-Revu le 2026-09-28 ; les puces qui suivent ce bloc datent d'avant, et ce bloc les remplace là où ils se contredisent (outil actif, planification, résultats enregistrés, recalcul). Le reste se reprend à la spec de Calcul.
+Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout outil lit d'une seule source est la lecture du cœur (plus haut).
 
 - **Lu à la demande, rien d'enregistré** : un Calcul ne garde que ses formules, dans sa config. Chacune est une valeur que l'instance expose, comme elle expose ses opérations (`getOperations`) : un Objectif, un Graphique ou l'IA la choisit (« Calcul Santé, lu en imc ») sans cas particulier pour le type Calcul.
 - **Le lecteur donne un instant t, le Calcul porte les périodes**, et chaque terme de sa formule a sa plage, relative à un ancrage :
   - **sans tranche** (le glissant), l'ancrage est t : les N jours finissant à t, valable à t, sans limite ;
   - **avec tranche** (le calendaire : jour, semaine, mois, dont le début est fixé dans l'absolu), t tombe toujours au milieu d'une tranche, et un réglage choisit celle qui répond : la tranche qui contient t, partielle, ou la dernière finie avant t (un bilan). L'ancrage est cette tranche : dans la tranche, valable à sa fin, les N jours finissant à sa fin, sans limite.
-  
-  L'état dans une formule se règle là : la taille se lit sans limite, la pesée valable à l'ancrage.
-- **La même formule à deux échelles, deux Calculs** (« bilan du jour », « bilan du mois »).
-- **Une tentative à cheval sur deux tranches** n'est plus un trou : l'utilisateur fait lire à son Objectif un Calcul dont le découpage lui correspond.
-- **Garder une valeur dans le temps** : un Suivi ordinaire, alimenté par une automation qui écrit `data.value = {Santé → imc}` sur un instant relatif à son heure prévue. Manquent une automation sans IA (des commandes que l'app exécute elle-même, sans doute la brique des events du cœur) et une écriture qui accepte une valeur lue à l'exécution. À trancher avec elles : la date de l'entrée écrite, et le doublon quand une exécution est relancée sur la même période.
 
-- **Outil actif** (`docs/TOOLS.md`) : il s'exécute selon sa planification (celle des Messages et des automations, rattrapage compris) et écrit ses résultats comme des entrées ordinaires, datées, lisibles par `tool_data.get`, le pointeur, les graphiques, les alertes et l'IA.
-- **Trois périodes indépendantes** : la fréquence d'exécution (la planification), la portée (ce qu'une exécution lit : les 30 derniers jours, la semaine écoulée, tout l'historique) et le découpage (un résultat pour toute la portée, ou un par jour, semaine, mois).
-- **Un résultat porte la période qu'il couvre** quand sa formule lit une période : sa période de découpage, ou sa portée sans découpage. Un calcul qui lit un état n'a qu'une date.
-- **Même période de découpage = même résultat** : une nouvelle exécution le remplace. Rattraper une saisie tardive, c'est une portée plus large que le découpage ; recalculer un historique, une exécution à la main sur une portée élargie. Pas de recalcul automatique quand une source change : il pourra s'ajouter sans migrer les résultats.
-- **Un recalcul écrase le résultat**, sans garder l'ancienne valeur : c'est à qui agit sur une valeur de la noter (une alerte garde la valeur qui l'a déclenchée, une note de l'IA cite le chiffre lu).
-- **Recalcul automatique** : un réglage, « recalculer pendant [jamais / une durée / toujours] après la fin de la période », « jamais » par défaut. Quand une entrée d'une source est écrite (`DataChangeNotifier`), chaque résultat dont la période couverte contient sa date (l'ancienne et la nouvelle si elle change) est recalculé sur sa propre période, s'il n'est pas figé. Il met à jour des résultats existants, n'en crée pas. Un Calcul qui lit un Calcul suit de lui-même. Un recalcul à la main passe outre le figement.
-- **Planification** : celle des Messages et des automations (`ScheduleSettings`, `ScheduleCalculator`, `ScheduleConfigEditor`, `CoreScheduler`), et le rattrapage des automations : une fenêtre de retard admis, et « la plus récente seulement ».
-- **Ce qu'il calcule** : des entrées nommées et une formule arithmétique sur ces noms (`mange - depense`). Une entrée nommée agrège (somme, moyenne, minimum, maximum, nombre) une expression calculée pour chaque entrée d'un outil désigné ; une constante est une entrée nommée. L'expression peut suivre une référence (`data.value × ref(extra.aliment).kcal_100g ÷ 100`).
-- **Plusieurs sorties nommées** : chacune sa formule sur les mêmes entrées nommées, et son unité. Une exécution écrit une entrée de résultat qui porte toutes les sorties, chacune un champ de `data` (`data.kcal`, `data.proteines`), lu et filtré comme un champ de suivi.
-- **La formule s'écrit en texte** (`(mange - depense) / 7`), avec des boutons qui insèrent les noms et une vérification à chaque frappe qui nomme l'erreur. `+ - × ÷`, parenthèses, nombres ; une fonction ne s'ajoute que pour un cas réel. L'app lit la formule, ne l'exécute jamais comme du code.
-- **Ouvert, un état dans une formule** : `âge × poids ÷ taille` ne s'agrège pas sur la portée. Ce sont des dernières valeurs connues, qu'une taille mesurée il y a deux ans laisse hors d'une portée de 7 jours, donc sans valeur. La portée ne peut pas être commune à toutes les entrées nommées, et la liste des agrégations n'a pas « dernière ». L'âge demande en plus une fonction de date.
-- **Données manquantes** : une somme ou un nombre sur aucune entrée vaut 0 ; une moyenne, un minimum, un maximum n'a pas de valeur. Un terme sans valeur ou une division par zéro laisse la sortie sans valeur, jamais 0. Une entrée dont la référence ne mène nulle part est écartée, et le résultat compte les entrées écartées. Le résultat s'écrit toujours, avec la raison d'une sortie sans valeur : un calcul qui n'avait rien se distingue d'un calcul qui n'a pas tourné.
+  Un état se lit ainsi dans une formule : la taille sans limite, la pesée valable à l'ancrage. L'âge demande en plus une fonction de date.
+- **La même formule à deux échelles, deux Calculs** (« bilan du jour », « bilan du mois »).
+- **Une tentative à cheval sur deux tranches** n'est pas un trou : l'utilisateur fait lire à son Objectif un Calcul dont le découpage lui correspond.
+- **Ce qu'il calcule** : des termes nommés, chacun une lecture du cœur sans test avec sa plage, ou une constante, et des formules sur ces noms (`mange - depense`), chacune une valeur exposée avec son unité. Un terme peut suivre une référence entrée par entrée (`data.value × ref(extra.aliment).kcal_100g ÷ 100`) : à reprendre à la spec.
+- **La formule s'écrit en texte** (`(mange - depense) / 7`), avec des boutons qui insèrent les noms et une vérification à chaque frappe qui nomme l'erreur, types compris. `+ - × ÷`, parenthèses, nombres ; une fonction ne s'ajoute que pour un cas réel. L'app lit la formule, ne l'exécute jamais comme du code.
+- **Données manquantes** : un terme sans valeur ou une division par zéro laisse la valeur sans valeur, jamais 0, et la lecture dit pourquoi. Une entrée dont la référence ne mène nulle part est écartée, et comptée.
+- **Garder une valeur dans le temps** : un Suivi ordinaire, alimenté par une automation qui écrit `data.value = {Santé → imc}` sur un instant relatif à son heure prévue. Manquent une automation sans IA et une écriture qui accepte une valeur lue à l'exécution (`TODO.md`).
 
 ## Prérequis de Calcul
 
 - **REFERENCE** (`unified-fields.md`) : sans lui, une entrée ne dit pas à quelle fiche elle correspond, et le calcul entrée par entrée (la nutrition) est impossible.
-- **Une sélection d'entrées au cœur** : un outil, des filtres (période comprise), des champs, avec sa forme enregistrée, sa partie d'écran et sa lecture. Le pointeur d'un message devient cette sélection plus ce qui ne regarde que l'IA (joindre ou mentionner, viser l'app ou une zone) ; Calcul utilise la sélection seule. Aujourd'hui `PointerConfig`, `PointerSelector` et `EnrichmentProcessor` mêlent les deux et vivent dans le code de l'IA.
-- **Une règle de rattrapage au cœur** : « fenêtre de retard admis + la plus récente seulement », sortie de `core/ai/scheduling/CatchUpPolicy` vers le planificateur du cœur, utilisée par les automations, Calcul et Messages (sa fenêtre, sans « la plus récente seulement »). Le réglage prend un seul nom, `catch_up_window` : `validity_window` des Messages migre (configs, sauvegardes à l'import, prompt L1).
+- **Une sélection d'entrées au cœur** : une RÉFÉRENCE, des filtres, des champs, avec sa forme enregistrée, sa partie d'écran et sa lecture. Le pointeur d'un message devient cette sélection plus ce qui ne regarde que l'IA (joindre ou mentionner) ; la lecture du cœur l'utilise seule. Aujourd'hui `PointerConfig`, `PointerSelector` et `EnrichmentProcessor` mêlent les deux et vivent dans le code de l'IA.
 
 ## Graphique
 
