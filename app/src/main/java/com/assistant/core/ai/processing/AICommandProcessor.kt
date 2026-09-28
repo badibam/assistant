@@ -8,7 +8,9 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.BaseSchemas
+import com.assistant.core.tools.ToolOperations
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.FieldPatternGrammar
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.LogManager
@@ -205,6 +207,7 @@ class AICommandProcessor(private val context: Context) {
             )
             "START_DURATION" -> durationCommand(command, "start_duration")
             "STOP_DURATION" -> durationCommand(command, "stop_duration")
+            "TOOL_OPERATION" -> toolOperationCommand(command)
 
             // Tool instance actions
             "CREATE_TOOL" -> ExecutableCommand(
@@ -260,7 +263,7 @@ class AICommandProcessor(private val context: Context) {
      * @param command DataCommand to transform
      * @return ExecutableCommand ready for verbalization, or null if unknown type
      */
-    fun transformActionForVerbalization(command: DataCommand): ExecutableCommand? {
+    suspend fun transformActionForVerbalization(command: DataCommand): ExecutableCommand? {
         return when (command.type) {
             // Tool data actions
             "CREATE_DATA" -> ExecutableCommand(
@@ -283,6 +286,7 @@ class AICommandProcessor(private val context: Context) {
             )
             "START_DURATION" -> durationCommand(command, "start_duration")
             "STOP_DURATION" -> durationCommand(command, "stop_duration")
+            "TOOL_OPERATION" -> toolOperationCommand(injectTooltypeIfNeeded(command))
 
             // Tool instance actions
             "CREATE_TOOL" -> {
@@ -361,6 +365,49 @@ class AICommandProcessor(private val context: Context) {
                 "container" to container,
                 "field" to names.single()
             ),
+            isActionCommand = true
+        )
+    }
+
+    /**
+     * A TOOL_OPERATION: the operation its tool's type declares (ToolOperation), run by that
+     * type's service with the tool beside its parameters. The parameters' ISO 8601 dates and
+     * durations become milliseconds where their schema marks them, then the parameters are
+     * checked against that schema, generated from their declaration.
+     *
+     * @throws IllegalArgumentException when the tool's type declares no operation of that name,
+     *   naming the ones it declares; or when the parameters do not hold to their schema
+     */
+    private fun toolOperationCommand(command: DataCommand): ExecutableCommand {
+        val toolInstanceId = command.params["tool_instance_id"] as? String
+            ?: throw IllegalArgumentException(s.shared("service_error_missing_tool_instance_id"))
+        // Injected from the tool (injectTooltypeIfNeeded): absent, the tool was not found
+        val tooltype = command.params["tooltype"] as? String
+            ?: throw IllegalArgumentException(s.shared("service_error_tool_instance_not_found"))
+        val toolType = ToolTypeManager.getToolType(tooltype)
+            ?: throw IllegalArgumentException(s.shared("service_error_tool_instance_not_found"))
+
+        val name = command.params["operation"] as? String ?: ""
+        val operation = ToolOperations.find(toolType, name, context)
+            ?: throw IllegalArgumentException(s.shared("ai_error_tool_operation_unknown").format(
+                name, tooltype,
+                toolType.getOperations(context).joinToString("; ") { "${it.name}: ${it.description}" }
+                    .ifEmpty { s.shared("ai_error_tool_operation_none") }
+            ))
+
+        val schema = ToolOperations.schema(tooltype, operation, context)
+        val zone = AppConfigManager.getDateTimeConfig().getZoneId()
+        @Suppress("UNCHECKED_CAST")
+        val params = (ModelValues.fromModel(command.params["params"] ?: emptyMap<String, Any?>(), JSONObject(schema.content), zone)
+            as? Map<String, Any?>)
+            ?: throw IllegalArgumentException(s.shared("ai_error_tool_operation_params_not_object"))
+        val check = SchemaValidator.validate(schema, params, context)
+        if (!check.isValid) throw IllegalArgumentException(check.errorMessage)
+
+        return ExecutableCommand(
+            resource = tooltype,
+            operation = operation.name,
+            params = params + ("tool_instance_id" to toolInstanceId),
             isActionCommand = true
         )
     }

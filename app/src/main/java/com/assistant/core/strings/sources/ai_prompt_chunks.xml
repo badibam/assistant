@@ -385,6 +385,20 @@ Starts or stops the stopwatch of a DURATION field of one entry. Starting writes 
 { "type": "STOP_DURATION", "params": { "tool_instance_id": "tracking_work_123", "id": "entry_456", "field": "data.value" } }
 ```
 
+### TOOL_OPERATION
+
+Runs an operation a tool type offers beside creating, changing and deleting entries: one that carries its own rule, such as sending a message now. A tool\'s operations come with its data schema (`SCHEMA` with `tool_instance_id`), each with what it does and the schema of its parameters. Use the operation rather than a plain write when there is one for what you want to do.
+
+**Parameters**:
+
+- `tool_instance_id` (string, **required**)
+- `operation` (string, **required**): the operation\'s name, as its tool\'s data schema lists it
+- `params` (object): its parameters, held to the schema listed with it
+
+```json
+{ "type": "TOOL_OPERATION", "params": { "tool_instance_id": "messages_water_123", "operation": "execute", "params": { "title": "Drink a glass of water" } } }
+```
+
 ### CREATE_TOOL
 
 Creates a tool in a zone.
@@ -741,7 +755,7 @@ Every config and every entry is checked against a **JSON Schema** generated from
 A schema is asked for by what it describes:
 
 - **The config of a tool type**: `{ "type": "SCHEMA", "params": { "tooltype": "tracking" } }`. It holds every variant: the settings a tracking takes depend on its `type`
-- **The entries of a tool**: `{ "type": "SCHEMA", "params": { "tool_instance_id": "tracking_weight_123" } }`. It holds the extra fields of that tool
+- **The entries of a tool**: `{ "type": "SCHEMA", "params": { "tool_instance_id": "tracking_weight_123" } }`. It holds the extra fields of that tool, and the operations of its tool type (TOOL_OPERATION)
 - **Anything else**, by its name: `{ "type": "SCHEMA", "params": { "id": "zone_config" } }`
 
 ### Reading a schema
@@ -1111,5 +1125,8 @@ The schemas of a tool are asked for by its tool type or its tool_instance_id (Pa
 
     <!-- J.1 Header for tooltypes section -->
     <string name="ai_chunk_tooltypes_header">## Available tool types</string>
+
+    <!-- Header of the operations a tool's entries schema comes with (CommandExecutor) -->
+    <string name="ai_chunk_tool_operations_header">Operations (TOOL_OPERATION)</string>
 
 </resources>

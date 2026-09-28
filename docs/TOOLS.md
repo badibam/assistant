@@ -51,7 +51,7 @@ Dossier tools/[type]/ contient :
 ### Interface ToolTypeContract
 Interface principale avec méthodes pour :
 - **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultIconName(), getDefaultDisplayMode(), getDefaultShowFieldLabels()
-- **Déclarations** : getEntryFields() (champs des entrées), getConfigSettings() (réglages propres, à côté de la partie commune `ToolConfigSettings`) ; schémas, config par défaut et lecture en sont générés ; configWithOptionsAdded() pour un type qui déclare un choix ouvert dans `data`
+- **Déclarations** : getEntryFields() (champs des entrées), getConfigSettings() (réglages propres, à côté de la partie commune `ToolConfigSettings`) ; schémas, config par défaut et lecture en sont générés ; configWithOptionsAdded() pour un type qui déclare un choix ouvert dans `data` ; getOperations() (défaut : aucune), les opérations que son service mène sur ses entrées à côté des écritures génériques, chacune un nom, une phrase et ses paramètres déclarés en champs (`ToolOperation`)
 - **Interface utilisateur** : getUsageScreen() @Composable ; TileContent() @Composable, ce que montre la tuile de l'outil sur une zone à côté de son en-tête (la moitié droite d'une tuile LINE, le dessous des plus grandes ; par défaut, le nom du type en LINE et rien ailleurs) ; l'écran de config est généré depuis la déclaration (`ToolConfigScreen`, `SettingsForm`), et getConfigEditors() y branche les parties qu'un type dessine lui-même, par nom de réglage (la planification de Messages)
 - **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations(), getScheduler()
 - **Enrichissement** : enrichData() (défaut identity, enrichissement automatique avant persistence)
@@ -117,7 +117,7 @@ override fun enrichData(data: Map<String, Any>, context: Context): Map<String, A
 
 **Passifs** (Tracking, Journal, Note) : l'utilisateur écrit dans tool_data.
 
-**Actifs** (Messages, futurs Calcul, Alertes, Objectifs) : le système écrit dans tool_data, piloté par la config. Un tooltype actif expose une opération `execute` (`{tooltype}.execute` avec `tool_instance_id`) et généralement un `getScheduler()`. Ses occurrences sont des entrées tool_data ordinaires : requêtables, statistiquables, migrables, visibles par l'IA, comme n'importe quelle autre entrée.
+**Actifs** (Messages, futurs Calcul, Alertes, Objectifs) : le système écrit dans tool_data, piloté par la config. Un tooltype actif expose une opération `execute` (`{tooltype}.execute` avec `tool_instance_id`), déclarée dans getOperations(), et généralement un `getScheduler()`. Ses occurrences sont des entrées tool_data ordinaires : requêtables, statistiquables, migrables, visibles par l'IA, comme n'importe quelle autre entrée.
 
 **Occurrences à cycle de vie** : une occurrence n'est pas forcément instantanée. Elle peut vivre (créée → active → close), auquel cas son schéma data porte un champ `status` et ses exigences en dépendent. Le filtre `status` de `tool_data.get` existe pour ces tooltypes-là.
 

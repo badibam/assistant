@@ -58,5 +58,4 @@ Sources : la spec d'origine (arbre objectif → sous-objectifs → items, poids 
 
 ## Prérequis d'Objectif
 
-- **Des opérations propres à un type d'outil, ouvertes à l'IA.** Le dispatcher en connaît (`messages.execute`), mais l'IA parle un vocabulaire fermé que `AICommandProcessor` traduit, et le prompt L1 n'a aucun catalogue d'opérations par type d'outil ; le chronomètre (`START_DURATION`) a été ajouté au cœur à la main. Un type d'outil déclare ses opérations (nom, schéma des paramètres, une phrase), l'IA les appelle par une seule commande `TOOL_OPERATION` (`tool_instance_id`, `operation`, `params`), et leur catalogue arrive par `SCHEMA` avec le type d'outil. `messages.execute` en profite aussitôt ; Calcul et Alerte en auront besoin.
 - **RÉFÉRENCE** (`unified-fields.md`), à l'adresse d'un champ : un critère mesuré désigne un champ d'un outil, le poids d'un suivi ou une sortie d'un Calcul.

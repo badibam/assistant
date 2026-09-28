@@ -77,8 +77,12 @@ class SchemaService(private val context: Context) : ExecutableService {
             "schema_id" to schema.id,
             "content" to schema.content
         )
-        // Entries schemas are one per tool: the tool is part of what tells two of them apart
-        if (toolInstanceId.isNotEmpty()) resultData["tool_instance_id"] = toolInstanceId
+        // Entries schemas are one per tool: the tool is part of what tells two of them apart.
+        // Its type comes with it, whose operations are read beside the entries (ToolOperation).
+        if (toolInstanceId.isNotEmpty()) {
+            resultData["tool_instance_id"] = toolInstanceId
+            toolTypeOf(toolInstanceId)?.let { resultData["tooltype"] = it }
+        }
 
         return OperationResult.success(resultData)
     }
@@ -88,6 +92,10 @@ class SchemaService(private val context: Context) : ExecutableService {
         val toolType = ToolTypeManager.getToolType(tooltype) ?: return null
         return ToolConfigSettings.schema(toolType, "${tooltype}_config", context)
     }
+
+    /** The tool type of the tool [toolInstanceId], or null when there is no such tool. */
+    private suspend fun toolTypeOf(toolInstanceId: String): String? =
+        com.assistant.core.database.AppDatabase.getDatabase(context).toolInstanceDao().getToolInstanceById(toolInstanceId)?.tooltype
 
     /**
      * The schema of the entries of the tool [toolInstanceId], from its current config.

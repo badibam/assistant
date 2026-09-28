@@ -838,6 +838,9 @@
     <string name="ai_system_actions_partial">%1$d action(s) succeeded, %2$d failed</string>
     <string name="ai_schema_required_summary">The following data schemas are needed to word the TOOL_DATA request correctly (%1$d schema(s)):\n%2$s\n\nThe schemas are included below. Please make your request again taking them into account.</string>
     <string name="ai_schema_required_for_writes_summary">Your writes were not carried out: they touch tools whose data schema you have not received in this session (%1$d schema(s)):\n%2$s\n\nThe schemas are included below. Read them, then send your writes again.</string>
+    <string name="ai_error_tool_operation_unknown">The tool type %2$s has no operation "%1$s". Its operations: %3$s</string>
+    <string name="ai_error_tool_operation_none">none</string>
+    <string name="ai_error_tool_operation_params_not_object">The params of TOOL_OPERATION must be an object</string>
     <string name="ai_schema_required_details">Schema %1$s required for the tool instance %2$s</string>
 
     <!-- AI PROMPT SYSTEM - Internal messages of the prompt system -->

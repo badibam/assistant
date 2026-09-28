@@ -337,6 +337,10 @@ class ValidationResolver(private val context: Context) {
             action.type in listOf("START_DURATION", "STOP_DURATION") ->
                 ParsedActionType(ActionScope.TOOL_DATA, "update")
 
+            // A tool type's own operation writes its entries: the tool's data validation applies
+            action.type == "TOOL_OPERATION" ->
+                ParsedActionType(ActionScope.TOOL_DATA, "update")
+
             else -> {
                 LogManager.aiService("ValidationResolver: Unknown action type ${action.type}, defaulting to TOOL_DATA", "WARN")
                 ParsedActionType(ActionScope.TOOL_DATA, "unknown")

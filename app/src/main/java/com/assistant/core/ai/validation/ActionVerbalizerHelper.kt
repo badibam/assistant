@@ -26,7 +26,7 @@ object ActionVerbalizerHelper {
 
     // Action command types that AICommandProcessor handles
     private val ACTION_TYPES = setOf(
-        "CREATE_DATA", "UPDATE_DATA", "DELETE_DATA", "START_DURATION", "STOP_DURATION",
+        "CREATE_DATA", "UPDATE_DATA", "DELETE_DATA", "START_DURATION", "STOP_DURATION", "TOOL_OPERATION",
         "CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL",
         "CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE"
     )

@@ -748,7 +748,7 @@ class CommandExecutor(private val context: Context) {
 
         // A schema is read in its notation, not as the JSON the app validates against
         (data["content"] as? String)?.takeIf { command.resource == "schemas" }?.let { content ->
-            return "schema_id: ${data["schema_id"]}\n" + schemaForModel(content)
+            return "schema_id: ${data["schema_id"]}\n" + schemaForModel(content) + operationsForModel(data["tooltype"] as? String)
         }
 
         // Extract metadata keys first based on command type
@@ -817,6 +817,27 @@ class CommandExecutor(private val context: Context) {
      * A schema as the model reads it: its dates and durations in ISO 8601 (SchemaModelView),
      * written in the notation (SchemaNotation).
      */
+    /**
+     * The operations the tool type [tooltype] declares (ToolOperation), as the model reads them
+     * after a tool's entries schema: each one's name, its sentence and its parameters' schema.
+     * Empty when there is no tool type or it declares none.
+     */
+    private fun operationsForModel(tooltype: String?): String {
+        val toolType = tooltype?.let { com.assistant.core.tools.ToolTypeManager.getToolType(it) } ?: return ""
+        val operations = toolType.getOperations(context)
+        if (operations.isEmpty()) return ""
+        return buildString {
+            append("\n\n## ").append(s.shared("ai_chunk_tool_operations_header"))
+            for (operation in operations) {
+                append("\n\n### ").append(operation.name).append("\n").append(operation.description)
+                if (operation.params.isNotEmpty()) {
+                    val schema = com.assistant.core.tools.ToolOperations.schema(tooltype, operation, context)
+                    append("\n").append(schemaForModel(schema.content))
+                }
+            }
+        }
+    }
+
     private fun schemaForModel(content: String): String =
         SchemaNotation.render(SchemaModelView.forModel(JSONObject(content), AppConfigManager.getDateTimeConfig().getZoneId()))
 
@@ -882,7 +903,8 @@ class CommandExecutor(private val context: Context) {
     private data class MissingSchemaInfo(
         val schemaId: String,
         val toolInstanceId: String,
-        val schemaContent: String  // Full JSON schema content
+        val schemaContent: String,  // Full JSON schema content
+        val tooltype: String?       // Whose operations come with the schema
     )
 
     /**
@@ -915,7 +937,7 @@ class CommandExecutor(private val context: Context) {
             schemasText.appendLine("## Schema: ${schema.schemaId}")
             schemasText.appendLine("Tool Instance: ${schema.toolInstanceId}")
             schemasText.appendLine()
-            schemasText.appendLine(schemaForModel(schema.schemaContent))
+            schemasText.appendLine(schemaForModel(schema.schemaContent) + operationsForModel(schema.tooltype))
             schemasText.appendLine()
         }
         LogManager.aiPrompt("SCHEMA_REQUIRED formattedData length: ${schemasText.length}", "DEBUG")
@@ -971,7 +993,8 @@ class CommandExecutor(private val context: Context) {
                         toolInstanceId = toolInstanceId,
                         // A schema that cannot be read is said so to the model, rather than left out
                         schemaContent = schemaContent
-                            ?: "{\"error\": \"Failed to fetch schema: ${schemaResult.error ?: "no content"}\"}"
+                            ?: "{\"error\": \"Failed to fetch schema: ${schemaResult.error ?: "no content"}\"}",
+                        tooltype = schemaResult.data?.get("tooltype") as? String
                     ))
                 }
             } catch (e: Exception) {

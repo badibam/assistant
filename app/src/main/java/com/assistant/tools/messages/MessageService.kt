@@ -7,8 +7,6 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
-import com.assistant.core.utils.AppConfigManager
-import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 import com.assistant.tools.messages.scheduler.MessageScheduler
 import org.json.JSONObject

@@ -252,6 +252,8 @@ User: EnrichmentBlock → EnrichmentProcessor → CommandTransformer → Command
 AI: AIMessage → CommandTransformer → CommandExecutor
 ```
 
+**Opérations d'un type d'outil** : `TOOL_OPERATION` (`tool_instance_id`, `operation`, `params`) devient `{tooltype}.{operation}` dans `AICommandProcessor`, le type lu depuis l'outil. Les paramètres passent en millisecondes puis sont vérifiés contre le schéma généré de leur déclaration (`ToolOperations.schema`) ; une opération inconnue est refusée avec la liste de celles que le type déclare. L'IA lit ces opérations après le schéma des entrées d'un outil (`CommandExecutor.operationsForModel`) : le prompt L1 ne décrit que la commande, jamais le catalogue.
+
 ## 5. Contrôle de session
 
 ### Session active exclusive
