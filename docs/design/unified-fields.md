@@ -19,5 +19,4 @@ Conception commencée le 2026-09-25. Les blocs A à C sont en place : le modèle
 - Réglage d'un champ : réservé à l'utilisateur. L'IA le lit, ne l'écrit jamais ; sa commande est refusée avec une erreur qui nomme le champ, contrôlée à l'exécution selon la provenance ; son schéma le marque non modifiable. Premier cas : un critère déclaré d'Objectif (`missing-tools.md`). La validation des actions de l'IA ne le couvre pas : elle porte sur tout un outil et demande à chaque fois.
 - Les quasi-doublons d'un CHOICE ouvert (« Travail » / « travail » / « boulot ») : aujourd'hui chacun devient une option.
 - Corriger une proposition de l'IA avant de la valider, avec le composant de saisie : l'IA doit apprendre ce qui a été changé.
-- Données structurées exprimées avec le modèle : propriétés = champs de `extra`, objets imbriqués à plat (un groupement éventuel est de l'affichage), colonnes de liste, recherche et tri à l'outil. La spec `structured-data-tooltype.md` et son schéma JSON propre sont à réécrire en conséquence.
 - Vérification sur papier restante : Graphique.

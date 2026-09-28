@@ -83,6 +83,7 @@ Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout
 - **Un en-tête de filtre commun aux deux vues** : recherche par nom, filtres (le composant du pointeur) et tri, replié en une ligne qui les résume avec la position (« catégorie = fruit · kcal ↑ · 12 / 48 »), déplié au toucher. On ne parcourt que les fiches filtrées. Il vit le temps de la visite de l'outil : il survit aux allers-retours entre les vues et à la rotation, et repart à zéro quand on quitte l'outil. Une fiche modifiée qui sort du filtre reste affichée jusqu'à ce qu'on la quitte.
 - **L'édition se fait dans l'écran de la fiche**, comme `JournalEntryScreen` : « Modifier » passe toute la fiche en saisie, « Enregistrer » l'écrit en une fois ; le glissement est coupé pendant l'édition. « + » sur le tableau ouvre une fiche vide en édition, et rien n'est écrit avant « Enregistrer » (le nom obligatoire et unique interdit l'entrée créée d'avance du Journal). Supprimer, depuis la fiche, après confirmation. Aucune modification dans les cellules du tableau.
 - **Remplir en masse** : l'import du cœur (plus haut), le nom servant de clé.
+- **La tuile**, une ligne pour l'instant : le nom de la table et son nombre de fiches.
 
 ## Graphique
 
