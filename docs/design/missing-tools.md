@@ -28,16 +28,16 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
   | Type | Réductions | Résultat |
   |---|---|---|
   | NUMERIC, DURÉE | dernière, somme, moyenne, min, max | son type |
-  | SCALE | dernière, moyenne, min, max | nombre |
+  | SCALE | dernière, moyenne, min, max | son type |
   | BOOLEAN, CHOICE, TEXT | dernière | son type |
   | DATE, DATETIME, TIME | dernière, la plus tôt, la plus tard | son type |
   | RANGE | aucune | – |
   | sans champ | compte | nombre |
 
-  Pas de moyenne d'une heure : 23:30 et 00:30 donneraient 12:00.
+  « Son type » s'entend avec ses réglages : la moyenne d'une SCALE 1–10 est une SCALE 1–10, dont le pas ne vaut que pour la saisie (6,5 s'affiche tel quel). Pas de moyenne d'une heure : 23:30 et 00:30 donneraient 12:00.
 - **Test** : les conditions que le type du résultat déclare pour les filtres (`EntryFilters.operatorsFor`).
 - **Période vide** : `somme` et `compte` valent 0 ; les autres sont sans valeur, et un critère sans valeur n'est pas rempli.
-- **La frontière avec le Calcul** : une source et la période de qui lit, c'est la lecture du cœur ; plusieurs sources combinées, ou une période propre (glissante, par tranche), c'est un Calcul. Un terme de Calcul est une lecture du cœur sans test, avec sa plage, et du type que lui donne sa réduction : la formule vérifie que les types se combinent (durée ÷ durée donne un nombre).
+- **La frontière avec le Calcul** : une source et la période de qui lit, c'est la lecture du cœur ; plusieurs sources combinées, ou une période propre (glissante, par tranche), c'est un Calcul. Un terme de Calcul est une lecture du cœur sans test, avec sa plage, et du type que lui donne sa réduction.
 
 ## L'import
 
@@ -64,8 +64,9 @@ Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout
   Un état se lit ainsi dans une formule : la taille sans limite, la pesée valable à l'ancrage. L'âge demande en plus une fonction de date.
 - **La même formule à deux échelles, deux Calculs** (« bilan du jour », « bilan du mois »).
 - **Une tentative à cheval sur deux tranches** n'est pas un trou : l'utilisateur fait lire à son Objectif un Calcul dont le découpage lui correspond.
-- **Ce qu'il calcule** : des termes nommés, chacun une lecture du cœur sans test avec sa plage, ou une constante, et des formules sur ces noms (`mange - depense`), chacune une valeur exposée avec son unité. Un terme peut suivre une référence entrée par entrée (`data.value × ref(extra.aliment).kcal_100g ÷ 100`) : à reprendre à la spec.
-- **La formule s'écrit en texte** (`(mange - depense) / 7`), avec des boutons qui insèrent les noms et une vérification à chaque frappe qui nomme l'erreur, types compris. `+ - × ÷`, parenthèses, nombres ; une fonction ne s'ajoute que pour un cas réel. Premier cas : `heures()`, `minutes()`, `secondes()` changent une durée en nombre (vitesse = `km / heures(temps)`, quand l'allure `temps / km` reste une durée) ; écrit sans elles, `km / temps` divise par des millisecondes. Qui écrit la formule répond de son sens. L'app lit la formule, ne l'exécute jamais comme du code.
+- **Ce qu'il calcule** : des termes nommés, chacun une lecture du cœur sans test avec sa plage, ou une constante, et des formules sur ces noms (`mange - depense`). Un terme peut suivre une référence entrée par entrée (`data.value × ref(extra.aliment).kcal_100g ÷ 100`) : à reprendre à la spec.
+- **La formule s'écrit en texte** (`(mange - depense) / 7`), avec des boutons qui insèrent les noms et une vérification à chaque frappe qui ne nomme que ce qui empêche de calculer (un nom inconnu, une parenthèse qui manque). `+ - × ÷`, parenthèses, nombres ; une fonction ne s'ajoute que pour un cas réel. Premier cas : `heures()`, `minutes()`, `secondes()` changent une durée en nombre (vitesse = `km / heures(temps)`, quand l'allure `temps / km` reste une durée) ; écrit sans elles, `km / temps` divise par des millisecondes. Qui écrit la formule répond de son sens. L'app lit la formule, ne l'exécute jamais comme du code.
+- **Une formule est un champ calculé** : un nom, un type, les réglages de ce type ; elle s'affiche, se teste et se décrit à l'IA comme tout champ. Le type et les réglages se déduisent de ce qu'elle lit, jamais pour refuser : une réduction garde ceux de sa source, une opération ceux que ses deux côtés partagent (km + km, durée × 2), sinon un nombre nu (`km / heures(temps)`), `compte` un nombre. L'utilisateur complète ce que la déduction ne donne pas (l'unité « km/h ») et corrige un réglage déduit ; la déduction se refait quand la formule change. Il change aussi le type, vers un type de même forme : SCALE → nombre (sans les bornes), nombre → SCALE (en donnant bornes et libellés), nombre → DURÉE (en disant l'unité du nombre).
 - **Données manquantes** : un terme sans valeur ou une division par zéro laisse la valeur sans valeur, jamais 0, et la lecture dit pourquoi. Une entrée dont la référence ne mène nulle part est écartée, et comptée.
 - **Garder une valeur dans le temps** : un Suivi ordinaire, alimenté par une automation qui écrit `data.value = {Santé → imc}` sur un instant relatif à son heure prévue. Manquent une automation sans IA et une écriture qui accepte une valeur lue à l'exécution (`TODO.md`).
 
