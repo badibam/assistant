@@ -61,6 +61,10 @@ Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout
 - **REFERENCE** (`unified-fields.md`) : sans lui, une entrée ne dit pas à quelle fiche elle correspond, et le calcul entrée par entrée (la nutrition) est impossible.
 - **Une sélection d'entrées au cœur** : une RÉFÉRENCE, des filtres, des champs, avec sa forme enregistrée, sa partie d'écran et sa lecture. Le pointeur d'un message devient cette sélection plus ce qui ne regarde que l'IA (joindre ou mentionner) ; la lecture du cœur l'utilise seule. Aujourd'hui `PointerConfig`, `PointerSelector` et `EnrichmentProcessor` mêlent les deux et vivent dans le code de l'IA.
 
+## Données structurées
+
+- **Ses colonnes sont des champs de l'utilisateur** (`extra`), déclarés dans la config de l'instance ; le type d'outil n'en déclare aucun, `data` reste vide. Le nom est obligatoire, la date absente. Ce qui en fait un outil est ailleurs : son écran et ses façons rapides de créer des entrées.
+
 ## Graphique
 
 - **Il dessine, ne calcule pas** : aucun regroupement ni agrégation. Un total par jour est un Calcul découpé par jour, que le Graphique dessine ; un nombre n'a ainsi qu'une origine, lisible aussi par les alertes et l'IA.
