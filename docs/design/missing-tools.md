@@ -8,7 +8,7 @@ Conception commencée le 2026-09-27, après la refonte des champs (`docs/DATA.md
 - **Objectif** : un outil (section plus bas).
 - **Calcul** et **Graphique** : deux outils, pas un. Calcul est une source (ses valeurs sont lues par les autres outils), Graphique une vue (sa sortie s'affiche). Ce qu'ils partagent vit au cœur : la sélection d'entrées et la lecture du cœur.
 - **Alerte** : probablement pas un outil, mais un cas des événements du cœur (`NOTES.md`, « Events et badges ») — à confirmer.
-- **Données structurées**, **questionnaire** : candidats au même rang.
+- **Données structurées** et **questionnaire** : deux outils distincts, même si leurs entrées ne portent l'une et l'autre que des champs déclarés par l'utilisateur.
 
 ## La lecture du cœur
 
