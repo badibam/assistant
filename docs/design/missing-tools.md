@@ -92,6 +92,8 @@ Revu le 2026-09-28 : un Calcul combine plusieurs lectures du cœur ; ce que tout
 - **Une passation interrompue** : planifiée, chaque « suivant » enregistre sa réponse dans l'entrée, qui reste « à remplir » et reprend à la première question sans réponse ; à la demande, elle est perdue. Une question passée reste sans réponse ; l'entrée peut être remplie avec des trous.
 - **États** : à remplir, remplie, ignorée — ignorée à la main, un trou assumé qui reste dans l'historique. Aucun délai : planifié, il est censé être rempli.
 - **Un onglet « À remplir (n) »**, présent tant qu'il y en a, comme celui d'Objectif, avec « Tout ignorer » pour le retour d'une absence.
+- **L'écran** : « Remplir maintenant » en haut, l'onglet « À remplir », puis l'historique, du plus récent au plus ancien, chaque entrée avec son titre et son état, sans filtre ; toucher une entrée l'ouvre en lecture (`EXPANDED`), et on y modifie une réponse. Les tendances sont l'affaire du Graphique.
+- **La tuile**, une ligne : le nom, le nombre à remplir s'il y en a, sinon la dernière réponse en relatif ; touchée quand une entrée attend, elle ouvre sa passation.
 - **Son titre** : le nom du questionnaire et le moment prévu en relatif (« il y a 13 h », `FormatUtils.formatRelativeTimePast`), calculé à l'affichage, jamais enregistré.
 
 ## Graphique
