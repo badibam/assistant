@@ -1131,6 +1131,7 @@
     <string name="file_summary_preview">Fichier : %1$s (%2$d lignes), aperçu seulement</string>
     <string name="file_error_encoding">%1$s n\'est pas un texte lisible (UTF-8 attendu).</string>
     <string name="action_attach">Joindre un fichier</string>
+    <string name="action_repeat">Encore</string>
     <string name="size_bytes">%1$d o</string>
     <string name="size_kilobytes">%1$.1f Ko</string>
     <string name="size_megabytes">%1$.1f Mo</string>

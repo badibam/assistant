@@ -78,11 +78,13 @@ interface ThemeContract {
     // =====================================
     
     @Composable
+    /** @param maxLines Lines shown at most, a cut text ending with an ellipsis (a tile's lines) */
     fun Text(
         text: String,
         type: TextType,
         fillMaxWidth: Boolean,
-        textAlign: TextAlign?
+        textAlign: TextAlign?,
+        maxLines: Int = Int.MAX_VALUE
     )
     
     @Composable

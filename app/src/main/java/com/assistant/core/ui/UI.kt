@@ -72,9 +72,10 @@ object UI {
         text: String,
         type: TextType,
         fillMaxWidth: Boolean = false,
-        textAlign: TextAlign? = null
+        textAlign: TextAlign? = null,
+        maxLines: Int = Int.MAX_VALUE
     ) {
-        CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign)
+        CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign, maxLines)
     }
     
     /**

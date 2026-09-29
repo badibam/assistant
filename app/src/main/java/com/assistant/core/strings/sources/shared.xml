@@ -1131,6 +1131,7 @@
     <string name="file_summary_preview">File: %1$s (%2$d lines), preview only</string>
     <string name="file_error_encoding">%1$s is not readable text (UTF-8 expected).</string>
     <string name="action_attach">Join a file</string>
+    <string name="action_repeat">Again</string>
     <string name="size_bytes">%1$d B</string>
     <string name="size_kilobytes">%1$.1f KB</string>
     <string name="size_megabytes">%1$.1f MB</string>

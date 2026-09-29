@@ -151,7 +151,7 @@ enum class ButtonAction(val iconName: String) {
     CONFIGURE("settings"), ADD("plus"), EDIT("pencil"), REFRESH("refresh-cw"), SELECT("check"), CONFIRM("check"),
     LEFT("chevron-left"), RIGHT("chevron-right"),
     AI_CHAT("message-circle"), RESET("rotate-ccw"), INTERRUPT("pause"), STOP("square"), PAUSE("pause"),
-    RESUME("play"), START("play"), VIEW("eye"), ATTACH("paperclip")
+    RESUME("play"), START("play"), VIEW("eye"), ATTACH("paperclip"), REPEAT("repeat")
 }
 
 /**

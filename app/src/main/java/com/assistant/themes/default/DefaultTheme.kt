@@ -381,7 +381,7 @@ object DefaultTheme : ThemeContract {
     private fun getDefaultButtonType(action: ButtonAction): ButtonType {
         return when (action) {
             // PRIMARY: Actions critiques/importantes
-            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START, ButtonAction.ATTACH -> ButtonType.PRIMARY
+            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START, ButtonAction.ATTACH, ButtonAction.REPEAT -> ButtonType.PRIMARY
 
             // DANGER: destructive actions, behind a confirmation
             ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
@@ -420,6 +420,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.START -> s.shared("action_start")
             ButtonAction.VIEW -> s.shared("action_view")
             ButtonAction.ATTACH -> s.shared("action_attach")
+            ButtonAction.REPEAT -> s.shared("action_repeat")
         }
     }
 
@@ -572,7 +573,8 @@ object DefaultTheme : ThemeContract {
         text: String,
         type: TextType,
         fillMaxWidth: Boolean,
-        textAlign: TextAlign?
+        textAlign: TextAlign?,
+        maxLines: Int
     ) {
         val style = when (type) {
             TextType.TITLE -> MaterialTheme.typography.headlineMedium
@@ -598,7 +600,9 @@ object DefaultTheme : ThemeContract {
             style = style,
             color = color,
             modifier = textModifier,
-            textAlign = textAlign
+            textAlign = textAlign,
+            maxLines = maxLines,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     }
     
