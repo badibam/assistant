@@ -1667,6 +1667,7 @@
     <string name="label_ai_provider">AI provider</string>
     <string name="label_yes">Yes</string>
     <string name="label_with_default">%1$s (default: %2$s)</string>
+    <string name="setting_field_of_tool_first">choose the tool first</string>
     <string name="label_on">On</string>
     <string name="label_off">Off</string>
     <string name="label_no">No</string>

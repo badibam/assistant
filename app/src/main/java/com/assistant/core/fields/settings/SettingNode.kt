@@ -25,6 +25,9 @@ sealed class SettingNode {
      *   definition's default value): [definition] gives its type, and the object its config —
      *   options, bounds — which the form reads to enter it and the service to check it. Its
      *   schema is its type's alone, the config being set beside it
+     * @property fieldOf The name of the setting beside it that designates a tool instance (a
+     *   REFERENCE): this one is the path of one of that tool's fields ("data.kcal"), which the form
+     *   offers to choose among rather than to type
      */
     data class Field(
         val definition: FieldDefinition,
@@ -32,7 +35,8 @@ sealed class SettingNode {
         val default: Any? = null,
         val secret: Boolean = false,
         val systemWritten: Boolean = false,
-        val valueOfDefined: Boolean = false
+        val valueOfDefined: Boolean = false,
+        val fieldOf: String? = null
     ) : SettingNode()
 
     /** Settings stored together as one object under [name]. */

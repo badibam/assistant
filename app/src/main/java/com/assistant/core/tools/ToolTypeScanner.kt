@@ -6,6 +6,7 @@ import com.assistant.tools.journal.JournalToolType
 import com.assistant.tools.messages.MessageToolType
 import com.assistant.tools.list.ListToolType
 import com.assistant.tools.structured.StructuredToolType
+import com.assistant.tools.goal.GoalToolType
 
 /**
  * Simple registry that lists known tool types
@@ -20,7 +21,8 @@ object ToolTypeScanner {
             "journal" to JournalToolType,
             "messages" to MessageToolType,
             "list" to ListToolType,
-            "structured" to StructuredToolType
+            "structured" to StructuredToolType,
+            "goal" to GoalToolType
         )
     }
 }

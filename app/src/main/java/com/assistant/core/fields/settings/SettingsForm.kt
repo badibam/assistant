@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.assistant.core.fields.FieldValue
@@ -108,6 +109,8 @@ private fun NodeForm(
             val editor = editors[name]
             when {
                 editor != null -> editor.Edit(stored) { set(name, it) }
+                // A field of the tool the setting beside it designates, chosen among its fields
+                node.fieldOf != null -> ToolFieldChoice(node, config.opt(node.fieldOf), stored as? String, context) { set(name, it) }
                 // A value of the field this object defines, entered as that field: its type, and
                 // the options or bounds set above it, read from the object as it is being edited
                 node.valueOfDefined -> {
@@ -299,6 +302,39 @@ private fun Titled(label: String, content: @Composable () -> Unit) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             UI.Text(label, TextType.SUBTITLE)
             content()
+        }
+    }
+}
+
+/**
+ * The choice of a field of the tool [tool] designates (SettingNode.Field.fieldOf), by its label and
+ * path; nothing to choose before the tool is. The fields not read are said, never left out in silence.
+ */
+@Composable
+private fun ToolFieldChoice(node: SettingNode.Field, tool: Any?, stored: String?, context: Context, onChange: (String?) -> Unit) {
+    val s = remember { Strings.`for`(context = context) }
+    val toolId = com.assistant.core.fields.ReferenceTarget.referenceOf(tool)?.id
+    var fields by remember { mutableStateOf<Map<String, com.assistant.core.fields.FieldDefinition>?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    androidx.compose.runtime.LaunchedEffect(toolId) {
+        error = null
+        fields = if (toolId == null) null else try {
+            com.assistant.core.fields.ToolFields.filterable(toolId, context, s)
+        } catch (e: IllegalStateException) { error = e.message; null }
+    }
+    val loaded = fields
+    when {
+        error != null -> UI.Text(error!!, TextType.ERROR)
+        loaded == null -> UI.Text(node.definition.displayName + " — " + s.shared("setting_field_of_tool_first"), TextType.CAPTION)
+        else -> {
+            val choices = loaded.map { (path, field) -> path to "${field.displayName} ($path)" }
+            UI.FormSelection(
+                label = node.definition.displayName,
+                options = choices.map { it.second },
+                selected = choices.firstOrNull { it.first == stored }?.second ?: "",
+                onSelect = { label -> onChange(choices.first { it.second == label }.first) },
+                required = node.required
+            )
         }
     }
 }

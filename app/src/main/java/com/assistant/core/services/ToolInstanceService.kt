@@ -110,7 +110,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // Unlike an update, a name that comes in is kept rather than refused: the guard over
         // there protects values already stored under the old key, and a tool being created
         // has none. The interface takes that route, assigning names in its editor.
-        val namedConfigJson = assignMissingFieldNames(configJson)
+        val namedConfigJson = ToolTypeManager.getToolType(toolType)?.completeConfig(JSONObject(assignMissingFieldNames(configJson)), null)?.toString()
+            ?: assignMissingFieldNames(configJson)
 
         val iconCheck = checkIconName(namedConfigJson)
         val storedConfigJson = when (iconCheck) {
@@ -190,6 +191,9 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             is IconCheck.Kept -> configJson = iconCheck.configJson
         }
         if (configJson.isNotBlank()) {
+            ToolTypeManager.getToolType(existingTool.tooltype)?.let { type ->
+                configJson = type.completeConfig(JSONObject(configJson), JSONObject(existingTool.config_json)).toString()
+            }
             checkConfig(existingTool.tooltype, configJson)?.let { return OperationResult.error(it) }
         }
 

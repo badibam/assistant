@@ -231,6 +231,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         val existingEntity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
+        ToolTypeManager.getToolType(existingEntity.tooltype)?.refuseChange(existingEntity, context)?.let { return OperationResult.error(it) }
 
         val target = when (val loaded = loadWriteTarget(existingEntity.toolInstanceId)) {
             is WriteTarget.Refused -> return OperationResult.error(loaded.error)
@@ -333,6 +334,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Verify entry exists before deletion (CRITICAL: AI must know if entry doesn't exist)
         val entity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
+        ToolTypeManager.getToolType(entity.tooltype)?.refuseChange(entity, context)?.let { return OperationResult.error(it) }
 
         val after = dao.getByToolInstance(entity.toolInstanceId).filter { it.id != entryId }
         storeSettled(entity.tooltype, after, null) {
@@ -887,6 +889,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
         updated: ToolDataEntity,
         result: Map<String, Any>
     ): OperationResult {
+        getToolDataDao().getById(updated.id)?.let { before ->
+            ToolTypeManager.getToolType(before.tooltype)?.refuseChange(before, context)?.let { return OperationResult.error(it) }
+        }
         validateEntry(target, updated.name, updated.timestamp, updated.data, updated.extra, updated.state)
             ?.let { return OperationResult.error(it) }
 

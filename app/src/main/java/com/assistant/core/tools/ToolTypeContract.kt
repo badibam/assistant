@@ -168,6 +168,21 @@ interface ToolTypeContract {
     fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> = emptyList()
 
     /**
+     * [config] completed with what only this tool type writes, on every create and update of an
+     * instance, before it is checked: a goal gives each new criterion its key, fixed from then on.
+     *
+     * @param previous The config as stored, null on a create
+     */
+    fun completeConfig(config: JSONObject, previous: JSONObject?): JSONObject = config
+
+    /**
+     * Why [entry] may not be changed or deleted by an ordinary write, or null when it may: a
+     * goal's validated attempt changes only by its own operation, reopening it. ToolDataService
+     * asks it before every update and delete, whoever the caller.
+     */
+    fun refuseChange(entry: ToolDataEntity, context: Context): String? = null
+
+    /**
      * Get scheduler instance for this tool type.
      *
      * Discovery pattern: CoreScheduler discovers schedulers via ToolTypeManager,
