@@ -1,7 +1,10 @@
 package com.assistant.core.reading
 
 import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldContainer
 import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.RunningDurations
+import com.assistant.core.utils.JsonUtils
 
 /** How a reading reduces the values of a field across entries to one. */
 enum class Reduction {
@@ -50,6 +53,7 @@ sealed interface ReadingResult {
  * whose step only matters to entering it); counting gives a whole number. Without an entry, a sum
  * and a count are 0 and anything else fails; an entry without an answer to the field fails the
  * reading, naming it -- the reader leaves it out with a filter "present" if that is what it means.
+ * A DURATION running counts up to the instant read: its stopwatch's time is part of it.
  */
 object FieldReading {
 
@@ -62,13 +66,16 @@ object FieldReading {
     /**
      * @param path The field's path ("data.weight", "extra.mood", "timestamp"), null to count
      * @param field Its definition, null to count
+     * @param at The instant read at, up to which a running DURATION counts
      */
-    fun reduce(entries: List<Map<String, Any?>>, path: String?, field: FieldDefinition?, reduction: Reduction): ReadingResult {
+    fun reduce(entries: List<Map<String, Any?>>, path: String?, field: FieldDefinition?, reduction: Reduction, at: Long): ReadingResult {
         require(reduction in Reduction.forType(field?.type)) { "$reduction does not reduce a ${field?.type ?: "count"}" }
         if (reduction == Reduction.COUNT) return ReadingResult.Value(entries.size, COUNT_FIELD)
         path!!; field!!
 
-        val values = entries.map { it["id"] as String to valueAt(it, path) }
+        val values = entries.map { entry ->
+            entry["id"] as String to if (field.type == FieldType.DURATION) durationAt(entry, path, at) else valueAt(entry, path)
+        }
         values.filter { it.second == null }.map { it.first }.takeIf { it.isNotEmpty() }
             ?.let { return ReadingResult.Failure(FailureReason.MISSING_VALUE, path, it) }
         val present = values.map { it.second!! }
@@ -97,6 +104,15 @@ object FieldReading {
         val value = (entry[container] as? Map<*, *>)?.get(path.substringAfter('.'))
         // An empty text or list is what a form leaves when emptied: no answer
         return value.takeUnless { it == "" || (it is List<*> && it.isEmpty()) }
+    }
+
+    /** A duration's value at [at]: stored, plus the time its stopwatch has run when it runs. */
+    private fun durationAt(entry: Map<String, Any?>, path: String, at: Long): Any? {
+        val stored = valueAt(entry, path)
+        val container = FieldContainer.entries.firstOrNull { it.key == path.substringBefore('.', "") } ?: return stored
+        @Suppress("UNCHECKED_CAST")
+        val state = (entry["state"] as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
+        return RunningDurations.currentValue((stored as? Number)?.toLong(), state, container, path.substringAfter('.'), at) ?: stored
     }
 
     private fun zero(type: FieldType): Any = if (type == FieldType.DURATION) 0L else 0.0

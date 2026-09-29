@@ -44,7 +44,7 @@ class FieldReadingTest {
     )
 
     private fun value(path: String?, field: FieldDefinition?, reduction: Reduction, rows: List<Map<String, Any?>> = entries): Any =
-        (FieldReading.reduce(rows, path, field, reduction) as ReadingResult.Value).value
+        (FieldReading.reduce(rows, path, field, reduction, 0L) as ReadingResult.Value).value
 
     @Test
     fun `the last is the newest, a sum and an average run over all`() {
@@ -58,7 +58,7 @@ class FieldReadingTest {
     fun `a duration stays whole milliseconds, a scale average keeps its scale`() {
         assertEquals(75_600_000L, value("data.sleep", sleep, Reduction.SUM))
         assertEquals(25_200_000L, value("data.sleep", sleep, Reduction.AVERAGE))
-        val average = FieldReading.reduce(entries, "data.mood", mood, Reduction.AVERAGE) as ReadingResult.Value
+        val average = FieldReading.reduce(entries, "data.mood", mood, Reduction.AVERAGE, 0L) as ReadingResult.Value
         assertEquals(7.0, average.value)
         assertEquals(mood, average.field)
     }
@@ -71,7 +71,7 @@ class FieldReadingTest {
 
     @Test
     fun `a count is a whole number, and zero without entries, as is a sum`() {
-        val count = FieldReading.reduce(entries, null, null, Reduction.COUNT) as ReadingResult.Value
+        val count = FieldReading.reduce(entries, null, null, Reduction.COUNT, 0L) as ReadingResult.Value
         assertEquals(3, count.value)
         assertEquals(FieldReading.COUNT_FIELD, count.field)
         assertEquals(0, value(null, null, Reduction.COUNT, emptyList()))
@@ -80,7 +80,7 @@ class FieldReadingTest {
 
     @Test
     fun `without an entry, anything but a sum or a count fails`() {
-        val failure = FieldReading.reduce(emptyList(), "data.weight", weight, Reduction.LAST) as ReadingResult.Failure
+        val failure = FieldReading.reduce(emptyList(), "data.weight", weight, Reduction.LAST, 0L) as ReadingResult.Failure
         assertEquals(FailureReason.NO_ENTRY, failure.reason)
         assertEquals("data.weight", failure.field)
     }
@@ -88,15 +88,15 @@ class FieldReadingTest {
     @Test
     fun `an entry without an answer fails the reading and is named`() {
         val rows = entries + entry("z", mapOf("mood" to 5)) + entry("y", mapOf("weight" to ""))
-        val failure = FieldReading.reduce(rows, "data.weight", weight, Reduction.SUM) as ReadingResult.Failure
+        val failure = FieldReading.reduce(rows, "data.weight", weight, Reduction.SUM, 0L) as ReadingResult.Failure
         assertEquals(FailureReason.MISSING_VALUE, failure.reason)
         assertEquals(listOf("z", "y"), failure.entries)
     }
 
     @Test
     fun `a reduction a type does not take is refused`() {
-        assertThrows(IllegalArgumentException::class.java) { FieldReading.reduce(entries, "data.mood", mood, Reduction.SUM) }
-        assertThrows(IllegalArgumentException::class.java) { FieldReading.reduce(entries, "data.bedtime", bedtime, Reduction.AVERAGE) }
+        assertThrows(IllegalArgumentException::class.java) { FieldReading.reduce(entries, "data.mood", mood, Reduction.SUM, 0L) }
+        assertThrows(IllegalArgumentException::class.java) { FieldReading.reduce(entries, "data.bedtime", bedtime, Reduction.AVERAGE, 0L) }
         assertTrue(Reduction.forType(FieldType.RANGE).isEmpty())
     }
 
@@ -118,5 +118,11 @@ class FieldReadingTest {
         assertEquals(at(15, 4), stored.getJSONObject(0).getLong("value"))
         assertEquals("2026-09-16", stored.getJSONObject(1).getString("value"))
         assertEquals(80, stored.getJSONObject(2).getInt("value"))
+    }
+
+    @Test
+    fun `a duration running counts up to the instant read`() {
+        val running = mapOf("id" to "r", "data" to mapOf("sleep" to 3_600_000L), "state" to mapOf("running" to mapOf("data" to mapOf("sleep" to 10_000L))))
+        assertEquals(3_600_000L + 50_000L, (FieldReading.reduce(listOf(running), "data.sleep", sleep, Reduction.SUM, 60_000L) as ReadingResult.Value).value)
     }
 }

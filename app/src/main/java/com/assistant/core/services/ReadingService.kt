@@ -96,7 +96,7 @@ class ReadingService(private val context: Context) : ExecutableService {
         if (!entries.isSuccess) return OperationResult.error(entries.error ?: "")
         val rows = (entries.data?.get("entries") as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<String, Any?>>()
 
-        return OperationResult.success(when (val result = FieldReading.reduce(rows, path, field, reduction)) {
+        return OperationResult.success(when (val result = FieldReading.reduce(rows, path, field, reduction, reference)) {
             is ReadingResult.Value -> mapOf("value" to result.value, "field" to JsonUtils.toMap(result.field.toJson()))
             is ReadingResult.Failure -> failure(result)
         })
