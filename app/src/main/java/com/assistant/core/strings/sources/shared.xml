@@ -214,6 +214,11 @@
     <string name="service_error_param_unknown">Unknown parameter \'%1$s\'. Parameters: %2$s</string>
     <string name="service_error_filter_unreadable">Unreadable filter: %1$s. A filter is {\"left\": {\"field\": \"data.value\"}, \"op\": \"&lt;\", \"right\": {\"constant\": 10}}.</string>
     <string name="service_error_filter_not_written">The filter on %1$s compares with %2$s: a filter takes written values, {\"constant\": …}; read a variable or a reading first.</string>
+    <string name="condition_error_side">The condition of %1$s has a side that does not read: %2$s. A side is {\"field\": …}, {\"constant\": …}, {\"variable\": …} or {\"reading\": …}.</string>
+    <string name="condition_error_op">The condition of %1$s has an unknown operator: %2$s.</string>
+    <string name="condition_error_right">The condition of %1$s with %2$s takes %3$d side(s) on the right.</string>
+    <string name="condition_schema_description">A condition judged once: {\"left\": side, \"op\": ..., \"right\": side}, each side a term, {\"constant\": ...}, {\"variable\": \"id\"} or {\"reading\": {\"selection\", \"field\"?, \"reduction\"}}; right is a pair of sides for between, absent for absent and present. A constant is written as the other side stores its values.</string>
+    <string name="condition_schema_entered_description">A condition on the value entered in each attempt: {\"op\": ..., \"right\": side}; the app writes left, the entered field. A side is {\"constant\": ...}, {\"variable\": \"id\"} or {\"reading\": ...}; right is a pair for between, absent for absent and present.</string>
     <string name="service_error_filter_unknown_field">Filter on \'%1$s\': the entries of this tool have no such field to filter on. Fields: %2$s</string>
     <string name="service_error_values_not_text">'%1$s' is not a text field: only a text has values to offer</string>
     <string name="service_error_filter_operator">Filter on \'%1$s\': the condition \'%2$s\' does not apply to a %3$s field. Conditions: %4$s</string>

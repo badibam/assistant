@@ -30,13 +30,23 @@ private val DraftSaver: Saver<SelectionDraft?, String> = Saver(
 )
 
 /**
+ * Where a reading is made, as its picker says it.
+ *
+ * @property reference The name of the instant its relative dates resolve against
+ * @property emptyPeriod What no period means there, said under the period; null for none: the
+ *   whole history
+ * @property perEntry Whether a formula computed in each entry is offered (a variable's term)
+ */
+data class ReadingContext(val reference: String, val emptyPeriod: String? = null, val perEntry: Boolean = true)
+
+/**
  * The Lecture brick's selector (docs/BRICKS.md): a selection of a tool's entries (SelectionPicker),
  * its period relative to the instant the reading is made, then what is reduced (a field, a formula
  * per entry, or the entries counted) and how (ReductionPicker). [reading] is its stored form,
  * `{"selection", "field" | "per_entry", "reduction"}`.
  */
 @Composable
-fun ReadingPicker(reading: JSONObject, s: StringsContext, onChange: (JSONObject) -> Unit) {
+fun ReadingPicker(reading: JSONObject, s: StringsContext, where: ReadingContext, onChange: (JSONObject) -> Unit) {
     val context = LocalContext.current
     fun edit(change: JSONObject.() -> Unit) = onChange(JSONObject(reading.toString()).apply(change))
 
@@ -57,7 +67,7 @@ fun ReadingPicker(reading: JSONObject, s: StringsContext, onChange: (JSONObject)
             // Another tool's fields are not this one's
             if (next.tool != current.tool) remove("field")
         }
-    }, READ, fields, s.shared("instant_reference_reading"), offerFields = false)
+    }, READ, fields, where.reference, offerFields = false, emptyPeriod = where.emptyPeriod)
 
     // What is reduced: a field, a formula per entry, or the entries themselves counted
     val perEntry = reading.has("per_entry")
@@ -84,7 +94,7 @@ fun ReadingPicker(reading: JSONObject, s: StringsContext, onChange: (JSONObject)
             }
         },
         accepts = { Reduction.forType(it.type).isNotEmpty() },
-        others = mapOf(COUNT to s.shared("variable_reading_count"), PER_ENTRY to s.shared("variable_reading_per_entry"))
+        others = mapOf(COUNT to s.shared("variable_reading_count")) + (if (where.perEntry) mapOf(PER_ENTRY to s.shared("variable_reading_per_entry")) else emptyMap())
     )
     if (perEntry) {
         UI.FormField(label = s.shared("variable_reading_per_entry"), value = reading.optString("per_entry"), onChange = { v -> edit { put("per_entry", v) } }, required = true)

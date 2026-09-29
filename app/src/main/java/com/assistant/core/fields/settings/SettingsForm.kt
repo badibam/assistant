@@ -156,7 +156,8 @@ private fun NodeForm(
             val editor = editors[node.name]
                 ?: if (node.name == ScheduleSettings.NAME) ScheduleSettingEditor(node.label, Strings.`for`(context = context)) else null
             if (editor != null) editor.Edit(config.optJSONObject(node.name)) { set(node.name, it) }
-            else Titled(node.label) {
+            // An optional group set can be removed whole: left out, it is none
+            else Titled(node.label, onRemove = if (!node.required && config.has(node.name)) {{ set(node.name, null) }} else null) {
                 SettingsForm(node.nodes, config.optJSONObject(node.name) ?: JSONObject(), { set(node.name, it) }, context)
             }
         }
@@ -180,6 +181,23 @@ private fun NodeForm(
 
         is SettingNode.Section -> Titled(node.label) {
             NodesForm(node.nodes, level, config, onChange, context, editors)
+        }
+
+        // Its left side is the value entered beside it once that value has a type
+        is SettingNode.Condition -> {
+            val entered = node.enteredField?.let { config.optJSONObject(it) }?.let { declared ->
+                com.assistant.core.fields.FieldType.entries.firstOrNull { it.name == declared.optString("type") }?.let { type ->
+                    com.assistant.core.fields.FieldDefinition(node.name, node.label, null, type, false, declared.optJSONObject("config")?.toFieldConfig())
+                }
+            }
+            com.assistant.core.ui.selectors.ConditionSetting(
+                label = node.label,
+                condition = config.optJSONObject(node.name),
+                entered = entered,
+                onChange = { set(node.name, it) },
+                s = Strings.`for`(context = context),
+                where = com.assistant.core.ui.selectors.ReadingContext(node.reference, node.emptyPeriod, perEntry = false)
+            )
         }
     }
 }
@@ -297,12 +315,15 @@ private fun Summary(summary: List<String>, nodes: List<SettingNode>, element: JS
     }
 }
 
-/** A card with [label] as its title, over [content]. */
+/** A card with [label] as its title, over [content]; with [onRemove], a button removing what it holds. */
 @Composable
-private fun Titled(label: String, content: @Composable () -> Unit) {
+private fun Titled(label: String, onRemove: (() -> Unit)? = null, content: @Composable () -> Unit) {
     UI.Card(type = CardType.DEFAULT) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            UI.Text(label, TextType.SUBTITLE)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.weight(1f)) { UI.Text(label, TextType.SUBTITLE) }
+                onRemove?.let { UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = it) }
+            }
             content()
         }
     }

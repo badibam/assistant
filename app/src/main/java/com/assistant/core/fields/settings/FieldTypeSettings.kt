@@ -51,18 +51,35 @@ object FieldTypeSettings {
      * or a range the user adds measures in one unit, set with the field.
      */
     private fun caseNodes(type: FieldType, text: (String) -> String): List<SettingNode> {
-        val settings = listOfNotNull(if (type == FieldType.NUMERIC || type == FieldType.RANGE) unit(text) else null) +
-            configNodes(type, text)
-        // A number or a range needs its decimals, a scale its bounds and a choice its options:
-        // their config is required
-        val config = if (settings.isEmpty()) null else SettingNode.Group("config", text("field_config_section_title"), settings,
-            required = type in setOf(FieldType.NUMERIC, FieldType.RANGE, FieldType.SCALE, FieldType.CHOICE, FieldType.REFERENCE))
+        val config = configGroup(type, text)
         // A fixed day or instant is hardly a suggestion for every new entry: dates have none, nor
         // a reference, one thing for all the entries to come
         val default = if (type == FieldType.DATE || type == FieldType.DATETIME || type == FieldType.REFERENCE) null
             else field("default_value", "field_default_value", type, text, description = "field_type_schema_default_value_description")
                 .copy(valueOfDefined = true)
         return listOfNotNull(config, default)
+    }
+
+    /**
+     * A value declared apart from a tool's fields, `{"type", "config"}`: its type among [types],
+     * and that type's settings. A goal's entered criterion is one.
+     */
+    fun valueNodes(text: (String) -> String, types: List<FieldType>): List<SettingNode> = listOf(
+        SettingNode.Variant(
+            selector = field("type", "custom_fields_type", FieldType.CHOICE, text, required = true,
+                config = choice(types.map { it.name }, types.associate { it.name to text("field_type_${it.name.lowercase()}_display_name") })),
+            cases = types.associate { type -> type.name to listOfNotNull(configGroup(type, text)) }
+        )
+    )
+
+    /** The "config" of a value of [type], its unit first for a number or a range; null when the type has no settings. */
+    private fun configGroup(type: FieldType, text: (String) -> String): SettingNode.Group? {
+        val settings = listOfNotNull(if (type == FieldType.NUMERIC || type == FieldType.RANGE) unit(text) else null) +
+            configNodes(type, text)
+        // A number or a range needs its decimals, a scale its bounds and a choice its options:
+        // their config is required
+        return if (settings.isEmpty()) null else SettingNode.Group("config", text("field_config_section_title"), settings,
+            required = type in setOf(FieldType.NUMERIC, FieldType.RANGE, FieldType.SCALE, FieldType.CHOICE, FieldType.REFERENCE))
     }
 
     /**

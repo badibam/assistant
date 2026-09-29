@@ -98,6 +98,26 @@ sealed class SettingNode {
         val cases: Map<String, List<SettingNode>>
     ) : SettingNode()
 
+    /**
+     * A condition stored under [name] (the Condition brick, docs/BRICKS.md): `{"left", "op", "right"}`,
+     * judged once, each side a term; drawn by ConditionSetting, its sides read by the service
+     * that judges it.
+     *
+     * @property reference The name of the instant it is judged at, which its relative dates resolve against
+     * @property emptyPeriod What a reading without a period of its own reads there
+     * @property enteredField The name of the setting beside it that declares a value entered in
+     *   each entry (FieldTypeSettings.valueNodes): when it is set, the condition is put on that
+     *   entry, its left side the entry's field, which whoever owns the key writes
+     */
+    data class Condition(
+        val name: String,
+        val label: String,
+        val reference: String,
+        val emptyPeriod: String?,
+        val required: Boolean = false,
+        val enteredField: String? = null
+    ) : SettingNode()
+
     /** Settings shown together on the screen; nothing of it is stored. */
     data class Section(
         val label: String,
@@ -117,7 +137,7 @@ fun List<SettingNode>.storedField(name: String): FieldDefinition? {
             is SettingNode.Variant -> node.selector.definition.takeIf { it.name == name }
                 ?: node.cases.values.firstNotNullOfOrNull { it.storedField(name) }
             is SettingNode.Section -> node.nodes.storedField(name)
-            is SettingNode.Group, is SettingNode.ListOf -> null
+            is SettingNode.Group, is SettingNode.ListOf, is SettingNode.Condition -> null
         }
         if (found != null) return found
     }
@@ -138,6 +158,7 @@ fun List<SettingNode>.labelOf(name: String): String? {
             is SettingNode.Variant -> listOf(node.selector).labelOf(name)
                 ?: node.cases.values.firstNotNullOfOrNull { it.labelOf(name) }
             is SettingNode.Section -> node.nodes.labelOf(name)
+            is SettingNode.Condition -> node.label.takeIf { node.name == name }
         }
         if (found != null) return found
     }

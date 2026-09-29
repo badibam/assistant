@@ -60,6 +60,7 @@ object SettingsSchemaGenerator {
                 is SettingNode.Field -> Triple(node.definition.name, node.required, fieldSchema(node, text))
                 is SettingNode.Group -> Triple(node.name, node.required, objectOf(node.nodes, text).put("title", node.label))
                 is SettingNode.ListOf -> Triple(node.name, node.required, listSchema(node, text))
+                is SettingNode.Condition -> Triple(node.name, node.required, conditionSchema(node, text))
                 is SettingNode.Variant, is SettingNode.Section -> error("flattened before")
             }
             check(!properties.has(name)) { "Setting '$name' is declared twice in one object" }
@@ -117,6 +118,21 @@ object SettingsSchemaGenerator {
                 if (list.fieldDefinitions) it.put(FIELD_DEFINITIONS, true)
             }
     }
+
+    /**
+     * A condition: its operator among the known ones, each side an object the service reads as a
+     * field or a term (Condition.fromJson), which the description spells out.
+     */
+    private fun conditionSchema(node: SettingNode.Condition, text: (String) -> String): JSONObject = JSONObject()
+        .put("type", "object")
+        .put("title", node.label)
+        .put("description", text(if (node.enteredField != null) "condition_schema_entered_description" else "condition_schema_description"))
+        .put("properties", JSONObject()
+            .put("left", JSONObject().put("type", "object"))
+            .put("op", JSONObject().put("type", "string").put("enum", JSONArray(com.assistant.core.fields.FilterOperator.entries.map { it.key })))
+            .put("right", JSONObject().put("type", JSONArray().put("object").put("array"))))
+        .put("required", JSONArray().put("op"))
+        .put("additionalProperties", false)
 
     /** The nodes stored in one object: sections opened, since they store nothing of their own. */
     internal fun flatten(nodes: List<SettingNode>): List<SettingNode> = nodes.flatMap { node ->

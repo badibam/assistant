@@ -36,6 +36,7 @@ import com.assistant.core.ui.CardType
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.core.ui.selectors.ReadingContext
 import com.assistant.core.ui.selectors.TermPicker
 import com.assistant.core.utils.JsonUtils
 import com.assistant.core.variables.Formula
@@ -269,7 +270,7 @@ private fun TermEditor(
                 }
                 UI.ActionButton(action = ButtonAction.DELETE, display = com.assistant.core.ui.ButtonDisplay.ICON, onClick = onRemove)
             }
-            TermPicker(term, remember { FieldDefinition(name, name, null, FieldType.NUMERIC, false, null) }, onChange, s)
+            TermPicker(term, remember { FieldDefinition(name, name, null, FieldType.NUMERIC, false, null) }, onChange, s, ReadingContext(s.shared("instant_reference_reading")))
         }
     }
 }

@@ -7,11 +7,15 @@ import com.assistant.core.coordinator.Source
 import com.assistant.core.coordinator.currentOrigin
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.AppDatabase
+import com.assistant.core.conditions.Condition
+import com.assistant.core.conditions.ConditionJudge
+import com.assistant.core.conditions.Conditions
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.toJson
 import com.assistant.core.selection.EntryPeriod
-import com.assistant.core.selection.EntrySelection
-import com.assistant.core.selection.Reference
-import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.selection.TimePoint
+import com.assistant.core.selection.TimeResolver
+import com.assistant.core.terms.TermReader
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
@@ -87,34 +91,47 @@ class GoalService(private val context: Context) : ExecutableService {
     /** The instant a read criterion is read at: the end of the period, now while it runs. */
     private fun readAt(attempt: Attempt): Long = minOf(System.currentTimeMillis(), attempt.periodEnd ?: Long.MAX_VALUE)
 
-    /** Each criterion's value by key, and why a read one has none. */
-    private suspend fun values(attempt: Attempt, definition: GoalDefinition): Pair<Map<String, Any?>, Map<String, String>> {
-        val values = mutableMapOf<String, Any?>()
-        val failures = mutableMapOf<String, String>()
+    /**
+     * A criterion judged: its value (the left side), what it is compared with (the right side,
+     * read), the field both are values of, whether it is met; or why it could not be read.
+     */
+    private data class Judged(val value: Any?, val right: List<Any?>, val field: FieldDefinition?, val met: Met, val failure: String?)
+
+    /**
+     * Each criterion judged, by key. Its terms are read at the end of the attempt, now while it
+     * runs; a reading without a period of its own reads the attempt's.
+     */
+    private suspend fun judged(attempt: Attempt, definition: GoalDefinition): Map<String, Judged> {
         val at = readAt(attempt)
-        for (criterion in definition.allCriteria) {
-            if (criterion.kind.entered != null) {
-                values[criterion.key] = attempt.data.opt(criterion.key)?.takeIf { it != JSONObject.NULL }
-                continue
+        val period = EntryPeriod(TimePoint.Fixed(attempt.start), TimePoint.Fixed(at))
+        val reader = TermReader(context)
+        val text = { key: String -> s.shared(key) }
+        return definition.allCriteria.associate { criterion ->
+            criterion.key to try {
+                val condition = Condition.fromJson(criterion.condition, criterion.name, text)
+                val entered = criterion.enteredField()
+                // One side read: its value and its field, or why it has none
+                suspend fun side(side: Condition.Side): TermReader.Read = when (side) {
+                    is Condition.Side.Of -> reader.read(side.term, at, period)
+                    is Condition.Side.Field -> if (entered != null) TermReader.Read.Value(attempt.data.opt(criterion.key)?.takeIf { it != JSONObject.NULL }?.let { JsonUtils.toValue(it) }, entered)
+                        else throw IllegalArgumentException(s.tool("error_criterion_field").format(criterion.name))
+                }
+                val sides = listOf(side(if (entered != null) Condition.Side.Field(Criterion.enteredPath(criterion.key)) else condition.left)) + condition.right.map { side(it) }
+                val failure = sides.filterIsInstance<TermReader.Read.Failed>().firstOrNull()
+                if (failure != null) Judged(null, emptyList(), null, Met.UNKNOWN, failure.message)
+                else {
+                    val values = sides.map { it as TermReader.Read.Value }
+                    // Compared as the side that has a type: a constant takes the other's
+                    val field = values.firstNotNullOfOrNull { it.field }
+                        ?: throw IllegalArgumentException(s.tool("error_criterion_constants").format(criterion.name))
+                    val holds = ConditionJudge.holds(field, condition.op, values[0].value, values.drop(1).map { it.value }, TimeResolver.at(at), text)
+                    Judged(values[0].value, values.drop(1).map { it.value }, field, when (holds) { true -> Met.YES; false -> Met.NO; null -> Met.UNKNOWN }, null)
+                }
+            } catch (e: IllegalArgumentException) {
+                // A condition that does not read is said on its criterion, never judged
+                Judged(null, emptyList(), null, Met.UNKNOWN, e.message)
             }
-            val result = when (criterion.kind) {
-                CriterionKind.VARIABLE -> coordinator.processUserAction("variables.evaluate", mapOf("variable_id" to criterion.variable, "at" to listOf(at)))
-                else -> coordinator.processUserAction("readings.read", mapOf(
-                    "selection" to JsonUtils.toMap(EntrySelection(
-                        target = Reference(ReferenceKind.TOOL_INSTANCE, criterion.tool ?: ""),
-                        period = EntryPeriod(TimePoint.Fixed(attempt.start), TimePoint.Fixed(at))
-                    ).toJson()),
-                    "field" to (criterion.field ?: ""),
-                    "reduction" to (criterion.reduction?.name ?: ""),
-                    "reference" to at
-                ))
-            }
-            if (!result.isSuccess) throw IllegalStateException(result.error ?: "")
-            val row = ((result.data?.get("values") as? List<*>)?.firstOrNull() as? Map<*, *>) ?: result.data
-            val failure = row?.get("failure") as? Map<*, *>
-            if (failure != null) failures[criterion.key] = failure["message"] as? String ?: "" else values[criterion.key] = row?.get("value")
         }
-        return values to failures
     }
 
     /** The judgement of [attempt] as the screen and the AI read it. */
@@ -123,25 +140,29 @@ class GoalService(private val context: Context) : ExecutableService {
             return JsonUtils.toMap(JSONObject(attempt.state.getString(GoalToolType.JUDGEMENT))) + mapOf("status" to attempt.status, "frozen" to true)
         }
         val definition = definitionOf(attempt)
-        val (values, failures) = values(attempt, definition)
-        val judged = GoalJudge.judge(definition, values)
+        val judged = judged(attempt, definition)
+        val judgement = GoalJudge.judge(definition, judged.mapValues { it.value.value to it.value.met })
         return mapOf(
             "status" to attempt.status,
             "frozen" to false,
-            "verdict" to judged.verdict.name,
-            "met" to judged.met,
-            "required" to judged.required,
+            "verdict" to judgement.verdict.name,
+            "met" to judgement.met,
+            "required" to judgement.required,
             "read_at" to readAt(attempt),
             "criteria" to definition.allCriteria.map { criterion ->
+                val one = judged.getValue(criterion.key)
                 mapOf(
                     "key" to criterion.key,
                     "name" to criterion.name,
-                    "value" to values[criterion.key],
-                    "met" to judged.criteria.getValue(criterion.key).second.name,
-                    "failure" to failures[criterion.key]
+                    "value" to one.value,
+                    "op" to criterion.condition.optString(Conditions.OP),
+                    "compared" to one.right,
+                    "field" to one.field?.let { JsonUtils.toMap(it.toJson()) },
+                    "met" to one.met.name,
+                    "failure" to one.failure
                 )
             },
-            "sub_goals" to judged.subGoals.mapValues { it.value.name }
+            "sub_goals" to judgement.subGoals.mapValues { it.value.name }
         )
     }
 

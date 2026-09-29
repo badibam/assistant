@@ -10,15 +10,6 @@
 - Rappel : rien de ce qui a été codé depuis la base 46 n'a tourné sur le téléphone (`device-checks.md`).
 - Ailleurs, et à relire avant l'étape qui les cite : dans `docs/design/missing-tools.md`, « Le temps relatif » (la référence, les libellés relatifs, « = » refusé sur un DATETIME) et « Les formes enregistrées » (Instant, période, sélection, pointeur) ; sa section « Objectif » ; dans `docs/design/unified-fields.md`, le réglage de champ réservé à l'utilisateur.
 
-## 8. Critères d'Objectif
-
-- Un critère : sa clé, son nom, indispensable ou non, et une Condition — jugée une fois pour un critère lu (« Par rapport à : la fin de la tentative (maintenant tant qu'elle court) », la période d'une Lecture préremplie à celle de la tentative), posée à la tentative pour un critère saisi (son champ déclaré d'un côté).
-- Disparaissent : `kind`, `target`, `target_unit`, `TargetUnit`, `Criterion.meets`, le CHOICE de réduction ; le formulaire du critère devient un éditeur fait des sélecteurs, que l'Objectif branche sur son formulaire de réglages (le crochet est à recréer : sans usage, il a été retiré).
-- La Condition jugée une fois arrive ici, avec son premier usage : un modèle (côté, opérateur, côté) lu depuis `Conditions`, évalué en Kotlin par type, dates relatives comprises ; et une variable ou une Lecture d'un côté, lues d'abord à la référence du contexte. `ConditionPicker` apprend alors à proposer un terme à droite.
-- Pas de migration : aucun Objectif n'existe encore (confirmé le 2026-09-29).
-- Ce qui ne change pas vient de `missing-tools.md`, « Objectif » (comptage, indispensables, verrouillage, `goal.validate` et `goal.reopen`) ; le verdict réservé à l'utilisateur, du réglage de champ de `unified-fields.md`.
-- Côté IA : le schéma de config, la doc et les exemples de l'Objectif.
-
 ## 9. Attente
 
 - Un type d'outil déclare ce qui attend : une Condition jugée une fois, une Lecture d'un côté (« compte de ses entrées où … `>` 0 ») ; Questionnaire `state.status = TO_FILL`, Objectif `TO_VALIDATE`, Messages `status = sent` et `read = false`.

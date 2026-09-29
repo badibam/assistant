@@ -2,8 +2,7 @@ package com.assistant.tools.goal
 
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
-import com.assistant.core.fields.ReferenceTarget
-import com.assistant.core.reading.Reduction
+import com.assistant.core.fields.toFieldConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.Normalizer
@@ -11,74 +10,33 @@ import java.text.Normalizer
 /** Whether a node is met: yes, no, or not known yet (a value missing, a reading that failed). */
 enum class Met { YES, NO, UNKNOWN }
 
-/** Where a criterion's value comes from, and what kind of value it is. */
-enum class CriterionKind(val entered: FieldType?) {
-    /** A variable of the core, read at the end of the attempt's period */
-    VARIABLE(null),
-    /** A field of a tool reduced over the attempt's period */
-    FIELD(null),
-    /** Entered in the attempt, by the user or the AI */
-    ENTERED_BOOLEAN(FieldType.BOOLEAN),
-    ENTERED_NUMBER(FieldType.NUMERIC),
-    ENTERED_DURATION(FieldType.DURATION),
-    ENTERED_SCALE(FieldType.SCALE)
-}
-
-/** How a read value is compared with a number written in the condition, when it is a duration. */
-enum class TargetUnit(val millis: Double) { NUMBER(1.0), MINUTES(60_000.0), HOURS(3_600_000.0) }
-
 /**
- * One criterion: a value and a condition on it (docs/design/missing-tools.md, « Objectif »). Its
- * [key] is the field an entered value is stored under, fixed when the criterion is created
- * (GoalToolType.completeConfig): renaming it keeps its values; a criterion deleted and made anew
- * gets a new one.
+ * One criterion: a condition (the Condition brick, docs/BRICKS.md) and, when it is entered, the
+ * value it declares (docs/design/missing-tools.md, « Objectif »). A read criterion's condition is
+ * judged once, its sides terms read at the end of the attempt; an entered one's is put on the
+ * attempt, its left side the value entered, stored under [key].
+ *
+ * Its [key] is fixed when the criterion is created (GoalToolType.completeConfig): renaming it keeps
+ * its values; a criterion deleted and made anew gets a new one.
+ *
+ * @property entered The type and settings of the value entered, `{"type", "config"}`, stored under "field"; null for a read criterion
+ * @property condition Its stored form, `{"left", "op", "right"}`
  */
 data class Criterion(
     val key: String,
     val name: String,
-    val kind: CriterionKind,
     val essential: Boolean,
-    val op: String,
-    val target: Any?,
-    val targetUnit: TargetUnit = TargetUnit.NUMBER,
-    val variable: String? = null,
-    val tool: String? = null,
-    val field: String? = null,
-    val reduction: Reduction? = null,
-    val unit: String? = null,
-    val instructions: String? = null
+    val entered: JSONObject?,
+    val instructions: String?,
+    val condition: JSONObject
 ) {
-    /** The field an entered criterion's value is written in. */
-    fun enteredField(): FieldDefinition? = kind.entered?.let { type ->
+    /** The field an entered criterion's value is written in, in the attempt's data. */
+    fun enteredField(): FieldDefinition? = entered?.let { declared ->
         FieldDefinition(
-            name = key, displayName = name, description = instructions, type = type, alwaysVisible = true,
-            config = when (type) {
-                FieldType.NUMERIC -> mapOf("decimals" to 2) + (unit?.let { mapOf("unit" to it) } ?: emptyMap())
-                FieldType.SCALE -> mapOf("min" to 1, "max" to 10)
-                else -> null
-            }
+            name = key, displayName = name, description = instructions,
+            type = FieldType.valueOf(declared.getString("type")), alwaysVisible = true,
+            config = declared.optJSONObject("config")?.toFieldConfig()
         )
-    }
-
-    /** Whether [value] meets the condition; unknown without a value. */
-    fun meets(value: Any?): Met {
-        if (value == null) return Met.UNKNOWN
-        if (kind == CriterionKind.ENTERED_BOOLEAN || value is Boolean) {
-            return if (value == (target as? Boolean ?: true)) Met.YES else Met.NO
-        }
-        val number = (value as? Number)?.toDouble() ?: return Met.UNKNOWN
-        val goal = (target as? Number)?.toDouble() ?: return Met.UNKNOWN
-        // A duration entered is compared in milliseconds; one read, in the unit the condition says
-        val compared = if (kind == CriterionKind.ENTERED_DURATION) goal else goal * targetUnit.millis
-        val holds = when (op) {
-            "<" -> number < compared
-            "<=" -> number <= compared
-            "=" -> number == compared
-            ">=" -> number >= compared
-            ">" -> number > compared
-            else -> return Met.UNKNOWN
-        }
-        return if (holds) Met.YES else Met.NO
     }
 
     companion object {
@@ -86,22 +44,21 @@ data class Criterion(
         fun keyOf(name: String): String = "c_" + Normalizer.normalize(name, Normalizer.Form.NFD)
             .replace(Regex("\\p{M}"), "").lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_')
 
+        /** The path of the value an entered criterion of [key] writes in its attempt. */
+        fun enteredPath(key: String) = "data.$key"
+
         /** @throws IllegalArgumentException on a criterion that has no key yet */
         fun fromJson(json: JSONObject) = Criterion(
             key = json.optString("key").takeIf { it.isNotEmpty() } ?: throw IllegalArgumentException("criterion \"${json.optString("name")}\" has no key"),
             name = json.getString("name"),
-            kind = CriterionKind.valueOf(json.getString("kind")),
             essential = json.optBoolean("essential", false),
-            op = json.optString("op", "="),
-            target = json.opt("target")?.takeIf { it != JSONObject.NULL },
-            targetUnit = json.optString("target_unit").takeIf { it.isNotEmpty() }?.let { TargetUnit.valueOf(it) } ?: TargetUnit.NUMBER,
-            variable = json.opt("variable")?.let { ReferenceTarget.referenceOf(it)?.id },
-            tool = json.opt("tool")?.let { ReferenceTarget.referenceOf(it)?.id ?: it as? String },
-            field = json.optString("field").takeIf { it.isNotEmpty() },
-            reduction = json.optString("reduction").takeIf { it.isNotEmpty() }?.let { Reduction.valueOf(it) },
-            unit = json.optString("unit").takeIf { it.isNotEmpty() },
-            instructions = json.optString("instructions").takeIf { it.isNotEmpty() }
+            entered = json.optJSONObject(ENTERED)?.takeIf { it.optString("type").isNotEmpty() },
+            instructions = json.optString("instructions").takeIf { it.isNotEmpty() },
+            condition = json.optJSONObject(CONDITION) ?: JSONObject()
         )
+
+        const val ENTERED = "field"
+        const val CONDITION = "condition"
     }
 }
 
@@ -159,9 +116,9 @@ data class Judgement(
  */
 object GoalJudge {
 
-    /** @param values Each criterion's value by key: entered, or read; absent when unknown */
-    fun judge(definition: GoalDefinition, values: Map<String, Any?>): Judgement {
-        val criteria = definition.allCriteria.associate { it.key to (values[it.key] to it.meets(values[it.key])) }
+    /** @param criteria Each criterion's value and whether it is met, by key; absent when unknown */
+    fun judge(definition: GoalDefinition, criteria: Map<String, Pair<Any?, Met>>): Judgement {
+        val criteria = definition.allCriteria.associate { it.key to (criteria[it.key] ?: (null to Met.UNKNOWN)) }
         val subGoals = definition.subGoals.associate { sub ->
             sub.name to node(sub.criteria.map { criteria.getValue(it.key).second to it.essential }, sub.atLeast)
         }

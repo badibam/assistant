@@ -40,7 +40,7 @@ import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.utils.JsonUtils
-import com.assistant.tools.goal.CriterionKind
+import com.assistant.core.fields.toFieldDefinition
 import com.assistant.tools.goal.GoalDefinition
 import com.assistant.tools.goal.GoalToolType
 import com.assistant.tools.goal.Met
@@ -205,6 +205,10 @@ private fun AttemptCard(
                 val criterion = definition.allCriteria.find { it.key == key }
                 val met = Met.valueOf(row["met"] as? String ?: "UNKNOWN")
                 val entered = criterion?.enteredField()
+                // The field the value and what it is compared with are values of
+                val field = entered ?: (row["field"] as? Map<*, *>)?.let { JsonUtils.toJSONObject(it.entries.associate { e -> e.key.toString() to e.value }).toFieldDefinition() }
+                val compared = row["compared"] as? List<*> ?: emptyList<Any?>()
+                val conditionText = condition(row["op"] as? String ?: "", compared, field, context, s)
                 if (!locked && entered != null) {
                     FieldInput(entered, row["value"], { value ->
                         scope.launch {
@@ -212,17 +216,15 @@ private fun AttemptCard(
                             if (!result.isSuccess) onError(result.error) else local++
                         }
                     }, context, required = false)
-                    UI.Text(condition(criterion, s) + " · " + s.tool("met_${met.name.lowercase()}"), TextType.CAPTION)
+                    UI.Text(listOfNotNull(conditionText, row["failure"] as? String, s.tool("met_${met.name.lowercase()}")).joinToString(" · "), TextType.CAPTION)
                 } else {
-                    val shown = row["failure"] as? String ?: row["value"]?.let { value ->
-                        (entered ?: FieldDefinition(key, key, null, FieldType.NUMERIC, false, mapOf("decimals" to 2))).formatValue(value, context)
-                    } ?: s.shared("label_no_value")
-                    UI.Text("${row["name"]} : $shown" + (criterion?.let { " / " + condition(it, s) } ?: "") + " · " + s.tool("met_${met.name.lowercase()}"), TextType.BODY)
+                    val shown = row["failure"] as? String ?: row["value"]?.let { value -> field?.formatValue(value, context) ?: value.toString() } ?: s.shared("label_no_value")
+                    UI.Text("${row["name"]} : $shown" + (conditionText?.let { " / $it" } ?: "") + " · " + s.tool("met_${met.name.lowercase()}"), TextType.BODY)
+                    // A gauge for an ordered value compared with one number
                     val value = (row["value"] as? Number)?.toDouble()
-                    val target = (criterion?.target as? Number)?.toDouble()
-                    if (value != null && target != null && target > 0 && criterion.kind != CriterionKind.ENTERED_BOOLEAN) {
-                        val scale = if (criterion.kind == CriterionKind.ENTERED_DURATION) 1.0 else criterion.targetUnit.millis
-                        UI.Gauge(fraction = (value / (target * scale)).toFloat().coerceIn(0f, 1f))
+                    val target = (compared.singleOrNull() as? Number)?.toDouble()
+                    if (value != null && target != null && target > 0 && field?.type in GAUGED) {
+                        UI.Gauge(fraction = (value / target).toFloat().coerceIn(0f, 1f))
                     }
                 }
             }
@@ -237,14 +239,20 @@ private fun AttemptCard(
     }
 }
 
-/** A criterion's condition in words: "≥ 7 h", "= oui". */
-private fun condition(criterion: com.assistant.tools.goal.Criterion, s: StringsContext): String {
-    if (criterion.kind == CriterionKind.ENTERED_BOOLEAN) return "= " + s.shared(if (criterion.target == false) "label_no" else "label_yes")
-    val target = (criterion.target as? Number)?.let {
-        if (criterion.kind == CriterionKind.ENTERED_DURATION) java.time.Duration.ofMillis(it.toLong()).toMinutes().toString() + " min"
-        else (if (it.toDouble() % 1.0 == 0.0) it.toLong().toString() else it.toString()) +
-            (if (criterion.targetUnit != com.assistant.tools.goal.TargetUnit.NUMBER) " " + s.tool("target_unit_${criterion.targetUnit.name.lowercase()}") else "") +
-            (criterion.unit?.let { u -> " $u" } ?: "")
-    } ?: "?"
-    return "${criterion.op} $target"
+/** The values a gauge measures, against the number a criterion compares them with. */
+private val GAUGED = setOf(FieldType.NUMERIC, FieldType.SCALE, FieldType.DURATION)
+
+/**
+ * A criterion's condition in words, what it is compared with shown as [field] shows its values:
+ * "≥ 7 h", "= Yes", "between 70 kg and 80 kg"; null before it is judged.
+ */
+private fun condition(op: String, compared: List<*>, field: FieldDefinition?, context: android.content.Context, s: StringsContext): String? {
+    val operator = com.assistant.core.fields.FilterOperator.of(op) ?: return null
+    fun shown(value: Any?) = value?.let { field?.formatValue(it, context) ?: it.toString() } ?: "?"
+    val words = com.assistant.core.ui.selectors.PointerDescription.operator(operator, s)
+    return when (operator) {
+        com.assistant.core.fields.FilterOperator.ABSENT, com.assistant.core.fields.FilterOperator.PRESENT -> words
+        com.assistant.core.fields.FilterOperator.BETWEEN -> s.shared("filter_between").format("", shown(compared.getOrNull(0)), shown(compared.getOrNull(1))).trim()
+        else -> "$words ${shown(compared.firstOrNull())}"
+    }
 }

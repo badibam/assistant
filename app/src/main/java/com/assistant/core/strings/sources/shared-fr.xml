@@ -214,6 +214,11 @@
     <string name="service_error_param_unknown">Paramètre \'%1$s\' inconnu. Paramètres : %2$s</string>
     <string name="service_error_filter_unreadable">Filtre illisible : %1$s. Un filtre s\'écrit {\"left\": {\"field\": \"data.value\"}, \"op\": \"&lt;\", \"right\": {\"constant\": 10}}.</string>
     <string name="service_error_filter_not_written">Le filtre sur %1$s compare à %2$s : un filtre prend des valeurs écrites, {\"constant\": …} ; lire d\'abord une variable ou une lecture.</string>
+    <string name="condition_error_side">La condition de %1$s a un côté illisible : %2$s. Un côté est {\"field\": …}, {\"constant\": …}, {\"variable\": …} ou {\"reading\": …}.</string>
+    <string name="condition_error_op">La condition de %1$s a un opérateur inconnu : %2$s.</string>
+    <string name="condition_error_right">La condition de %1$s avec %2$s prend %3$d côté(s) à droite.</string>
+    <string name="condition_schema_description">Une condition jugée une fois : {\"left\": côté, \"op\": ..., \"right\": côté}, chaque côté un terme, {\"constant\": ...}, {\"variable\": \"id\"} ou {\"reading\": {\"selection\", \"field\"?, \"reduction\"}} ; right est une paire de côtés pour between, absent pour absent et present. Une constante s\'écrit comme l\'autre côté stocke ses valeurs.</string>
+    <string name="condition_schema_entered_description">Une condition sur la valeur saisie dans chaque tentative : {\"op\": ..., \"right\": côté} ; l\'app écrit left, le champ saisi. Un côté est {\"constant\": ...}, {\"variable\": \"id\"} ou {\"reading\": ...} ; right est une paire pour between, absent pour absent et present.</string>
     <string name="service_error_filter_unknown_field">Filtre sur \'%1$s\' : les entrées de cet outil n\'ont pas ce champ à filtrer. Champs : %2$s</string>
     <string name="service_error_values_not_text">« %1$s » n\'est pas un champ texte : seul un texte a des valeurs à proposer</string>
     <string name="service_error_filter_operator">Filtre sur \'%1$s\' : la condition \'%2$s\' ne s\'applique pas à un champ %3$s. Conditions : %4$s</string>

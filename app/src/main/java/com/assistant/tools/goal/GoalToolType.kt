@@ -1,5 +1,7 @@
 package com.assistant.tools.goal
 
+import com.assistant.core.conditions.Conditions
+import com.assistant.core.fields.settings.FieldTypeSettings
 import android.content.Context
 import androidx.compose.runtime.Composable
 import com.assistant.core.database.entities.ToolDataEntity
@@ -63,6 +65,10 @@ object GoalToolType : ToolTypeContract {
     /** The data key of the definition's copy, a JSON text. */
     const val DEFINITION = "definition"
 
+    /** The types a value entered in an attempt takes: those a condition compares. */
+    private val ENTERED_TYPES = listOf(FieldType.BOOLEAN, FieldType.NUMERIC, FieldType.SCALE, FieldType.DURATION,
+        FieldType.CHOICE, FieldType.TEXT, FieldType.DATE, FieldType.TIME)
+
     /** Seven days, the default delay before an attempt left to validate expires. */
     const val DEFAULT_EXPIRY = 7L * 86_400_000
 
@@ -78,7 +84,7 @@ object GoalToolType : ToolTypeContract {
     /** The settings and fields a validation error may name, by their key. */
     private val LABELS = setOf(
         "criteria", "sub_goals", "at_least", "start", "deadline", "schedule", "duration", "enabled", "expiry_delay", "notify",
-        "essential", "kind", "variable", "tool", "field", "reduction", "op", "target", "target_unit", "unit", "instructions",
+        "essential", Criterion.ENTERED, Criterion.CONDITION, "instructions",
         DEFINITION, STATUS, PERIOD_END, JUDGEMENT, VALIDATED_BY, VALIDATED_AT, REOPENED_AT, NOTIFIED
     )
 
@@ -93,58 +99,29 @@ object GoalToolType : ToolTypeContract {
     private fun choice(values: List<String>, labels: (String) -> String): Map<String, Any> =
         mapOf("options" to ChoiceSettings.storedOptions(values, values.associateWith(labels), emptyMap()))
 
-    /** The settings of one criterion: its name, whether it is essential, its value and condition. */
+    /**
+     * The settings of one criterion: its name, whether it is essential, the value it declares
+     * when that value is entered in each attempt, and its condition (Criterion).
+     */
     private fun criterionNodes(context: Context): List<SettingNode> {
         val s = s(context)
-        val ops = listOf("<", "<=", "=", ">=", ">")
-        fun op() = SettingNode.Field(field("op", s.tool("field_op"), FieldType.CHOICE, config = choice(ops) { it }), required = true, default = ">=")
-        fun target() = SettingNode.Field(field("target", s.tool("field_target"), FieldType.NUMERIC, config = mapOf("decimals" to 2)), required = true)
-        fun targetUnit() = SettingNode.Field(field("target_unit", s.tool("field_target_unit"), FieldType.CHOICE, s.tool("schema_target_unit"),
-            choice(TargetUnit.entries.map { it.name }) { s.tool("target_unit_${it.lowercase()}") }), default = TargetUnit.NUMBER.name)
-        fun instructions() = SettingNode.Field(field("instructions", s.tool("field_instructions"), FieldType.TEXT, s.tool("schema_instructions"), mapOf("length" to TextLength.MEDIUM.name)))
+        val shared = Strings.`for`(context = context)
         return listOf(
             // Written by the app when the criterion is created (completeConfig), sent back unchanged
             SettingNode.Field(field("key", "key", FieldType.TEXT, s.tool("schema_key"), mapOf("length" to TextLength.SHORT.name)), systemWritten = true),
-            SettingNode.Field(field("name", s.shared("label_name"), FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)), required = true),
+            SettingNode.Field(field("name", shared.shared("label_name"), FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)), required = true),
             SettingNode.Field(field("essential", s.tool("field_essential"), FieldType.BOOLEAN, s.tool("schema_essential")), default = false),
-            SettingNode.Variant(
-                selector = SettingNode.Field(field("kind", s.tool("field_kind"), FieldType.CHOICE, s.tool("schema_kind"),
-                    choice(CriterionKind.entries.map { it.name }) { s.tool("kind_${it.lowercase()}") }), required = true),
-                cases = mapOf(
-                    CriterionKind.VARIABLE.name to listOf(
-                        SettingNode.Field(field("variable", s.tool("field_variable"), FieldType.REFERENCE, s.tool("schema_variable"),
-                            mapOf("target" to mapOf("kinds" to listOf(ReferenceKind.VARIABLE.name)))), required = true),
-                        op(), target(), targetUnit()
-                    ),
-                    CriterionKind.FIELD.name to listOf(
-                        SettingNode.Field(field("tool", s.tool("field_tool"), FieldType.REFERENCE, s.tool("schema_tool"),
-                            mapOf("target" to mapOf("kinds" to listOf(ReferenceKind.TOOL_INSTANCE.name)))), required = true),
-                        SettingNode.Field(field("field", s.tool("field_field"), FieldType.TEXT, s.tool("schema_field"), mapOf("length" to TextLength.SHORT.name)), required = true, fieldOf = "tool"),
-                        SettingNode.Field(field("reduction", s.tool("field_reduction"), FieldType.CHOICE,
-                            config = choice(Reduction.entries.map { it.name }) { s.shared("reduction_${it.lowercase()}") }), required = true, default = Reduction.LAST.name),
-                        op(), target(), targetUnit()
-                    ),
-                    CriterionKind.ENTERED_BOOLEAN.name to listOf(
-                        SettingNode.Field(field("target", s.tool("field_expected"), FieldType.BOOLEAN), required = true, default = true),
-                        instructions()
-                    ),
-                    CriterionKind.ENTERED_NUMBER.name to listOf(
-                        SettingNode.Field(field("unit", s.shared("field_config_unit"), FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name))),
-                        op(), target(), instructions()
-                    ),
-                    CriterionKind.ENTERED_DURATION.name to listOf(
-                        op(), SettingNode.Field(field("target", s.tool("field_target"), FieldType.DURATION), required = true), instructions()
-                    ),
-                    CriterionKind.ENTERED_SCALE.name to listOf(op(), target(), instructions())
-                )
-            )
+            SettingNode.Group(Criterion.ENTERED, s.tool("field_field"), FieldTypeSettings.valueNodes(shared::shared, ENTERED_TYPES)),
+            SettingNode.Field(field("instructions", s.tool("field_instructions"), FieldType.TEXT, s.tool("schema_instructions"), mapOf("length" to TextLength.MEDIUM.name))),
+            SettingNode.Condition(Criterion.CONDITION, s.tool("field_condition"), reference = s.tool("reference_attempt_end"),
+                emptyPeriod = s.tool("period_of_attempt"), required = true, enteredField = Criterion.ENTERED)
         )
     }
 
     override fun getConfigSettings(context: Context): List<SettingNode> {
         val s = s(context)
         val shared = Strings.`for`(context = context)
-        val criteria = SettingNode.ListOf("criteria", s.tool("field_criteria"), SettingNode.Item.Of(criterionNodes(context)), summary = listOf("name", "kind"))
+        val criteria = SettingNode.ListOf("criteria", s.tool("field_criteria"), SettingNode.Item.Of(criterionNodes(context)), summary = listOf("name"))
         return listOf(
             SettingNode.Section(s.tool("section_definition"), listOf(
                 criteria,
@@ -224,6 +201,10 @@ object GoalToolType : ToolTypeContract {
             while (key in taken) key = "${base}_${n++}"
             taken.add(key)
             criterion.put("key", key)
+        }
+        // An entered criterion's condition is put on its own value: its left side is written here
+        all.filter { it.optJSONObject(Criterion.ENTERED)?.optString("type").isNullOrEmpty().not() }.forEach { criterion ->
+            criterion.optJSONObject(Criterion.CONDITION)?.put(Conditions.LEFT, JSONObject().put(Conditions.FIELD, Criterion.enteredPath(criterion.getString("key"))))
         }
         return completed
     }

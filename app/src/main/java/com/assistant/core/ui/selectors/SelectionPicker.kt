@@ -38,6 +38,7 @@ import com.assistant.core.ui.components.PeriodPicker
  * @param fields The fields of the tool reached, by path (rememberToolFields)
  * @param reference The name of what relative dates resolve against, null where a date is fixed
  *   when it is chosen
+ * @param emptyPeriod What no period means in this context, said while none is set
  */
 @Composable
 fun SelectionPicker(
@@ -46,7 +47,8 @@ fun SelectionPicker(
     target: ReferenceTarget,
     fields: Map<String, FieldDefinition>,
     reference: String?,
-    offerFields: Boolean
+    offerFields: Boolean,
+    emptyPeriod: String? = null
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -78,6 +80,7 @@ fun SelectionPicker(
         if (!chosen) return@Column
 
         UI.Text(text = s.shared("pointer_period"), type = TextType.SUBTITLE)
+        if (draft.period.isEmpty && emptyPeriod != null) UI.Text(text = emptyPeriod, type = TextType.CAPTION)
         PeriodPicker(draft.period, { onChange(draft.copy(period = it)) }, FieldType.DATETIME, reference)
 
         val tool = draft.tool

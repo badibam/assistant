@@ -21,7 +21,7 @@ import org.json.JSONObject
  * as a thing, reached in its zone.
  */
 @Composable
-fun TermPicker(term: JSONObject, constantField: FieldDefinition, onChange: (JSONObject) -> Unit, s: StringsContext) {
+fun TermPicker(term: JSONObject, constantField: FieldDefinition, onChange: (JSONObject) -> Unit, s: StringsContext, where: ReadingContext) {
     val context = LocalContext.current
     val kinds = listOf(READING to s.shared("variable_term_reading"), CONSTANT to s.shared("variable_term_constant"), VARIABLE to s.shared("variable_term_variable"))
     val kind = kinds.firstOrNull { term.has(it.first) }?.first ?: CONSTANT
@@ -46,7 +46,7 @@ fun TermPicker(term: JSONObject, constantField: FieldDefinition, onChange: (JSON
             { value -> onChange(JSONObject().put(VARIABLE, ReferenceTarget.referenceOf(value)?.id ?: "")) },
             context, required = true
         )
-        else -> ReadingPicker(term.getJSONObject(READING), s) { reading -> onChange(JSONObject().put(READING, reading)) }
+        else -> ReadingPicker(term.getJSONObject(READING), s, where) { reading -> onChange(JSONObject().put(READING, reading)) }
     }
 }
 

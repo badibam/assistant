@@ -41,6 +41,7 @@ object SettingVariants {
                         val option = config.optString(selector).ifEmpty { node.selector.default?.toString() }
                         keep(node.cases[option].orEmpty())
                     }
+                    is SettingNode.Condition -> config.optJSONObject(node.name)?.let { kept.put(node.name, it) }
                     is SettingNode.Section -> Unit
                 }
             }

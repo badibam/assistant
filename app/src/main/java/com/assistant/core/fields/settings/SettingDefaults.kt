@@ -20,7 +20,7 @@ object SettingDefaults {
                     val case = of(node.cases[option].orEmpty())
                     case.keys().forEach { config.put(it, case.get(it)) }
                 }
-                is SettingNode.ListOf, is SettingNode.Section -> Unit
+                is SettingNode.ListOf, is SettingNode.Section, is SettingNode.Condition -> Unit
             }
         }
         return config
