@@ -8,6 +8,7 @@ import com.assistant.core.ai.processing.FilterValues
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.ui.selectors.PointerDescription
@@ -51,7 +52,7 @@ class EnrichmentText private constructor(
 
     /** A block's text for the screen. */
     fun display(block: MessageSegment.EnrichmentBlock): String = when (block.type) {
-        EnrichmentType.POINTER -> PointerConfig.fromJson(block.config).let { PointerDescription.block(it, place(it), s) }
+        EnrichmentType.POINTER -> PointerConfig.fromJson(block.config) { s.shared(it) }.let { PointerDescription.block(it, place(it), s) }
         else -> EnrichmentProcessor(context).generateSummary(block.type, block.config)
     }
 
@@ -61,10 +62,10 @@ class EnrichmentText private constructor(
      */
     suspend fun prompt(block: MessageSegment.EnrichmentBlock): String = when (block.type) {
         EnrichmentType.POINTER -> {
-            val pointer = PointerConfig.fromJson(block.config)
+            val pointer = PointerConfig.fromJson(block.config) { s.shared(it) }
             val place = place(pointer)
             val fields: Map<String, FieldDefinition> =
-                if (place != null && pointer.target.kind == PointerKind.TOOL && pointer.isMention && pointer.filters.length() > 0)
+                if (place != null && pointer.target.kind == ReferenceKind.TOOL_INSTANCE && pointer.isMention && pointer.narrowed)
                     FilterValues.filterableFields(pointer.target.id!!, context, s)
                 else emptyMap()
             PointerDescription.prompt(pointer, place, fields, s)
@@ -74,8 +75,8 @@ class EnrichmentText private constructor(
 
     /** The pointer's target as it is now, null when it was deleted. */
     private fun place(pointer: PointerConfig): PointerPlace? = when (pointer.target.kind) {
-        PointerKind.ZONE -> zones[pointer.target.id]
-        PointerKind.TOOL -> tools[pointer.target.id]
+        ReferenceKind.ZONE -> zones[pointer.target.id]
+        ReferenceKind.TOOL_INSTANCE -> tools[pointer.target.id]
         else -> throw IllegalArgumentException("a pointer to ${pointer.target.kind} has no text yet")
     }
 

@@ -1,8 +1,5 @@
 package com.assistant.core.versioning
 
-import com.assistant.core.ai.enrichments.PointerConfig
-import com.assistant.core.ai.enrichments.PointerKind
-import com.assistant.core.ai.enrichments.PointerTarget
 import com.assistant.core.config.DateTimeConfig
 import com.assistant.core.config.FormatDefaults
 import com.assistant.core.database.entities.AppSettingCategories
@@ -14,7 +11,7 @@ import org.json.JSONObject
 import java.time.ZoneId
 
 /**
- * Brings the POINTER enrichments stored in messages to their v44 form (PointerConfig): a target
+ * Brings the POINTER enrichments stored in messages to their v44 form: a target
  * named by its kind and id, what is attached as two booleans, and the period as filters on
  * timestamp.
  *
@@ -53,20 +50,21 @@ object PointerAtV44 {
 
         val path = old.optString("selected_path").split(".")
         val target = when {
-            old.optString("selection_level") == "ZONE" && path.size == 2 && path[0] == "zones" -> PointerTarget(PointerKind.ZONE, path[1])
-            old.optString("selection_level") == "INSTANCE" && path.size == 2 && path[0] == "tools" -> PointerTarget(PointerKind.TOOL, path[1])
+            old.optString("selection_level") == "ZONE" && path.size == 2 && path[0] == "zones" -> JSONObject().put("kind", "ZONE").put("id", path[1])
+            old.optString("selection_level") == "INSTANCE" && path.size == 2 && path[0] == "tools" -> JSONObject().put("kind", "TOOL").put("id", path[1])
             else -> throw IllegalArgumentException("pointer path '${old.optString("selected_path")}' names neither a zone nor a tool")
         }
 
         val resources = old.optJSONArray("selected_resources")?.let { array -> (0 until array.length()).map { array.getString(it) } } ?: emptyList()
         val context = old.optString("selected_context")
 
-        return PointerConfig(
-            target = target,
-            config = context == "CONFIG" && "config" in resources,
-            entries = context == "DATA" && "data" in resources,
-            filters = old.optJSONObject("timestamp_selection")?.let { period(it, calendar) } ?: JSONArray()
-        ).toJson()
+        val filters = old.optJSONObject("timestamp_selection")?.let { period(it, calendar) } ?: JSONArray()
+        return JSONObject()
+            .put("target", target)
+            .put("attach", JSONObject()
+                .put("config", context == "CONFIG" && "config" in resources)
+                .put("entries", context == "DATA" && "data" in resources))
+            .apply { if (filters.length() > 0) put("filters", filters) }
     }
 
     /** The bounds of a pointer's period as filters on timestamp, from its first instant to its last. */

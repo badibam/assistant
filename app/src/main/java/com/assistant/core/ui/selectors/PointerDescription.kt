@@ -1,15 +1,16 @@
 package com.assistant.core.ui.selectors
 
 import com.assistant.core.ai.enrichments.PointerConfig
-import com.assistant.core.ai.enrichments.PointerKind
 import com.assistant.core.ai.enrichments.PointerPlace
 import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.Durations
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.FilterOperator
+import com.assistant.core.selection.Edge
+import com.assistant.core.selection.ReferenceKind
+import com.assistant.core.selection.TimePoint
 import com.assistant.core.strings.StringsContext
-import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.RelativePeriod
 import com.assistant.core.ui.components.generatePeriodLabel
 import com.assistant.core.ui.components.generateRelativePeriodLabel
@@ -29,8 +30,6 @@ object PointerDescription {
     /** The label of a condition. */
     fun operator(op: FilterOperator, s: StringsContext): String = s.shared("filter_op_${op.name.lowercase()}")
 
-    private val RELATIVE = Regex("^-?\\d+_[A-Z]+$")
-
     private fun isDate(field: FieldDefinition) = field.type == FieldType.DATE || field.type == FieldType.DATETIME
 
     /** A stored value of [field] as text. */
@@ -41,11 +40,8 @@ object PointerDescription {
             value.joinToString(", ") { choice.labelOf(it.toString()) }
         }
         field.type == FieldType.CHOICE -> ChoiceSettings.fromConfig(field.config).labelOf(value.toString())
-        // A date bound resolved at each send: now, or a period relative to it
-        isDate(field) && value == "NOW" -> s.shared("period_now_label")
-        isDate(field) && value is String && RELATIVE.matches(value) -> value.split("_").let { (offset, type) ->
-            generateRelativePeriodLabel(RelativePeriod(offset.toInt(), PeriodType.valueOf(type)), s)
-        }
+        // A date resolved at each send: now, or a side of a period relative to it
+        isDate(field) && TimePoint.isRelative(value) -> relative(TimePoint.read(value) { s.shared(it) }, s)
         field.type == FieldType.DURATION && value is Number -> Durations.format(value.toLong(), field.config, s)
         field.type == FieldType.DATETIME && value is Number -> DateUtils.formatFullDateTime(value.toLong())
         field.type == FieldType.BOOLEAN -> s.shared(if (value == true) "label_yes" else "label_no")
@@ -102,10 +98,14 @@ object PointerDescription {
     private fun side(label: String, end: Boolean, s: StringsContext): String =
         s.shared(if (end) "period_bound_end" else "period_bound_start").format(label.replaceFirstChar { it.lowercase() })
 
-    /**
-     * A date filter's bound in words, or null when the filter is not one. A relative period is
-     * read at its start for ≥ and <, at its end for > and ≤, as FilterValues resolves it.
-     */
+    /** A date resolved at each send, in words: now, or the side of the period it stands on. */
+    private fun relative(point: TimePoint, s: StringsContext): String = when (point) {
+        TimePoint.Now -> s.shared("period_now_label").lowercase()
+        is TimePoint.Relative -> side(generateRelativePeriodLabel(RelativePeriod(point.offset, point.unit), s), point.edge == Edge.END, s)
+        is TimePoint.Fixed -> point.value.toString()
+    }
+
+    /** A date filter's bound in words ("since the start of “yesterday”"), or null when the filter is not one. */
     private fun dateBound(field: FieldDefinition, op: FilterOperator, raw: Any?, s: StringsContext): String? {
         val key = when (op) {
             FilterOperator.GREATER_OR_EQUAL -> "filter_date_from"
@@ -115,15 +115,7 @@ object PointerDescription {
             else -> return null
         }
         if (!isDate(field) || raw == null) return null
-        val bound = when {
-            raw == "NOW" -> s.shared("period_now_label").lowercase()
-            raw is String && RELATIVE.matches(raw) -> raw.split("_").let { (offset, type) ->
-                side(generateRelativePeriodLabel(RelativePeriod(offset.toInt(), PeriodType.valueOf(type)), s),
-                    end = op == FilterOperator.GREATER || op == FilterOperator.LESS_OR_EQUAL, s)
-            }
-            else -> value(field, raw, s)
-        }
-        return s.shared(key).format(bound)
+        return s.shared(key).format(value(field, raw, s))
     }
 
     /** What narrows the entries, in words: the period, then each filter, then the fields kept. */
@@ -159,53 +151,56 @@ object PointerDescription {
      * null once deleted, a tool with its type), then what goes with it and what narrows it.
      */
     fun block(pointer: PointerConfig, place: PointerPlace?, s: StringsContext): String {
-        val kind = s.shared(if (pointer.target.kind == PointerKind.TOOL) "ai_enrichment_pointer_tool" else "ai_enrichment_pointer_zone")
+        val kind = s.shared(if (pointer.target.kind == ReferenceKind.TOOL_INSTANCE) "ai_enrichment_pointer_tool" else "ai_enrichment_pointer_zone")
         val name = when {
             place == null -> s.shared("pointer_target_deleted")
             place.typeName != null -> "${place.name} (${place.typeName})"
             else -> place.name
         }
-        // A period is a filter on timestamp; any other narrows the entries by their values
-        val filtered = (0 until pointer.filters.length()).map { pointer.filters.getJSONObject(it).optString("field") }
         return listOfNotNull(
             "$kind : $name",
             s.shared("ai_enrichment_pointer_context_config").takeIf { pointer.config },
             s.shared("ai_enrichment_pointer_context_data").takeIf { pointer.entries },
-            s.shared("ai_period_filtered").takeIf { "timestamp" in filtered },
-            s.shared("ai_values_filtered").takeIf { filtered.any { it != "timestamp" } }
+            s.shared("ai_period_filtered").takeIf { !pointer.selection.period.isEmpty },
+            s.shared("ai_values_filtered").takeIf { pointer.selection.filters.length() > 0 }
         ).joinToString(", ")
     }
 
     /**
      * What the AI reads of a pointer: the block's text with the target's id, and, for entries
      * narrowed but not attached, how to read them, for the AI to run if it needs to: a tool's
-     * query, or the filters of a zone's period, to read each of its tools with. [fields] are the
-     * tool's, which say how each filter's value is written for the AI; a zone's filters are on
-     * timestamp alone.
+     * query, or a zone's period, to read each of its tools with. [fields] are the tool's, which
+     * say how each filter's value is written for the AI.
      */
     fun prompt(pointer: PointerConfig, place: PointerPlace?, fields: Map<String, FieldDefinition>, s: StringsContext): String {
         val base = "${block(pointer, place, s)} (id = ${pointer.target.id})"
-        if (place == null || !pointer.isMention || pointer.filters.length() == 0) return base
+        if (place == null || !pointer.isMention || !pointer.narrowed) return base
         val zone = AppConfigManager.getDateTimeConfig().getZoneId()
-        // Instants and durations as the AI writes them, ISO 8601, by the type of their field
+        // Instants and durations as the AI writes them, ISO 8601, by the type of their field;
+        // a relative date is written as it is stored
         fun model(type: FieldType?, value: Any?): Any? = when {
             value is JSONArray -> JSONArray((0 until value.length()).map { model(type, value.get(it)) })
             value is Number && type == FieldType.DATETIME -> DateTimeConverter.timestampToISO(value.toLong(), zone)
             value is Number && type == FieldType.DURATION -> java.time.Duration.ofMillis(value.toLong()).toString()
             else -> value
         }
-        val filters = JSONArray((0 until pointer.filters.length()).map { i ->
-            val filter = JSONObject(pointer.filters.getJSONObject(i).toString())
+        val selection = pointer.selection
+        val period = selection.period.toJson().let { json ->
+            JSONObject().apply { for (key in json.keys()) put(key, model(FieldType.DATETIME, json.get(key))) }
+        }
+        if (pointer.target.kind == ReferenceKind.ZONE) return "$base — ${s.shared("pointer_prompt_zone_period").format(period.toString())}"
+        val filters = JSONArray((0 until selection.filters.length()).map { i ->
+            val filter = JSONObject(selection.filters.getJSONObject(i).toString())
             val path = filter.optString("field")
             val type = fields[path]?.type ?: FieldType.DATETIME.takeIf { path == "timestamp" }
             if (filter.has("value")) filter.put("value", model(type, filter.get("value")))
             filter
         })
-        if (pointer.target.kind == PointerKind.ZONE) return "$base — ${s.shared("pointer_prompt_zone_filters").format(filters.toString())}"
         val query = JSONObject().put("type", "TOOL_DATA").put("params", JSONObject().apply {
             put("id", pointer.target.id)
-            put("filters", filters)
-            pointer.fields?.let { put("fields", JSONArray((listOf("id") + it).distinct())) }
+            if (period.length() > 0) put("period", period)
+            if (filters.length() > 0) put("filters", filters)
+            selection.fields?.let { put("fields", JSONArray((listOf("id") + it).distinct())) }
         })
         return "$base — ${s.shared("pointer_prompt_query").format(query.toString())}"
     }

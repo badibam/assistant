@@ -4,6 +4,8 @@ import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.EnrichmentType
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.selection.EntrySelection
+import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.JsonUtils
@@ -214,20 +216,21 @@ class EnrichmentProcessor(
      * The queries a POINTER sends with the message: the target's config and its schema when the
      * config is attached, its entries and their schema when they are. A mention sends none.
      *
-     * The entries are read with the pointer's filters and fields, as tool_data.get takes them;
-     * a relative period or "NOW" among the values is resolved by the command transformer, at
-     * each send, so an automation's pointer reads its own period at every run.
+     * The entries are read with the selection's period, filters and fields; a relative date
+     * among them is resolved by the command transformer, at each send, so an automation's
+     * pointer reads its own period at every run.
      */
     private suspend fun generatePointerQueries(
         config: JSONObject,
         isRelative: Boolean
     ): List<DataCommand> {
-        val pointer = PointerConfig.fromJson(config)
+        val pointer = PointerConfig.fromJson(config) { s.shared(it) }
         val id = pointer.target.id
-        LogManager.aiEnrichment("POINTER: target=${pointer.target}, config=${pointer.config}, entries=${pointer.entries}, filters=${pointer.filters}", "VERBOSE")
+        LogManager.aiEnrichment("POINTER: selection=${pointer.selection.toJson()}, config=${pointer.config}, entries=${pointer.entries}", "VERBOSE")
+        pointer.selection.problem()?.let { throw IllegalArgumentException("POINTER: $it") }
 
         return when (pointer.target.kind) {
-            PointerKind.ZONE -> buildList {
+            ReferenceKind.ZONE -> buildList {
                 if (pointer.config) {
                     add(DataCommand(
                         id = buildQueryId("zone_config", mapOf("id" to id!!)),
@@ -239,10 +242,10 @@ class EnrichmentProcessor(
                 // The entries of a zone: those of each of its tools over the period, one read per
                 // tool with its schema, as a tool's pointer sends them
                 if (pointer.entries) {
-                    for (toolInstanceId in zoneToolIds(id!!)) addAll(entriesQueries(toolInstanceId, pointer, isRelative))
+                    for (toolInstanceId in zoneToolIds(id!!)) addAll(entriesQueries(toolInstanceId, pointer.selection, isRelative))
                 }
             }
-            PointerKind.TOOL -> buildList {
+            ReferenceKind.TOOL_INSTANCE -> buildList {
                 val toolInstanceId = id!!
                 if (pointer.config) {
                     val params = mapOf<String, Any>("id" to toolInstanceId)
@@ -254,22 +257,26 @@ class EnrichmentProcessor(
                     ))
                     add(configSchemaQuery(resolveTooltype(toolInstanceId), isRelative))
                 }
-                if (pointer.entries) addAll(entriesQueries(toolInstanceId, pointer, isRelative))
+                if (pointer.entries) addAll(entriesQueries(toolInstanceId, pointer.selection, isRelative))
             }
             // No selector designates them yet
-            PointerKind.APP, PointerKind.ENTRY -> {
+            ReferenceKind.APP, ReferenceKind.ENTRY -> {
                 LogManager.aiEnrichment("POINTER: a ${pointer.target.kind} target cannot be read yet", "WARN")
                 emptyList()
             }
         }
     }
 
-    /** The entries of [toolInstanceId] with the pointer's filters and fields, then their schema. */
-    private fun entriesQueries(toolInstanceId: String, pointer: PointerConfig, isRelative: Boolean): List<DataCommand> {
+    /**
+     * The entries of [toolInstanceId] with the selection's period, filters and fields, then their
+     * schema. A zone's selection brings its period alone.
+     */
+    private fun entriesQueries(toolInstanceId: String, selection: EntrySelection, isRelative: Boolean): List<DataCommand> {
         val params = mutableMapOf<String, Any>("id" to toolInstanceId)
-        if (pointer.filters.length() > 0) params["filters"] = JsonUtils.toList(pointer.filters)
+        if (!selection.period.isEmpty) params["period"] = JsonUtils.toMap(selection.period.toJson())
+        if (selection.filters.length() > 0) params["filters"] = JsonUtils.toList(selection.filters)
         // The id always goes, for the AI to act on an entry it is shown
-        pointer.fields?.let { params["fields"] = (listOf("id") + it).distinct() }
+        selection.fields?.let { params["fields"] = (listOf("id") + it).distinct() }
         return listOf(
             DataCommand(id = buildQueryId("tool_data", params), type = "TOOL_DATA", params = params, isRelative = isRelative),
             entriesSchemaQuery(toolInstanceId, isRelative)
