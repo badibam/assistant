@@ -346,6 +346,7 @@ fun ZoneScreen(
                         showAvailableToolsForGroup = null
                     },
                     onToolClick = { toolId -> openEntryId = waiting.oldest[toolId]; selectedToolInstanceId = toolId },
+                    onOpenEntry = { tool, entryId -> openEntryId = entryId; selectedToolInstanceId = tool.id },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype
@@ -429,6 +430,7 @@ fun ZoneScreen(
                         showAvailableToolsForGroup = null
                     },
                     onToolClick = { toolId -> openEntryId = waiting.oldest[toolId]; selectedToolInstanceId = toolId },
+                    onOpenEntry = { tool, entryId -> openEntryId = entryId; selectedToolInstanceId = tool.id },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype
@@ -629,6 +631,7 @@ private fun GroupSection(
     onDuplicateTool: () -> Unit,
     onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
+    onOpenEntry: (ToolInstance, String) -> Unit,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
@@ -766,7 +769,7 @@ private fun GroupSection(
     }
 
     // The group's tools on their grid
-    com.assistant.core.ui.components.ToolGrid(groupTools, { onToolClick(it.id) }, onToolLongClick)
+    com.assistant.core.ui.components.ToolGrid(groupTools, { onToolClick(it.id) }, onToolLongClick, onOpenEntry)
 
     // The group's variables, in one compact card
     com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)
@@ -815,6 +818,7 @@ private fun UngroupedSection(
     onDuplicateTool: () -> Unit,
     onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
+    onOpenEntry: (ToolInstance, String) -> Unit,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
@@ -956,7 +960,7 @@ private fun UngroupedSection(
     }
 
     // The ungrouped tools on their grid
-    com.assistant.core.ui.components.ToolGrid(toolInstances, { onToolClick(it.id) }, onToolLongClick)
+    com.assistant.core.ui.components.ToolGrid(toolInstances, { onToolClick(it.id) }, onToolLongClick, onOpenEntry)
 
     // The ungrouped variables, in one compact card
     com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)

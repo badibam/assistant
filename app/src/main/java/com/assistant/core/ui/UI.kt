@@ -490,23 +490,41 @@ object UI {
         }
     }
     
+    /**
+     * A tool's tile, laid out by its display mode: the header (icon and name) the core draws, the
+     * summary and the body its tool type draws (ToolTile), each on whole cells of the grid.
+     *
+     * @param onOpenEntry Opens the tool on one of its entries, touched on the tile
+     */
     @Composable
     fun ToolCard(
         tool: ToolInstance,
         displayMode: DisplayMode,
         context: android.content.Context,
         onClick: () -> Unit,
-        onLongClick: () -> Unit = { }
+        onLongClick: () -> Unit = { },
+        onOpenEntry: (String) -> Unit = { }
     ) {
         // Something waiting among its entries (LocalWaiting) is marked beside its name
         val waiting = LocalWaiting.current.tool(tool.id)
-        // Content defined at core level + tool types with UI.*
         val toolType = requireNotNull(ToolTypeManager.getToolType(tool.tooltype)) { "No tool type '${tool.tooltype}' for tool ${tool.id}" }
+        val tile = toolType.rememberTile(tool, onOpenEntry)
         CurrentTheme.current.ToolCardContainer(
             displayMode = displayMode,
-            onClick = onClick, 
+            onClick = onClick,
             onLongClick = onLongClick
         ) {
+            // The header and the summary side by side, each on half the width
+            @Composable
+            fun HeaderAndSummary(modifier: Modifier) = Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
+                    ToolCardHeader(tool, context, waiting)
+                }
+                Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    tile.Summary()
+                }
+            }
+
             when (displayMode) {
                 DisplayMode.ICON -> {
                     // The icon alone, centered in its cell
@@ -523,47 +541,38 @@ object UI {
                         ToolCardHeader(tool, context, waiting)
                     }
                 }
-                DisplayMode.LINE -> {
-                    Row(
-                        modifier = Modifier.fillMaxHeight(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Left half: ToolCardHeader centered vertically and horizontally
-                        Box(
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                            contentAlignment = Alignment.Center
-                        ) {
+                DisplayMode.LINE -> HeaderAndSummary(Modifier.fillMaxSize())
+                DisplayMode.CONDENSED -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
                             ToolCardHeader(tool, context, waiting)
                         }
-                        
-                        // Right half: what the tool type shows there
-                        Box(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            toolType.TileContent(tool, displayMode)
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            tile.Summary()
                         }
                     }
                 }
-                DisplayMode.CONDENSED, DisplayMode.EXTENDED, DisplayMode.SQUARE, DisplayMode.FULL -> {
-                    Column {
-                        Row {
-                            // Icon + title on left (fixed part)
-                            ToolCardHeader(tool, context, waiting)
-                            // Free zone at top right defined by tool type
-                            Box {
-                                // TODO: Top free content defined by tool type according to mode
-                            }
+                DisplayMode.EXTENDED, DisplayMode.SQUARE -> {
+                    // One row of cells for the header and the summary, the others for the body
+                    val rows = if (displayMode == DisplayMode.EXTENDED) 1 else 3
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        HeaderAndSummary(Modifier.weight(1f).fillMaxWidth())
+                        Box(modifier = Modifier.weight(rows.toFloat()).fillMaxWidth()) {
+                            tile.Body(rows)
                         }
-                        // Below the header: what the tool type shows there
-                        Box {
-                            toolType.TileContent(tool, displayMode)
-                        }
+                    }
+                }
+                DisplayMode.FULL -> {
+                    // As tall as the body needs; the grid rounds the tile up to whole cells
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        HeaderAndSummary(Modifier.fillMaxWidth().height(IntrinsicSize.Min))
+                        tile.Body(null)
                     }
                 }
             }
         }
     }
-    
+
     // =====================================
     // REUSABLE COMPONENTS
     // =====================================

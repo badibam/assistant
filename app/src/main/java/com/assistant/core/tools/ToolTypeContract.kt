@@ -100,6 +100,30 @@ interface ToolTypeContract {
     )
 
     /**
+     * The tile of [tool] (ToolTile): its summary and its body, placed by UI.ToolCard as its
+     * display mode lays them out. [open] opens the tool on one of its entries, as this tool type
+     * understands opening one (Screen's openEntryId): a tile opens an entry it shows when touched.
+     *
+     * While a tool type still shows its tile through TileContent, the summary is its LINE content
+     * and the body its EXTENDED, SQUARE or FULL one.
+     */
+    @Composable
+    fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (entryId: String) -> Unit): ToolTile =
+        androidx.compose.runtime.remember(tool) {
+            object : ToolTile {
+                @Composable
+                override fun Summary() = TileContent(tool, com.assistant.core.ui.DisplayMode.LINE)
+
+                @Composable
+                override fun Body(rows: Int?) = TileContent(tool, when (rows) {
+                    null -> com.assistant.core.ui.DisplayMode.FULL
+                    1 -> com.assistant.core.ui.DisplayMode.EXTENDED
+                    else -> com.assistant.core.ui.DisplayMode.SQUARE
+                })
+            }
+        }
+
+    /**
      * What a tool of this type shows in its tile on a zone, beside the header UI.ToolCard draws:
      * the right half of a LINE tile, the space under the header of a CONDENSED, EXTENDED, SQUARE
      * or FULL one. The ICON and MINIMAL tiles have no room for it and never ask.

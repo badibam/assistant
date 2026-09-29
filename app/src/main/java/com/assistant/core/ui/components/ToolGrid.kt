@@ -29,7 +29,8 @@ import org.json.JSONObject
 fun ToolGrid(
     tools: List<ToolInstance>,
     onToolClick: (ToolInstance) -> Unit,
-    onToolLongClick: (ToolInstance) -> Unit
+    onToolLongClick: (ToolInstance) -> Unit,
+    onOpenEntry: (ToolInstance, String) -> Unit
 ) {
     if (tools.isEmpty()) return
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -47,7 +48,8 @@ fun ToolGrid(
                             displayMode = modes[i],
                             context = context,
                             onClick = { onToolClick(tool) },
-                            onLongClick = { onToolLongClick(tool) }
+                            onLongClick = { onToolLongClick(tool) },
+                            onOpenEntry = { entryId -> onOpenEntry(tool, entryId) }
                         )
                     }
                 }
