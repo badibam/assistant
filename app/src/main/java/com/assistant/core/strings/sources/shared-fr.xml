@@ -1103,6 +1103,14 @@
     <string name="service_error_references_missing">Donnez les références à nommer dans "references" : une liste de {"kind", "id"}.</string>
     <string name="action_verbalize_references_names">Lecture des noms des choses liées</string>
     <string name="action_verbalize_references_choices">Liste de ce qu\'un lien peut désigner</string>
+    <string name="service_error_reading_param">Une lecture demande "%1$s".</string>
+    <string name="service_error_reading_source">Une lecture lit les entrées d\'une instance d\'outil, pas d\'un %1$s.</string>
+    <string name="service_error_reading_reduction">Réduction inconnue : %1$s. Acceptées : %2$s.</string>
+    <string name="service_error_reading_reduction_type">%1$s ne réduit pas un champ de type %2$s. Il accepte : %3$s.</string>
+    <string name="reading_failure_no_entry">%1$s : aucune entrée dans la période</string>
+    <string name="reading_failure_missing_value">%1$d entrée(s) sans réponse à %2$s</string>
+    <string name="reading_failure_source_not_found">l\'outil lu n\'existe plus</string>
+    <string name="action_verbalize_readings_read">Lecture d\'une valeur dans des entrées</string>
     <string name="duration_amount">%1$s %2$s</string>
     <string name="duration_unit_day">j</string>
     <string name="duration_unit_hour">h</string>

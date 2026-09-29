@@ -11,8 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.assistant.core.fields.ToolFields
 import com.assistant.core.selection.ReferenceKind
-import com.assistant.core.ai.processing.FilterValues
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.navigation.DataNavigator
 import com.assistant.core.navigation.data.NodeType
@@ -83,7 +83,7 @@ fun PointerSelector(
     LaunchedEffect(selection.tool?.id) {
         val toolId = selection.tool?.id
         fields = if (toolId == null) emptyMap() else try {
-            FilterValues.filterableFields(toolId, context, s)
+            ToolFields.filterable(toolId, context, s)
         } catch (e: Exception) {
             LogManager.ui("PointerSelector: fields of $toolId not loaded: ${e.message}", "ERROR", e)
             errorMessage = s.shared("error_loading_options")

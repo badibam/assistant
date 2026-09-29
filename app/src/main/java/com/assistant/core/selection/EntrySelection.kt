@@ -1,5 +1,7 @@
 package com.assistant.core.selection
 
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldType
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -59,6 +61,34 @@ data class EntrySelection(
         filters.length() > 0 || fields != null -> "filters and fields narrow the entries of a tool instance, not of a ${target.kind}"
         !period.isEmpty && target.kind != ReferenceKind.ZONE -> "a period narrows the entries of a tool instance or a zone, not of a ${target.kind}"
         else -> null
+    }
+
+    /**
+     * The filters of tool_data.get this selection reads its entries with: its period on
+     * timestamp, then its filters, each relative date resolved by [resolver] in the stored form of
+     * its field ([fields], by path). A filter on a field the tool does not have is passed as it
+     * is, for the service to refuse it.
+     *
+     * @throws IllegalArgumentException on a relative date that does not read
+     */
+    fun storedFilters(fields: Map<String, FieldDefinition>, resolver: TimeResolver, text: (String) -> String): JSONArray {
+        val stored = JSONArray()
+        period.timestampFilters(resolver).forEach { stored.put(JSONObject(it)) }
+        for (i in 0 until filters.length()) {
+            val filter = JSONObject(filters.getJSONObject(i).toString())
+            val type = fields[filter.optString("field")]?.type
+            if (type == FieldType.DATE || type == FieldType.DATETIME) {
+                fun resolved(value: Any?): Any? =
+                    if (TimePoint.isRelative(value)) resolver.resolve(TimePoint.read(value!!, text), type) else value
+                when (val value = filter.opt("value")) {
+                    is JSONArray -> filter.put("value", JSONArray((0 until value.length()).map { resolved(value.get(it)) }))
+                    null -> {}
+                    else -> filter.put("value", resolved(value))
+                }
+            }
+            stored.put(filter)
+        }
+        return stored
     }
 
     fun toJson(): JSONObject = JSONObject().apply {

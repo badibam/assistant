@@ -4,10 +4,10 @@ import android.content.Context
 import com.assistant.core.ai.data.EnrichmentType
 import com.assistant.core.ai.data.MessageSegment
 import com.assistant.core.ai.data.RichMessage
-import com.assistant.core.ai.processing.FilterValues
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.ToolFields
 import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
@@ -66,7 +66,7 @@ class EnrichmentText private constructor(
             val place = place(pointer)
             val fields: Map<String, FieldDefinition> =
                 if (place != null && pointer.target.kind == ReferenceKind.TOOL_INSTANCE && pointer.isMention && pointer.narrowed)
-                    FilterValues.filterableFields(pointer.target.id!!, context, s)
+                    ToolFields.filterable(pointer.target.id!!, context, s)
                 else emptyMap()
             PointerDescription.prompt(pointer, place, fields, s)
         }

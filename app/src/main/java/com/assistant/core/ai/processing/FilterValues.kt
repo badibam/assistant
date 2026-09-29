@@ -1,20 +1,12 @@
 package com.assistant.core.ai.processing
 
-import android.content.Context
 import com.assistant.core.ai.prompts.ModelValues
-import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.coordinator.isSuccess
-import com.assistant.core.fields.EntryFilters
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.FieldValueSchema
-import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.selection.TimePoint
 import com.assistant.core.selection.TimeResolver
-import com.assistant.core.strings.StringsContext
-import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.DateTimeConverter
-import com.assistant.core.utils.JsonUtils
 
 /**
  * The filters of a TOOL_DATA query with their values in the stored form, from the forms the AI
@@ -59,20 +51,6 @@ object FilterValues {
             }
             else -> filter
         }
-    }
-
-    /** The fields a filter on the entries of [toolInstanceId] may name, read from its current config. */
-    suspend fun filterableFields(toolInstanceId: String, context: Context, s: StringsContext): Map<String, FieldDefinition> {
-        val result = Coordinator(context).processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
-        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-        @Suppress("UNCHECKED_CAST")
-        val config = (toolInstance?.get("config") as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
-        val toolType = (toolInstance?.get("tooltype") as? String)?.let { ToolTypeManager.getToolType(it) }
-        if (!result.isSuccess || config == null || toolType == null) {
-            throw IllegalStateException(s.shared("service_error_tool_instance_not_found"))
-        }
-        val extra = config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
-        return EntryFilters.filterableFields(toolType.getEntryFields(config, context), extra) { s.shared(it) }
     }
 
     /** [value], or each of the values of a list (between, in), through [convert]. */

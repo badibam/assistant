@@ -3,6 +3,7 @@ package com.assistant.core.ai.processing
 import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.ExecutableCommand
+import com.assistant.core.fields.ToolFields
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
 import com.assistant.core.selection.EntryPeriod
@@ -186,7 +187,7 @@ object CommandTransformer {
             ?.let { EntryPeriod.fromJson(JsonUtils.toJSONObject(it)) { key -> s.shared(key) }.timestampFilters(resolver) }
             ?: emptyList()
         val valueFilters = (command.params["filters"] as? List<*>)?.let { filters ->
-            FilterValues.toStored(filters, FilterValues.filterableFields(toolInstanceId, context, s), resolver) { s.shared(it) }
+            FilterValues.toStored(filters, ToolFields.filterable(toolInstanceId, context, s), resolver) { s.shared(it) }
         } ?: emptyList()
         if (periodFilters.isNotEmpty() || valueFilters.isNotEmpty()) params["filters"] = periodFilters + valueFilters
 
