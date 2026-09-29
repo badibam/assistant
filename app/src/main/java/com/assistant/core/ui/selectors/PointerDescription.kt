@@ -151,7 +151,11 @@ object PointerDescription {
      * null once deleted, a tool with its type), then what goes with it and what narrows it.
      */
     fun block(pointer: PointerConfig, place: PointerPlace?, s: StringsContext): String {
-        val kind = s.shared(if (pointer.target.kind == ReferenceKind.TOOL_INSTANCE) "ai_enrichment_pointer_tool" else "ai_enrichment_pointer_zone")
+        val kind = s.shared(when (pointer.target.kind) {
+            ReferenceKind.TOOL_INSTANCE -> "ai_enrichment_pointer_tool"
+            ReferenceKind.ENTRY -> "ai_enrichment_pointer_entry"
+            else -> "ai_enrichment_pointer_zone"
+        })
         val name = when {
             place == null -> s.shared("pointer_target_deleted")
             place.typeName != null -> "${place.name} (${place.typeName})"

@@ -29,7 +29,7 @@ fun rememberDisplayText(message: RichMessage): String {
     val text by produceState(initialValue = withBlocks("…"), message) {
         whileNamesHold {
             value = try {
-                EnrichmentText.load(context).display(message)
+                EnrichmentText.load(context, EnrichmentText.blocksOf(listOf(message))).display(message)
             } catch (e: Exception) {
                 LogManager.aiUI("Enrichment texts not read: ${e.message}", "ERROR", e)
                 withBlocks(s.shared("ai_enrichment_unreadable"))
@@ -47,7 +47,7 @@ fun rememberDisplayText(block: MessageSegment.EnrichmentBlock): String {
     val text by produceState(initialValue = "…", block) {
         whileNamesHold {
             value = try {
-                EnrichmentText.load(context).display(block)
+                EnrichmentText.load(context, listOf(block)).display(block)
             } catch (e: Exception) {
                 LogManager.aiUI("Enrichment text not read: ${e.message}", "ERROR", e)
                 s.shared("ai_enrichment_unreadable")

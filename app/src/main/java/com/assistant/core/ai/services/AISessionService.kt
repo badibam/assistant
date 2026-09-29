@@ -926,13 +926,15 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             // Build session list with preview and message count; the previews' pointers are named
             // as their targets are now, read once for the whole page
-            val enrichmentText = com.assistant.core.ai.enrichments.EnrichmentText.load(context)
+            val firstMessages = sessionEntities.associate { it.id to dao.getFirstUserMessage(it.id) }
+            val enrichmentText = com.assistant.core.ai.enrichments.EnrichmentText.load(context,
+                com.assistant.core.ai.enrichments.EnrichmentText.blocksOf(firstMessages.values.mapNotNull { m -> m?.richContentJson?.let { RichMessage.fromJson(it) } }))
             val sessions = sessionEntities.map { session ->
                 // Get message count
                 val messageCount = dao.getMessageCountForSession(session.id)
 
                 // Get first user message for preview
-                val firstMessage = dao.getFirstUserMessage(session.id)
+                val firstMessage = firstMessages[session.id]
                 val preview = if (firstMessage?.richContentJson != null) {
                     try {
                         val text = RichMessage.fromJson(firstMessage.richContentJson)?.let { enrichmentText.display(it) } ?: ""

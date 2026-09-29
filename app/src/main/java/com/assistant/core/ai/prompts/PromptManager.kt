@@ -128,7 +128,8 @@ object PromptManager {
 
         // 7. A user message reaches the AI as text, its pointers naming their targets as they are
         //    now, with their ids: a message only stores what the user chose (EnrichmentText)
-        val enrichmentText = com.assistant.core.ai.enrichments.EnrichmentText.load(context)
+        val enrichmentText = com.assistant.core.ai.enrichments.EnrichmentText.load(context,
+            com.assistant.core.ai.enrichments.EnrichmentText.blocksOf(sessionMessages.mapNotNull { it.richContent }))
         val promptMessages = sessionMessages.map { message ->
             message.richContent?.let { rich -> message.copy(richContent = null, textContent = enrichmentText.prompt(rich)) } ?: message
         }

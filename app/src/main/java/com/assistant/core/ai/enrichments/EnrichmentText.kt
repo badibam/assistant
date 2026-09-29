@@ -30,7 +30,8 @@ data class PointerPlace(val name: String, val typeName: String? = null)
 class EnrichmentText private constructor(
     private val context: Context,
     private val zones: Map<String, PointerPlace>,
-    private val tools: Map<String, PointerPlace>
+    private val tools: Map<String, PointerPlace>,
+    private val entries: Map<String, PointerPlace>
 ) {
     private val s = Strings.`for`(context = context)
 
@@ -77,12 +78,16 @@ class EnrichmentText private constructor(
     private fun place(pointer: PointerConfig): PointerPlace? = when (pointer.target.kind) {
         ReferenceKind.ZONE -> zones[pointer.target.id]
         ReferenceKind.TOOL_INSTANCE -> tools[pointer.target.id]
-        else -> throw IllegalArgumentException("a pointer to ${pointer.target.kind} has no text yet")
+        ReferenceKind.ENTRY -> entries[pointer.target.id]
+        ReferenceKind.APP -> throw IllegalArgumentException("a pointer to the app has no text yet")
     }
 
     companion object {
-        /** Reads the zones and the tools the blocks may name. */
-        suspend fun load(context: Context): EnrichmentText {
+        /**
+         * Reads the zones and the tools the blocks may name, and the entries [blocks] name: the
+         * blocks about to be shown or sent.
+         */
+        suspend fun load(context: Context, blocks: List<MessageSegment.EnrichmentBlock>): EnrichmentText {
             val coordinator = Coordinator(context)
 
             val zonesResult = coordinator.processUserAction("zones.list", emptyMap())
@@ -100,7 +105,20 @@ class EnrichmentText private constructor(
                     tool["id"] as String to PointerPlace(tool["name"] as? String ?: "", typeName)
                 }
 
-            return EnrichmentText(context, zones, tools)
+            // The entries named, as they are called now; one deleted since is absent
+            val s = Strings.`for`(context = context)
+            val entryIds = blocks.filter { it.type == EnrichmentType.POINTER }
+                .mapNotNull { runCatching { PointerConfig.fromJson(it.config) { k -> s.shared(k) } }.getOrNull() }
+                .filter { it.target.kind == ReferenceKind.ENTRY }.mapNotNull { it.target.id }.distinct()
+            val entries = com.assistant.core.fields.loadReferenceNames(entryIds.map { com.assistant.core.selection.Reference(ReferenceKind.ENTRY, it) }, context)
+                .mapNotNull { (reference, name) -> (name as? com.assistant.core.fields.ReferenceName.Named)?.let { reference.id!! to PointerPlace(it.name) } }
+                .toMap()
+
+            return EnrichmentText(context, zones, tools, entries)
         }
+
+        /** The blocks of [messages], for [load]. */
+        fun blocksOf(messages: List<RichMessage>): List<MessageSegment.EnrichmentBlock> =
+            messages.flatMap { it.segments }.filterIsInstance<MessageSegment.EnrichmentBlock>()
     }
 }

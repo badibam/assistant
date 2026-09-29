@@ -65,6 +65,15 @@ fun MainScreen() {
     var showData by rememberSaveable { mutableStateOf(false) }
     var showLogs by rememberSaveable { mutableStateOf(false) }
     var showAIChat by rememberSaveable { mutableStateOf(false) }
+
+    // A chat asked for from any screen, with its content: the zone left for the chat, which lives here
+    LaunchedEffect(Unit) {
+        com.assistant.core.ai.orchestration.ChatRequests.requests.collect { prefill ->
+            com.assistant.core.ai.orchestration.AIOrchestrator.startNewChatSession(prefill)
+            selectedZoneId = null
+            showAIChat = true
+        }
+    }
     var showHistory by rememberSaveable { mutableStateOf(false) }
     var showExitConfirm by remember { mutableStateOf(false) }
     
@@ -310,10 +319,7 @@ fun MainScreen() {
                     // The chat opens with the automation's starting message, to send or change
                     val seed = com.assistant.core.ai.orchestration.AIOrchestrator.loadSeedMessages(seedSessionId)
                     val prefill = seed.firstOrNull { it.sender == com.assistant.core.ai.data.MessageSender.USER }?.richContent?.segments ?: emptyList()
-                    com.assistant.core.ai.orchestration.AIOrchestrator.startNewChatSession(prefill)
-                    // Close ZoneScreen to return to MainScreen where AIFloatingChat is rendered
-                    selectedZoneId = null
-                    showAIChat = true
+                    com.assistant.core.ai.orchestration.ChatRequests.open(prefill)
                 }
             }
         )

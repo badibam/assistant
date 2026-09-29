@@ -1558,6 +1558,7 @@
     <!-- AI Enrichment - POINTER inline summaries -->
     <string name="ai_enrichment_pointer_zone">Zone</string>
     <string name="ai_enrichment_pointer_tool">Tool</string>
+    <string name="ai_enrichment_pointer_entry">Entry</string>
     <string name="ai_enrichment_pointer_generic">Data</string>
     <string name="ai_enrichment_pointer_context_config">configuration</string>
     <string name="ai_enrichment_pointer_context_data">data</string>
