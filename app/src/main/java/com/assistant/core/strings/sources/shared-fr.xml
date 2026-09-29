@@ -901,6 +901,7 @@
     <string name="settings_validation_description">Configurer quand l\'IA doit demander validation</string>
     <string name="app_config_validate_app_config_changes">Modifications des réglages de l\'app</string>
     <string name="app_config_validate_zone_config_changes">Modifications des zones</string>
+    <string name="app_config_validate_variable_changes">Modifications des variables</string>
     <string name="app_config_validate_tool_config_changes">Modifications des réglages des outils</string>
     <string name="app_config_validate_tool_data_changes">Modifications des données des outils</string>
 

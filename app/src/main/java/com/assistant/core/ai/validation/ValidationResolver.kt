@@ -121,6 +121,16 @@ class ValidationResolver(private val context: Context) {
                 )
             }
 
+            ActionScope.VARIABLES -> {
+                val requiresValidation = appConfig.validateVariableChanges
+                ActionAnalysis(
+                    actionId = action.id,
+                    requiresValidation = requiresValidation,
+                    requiresWarning = requiresValidation,
+                    trigger = if (requiresValidation) ValidationTrigger.APP_CONFIG else null
+                )
+            }
+
             ActionScope.TOOL_CONFIG -> {
                 val operation = actionType.operation
                 val toolInstanceId = extractToolInstanceId(action)
@@ -324,8 +334,10 @@ class ValidationResolver(private val context: Context) {
             action.type == "UPDATE_APP_CONFIG" ->
                 ParsedActionType(ActionScope.APP_CONFIG, "update")
 
-            // A variable lives in a zone: its changes are the zone's
-            action.type in listOf("CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE", "CREATE_VARIABLE", "UPDATE_VARIABLE", "DELETE_VARIABLE") ->
+            action.type in listOf("CREATE_VARIABLE", "UPDATE_VARIABLE", "DELETE_VARIABLE") ->
+                ParsedActionType(ActionScope.VARIABLES, extractOperation(action.type))
+
+            action.type in listOf("CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE") ->
                 ParsedActionType(ActionScope.ZONE_CONFIG, extractOperation(action.type))
 
             action.type in listOf("CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL") ->
@@ -402,6 +414,7 @@ sealed class ValidationResult {
 enum class ActionScope {
     APP_CONFIG,      // Modifying app configuration
     ZONE_CONFIG,     // Modifying zone configuration
+    VARIABLES,       // Creating, changing, deleting variables
     TOOL_CONFIG,     // Modifying tool instance configuration
     TOOL_DATA        // Modifying tool data
 }

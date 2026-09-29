@@ -901,6 +901,7 @@
     <string name="settings_validation_description">Configure when the AI must ask for validation</string>
     <string name="app_config_validate_app_config_changes">Changes to the app settings</string>
     <string name="app_config_validate_zone_config_changes">Changes to the zones</string>
+    <string name="app_config_validate_variable_changes">Changes to the variables</string>
     <string name="app_config_validate_tool_config_changes">Changes to the tools\' settings</string>
     <string name="app_config_validate_tool_data_changes">Changes to the tools\' data</string>
 

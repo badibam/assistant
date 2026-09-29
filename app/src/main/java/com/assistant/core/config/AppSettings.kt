@@ -87,7 +87,8 @@ object AppSettings {
                 scale("automation_max_data_chars", text("app_config_ai_data_automation"), text("settings_ai_data_automation_help"), AI_DATA_AUTOMATION_RANGE)
             )
             AppSettingCategories.VALIDATION_CONFIG -> listOf(
-                ValidationConfig.KEY_APP_CONFIG, ValidationConfig.KEY_ZONE_CONFIG, ValidationConfig.KEY_TOOL_CONFIG, ValidationConfig.KEY_TOOL_DATA
+                ValidationConfig.KEY_APP_CONFIG, ValidationConfig.KEY_ZONE_CONFIG, ValidationConfig.KEY_TOOL_CONFIG, ValidationConfig.KEY_TOOL_DATA,
+                ValidationConfig.KEY_VARIABLES
             ).map { key -> field(key, text("app_config_$key"), null, FieldType.BOOLEAN, required = true) }
             AppSettingCategories.MAIN_SCREEN -> listOf(
                 SettingNode.ListOf("zone_groups", text("label_zone_groups"),

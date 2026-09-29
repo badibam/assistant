@@ -38,6 +38,7 @@ import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
 import com.assistant.core.versioning.PointerAtV46
+import com.assistant.core.versioning.VariableValidationAtV49
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -80,7 +81,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 48
+        const val VERSION = 49
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1367,6 +1368,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** The AI's changes to variables get their own validation switch: see VariableValidationAtV49. */
+        private val MIGRATION_48_49 = object : Migration(48, 49) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.query("SELECT category, settings FROM app_settings_categories").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val category = cursor.getString(0)
+                        // A row that cannot be read stays as it was and is logged
+                        try {
+                            val settings = VariableValidationAtV49.settings(category, org.json.JSONObject(cursor.getString(1)))
+                            database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), category))
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 48->49: settings of $category left as they were: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 48->49: variables' validation switch added", "INFO")
+            }
+        }
+
         /**
          * A chat opened prefilled takes its content as the draft of its composer: the seed a
          * session pointed to goes. SQLite before 3.35 cannot drop a column, so the table is rebuilt.
@@ -1969,7 +1989,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_44_45,
                     migration45to46(context),
                     MIGRATION_46_47,
-                    MIGRATION_47_48
+                    MIGRATION_47_48,
+                    MIGRATION_48_49
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

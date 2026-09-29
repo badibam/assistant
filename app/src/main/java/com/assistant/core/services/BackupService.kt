@@ -22,6 +22,7 @@ import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
 import com.assistant.core.versioning.PointerAtV46
+import com.assistant.core.versioning.VariableValidationAtV49
 import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
@@ -742,6 +743,9 @@ class BackupService(private val context: Context) : ExecutableService {
             }
             if (fromVersion < 46 && toVersion >= 46) {
                 PointerAtV46.backup(data, context)
+            }
+            if (fromVersion < 49 && toVersion >= 49) {
+                VariableValidationAtV49.backup(data)
             }
 
             // Transform app settings
