@@ -28,6 +28,7 @@ import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.ToolFields
 import com.assistant.core.fields.formatValue
 import com.assistant.core.reading.Reduction
+import com.assistant.core.selection.EntryPeriod
 import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
@@ -37,7 +38,7 @@ import com.assistant.core.ui.CardType
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
-import com.assistant.core.ui.components.PeriodType
+import com.assistant.core.ui.components.PeriodPicker
 import com.assistant.core.utils.JsonUtils
 import com.assistant.core.variables.Formula
 import kotlinx.coroutines.launch
@@ -348,13 +349,17 @@ private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSO
         )
     }
 
-    // Its period, each bound relative to the instant the variable is read at
-    val period = selection.optJSONObject("period") ?: JSONObject()
-    listOf("start" to s.shared("variable_period_start"), "end" to s.shared("variable_period_end")).forEach { (key, label) ->
-        BoundEditor(label, period.opt(key), s) { bound ->
-            val nextPeriod = JSONObject(period.toString()).apply { if (bound == null) remove(key) else put(key, bound) }
-            edit { put("selection", JSONObject(selection.toString()).apply { if (nextPeriod.length() == 0) remove("period") else put("period", nextPeriod) }) }
-        }
+    // Its period, relative to the instant the variable is read at; one that does not read says why
+    val period = try {
+        EntryPeriod.fromJson(selection.optJSONObject("period") ?: JSONObject()) { s.shared(it) }
+    } catch (e: IllegalArgumentException) {
+        UI.Text(e.message ?: "", TextType.ERROR)
+        null
+    }
+    if (period != null) {
+        PeriodPicker(period, { next ->
+            edit { put("selection", JSONObject(selection.toString()).apply { if (next.isEmpty) remove("period") else put("period", next.toJson()) }) }
+        }, FieldType.DATETIME, s.shared("instant_reference_reading"))
     }
     // Its filters on the entries' values, relative dates resolved at each reading
     var editingFilters by rememberSaveable { mutableStateOf(false) }
@@ -373,7 +378,7 @@ private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSO
             fields = fields,
             filters = filters,
             chosenFields = null,
-            relative = true,
+            reference = s.shared("instant_reference_reading"),
             onDismiss = { editingFilters = false },
             onConfirm = { chosen, _ ->
                 editingFilters = false
@@ -381,43 +386,6 @@ private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSO
             }
         )
     }
-}
-
-/**
- * One bound of a term's period: none, the instant read at itself ("the moment itself"), or a
- * relative date — a unit, an offset, and its start or end.
- */
-@Composable
-private fun BoundEditor(label: String, bound: Any?, s: StringsContext, onChange: (Any?) -> Unit) {
-    val none = s.shared("variable_bound_none")
-    val now = s.shared("variable_bound_now")
-    val relative = s.shared("variable_bound_relative")
-    val inner = (bound as? JSONObject)?.opt("relative")
-    val mode = when { bound == null -> none; inner == "NOW" -> now; else -> relative }
-    UI.FormSelection(label = label, options = listOf(none, now, relative), selected = mode, onSelect = { choice ->
-        onChange(when (choice) {
-            none -> null
-            now -> JSONObject().put("relative", "NOW")
-            else -> JSONObject().put("relative", JSONObject().put("unit", "DAY").put("offset", 0).put("edge", if (label == s.shared("variable_period_end")) "END" else "START"))
-        })
-    }, required = false)
-    val parts = inner as? JSONObject ?: return
-    fun edit(key: String, value: Any) = onChange(JSONObject().put("relative", JSONObject(parts.toString()).put(key, value)))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) {
-            UI.FormField(label = s.shared("variable_bound_offset"), value = parts.optInt("offset").toString(),
-                onChange = { text -> text.toIntOrNull()?.let { edit("offset", it) } }, fieldType = com.assistant.core.ui.FieldType.NUMERIC, required = true)
-        }
-        androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) {
-            UI.FormSelection(label = s.shared("variable_bound_unit"), options = PeriodType.entries.map { s.shared("period_type_${it.name.lowercase()}") },
-                selected = s.shared("period_type_${parts.optString("unit").lowercase()}"),
-                onSelect = { l -> edit("unit", PeriodType.entries.first { s.shared("period_type_${it.name.lowercase()}") == l }.name) }, required = true)
-        }
-    }
-    val edges = listOf("START" to s.shared("variable_bound_start"), "END" to s.shared("variable_bound_end"))
-    UI.FormSelection(label = s.shared("variable_bound_edge"), options = edges.map { it.second },
-        selected = edges.first { it.first == parts.optString("edge", "START") }.second,
-        onSelect = { l -> edit("edge", edges.first { it.second == l }.first) }, required = true)
 }
 
 /**

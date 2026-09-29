@@ -13,6 +13,8 @@ import com.assistant.core.ui.TextType
 import com.assistant.core.ui.FieldType as UIFieldType
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.utils.LogManager
+import com.assistant.core.selection.TimePoint
+import com.assistant.core.ui.components.InstantPicker
 
 /**
  * Renders a single custom field input component.
@@ -180,45 +182,17 @@ fun FieldInput(
             }
         }
 
-        com.assistant.core.fields.FieldType.DATE -> {
-            var showPicker by rememberSaveable { mutableStateOf(false) }
-            val dateStr = value as? String ?: ""
-
-            // Convert ISO 8601 to display format dd/MM/yyyy
-            val displayDate = if (dateStr.isNotEmpty()) {
-                val timestamp = DateUtils.parseIso8601Date(dateStr)
-                if (timestamp == null) dateStr else DateUtils.formatDateForDisplay(timestamp)
-            } else {
-                ""
-            }
-
-            // Use FormField that opens DatePicker on click
-            Clearable(showClear = !required && value != null, onClear = { onChange(null) }) {
-                UI.FormField(
-                    label = fieldDef.displayName,
-                    value = displayDate,
-                    onChange = {}, // Read-only, use picker
-                    fieldType = UIFieldType.TEXT,
-                    required = required,
-                    readonly = true,
-                    onClick = { showPicker = true }
-                )
-            }
-
-            if (showPicker) {
-                UI.DatePicker(
-                    selectedDate = displayDate.ifEmpty { DateUtils.getTodayFormatted() },
-                    onDateSelected = { newDateDisplay ->
-                        // The picker gives back dd/MM/yyyy. Anything else is a bug upstream,
-                        // and the field keeps what it had rather than recording today.
-                        DateUtils.parseDateForFilter(newDateDisplay)?.let { timestamp ->
-                            onChange(DateUtils.timestampToIso8601Date(timestamp))
-                        }
-                        showPicker = false
-                    },
-                    onDismiss = { showPicker = false }
-                )
-            }
+        // A day or an instant, through the app's one date input: without a reference, a relative
+        // choice or now is stored as the date it gives
+        com.assistant.core.fields.FieldType.DATE, com.assistant.core.fields.FieldType.DATETIME -> {
+            InstantPicker(
+                label = fieldDef.displayName,
+                value = value?.let { TimePoint.Fixed(it) },
+                onChange = { point -> onChange((point as? TimePoint.Fixed)?.value) },
+                precision = fieldDef.type,
+                hasReference = false,
+                required = required
+            )
         }
 
         com.assistant.core.fields.FieldType.TIME -> {
@@ -250,83 +224,6 @@ fun FieldInput(
                         showPicker = false
                     },
                     onDismiss = { showPicker = false }
-                )
-            }
-        }
-
-        com.assistant.core.fields.FieldType.DATETIME -> {
-            var showDatePicker by rememberSaveable { mutableStateOf(false) }
-            var showTimePicker by rememberSaveable { mutableStateOf(false) }
-            // Milliseconds, as the field's schema says. Nothing to parse, so nothing that can
-            // fail to parse.
-            val timestamp = (value as? Number)?.toLong()
-
-            val (displayDate, displayTime) = if (timestamp != null) {
-                Pair(
-                    DateUtils.formatDateForDisplay(timestamp),
-                    DateUtils.formatTimeForDisplay(timestamp)
-                )
-            } else {
-                Pair("", "")
-            }
-
-            // Combined DatePicker and TimePicker
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Date field, under the field's label, which says whether it is required;
-                // an optional moment once chosen can be emptied
-                Clearable(showClear = !required && timestamp != null, onClear = { onChange(null) }) {
-                    UI.FormField(
-                        label = fieldDef.displayName,
-                        value = displayDate,
-                        onChange = {},
-                        fieldType = UIFieldType.TEXT,
-                        required = required,
-                        readonly = true,
-                        onClick = { showDatePicker = true }
-                    )
-                }
-
-                // Time field: the other half of the same value, its label already said
-                UI.FormField(
-                    label = "",
-                    value = displayTime,
-                    onChange = {},
-                    fieldType = UIFieldType.TEXT,
-                    required = false,
-                    readonly = true,
-                    onClick = { showTimePicker = true }
-                )
-            }
-
-            if (showDatePicker) {
-                UI.DatePicker(
-                    selectedDate = displayDate.ifEmpty { DateUtils.getTodayFormatted() },
-                    onDateSelected = { newDateDisplay ->
-                        // Combine new date with existing time; an unreadable pair leaves the
-                        // field as it was rather than recording the present moment.
-                        DateUtils.combineDateTime(newDateDisplay, displayTime.ifEmpty { "00:00" })?.let {
-                            onChange(it)
-                        }
-                        showDatePicker = false
-                    },
-                    onDismiss = { showDatePicker = false }
-                )
-            }
-
-            if (showTimePicker) {
-                UI.TimePicker(
-                    selectedTime = displayTime.ifEmpty { DateUtils.getCurrentTimeFormatted() },
-                    onTimeSelected = { newTimeDisplay ->
-                        // Same here: nothing is recorded unless both halves read.
-                        DateUtils.combineDateTime(displayDate.ifEmpty { DateUtils.getTodayFormatted() }, newTimeDisplay)?.let {
-                            onChange(it)
-                        }
-                        showTimePicker = false
-                    },
-                    onDismiss = { showTimePicker = false }
                 )
             }
         }

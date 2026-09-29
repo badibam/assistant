@@ -615,8 +615,8 @@ private fun EnrichmentConfigDialog(
 }
 
 /**
- * The POINTER enrichment's dialog: the pointer selector, its period relative for a starting
- * message that is replayed later (SEED), fixed for a chat.
+ * The POINTER enrichment's dialog: the pointer selector, its dates relative to the scheduled time
+ * of the run for a starting message that is replayed later (SEED), fixed for a chat.
  */
 @Composable
 private fun PointerEnrichmentDialog(
@@ -625,8 +625,9 @@ private fun PointerEnrichmentDialog(
     onConfirm: (config: String) -> Unit,
     sessionType: SessionType = SessionType.CHAT
 ) {
+    val context = LocalContext.current
     PointerSelector(
-        relative = sessionType == SessionType.SEED,
+        reference = if (sessionType == SessionType.SEED) Strings.`for`(context = context).shared("instant_reference_scheduled_run") else null,
         onDismiss = onDismiss,
         onConfirm = onConfirm
     )

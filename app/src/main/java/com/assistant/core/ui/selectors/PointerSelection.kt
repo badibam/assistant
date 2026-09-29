@@ -1,71 +1,15 @@
 package com.assistant.core.ui.selectors
 
 import com.assistant.core.ai.enrichments.PointerConfig
-import com.assistant.core.selection.Edge
 import com.assistant.core.selection.EntryPeriod
 import com.assistant.core.selection.EntrySelection
 import com.assistant.core.selection.Reference
 import com.assistant.core.selection.ReferenceKind
-import com.assistant.core.selection.TimePoint
-import com.assistant.core.ui.components.Period
-import com.assistant.core.ui.components.PeriodType
-import com.assistant.core.ui.components.RelativePeriod
 import org.json.JSONArray
 import org.json.JSONObject
 
 /** A zone or a tool the selector went through: its id, its name as shown, a tool's type. */
 data class Named(val id: String, val name: String, val tooltype: String? = null)
-
-/**
- * The period of a pointer as its selector edits it: each bound is a period picked (a chat), a
- * relative period (an automation, resolved at each run), a date, or now.
- */
-data class TimestampSelection(
-    val minPeriodType: PeriodType? = null,
-    val minPeriod: Period? = null,
-    val minCustomDateTime: Long? = null,
-    val minIsNow: Boolean = false,
-    val maxPeriodType: PeriodType? = null,
-    val maxPeriod: Period? = null,
-    val maxCustomDateTime: Long? = null,
-    val maxIsNow: Boolean = false,
-    val minRelativePeriod: RelativePeriod? = null,
-    val maxRelativePeriod: RelativePeriod? = null
-) {
-    fun toJson(): JSONObject = JSONObject().apply {
-        minPeriodType?.let { put("min_period_type", it.name) }
-        minPeriod?.let { put("min_period", JSONObject().put("timestamp", it.timestamp).put("type", it.type.name)) }
-        minCustomDateTime?.let { put("min_custom_date_time", it) }
-        put("min_is_now", minIsNow)
-        maxPeriodType?.let { put("max_period_type", it.name) }
-        maxPeriod?.let { put("max_period", JSONObject().put("timestamp", it.timestamp).put("type", it.type.name)) }
-        maxCustomDateTime?.let { put("max_custom_date_time", it) }
-        put("max_is_now", maxIsNow)
-        minRelativePeriod?.let { put("min_relative_period", JSONObject().put("offset", it.offset).put("type", it.type.name)) }
-        maxRelativePeriod?.let { put("max_relative_period", JSONObject().put("offset", it.offset).put("type", it.type.name)) }
-    }
-
-    companion object {
-        fun fromJson(json: JSONObject): TimestampSelection {
-            fun period(key: String) = json.optJSONObject(key)?.let { Period(it.getLong("timestamp"), PeriodType.valueOf(it.getString("type"))) }
-            fun relative(key: String) = json.optJSONObject(key)?.let { RelativePeriod(it.getInt("offset"), PeriodType.valueOf(it.getString("type"))) }
-            fun long(key: String) = if (json.has(key) && !json.isNull(key)) json.getLong(key) else null
-            fun type(key: String) = json.optString(key).takeIf { it.isNotEmpty() }?.let { PeriodType.valueOf(it) }
-            return TimestampSelection(
-                minPeriodType = type("min_period_type"),
-                minPeriod = period("min_period"),
-                minCustomDateTime = long("min_custom_date_time"),
-                minIsNow = json.optBoolean("min_is_now", false),
-                maxPeriodType = type("max_period_type"),
-                maxPeriod = period("max_period"),
-                maxCustomDateTime = long("max_custom_date_time"),
-                maxIsNow = json.optBoolean("max_is_now", false),
-                minRelativePeriod = relative("min_relative_period"),
-                maxRelativePeriod = relative("max_relative_period")
-            )
-        }
-    }
-}
 
 /**
  * What the pointer selector holds while a pointer is built: where the user went (a zone, a tool
@@ -84,7 +28,7 @@ data class PointerSelection(
     val tool: Named? = null,
     val config: Boolean = false,
     val entries: Boolean = false,
-    val period: TimestampSelection = TimestampSelection(),
+    val period: EntryPeriod = EntryPeriod(),
     val filters: JSONArray = JSONArray(),
     val fields: List<String>? = null
 ) {
@@ -114,11 +58,8 @@ data class PointerSelection(
         else -> this
     }
 
-    /**
-     * The pointer to store: a selection of the core, its period apart from the value filters.
-     * [periodEnd] gives the last instant of a period picked.
-     */
-    fun pointer(periodEnd: (Period) -> Long): PointerConfig {
+    /** The pointer to store: a selection of the core, its period apart from the value filters. */
+    fun pointer(): PointerConfig {
         val target = when (level) {
             ReferenceKind.TOOL_INSTANCE -> Reference(ReferenceKind.TOOL_INSTANCE, tool!!.id)
             ReferenceKind.ZONE -> Reference(ReferenceKind.ZONE, zone!!.id)
@@ -128,7 +69,7 @@ data class PointerSelection(
         return PointerConfig(
             selection = EntrySelection(
                 target = target,
-                period = EntryPeriod(bound(period, end = false, periodEnd, day = null), bound(period, end = true, periodEnd, day = null)),
+                period = period,
                 filters = if (isTool) filters else JSONArray(),
                 fields = fields.takeIf { isTool }
             ),
@@ -158,49 +99,11 @@ data class PointerSelection(
                 tool = json.optJSONObject("tool")?.let { named(it) },
                 config = json.getBoolean("config"),
                 entries = json.getBoolean("entries"),
-                period = TimestampSelection.fromJson(json.getJSONObject("period")),
+                // The selector's own state, written by toJson: its dates read
+                period = EntryPeriod.fromJson(json.getJSONObject("period")) { it },
                 filters = json.getJSONArray("filters"),
                 fields = json.optJSONArray("fields")?.let { a -> (0 until a.length()).map { a.getString(it) } }
             )
         }
     }
 }
-
-private const val DAY_MILLIS = 86_400_000L
-
-/** Whether no bound of the period is set. */
-val TimestampSelection.isEmpty: Boolean
-    get() = !minIsNow && minRelativePeriod == null && minCustomDateTime == null && minPeriod == null &&
-        !maxIsNow && maxRelativePeriod == null && maxCustomDateTime == null && maxPeriod == null
-
-/**
- * One bound of [period] as stored, null when it is not set: now and a relative period as relative
- * dates, resolved at each send, a relative period taking the edge of its side; a date or a period
- * picked, fixed, in milliseconds, or for a DATE field ([day] given) the day it falls on. The last
- * day of a period picked is the one before the next period starts.
- */
-fun bound(period: TimestampSelection, end: Boolean, periodEnd: (Period) -> Long, day: ((Long) -> String)?): TimePoint? {
-    fun fixed(millis: Long) = TimePoint.Fixed(day?.invoke(millis) ?: millis)
-    return if (!end) when {
-        period.minIsNow -> TimePoint.Now
-        period.minRelativePeriod != null -> period.minRelativePeriod.let { TimePoint.Relative(it.type, it.offset, Edge.START) }
-        period.minCustomDateTime != null -> fixed(period.minCustomDateTime)
-        period.minPeriod != null -> fixed(period.minPeriod.timestamp)
-        else -> null
-    } else when {
-        period.maxIsNow -> TimePoint.Now
-        period.maxRelativePeriod != null -> period.maxRelativePeriod.let { TimePoint.Relative(it.type, it.offset, Edge.END) }
-        period.maxCustomDateTime != null -> fixed(period.maxCustomDateTime)
-        period.maxPeriod != null -> periodEnd(period.maxPeriod).let { last ->
-            if (day != null) TimePoint.Fixed(day(last + 1 - DAY_MILLIS)) else TimePoint.Fixed(last)
-        }
-        else -> null
-    }
-}
-
-/** A period on the date field [path] as filters: ">=" its start and "<=" its end, each only when set. */
-fun periodFilters(path: String, period: TimestampSelection, periodEnd: (Period) -> Long, day: ((Long) -> String)?): JSONArray =
-    JSONArray().apply {
-        bound(period, end = false, periodEnd, day)?.let { put(JSONObject().put("field", path).put("op", ">=").put("value", it.toJson())) }
-        bound(period, end = true, periodEnd, day)?.let { put(JSONObject().put("field", path).put("op", "<=").put("value", it.toJson())) }
-    }

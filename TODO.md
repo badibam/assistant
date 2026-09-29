@@ -5,7 +5,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## En cours
 
 - Les outils manquants sont posés (sélection du cœur, RÉFÉRENCE, lecture du cœur, variables, Données structurées et import, Objectif, Questionnaire) ; rien n'a tourné sur un téléphone : passer `docs/design/device-checks.md`, puis élaguer de `docs/design/missing-tools.md` ce qui est codé, ses garanties devenant des tests (le Graphique y est encore en conception).
-- La brique Instant : une seule saisie de date pour toute l'app ; aujourd'hui trois — le sélecteur de période du pointeur, l'éditeur de borne de l'écran d'une variable (`BoundEditor`), les champs DATE et DATETIME (`docs/design/missing-tools.md`, « Les sélecteurs, recomposés »).
 - La brique Chose : une seule navigation App › Zone › Outil › Entrée, sortie de `PointerSelector` dans le cœur, dont se servent le pointeur et la RÉFÉRENCE (`ReferencePicker`).
 - Insérer au curseur, et non à la fin, depuis les boutons de l'éditeur de formule : `UI.FormField` ne donne pas la sélection ; il faut un champ du thème qui la porte.
 - La notification d'une invitation de Questionnaire ouvre l'app, pas la passation ; toucher la tuile quand une entrée attend ouvre l'outil, pas sa passation — l'app n'a pas encore de lien profond vers un écran.

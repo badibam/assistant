@@ -18,6 +18,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Importer une sauvegarde faite avant la mise à jour : les conversations reviennent, leur coût en « ≥ ».
 - « Quelle heure est-il ? », puis créer une entrée datée d'hier : la date est juste. Les résultats de données reçus par l'IA sont en ISO 8601.
 - Après `CREATE_ZONE` puis `CREATE_TOOL`, l'IA enchaîne sans redemander la liste des zones ni des outils.
+- Pointeur en chat, période « Depuis : date relative, il y a 2 jours, début » : « Soit : » montre la date obtenue, et après confirmation la phrase du pointeur dit cette date. Pointeur du message de départ d'une automation : « Par rapport à : l'heure prévue de l'exécution » s'affiche une fois, la période se relit « la veille », « le moment même ». Un filtre sur un champ DATE propose des jours, sans heure ni unité « heure ».
 - Une IA qui enchaîne plus de 10 appels seule s'arrête et rend la main avec un message.
 - Faire écrire par l'IA une valeur hors d'une échelle ou hors des options d'un choix : le refus lui revient.
 - Faire créer et modifier des entrées de tracking par l'IA : `raw` est juste.
@@ -57,6 +58,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 - Créer et modifier une entrée de chaque type : tracking de chaque sorte, note insérée à une position, journal, occurrence Messages, et une entrée avec champs personnalisés.
 - Une plage de champ personnalisé dont le début dépasse la fin est refusée à l'écran.
+- Champ DATE et DATETIME d'une entrée : une date personnalisée s'enregistre ; « Date relative, la veille, début » et « Maintenant » enregistrent la date qu'affiche « Soit : », qui revient en date personnalisée à la réouverture ; un champ facultatif se vide par sa croix, un champ obligatoire n'en a pas.
 - Échelle : un champ de 1 à 10 affiche et enregistre « 7 », pas « 7.0 » ; une échelle de 0 à 5 par 0.5 s'arrête sur chaque demi-point et affiche « 3,5 » ; l'éditeur refuse une échelle de 1 à 10 par 2. Le curseur de note d'un tracking d'échelle se comporte comme avant.
 - Sélecteurs de date et d'heure normaux dans l'entrée de journal, l'entrée de tracking, les champs DATE et DATETIME, le sélecteur de période. Un DATETIME déjà enregistré s'affiche comme une date.
 - Journal, « Annuler » en modification : l'écran revient au texte stocké, et une entrée créée, rouverte puis annulée reste en place.
@@ -102,6 +104,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Variables
 
+- La période d'une lecture sur l'écran d'une variable : « Par rapport à : l'instant lu », « Depuis » et « Jusqu'à » avec « Le moment même » et « Sans limite » ; une période enregistrée se relit telle qu'elle a été réglée.
 - Faire créer par l'IA une variable « kcal du jour » (somme par entrée de Repas à travers la référence aliment) : elle apparaît dans `APP_STATE` d'une nouvelle session, `VARIABLES` la liste avec sa formule sous les noms actuels, `READING` rend sa valeur maintenant et la veille ; un repas sans aliment la fait échouer en le disant.
 - Faire écrire à l'IA une formule avec un nom inconnu, ou deux variables qui se lisent l'une l'autre : refusées, le chemin de la boucle nommé.
 - Dans une zone, « + » puis Variable : créer « objectif » (constante 2100 kcal), puis « kcal » (formule `mange`, terme lecture de Repas, formule par entrée, somme, du jour-même · début au moment même) et « reste » (`objectif - kcal`) : chaque groupe montre ses variables sur une ligne avec la valeur actuelle ; ajouter un repas met la ligne à jour ; toucher une ligne rouvre la variable, un nom inconnu tapé dans la formule s'affiche en erreur sous la saisie ; tourner l'écran en cours d'édition garde le brouillon.

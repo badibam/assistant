@@ -8,11 +8,11 @@ import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.FilterOperator
 import com.assistant.core.selection.Edge
+import com.assistant.core.selection.EntryPeriod
 import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.selection.TimePoint
 import com.assistant.core.strings.StringsContext
 import com.assistant.core.ui.components.RelativePeriod
-import com.assistant.core.ui.components.generatePeriodLabel
 import com.assistant.core.ui.components.generateRelativePeriodLabel
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.DateTimeConverter
@@ -72,20 +72,13 @@ object PointerDescription {
     }
 
     /**
-     * The period in words, or null when it has no bound. A bound that is a period, relative or
-     * picked, says which side of it: "between the start of “2 days before” and the end of “the
-     * same day”". Now and a date are said as they are.
+     * The period in words, or null when it has no bound. A relative bound says which side of its
+     * period: "between the start of “2 days before” and the end of “the same day”". Now and a
+     * date are said as they are.
      */
-    fun period(period: TimestampSelection, s: StringsContext): String? {
-        fun bound(end: Boolean, isNow: Boolean, relative: RelativePeriod?, custom: Long?, picked: com.assistant.core.ui.components.Period?): String? = when {
-            isNow -> s.shared("period_now_label").lowercase()
-            relative != null -> side(generateRelativePeriodLabel(relative, s), end, s)
-            custom != null -> DateUtils.formatFullDateTime(custom)
-            picked != null -> side(generatePeriodLabel(picked, AppConfigManager.getDayStartHour(), AppConfigManager.getWeekStartDay(), s), end, s)
-            else -> null
-        }
-        val start = bound(false, period.minIsNow, period.minRelativePeriod, period.minCustomDateTime, period.minPeriod)
-        val end = bound(true, period.maxIsNow, period.maxRelativePeriod, period.maxCustomDateTime, period.maxPeriod)
+    fun period(period: EntryPeriod, s: StringsContext): String? {
+        val start = period.start?.let { relative(it, s) }
+        val end = period.end?.let { relative(it, s) }
         return when {
             start != null && end != null -> s.shared("ai_enrichment_pointer_period_range").format(start, end)
             start != null -> s.shared("filter_date_from").format(start)
@@ -98,11 +91,15 @@ object PointerDescription {
     private fun side(label: String, end: Boolean, s: StringsContext): String =
         s.shared(if (end) "period_bound_end" else "period_bound_start").format(label.replaceFirstChar { it.lowercase() })
 
-    /** A date resolved at each send, in words: now, or the side of the period it stands on. */
+    /**
+     * A date in words: the reference itself ("the moment itself": a date resolved later is one
+     * with a reference), the side of the period a relative one stands on, or a fixed one as it
+     * reads ("15/09/2026 08:00" for milliseconds, the day as stored otherwise).
+     */
     private fun relative(point: TimePoint, s: StringsContext): String = when (point) {
-        TimePoint.Now -> s.shared("period_now_label").lowercase()
+        TimePoint.Now -> s.shared("instant_mode_reference").lowercase()
         is TimePoint.Relative -> side(generateRelativePeriodLabel(RelativePeriod(point.offset, point.unit), s), point.edge == Edge.END, s)
-        is TimePoint.Fixed -> point.value.toString()
+        is TimePoint.Fixed -> (point.value as? Number)?.let { DateUtils.formatFullDateTime(it.toLong()) } ?: point.value.toString()
     }
 
     /** A date filter's bound in words ("since the start of “yesterday”"), or null when the filter is not one. */

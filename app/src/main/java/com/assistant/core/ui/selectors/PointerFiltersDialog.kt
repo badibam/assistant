@@ -28,11 +28,10 @@ import com.assistant.core.ui.ButtonDisplay
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
-import com.assistant.core.ui.components.getPeriodEndTimestamp
-import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.selection.EntryPeriod
+import com.assistant.core.ui.components.PeriodPicker
 import org.json.JSONArray
 import org.json.JSONObject
-import java.time.Instant
 
 /**
  * The value filters and the fields of a tool's entries, edited apart from the selector.
@@ -40,14 +39,15 @@ import java.time.Instant
  * Every filter must hold. One is added by picking a field, a condition among those its type takes
  * (EntryFilters.operatorsFor) and a value entered with the field's own input; it is checked as
  * tool_data.get will check it, so a filter that would be refused cannot be added. A date field
- * is filtered as the period is, with the period editor: its start and its end, relative in an
- * automation. The period itself is not here: it has its place on the selector.
+ * is filtered as the period is, with the period picker: its start and its end, relative to the
+ * context's reference when it has one. The period itself is not here: it has its place on the selector.
  *
  * A text field also offers the values its entries hold, the most frequent first, to pick one
  * rather than type it.
  *
  * @param toolInstanceId The tool whose entries are filtered
- * @param relative Whether a date is relative, the pointer being replayed later
+ * @param reference The name of what relative dates resolve against, null where a date is fixed
+ *   when it is chosen
  * @param fields The tool's fields a filter may name, by path
  * @param chosenFields The fields to attach, all of them when null
  */
@@ -57,7 +57,7 @@ fun PointerFiltersDialog(
     fields: Map<String, FieldDefinition>,
     filters: JSONArray,
     chosenFields: List<String>?,
-    relative: Boolean,
+    reference: String?,
     onDismiss: () -> Unit,
     onConfirm: (filters: JSONArray, fields: List<String>?) -> Unit
 ) {
@@ -79,8 +79,8 @@ fun PointerFiltersDialog(
     val draftOp = FilterOperator.of(draftJson.optString("op"))
     // A date field's period, the condition its editor stands for
     val isDate = draftField?.type == FieldType.DATE || draftField?.type == FieldType.DATETIME
-    val draftPeriod = draftJson.optJSONObject(PERIOD)?.let { TimestampSelection.fromJson(it) }
-    val periodBounds = draftPeriod?.let { periodFilters(draftJson.getString("field"), it, { p -> getPeriodEndTimestamp(p) }, day(draftField)) }
+    val draftPeriod = draftJson.optJSONObject(PERIOD)?.let { EntryPeriod.fromJson(it) { key -> s.shared(key) } }
+    val periodBounds = draftPeriod?.let { periodFilters(draftJson.getString("field"), it) }
     val draftValid = when {
         periodBounds != null -> periodBounds.length() > 0
         else -> draftField != null && draftOp != null &&
@@ -148,7 +148,7 @@ fun PointerFiltersDialog(
                     },
                     onSelect = { label ->
                         val next = JSONObject().put("field", draftJson.getString("field"))
-                        if (label == periodLabel) next.put(PERIOD, TimestampSelection().toJson())
+                        if (label == periodLabel) next.put(PERIOD, EntryPeriod().toJson())
                         else next.put("op", ops.first { PointerDescription.operator(it, s) == label }.key)
                         draft = next.toString()
                     },
@@ -156,8 +156,11 @@ fun PointerFiltersDialog(
                 )
             }
             if (draftPeriod != null) {
-                PeriodEditor(draftPeriod, relative) { period ->
-                    draft = JSONObject(draft).put(PERIOD, period.toJson()).toString()
+                // Another field starts a new period: the pickers keep no mode of the one before
+                key(draftJson.getString("field")) {
+                    PeriodPicker(draftPeriod, { period ->
+                        draft = JSONObject(draft).put(PERIOD, period.toJson()).toString()
+                    }, draftField!!.type, reference)
                 }
                 UI.ActionButton(action = ButtonAction.ADD, enabled = draftValid, onClick = {
                     current = withDraft().toString()
@@ -195,10 +198,11 @@ fun PointerFiltersDialog(
 /** The key of a date field's period in the filter being written. */
 private const val PERIOD = "period"
 
-/** How a DATE field stores a moment: the day it falls on, in the app's timezone; null for an instant. */
-private fun day(field: FieldDefinition?): ((Long) -> String)? =
-    if (field?.type != FieldType.DATE) null
-    else { millis -> Instant.ofEpochMilli(millis).atZone(AppConfigManager.getDateTimeConfig().getZoneId()).toLocalDate().toString() }
+/** A period on the date field [path] as filters: ">=" its start and "<=" its end, each only when set. */
+internal fun periodFilters(path: String, period: EntryPeriod): JSONArray = JSONArray().apply {
+    period.start?.let { put(JSONObject().put("field", path).put("op", ">=").put("value", it.toJson())) }
+    period.end?.let { put(JSONObject().put("field", path).put("op", "<=").put("value", it.toJson())) }
+}
 
 /** The values [path] holds among the tool's entries, each a button that picks it. */
 @OptIn(ExperimentalLayoutApi::class)

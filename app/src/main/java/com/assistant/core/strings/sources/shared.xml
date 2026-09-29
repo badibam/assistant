@@ -509,6 +509,23 @@
     <string name="confirm_reset">Do you want to reset the configuration? The current data will be lost.</string>
 
     
+    <!-- The one date input (InstantPicker) and its period -->
+    <string name="period_from">From</string>
+    <string name="period_until">Until</string>
+    <string name="instant_mode_custom">Custom date</string>
+    <string name="instant_mode_relative">Relative date</string>
+    <string name="instant_mode_now">Now</string>
+    <string name="instant_mode_reference">The moment itself</string>
+    <string name="instant_mode_none">No limit</string>
+    <string name="instant_unit">Unit</string>
+    <string name="instant_edge">Moment</string>
+    <string name="instant_edge_start">Start</string>
+    <string name="instant_edge_end">End</string>
+    <string name="instant_reference">Relative to: %1$s</string>
+    <string name="instant_resolved">That is: %1$s</string>
+    <string name="instant_reference_reading">the instant read</string>
+    <string name="instant_reference_scheduled_run">the scheduled time of the run</string>
+
     <!-- Time periods -->
     <string name="period_all">All</string>
     <string name="period_hour">Hour</string>
@@ -516,8 +533,6 @@
     <string name="period_week">Week</string>
     <string name="period_month">Month</string>
     <string name="period_year">Year</string>
-    <string name="period_now">Now</string>
-    <string name="period_now_label">Now</string>
     <string name="period_this_hour">This hour</string>
     <string name="period_hours_ago_singular">%1$d hour ago</string>
     <string name="period_hours_ago_plural">%1$d hours ago</string>
@@ -546,21 +561,14 @@
     <string name="period_this_year">This year</string>
     <string name="period_last_year">Last year</string>
     <string name="period_next_year">Next year</string>
-    <string name="period_custom">Custom</string>
 
     <!-- Range selectors -->
-    <string name="range_start">From</string>
-    <string name="range_end">To</string>
-    <string name="range_start_date">Start date</string>
-    <string name="range_end_date">End date</string>
-    <string name="select_date">Choose a date</string>
     <string name="period_years_ago_singular">%1$d year ago</string>
     <string name="period_years_ago_plural">%1$d years ago</string>
     <string name="period_years_from_now_singular">In %1$d year</string>
     <string name="period_years_from_now_plural">In %1$d years</string>
 
     <!-- Period types for selectors -->
-    <string name="period_type_custom">Custom date</string>
     <string name="period_type_hour">Hour</string>
     <string name="period_type_day">Day</string>
     <string name="period_type_week">Week</string>
@@ -603,7 +611,6 @@
     <string name="period_relative_years_after">%1$d years after</string>
 
     <!-- Actions -->
-    <string name="action_select_date">Select a date</string>
 
     <!-- Months -->
     <string name="month_january">January</string>
@@ -801,7 +808,6 @@
     <!-- SCOPE SELECTOR - Resource labels -->
 
     <!-- SCOPE SELECTOR - Period labels (context-specific) -->
-    <string name="label_period_type">Period type</string>
 
     <!-- SCOPE SELECTOR - Error messages -->
     <string name="error_loading_options">Error while loading the options</string>
@@ -1233,16 +1239,6 @@
     <string name="variable_reading_per_entry">A formula in each entry</string>
     <string name="variable_reading_reduction">Reduction</string>
     <string name="variable_reading_filters">%1$d filter(s) on the values</string>
-    <string name="variable_period_start">From</string>
-    <string name="variable_period_end">Until</string>
-    <string name="variable_bound_none">No limit</string>
-    <string name="variable_bound_now">The moment itself</string>
-    <string name="variable_bound_relative">Relative</string>
-    <string name="variable_bound_offset">Offset</string>
-    <string name="variable_bound_unit">Unit</string>
-    <string name="variable_bound_edge">Side</string>
-    <string name="variable_bound_start">Start</string>
-    <string name="variable_bound_end">End</string>
     <string name="variable_type">Type of the value</string>
     <string name="variable_type_deduced">Deduced from the formula</string>
     <string name="variable_delete_confirm">Delete the variable %1$s? A formula naming it will no longer compute.</string>

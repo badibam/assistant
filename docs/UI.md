@@ -276,7 +276,9 @@ data class RelativePeriod(val offset: Int, val type: PeriodType) // Période rel
 
 **SinglePeriodSelector** - Navigation avec flèches, period, onPeriodChange, showDatePicker, useOnlyRelativeLabels.
 
-**PeriodRangeSelector** - Sélection plages avec start/end PeriodType, periods, customDates, callbacks, useOnlyRelativeLabels et mode returnRelative (retourne RelativePeriod au lieu de Period).
+**InstantPicker** - La seule saisie d'une date ou d'un instant (champ DATE ou DATETIME d'une entrée, borne d'une période) : une date personnalisée, une date relative (unité, décalage, début ou fin), maintenant, sans limite pour une borne. Elle édite un `TimePoint`. Avec une référence (`hasReference`), un relatif et maintenant s'enregistrent tels quels, résolus à chaque fois ; sans référence, l'horloge résout le choix sur-le-champ et c'est la date obtenue qui s'enregistre.
+
+**PeriodPicker** - Deux `InstantPicker` (depuis, jusqu'à) qui éditent une `EntryPeriod` ; il nomme une fois la référence du contexte (« Par rapport à : l'instant lu »).
 
 ### Logique Labels
 **useOnlyRelativeLabels** :
