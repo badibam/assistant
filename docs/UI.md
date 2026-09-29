@@ -72,7 +72,7 @@ Row avec fillMaxWidth, padding vertical 4dp, espacement 8dp entre colonnes.
 
 **UI.Button** - Générique et flexible avec type (PRIMARY/SECONDARY/DEFAULT), size (XS à XXL), state et content personnalisé.
 
-**UI.ActionButton** - Actions standardisées avec action prédéfinie, display (ICON/LABEL), size et confirmation optionnelle. En ICON, le bouton montre l'icône Lucide que porte l'action (`ButtonAction.iconName`), dessinée par le thème.
+**UI.ActionButton** - Actions standardisées avec action prédéfinie, display (ICON/LABEL), size et confirmation optionnelle. En ICON, le bouton montre l'icône Lucide que porte l'action (`ButtonAction.iconName`), dessinée par le thème. `active` le montre allumé tant que dure ce qu'il ouvre (le mode d'édition d'un groupe), dessiné par le thème (le thème par défaut : un fond plein de la couleur principale).
 
 ### Actions Disponibles
 - **Principales** : SAVE, CREATE, UPDATE, DELETE, CANCEL, CONFIRM
@@ -230,6 +230,8 @@ Row avec fillMaxWidth, colonnes en Box avec weight pour répartition (ex: 1f pou
 **UI.ZoneCard** - Zone avec logique métier intégrée, onClick et contentDescription.
 
 **UI.ToolCard** - Tool instance avec displayMode (ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE, FULL), onClick et onLongClick.
+
+**ToolGrid** - Les outils d'une section sur leur grille de quatre colonnes. En mode d'édition (`GridEditor`, un groupe à la fois, ouvert par le bouton `ARRANGE` de son titre), le thème dessine les cases (`ThemeContract.GridCell`), un toucher sélectionne une tuile, et `GridEditBar` la déplace aux flèches (`Grid.move`) ; la validation l'écrit en une fois (`tools.place`), « Annuler » remet la section comme elle était ; le reste de l'écran s'atténue et ne réagit pas (`Faded`).
 
 ## Navigation et États
 

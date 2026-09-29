@@ -70,6 +70,8 @@ interface ThemeContract {
         enabled: Boolean,
         requireConfirmation: Boolean,
         confirmMessage: String?,
+        /** Shown as switched on while what it opens lasts (a group's edit mode), switched off by a press again */
+        active: Boolean = false,
         onClick: () -> Unit
     )
     
@@ -223,6 +225,10 @@ interface ThemeContract {
     /** The mark on a tool's or a zone's icon when something waits for the user there. */
     @Composable
     fun WaitingMark()
+
+    /** One cell of a grid in edit mode, filling it: the light lines that show the cells, and so the holes. */
+    @Composable
+    fun GridCell()
 
     /** The mark on a tool's or a zone's icon when a stopwatch runs on one of its entries. */
     @Composable

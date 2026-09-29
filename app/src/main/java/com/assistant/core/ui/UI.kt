@@ -60,8 +60,9 @@ object UI {
         enabled: Boolean = true,
         requireConfirmation: Boolean = false,  // Automatic confirmation dialog
         confirmMessage: String? = null,        // Custom message (null = default message)
+        active: Boolean = false,               // Switched on while what it opens lasts
         onClick: () -> Unit
-    ) = CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, onClick)
+    ) = CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, active, onClick)
     
     // =====================================
     // DISPLAY

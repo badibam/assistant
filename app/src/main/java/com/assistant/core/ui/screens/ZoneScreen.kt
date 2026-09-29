@@ -227,6 +227,13 @@ fun ZoneScreen(
         }
     }
 
+    // The edit mode of the sections' grids, a section named by its group, "" for the ungrouped one
+    val gridEditor = com.assistant.core.ui.components.rememberGridEditor(
+        zoneId = zone.id,
+        sectionTools = { key -> toolInstances.filter { ToolPositions.section(it, zoneToolGroups) == key.ifEmpty { null } } },
+        onError = { errorMessage = it }
+    )
+
     // Show configuration screen if requested
     showingConfigFor?.let { toolTypeId ->
         ToolTypeManager.getToolType(toolTypeId)?.let { toolType ->
@@ -282,8 +289,11 @@ fun ZoneScreen(
         return // Exit ZoneScreen composition when showing usage screen
     }
     
+    // Edit mode: the grids of one section at a time, the bar under the screen while a tool moves
+    Column(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
+            .weight(1f)
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(vertical = 16.dp),
@@ -347,6 +357,7 @@ fun ZoneScreen(
                     },
                     onToolClick = { toolId -> openEntry = waiting.oldest[toolId]?.let { com.assistant.core.tools.EntryToOpen.Existing(it) }; selectedToolInstanceId = toolId },
                     onOpenEntry = { tool, entry -> openEntry = entry; selectedToolInstanceId = tool.id },
+                    editor = gridEditor,
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype
@@ -431,6 +442,7 @@ fun ZoneScreen(
                     },
                     onToolClick = { toolId -> openEntry = waiting.oldest[toolId]?.let { com.assistant.core.tools.EntryToOpen.Existing(it) }; selectedToolInstanceId = toolId },
                     onOpenEntry = { tool, entry -> openEntry = entry; selectedToolInstanceId = tool.id },
+                    editor = gridEditor,
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype
@@ -473,6 +485,24 @@ fun ZoneScreen(
                     onAutomationStartChat = onAutomationStartChat,
                     context = context
                 )
+        }
+    }
+    if (gridEditor.selectedId != null) com.assistant.core.ui.components.GridEditBar(gridEditor)
+    }
+
+    // The phone's back key leaves the zone; a move in progress is cancelled, once asked
+    var confirmLeave by remember { mutableStateOf(false) }
+    if (gridEditor.moving) androidx.activity.compose.BackHandler { confirmLeave = true }
+    if (confirmLeave) {
+        UI.Dialog(
+            type = DialogType.CONFIRM,
+            onConfirm = { confirmLeave = false; gridEditor.cancel(); onBack() },
+            onCancel = { confirmLeave = false }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                UI.Text(s.shared("grid_leave_title"), TextType.SUBTITLE)
+                UI.Text(s.shared("grid_leave_message"), TextType.BODY)
+            }
         }
     }
 
@@ -632,6 +662,7 @@ private fun GroupSection(
     onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
     onOpenEntry: (ToolInstance, com.assistant.core.tools.EntryToOpen) -> Unit,
+    editor: com.assistant.core.ui.components.GridEditor,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
@@ -659,18 +690,12 @@ private fun GroupSection(
                 type = TextType.SUBTITLE
             )
 
-            // Add button
-            UI.ActionButton(
-                action = ButtonAction.ADD,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onToggleToolsList
-            )
+            SectionButtons(groupName, groupTools.isNotEmpty(), editor, onToggleToolsList)
         }
     }
 
     // Available tools/automations list (shown conditionally)
-    if (showAvailableToolsForGroup == groupName) {
+    if (showAvailableToolsForGroup == groupName && !editor.anyEditing) {
         UI.Card(type = CardType.DEFAULT) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -769,21 +794,21 @@ private fun GroupSection(
     }
 
     // The group's tools on their grid
-    com.assistant.core.ui.components.ToolGrid(groupTools, { onToolClick(it.id) }, onToolLongClick, onOpenEntry)
+    SectionGrid(groupName, groupTools, editor, onToolClick, onToolLongClick, onOpenEntry)
 
     // The group's variables, in one compact card
-    com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)
+    com.assistant.core.ui.components.Faded(editor.anyEditing) { com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable) }
 
     // Display automations in this group
     groupAutomations.forEach { automation ->
-        com.assistant.core.ai.ui.automation.AutomationCard(
+        com.assistant.core.ui.components.Faded(editor.anyEditing) { com.assistant.core.ai.ui.automation.AutomationCard(
             automation = automation,
             onEdit = { onAutomationEdit(automation) },
             onTest = { onAutomationTest(automation) },
             onView = { onAutomationView(automation) },
             onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) },
             onStartChat = { onAutomationStartChat?.invoke(automation.seedSessionId) }
-        )
+        ) }
     }
 
     // Empty state if no tools/automations in this group (only when list is not showing)
@@ -819,6 +844,7 @@ private fun UngroupedSection(
     onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
     onOpenEntry: (ToolInstance, com.assistant.core.tools.EntryToOpen) -> Unit,
+    editor: com.assistant.core.ui.components.GridEditor,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
@@ -850,18 +876,12 @@ private fun UngroupedSection(
                 type = TextType.SUBTITLE
             )
 
-            // Add button
-            UI.ActionButton(
-                action = ButtonAction.ADD,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onToggleToolsList
-            )
+            SectionButtons("", toolInstances.isNotEmpty(), editor, onToggleToolsList)
         }
     }
 
     // Available tools/automations list (shown conditionally)
-    if (showAvailableToolsForGroup == "") {
+    if (showAvailableToolsForGroup == "" && !editor.anyEditing) {
         UI.Card(type = CardType.DEFAULT) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -960,21 +980,21 @@ private fun UngroupedSection(
     }
 
     // The ungrouped tools on their grid
-    com.assistant.core.ui.components.ToolGrid(toolInstances, { onToolClick(it.id) }, onToolLongClick, onOpenEntry)
+    SectionGrid("", toolInstances, editor, onToolClick, onToolLongClick, onOpenEntry)
 
     // The ungrouped variables, in one compact card
-    com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)
+    com.assistant.core.ui.components.Faded(editor.anyEditing) { com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable) }
 
     // Display ungrouped automations
     automations.forEach { automation ->
-        com.assistant.core.ai.ui.automation.AutomationCard(
+        com.assistant.core.ui.components.Faded(editor.anyEditing) { com.assistant.core.ai.ui.automation.AutomationCard(
             automation = automation,
             onEdit = { onAutomationEdit(automation) },
             onTest = { onAutomationTest(automation) },
             onView = { onAutomationView(automation) },
             onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) },
             onStartChat = { onAutomationStartChat?.invoke(automation.seedSessionId) }
-        )
+        ) }
     }
 
     // Empty state (only when list is not showing)
@@ -1000,3 +1020,42 @@ private fun toolInstanceOf(map: Map<String, Any?>) = ToolInstance(
     created_at = (map["created_at"] as Number).toLong(),
     updated_at = (map["updated_at"] as Number).toLong()
 )
+
+/**
+ * The buttons of a section's title line: its edit mode, on while it lasts (shown when it has
+ * tools), and adding, off while any section is in edit mode.
+ */
+@Composable
+private fun SectionButtons(key: String, hasTools: Boolean, editor: com.assistant.core.ui.components.GridEditor, onToggleToolsList: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (hasTools) UI.ActionButton(
+            action = ButtonAction.ARRANGE,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            active = editor.isEditing(key),
+            onClick = { editor.toggle(key) }
+        )
+        UI.ActionButton(
+            action = ButtonAction.ADD,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            enabled = !editor.anyEditing,
+            onClick = onToggleToolsList
+        )
+    }
+}
+
+/** A section's grid: in edit mode when it is the section edited, faded while another is. */
+@Composable
+private fun SectionGrid(
+    key: String,
+    tools: List<ToolInstance>,
+    editor: com.assistant.core.ui.components.GridEditor,
+    onToolClick: (String) -> Unit,
+    onToolLongClick: (ToolInstance) -> Unit,
+    onOpenEntry: (ToolInstance, com.assistant.core.tools.EntryToOpen) -> Unit
+) {
+    com.assistant.core.ui.components.Faded(editor.anyEditing && !editor.isEditing(key)) {
+        com.assistant.core.ui.components.ToolGrid(tools, { onToolClick(it.id) }, onToolLongClick, onOpenEntry, editor.gridEdit(key))
+    }
+}

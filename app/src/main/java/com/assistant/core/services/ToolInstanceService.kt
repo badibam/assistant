@@ -68,6 +68,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "get" -> handleGetById(params, token)      // tools/{id} pattern
                 "waiting" -> handleWaiting(params, token)
                 "running" -> handleRunning(params)
+                "place" -> handlePlace(params)
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
@@ -609,6 +610,30 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         ))
     }
 
+    /**
+     * The places of the tools of one group section, moved in the zone's edit mode: `zone_id`,
+     * `group` (absent for the ungrouped one) and `places`, `{tool_id: {"grid_x", "grid_y"}}` for
+     * every tool of the section. Written in one go, or refused when they do not lay the section
+     * out (Grid.isLaidOut). The screen alone moves tiles: the AI has no command for it.
+     */
+    private suspend fun handlePlace(params: JSONObject): OperationResult {
+        val zone = zoneDao.getZoneById(params.optString("zone_id"))
+            ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
+        val groups = ToolPositions.zoneGroups(zone.tool_groups)
+        val section = ToolPositions.section(params.optString("group").takeIf { it.isNotEmpty() }, groups)
+        val places = params.optJSONObject("places") ?: return OperationResult.error(s.shared("service_error_grid_places"))
+        val tools = toolInstanceDao.getToolInstancesByZone(zone.id).filter { ToolPositions.section(it, groups) == section }
+        if (places.keys().asSequence().toSet() != tools.map { it.id }.toSet()) return OperationResult.error(s.shared("service_error_grid_places"))
+        val placed = tools.map { tool ->
+            val place = places.getJSONObject(tool.id)
+            tool.copy(grid_x = place.getInt("grid_x"), grid_y = place.getInt("grid_y"))
+        }
+        if (!Grid.isLaidOut(placed.map { ToolPositions.tile(it) })) return OperationResult.error(s.shared("service_error_grid_places"))
+        database.withTransaction { write(ToolPositions.moved(tools, placed.map { ToolPositions.tile(it) })) }
+        DataChangeNotifier.notifyToolsChanged(zone.id)
+        return OperationResult.success(mapOf("zone_id" to zone.id, "count" to placed.size))
+    }
+
     private suspend fun handleGetByZone(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -790,6 +815,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             }
             "waiting" -> s.shared("action_verbalize_tools_waiting")
             "running" -> s.shared("action_verbalize_tools_running")
+            "place" -> s.shared("action_verbalize_tools_place")
             else -> s.shared("action_verbalize_unknown")
         }
     }

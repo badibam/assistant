@@ -306,13 +306,14 @@ object DefaultTheme : ThemeContract {
         enabled: Boolean,
         requireConfirmation: Boolean,
         confirmMessage: String?,
+        active: Boolean,
         onClick: () -> Unit
     ) {
         // État du dialogue de confirmation
         var showConfirmDialog by rememberSaveable { mutableStateOf(false) }
         
-        // Determine default type based on action
-        val buttonType = type ?: getDefaultButtonType(action)
+        // Determine default type based on action; switched on, it is filled with the main color
+        val buttonType = if (active) ButtonType.PRIMARY else type ?: getDefaultButtonType(action)
         
         // Determine state based on enabled
         val state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED
@@ -387,7 +388,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
 
             // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW -> ButtonType.DEFAULT
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.ARRANGE, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW -> ButtonType.DEFAULT
         }
     }
     
@@ -421,6 +422,9 @@ object DefaultTheme : ThemeContract {
             ButtonAction.VIEW -> s.shared("action_view")
             ButtonAction.ATTACH -> s.shared("action_attach")
             ButtonAction.REPEAT -> s.shared("action_repeat")
+            ButtonAction.ARRANGE -> s.shared("action_arrange")
+            ButtonAction.UP -> s.shared("action_up")
+            ButtonAction.DOWN -> s.shared("action_down")
         }
     }
 
@@ -985,6 +989,11 @@ object DefaultTheme : ThemeContract {
     @Composable
     override fun WaitingMark() {
         Box(modifier = Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+    }
+
+    @Composable
+    override fun GridCell() {
+        Box(modifier = Modifier.fillMaxSize().padding(2.dp).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)))
     }
 
     @Composable
