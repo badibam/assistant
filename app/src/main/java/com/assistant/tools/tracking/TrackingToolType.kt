@@ -241,6 +241,10 @@ object TrackingToolType : ToolTypeContract {
      * settings (value: a scale's bounds, a choice's options...), the units a numeric value can
      * be in, the shortcuts, and the user's fields.
      */
+    @Composable
+    override fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (entryId: String) -> Unit): com.assistant.core.tools.ToolTile =
+        com.assistant.tools.tracking.ui.rememberTrackingTile(tool)
+
     override fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =
         TrackingStopwatch.settle(entries, writtenId)
 }

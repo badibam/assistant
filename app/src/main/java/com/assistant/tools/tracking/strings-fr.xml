@@ -53,6 +53,7 @@
     <string name="usage_entry_updated">Entrée modifiée</string>
     <string name="usage_entry_deleted">Entrée supprimée</string>
     <string name="usage_entry_saved">Entrée sauvegardée</string>
+    <string name="tile_no_entry">Aucune entrée</string>
     <string name="usage_no_entries">Aucune entrée enregistrée</string>
     <string name="usage_label_value">Valeur</string>
     <string name="usage_custom_date">Date personnalisée</string>
