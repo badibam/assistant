@@ -14,9 +14,7 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.tools.ManualOrder
 import com.assistant.core.tools.ToolTypeContract
-import com.assistant.core.ui.DisplayMode
 import com.assistant.tools.list.ui.ListScreen
-import com.assistant.tools.list.ui.ListTile
 import org.json.JSONObject
 
 /**
@@ -143,7 +141,6 @@ object ListToolType : ToolTypeContract {
     }
 
     @Composable
-    override fun TileContent(tool: ToolInstance, displayMode: DisplayMode) {
-        ListTile(tool = tool, displayMode = displayMode)
-    }
+    override fun rememberTile(tool: ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
+        com.assistant.tools.list.ui.rememberListTile(tool)
 }
