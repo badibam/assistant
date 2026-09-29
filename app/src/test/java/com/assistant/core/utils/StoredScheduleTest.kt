@@ -1,6 +1,5 @@
-package com.assistant.tools.messages.scheduler
+package com.assistant.core.utils
 
-import com.assistant.core.utils.SchedulePattern
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame

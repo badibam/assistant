@@ -1,6 +1,6 @@
 package com.assistant.tools.messages.ui
 
-import com.assistant.tools.messages.scheduler.StoredSchedule
+import com.assistant.core.utils.StoredSchedule
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll

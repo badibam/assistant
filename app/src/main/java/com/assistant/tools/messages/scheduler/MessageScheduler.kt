@@ -1,6 +1,7 @@
 package com.assistant.tools.messages.scheduler
 
 import com.assistant.core.fields.settings.SettingValues
+import com.assistant.core.utils.StoredSchedule
 import com.assistant.tools.messages.MessageToolType
 import com.assistant.core.tools.BaseSchemas
 import android.content.Context

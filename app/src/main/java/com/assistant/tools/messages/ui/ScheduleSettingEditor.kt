@@ -17,7 +17,7 @@ import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
 import com.assistant.core.utils.ScheduleConfig
 import com.assistant.core.utils.SchedulePattern
-import com.assistant.tools.messages.scheduler.StoredSchedule
+import com.assistant.core.utils.StoredSchedule
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 

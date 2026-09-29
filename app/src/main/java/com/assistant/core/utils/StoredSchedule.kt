@@ -1,11 +1,10 @@
-package com.assistant.tools.messages.scheduler
+package com.assistant.core.utils
 
-import com.assistant.core.utils.ScheduleConfig
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 
 /**
- * The recurrence of a Messages tool as its config holds it: none, readable, or unreadable.
+ * The recurrence a config holds under "schedule" (a Messages tool, a goal): none, readable, or unreadable.
  *
  * Unreadable is kept apart from none because the two call for opposite handling. No recurrence
  * means nothing is expected, and the scheduler sheds what an earlier recurrence generated. A
@@ -20,7 +19,7 @@ sealed interface StoredSchedule {
     data class Unreadable(val raw: JSONObject, val cause: String) : StoredSchedule
 
     companion object {
-        /** Read the "schedule" of a Messages config with the same strict reader as the scheduler. */
+        /** Read the "schedule" of a config with the same strict reader as the schedulers. */
         fun of(config: JSONObject): StoredSchedule {
             val raw = config.optJSONObject("schedule") ?: return None
             return try {
