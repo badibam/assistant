@@ -19,9 +19,7 @@ import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.tools.ToolOperation
 import com.assistant.core.tools.ToolScheduler
 import com.assistant.core.tools.ToolTypeContract
-import com.assistant.core.ui.DisplayMode
 import com.assistant.tools.questionnaire.ui.QuestionnaireScreen
-import com.assistant.tools.questionnaire.ui.QuestionnaireTile
 import org.json.JSONObject
 
 /**
@@ -117,7 +115,6 @@ object QuestionnaireToolType : ToolTypeContract {
     }
 
     @Composable
-    override fun TileContent(tool: ToolInstance, displayMode: DisplayMode) {
-        QuestionnaireTile(tool = tool, displayMode = displayMode)
-    }
+    override fun rememberTile(tool: ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
+        com.assistant.tools.questionnaire.ui.rememberQuestionnaireTile(tool)
 }
