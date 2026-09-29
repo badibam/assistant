@@ -14,7 +14,7 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 
 - **Sept modes, sans ajout ni retrait.**
 - **Une case fait deux lignes** : une ligne est un huitième de la largeur de la grille, et toute hauteur dans une tuile se compte en lignes. Le thème dimensionne texte et boutons pour qu'une ligne en tienne une rangée.
-- **Les zones d'une tuile suivent les cases** : aucune case n'est partagée entre deux zones. Le cœur dessine le cadre et l'en-tête (icône et nom, 2×1) ; le type d'outil dessine deux choses (`TileContent`) : son **résumé**, un seul composant de 2×1, le même partout où il a sa place, actions comprises ; et son **corps**, sur les rangées qu'on lui donne.
+- **Les zones d'une tuile suivent les cases** : aucune case n'est partagée entre deux zones. Le cœur dessine le cadre et l'en-tête (icône et nom, 2×1) ; le type d'outil dessine deux choses (`rememberTile`, qui rend une `ToolTile`) : son **résumé**, un seul composant de 2×1, le même partout où il a sa place, actions comprises ; et son **corps**, sur les rangées qu'on lui donne.
 
   | Mode | En-tête (cœur) | Résumé (outil) | Corps (outil) |
   |---|---|---|---|
@@ -28,7 +28,7 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 - **Deux pastilles sur l'icône**, dessinées par le thème dans tous les modes, chacune dans son coin : l'attente (`WaitingMark`, un point pour l'instant), et un chronomètre en cours sur une entrée de l'outil (un champ durée qui tourne, lu par `tool_data.get` avec `running`, pour tout type d'outil).
 - **Jamais de défilement à l'intérieur d'une tuile.** Ce qui ne tient pas, et comment le signaler, est l'affaire du type d'outil ; FULL grandit avec ce que le type d'outil y montre.
 - **Une tuile porte ses raccourcis d'utilisation** : un élément tactile de la tuile fait son action, un toucher ailleurs ouvre l'outil (ou l'entrée qui attend), l'appui long sa config. La taille minimale d'un élément tactile est celle du thème. En édition, rien ne réagit.
-- **Tous les modes sont proposés pour tout outil**, et chaque type d'outil remplit chacun : `TileContent` n'a plus de rendu par défaut. S'il a trop peu à montrer dans un mode, l'utilisateur en change.
+- **Tous les modes sont proposés pour tout outil**, et chaque type d'outil remplit chacun : il n'y a pas de tuile par défaut. S'il a trop peu à montrer dans un mode, l'utilisateur en change.
 
 ## Les tuiles, par type d'outil
 
