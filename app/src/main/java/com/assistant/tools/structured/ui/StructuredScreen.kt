@@ -228,12 +228,14 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
         }
 
         if (openId == null) {
-            SheetsTable(shown, columns, sortKey, ascending, loadedSheets.isEmpty() && search.isBlank() && JSONArray(filters).length() == 0, s, context,
+            val empty = loadedSheets.isEmpty() && search.isBlank() && JSONArray(filters).length() == 0
+            SheetsTable(shown, columns, sortKey, ascending, empty, s, context,
                 onSort = { key -> if (key == sortKey) ascending = !ascending else { sortKey = key; ascending = true } },
                 onOpen = { open(it) })
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 UI.ActionButton(action = ButtonAction.ADD, onClick = { open(null) })
-                UI.Button(type = ButtonType.SECONDARY, onClick = { pickFile.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel")) }) {
+                // Always there; put forward while the table is empty, a new table being most often filled from a file
+                UI.Button(type = if (empty) ButtonType.PRIMARY else ButtonType.SECONDARY, onClick = { pickFile.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel")) }) {
                     UI.Text(s.shared("import_action"), TextType.LABEL)
                 }
             }
