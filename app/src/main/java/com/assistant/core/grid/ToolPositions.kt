@@ -52,20 +52,10 @@ object ToolPositions {
      * grid and arrives in the other one, in their order on the screen. Returns the tools that
      * moved, at their new place.
      */
-    fun regroup(tools: List<ToolInstance>, before: List<String>, after: List<String>): List<ToolInstance> {
-        val leaving = tools
-            .filter { section(it, before) != section(it, after) }
-            .sortedWith(compareBy({ it.grid_y }, { it.grid_x }))
-        if (leaving.isEmpty()) return emptyList()
-
-        // Each section's grid as the groups stand now: the ones they had, then the ones they get
-        val grids = tools.groupBy { section(it, before) }.mapValues { (_, list) -> list.map { tile(it) } }.toMutableMap()
-        for (tool in leaving) {
-            val from = section(tool, before)
-            val to = section(tool, after)
-            grids[from] = Grid.leave(grids.getValue(from), tool.id)
-            grids[to] = Grid.arrive(grids[to] ?: emptyList(), tool.id, size(tool.config_json))
-        }
-        return moved(tools, grids.values.flatten())
-    }
+    fun regroup(tools: List<ToolInstance>, before: List<String>, after: List<String>): List<ToolInstance> =
+        moved(tools, Grid.regroup(
+            tools.map { tile(it) },
+            tools.associate { it.id to section(it, before) },
+            tools.associate { it.id to section(it, after) }
+        ))
 }

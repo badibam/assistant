@@ -21,9 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
-import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.grid.Grid
-import com.assistant.core.grid.ToolPositions
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
@@ -34,19 +32,22 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * The edit mode of a zone's grids (docs/design/grid-layout.md, « Le mode d'édition »): one group
- * section at a time, named by its key (its group, "" for the ungrouped one), and in it the tool
- * being moved, at the places of the move in progress.
+ * The edit mode of a screen's grids (docs/design/grid-layout.md, « Le mode d'édition »): the
+ * tools of a zone, the zones of the home screen. One group section at a time, named by its key
+ * (its group, "" for the ungrouped one), and in it the tile being moved, at the places of the move
+ * in progress.
  *
- * A move is written when it is validated, when another tool is touched or when the edit mode is
- * closed, in one write (tools.place); "Cancel" puts the section back as it was when the tool was
- * touched. What is being edited survives recreation.
+ * A move is written when it is validated, when another tile is touched or when the edit mode is
+ * closed, in one write ([placeOperation], given [placeParams], the section's group and its
+ * places); "Cancel" puts the section back as it was when the tile was touched. What is being
+ * edited survives recreation.
  */
 class GridEditor internal constructor(
-    private val zoneId: String,
+    private val placeOperation: String,
+    private val placeParams: Map<String, Any>,
     private val coordinator: Coordinator,
     private val scope: CoroutineScope,
-    private val sectionTools: (String) -> List<ToolInstance>,
+    private val sectionTiles: (String) -> List<Grid.Tile>,
     private val onError: (String) -> Unit,
     private val section: MutableState<String?>,
     private val selected: MutableState<String?>,
@@ -59,28 +60,28 @@ class GridEditor internal constructor(
     val anyEditing: Boolean get() = section.value != null
     fun isEditing(key: String): Boolean = section.value == key
 
-    /** Whether the tool touched has moved since. */
+    /** Whether the tile touched has moved since. */
     val moving: Boolean get() = draft.value != null && draft.value != original.value
 
     /** The places of the section [key] while one of its tools is moved, else null (the stored ones). */
     fun places(key: String): List<Grid.Tile>? =
-        if (isEditing(key)) draft.value?.let { decode(it, sectionTools(key)) } else null
+        if (isEditing(key)) draft.value?.let { decode(it, sectionTiles(key)) } else null
 
     /** What the grid of section [key] shows in edit mode, or null outside it. */
     fun gridEdit(key: String): GridEdit? =
         if (!isEditing(key)) null
-        else GridEdit(places(key) ?: sectionTools(key).map { ToolPositions.tile(it) }, selected.value) { tool -> select(key, tool) }
+        else GridEdit(places(key) ?: sectionTiles(key), selected.value) { id -> select(key, id) }
 
     /** The edit button of section [key]: opens its edit mode, closing another's; closes its own. */
     fun toggle(key: String) = afterCommit {
         section.value = if (section.value == key) null else key
     }
 
-    private fun select(key: String, tool: ToolInstance) {
-        if (selected.value == tool.id) return
+    private fun select(key: String, id: String) {
+        if (selected.value == id) return
         afterCommit {
-            val tiles = encode(sectionTools(key).map { ToolPositions.tile(it) })
-            selected.value = tool.id
+            val tiles = encode(sectionTiles(key))
+            selected.value = id
             original.value = tiles
             draft.value = tiles
         }
@@ -100,10 +101,10 @@ class GridEditor internal constructor(
         return Grid.move(places(key) ?: return null, id, direction)
     }
 
-    /** The move written, the tool unselected; the edit mode stays. */
+    /** The move written, the tile unselected; the edit mode stays. */
     fun validate() = afterCommit {}
 
-    /** The section as it was when the tool was touched, the tool unselected. */
+    /** The section as it was when the tile was touched, the tile unselected. */
     fun cancel() {
         selected.value = null
         draft.value = null
@@ -120,8 +121,7 @@ class GridEditor internal constructor(
             return
         }
         scope.launch {
-            val result = coordinator.processUserAction("tools.place", mapOf(
-                "zone_id" to zoneId,
+            val result = coordinator.processUserAction(placeOperation, placeParams + mapOf(
                 "group" to key,
                 "places" to places.associate { it.id to mapOf("grid_x" to it.column, "grid_y" to it.row) }
             ))
@@ -136,21 +136,22 @@ class GridEditor internal constructor(
 
     private fun encode(tiles: List<Grid.Tile>): String = tiles.sortedBy { it.id }.joinToString(";") { "${it.id},${it.column},${it.row}" }
 
-    /** Places kept as text, the sizes read again from the tools. */
-    private fun decode(text: String, tools: List<ToolInstance>): List<Grid.Tile> {
-        val byId = tools.associateBy { it.id }
+    /** Places kept as text, the sizes read again from the stored tiles. */
+    private fun decode(text: String, stored: List<Grid.Tile>): List<Grid.Tile> {
+        val byId = stored.associateBy { it.id }
         return text.split(";").filter { it.isNotEmpty() }.mapNotNull { part ->
             val (id, column, row) = part.split(",")
-            byId[id]?.let { ToolPositions.tile(it).copy(column = column.toInt(), row = row.toInt()) }
+            byId[id]?.copy(column = column.toInt(), row = row.toInt())
         }
     }
 }
 
 /**
- * The edit mode of zone [zoneId]'s grids, [sectionTools] giving the tools of a section by its key.
+ * The edit mode of a screen's grids, [sectionTiles] giving the stored tiles of a section by its
+ * key, a move written by [placeOperation] with [placeParams].
  */
 @Composable
-fun rememberGridEditor(zoneId: String, sectionTools: (String) -> List<ToolInstance>, onError: (String) -> Unit): GridEditor {
+fun rememberGridEditor(placeOperation: String, placeParams: Map<String, Any>, sectionTiles: (String) -> List<Grid.Tile>, onError: (String) -> Unit): GridEditor {
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     val scope = rememberCoroutineScope()
@@ -158,7 +159,7 @@ fun rememberGridEditor(zoneId: String, sectionTools: (String) -> List<ToolInstan
     val selected = rememberSaveable { mutableStateOf<String?>(null) }
     val draft = rememberSaveable { mutableStateOf<String?>(null) }
     val original = rememberSaveable { mutableStateOf<String?>(null) }
-    return GridEditor(zoneId, coordinator, scope, sectionTools, onError, section, selected, draft, original)
+    return GridEditor(placeOperation, placeParams, coordinator, scope, sectionTiles, onError, section, selected, draft, original)
 }
 
 /**

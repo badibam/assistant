@@ -229,8 +229,9 @@ fun ZoneScreen(
 
     // The edit mode of the sections' grids, a section named by its group, "" for the ungrouped one
     val gridEditor = com.assistant.core.ui.components.rememberGridEditor(
-        zoneId = zone.id,
-        sectionTools = { key -> toolInstances.filter { ToolPositions.section(it, zoneToolGroups) == key.ifEmpty { null } } },
+        placeOperation = "tools.place",
+        placeParams = mapOf("zone_id" to zone.id),
+        sectionTiles = { key -> ToolPositions.tiles(toolInstances, zoneToolGroups, key.ifEmpty { null }) },
         onError = { errorMessage = it }
     )
 

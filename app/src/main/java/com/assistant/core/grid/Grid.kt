@@ -75,6 +75,27 @@ object Grid {
         return closeEmptyRows(shifted + moved)
     }
 
+    /**
+     * Items whose section changes from [before] to [after] (by id): each leaves its grid and
+     * arrives in the other one, in the order of [tiles] on the screen (row, then column). [tiles]
+     * holds the items of every section at their places. Returns the tiles that moved, at their
+     * new place.
+     */
+    fun <K> regroup(tiles: List<Tile>, before: Map<String, K>, after: Map<String, K>): List<Tile> {
+        val leaving = tiles.filter { before[it.id] != after[it.id] }.sortedWith(compareBy({ it.row }, { it.column }))
+        if (leaving.isEmpty()) return emptyList()
+        // Each section's grid as the sections stand now: the ones they had, then the ones they get
+        val grids = tiles.groupBy { before[it.id] }.toMutableMap()
+        for (tile in leaving) {
+            val from = before[tile.id]
+            val to = after[tile.id]
+            grids[from] = leave(grids.getValue(from), tile.id)
+            grids[to] = arrive(grids[to] ?: emptyList(), tile.id, Size(tile.width, tile.height))
+        }
+        val original = tiles.associateBy { it.id }
+        return grids.values.flatten().filter { original[it.id] != it }
+    }
+
     enum class Direction { LEFT, RIGHT, UP, DOWN }
 
     /**
