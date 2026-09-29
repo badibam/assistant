@@ -1108,6 +1108,12 @@
     <string name="service_error_references_missing">Donnez les références à nommer dans "references" : une liste de {"kind", "id"}.</string>
     <string name="action_verbalize_references_names">Lecture des noms des choses liées</string>
     <string name="action_verbalize_references_choices">Liste de ce qu\'un lien peut désigner</string>
+    <string name="file_error_not_text">%1$s n\'est pas un fichier texte : seul du texte se joint (CSV, texte brut, Markdown, JSON).</string>
+    <string name="file_error_not_found">Aucun fichier joint n\'a l\'id %1$s.</string>
+    <string name="file_error_range">Lignes à lire : start_line à partir de 1 et lines à partir de 1 (reçu %1$d et %2$d).</string>
+    <string name="action_verbalize_files_attach">Ajout d\'un fichier joint</string>
+    <string name="action_verbalize_files_read">Lecture d\'un fichier joint</string>
+    <string name="action_verbalize_files_delete">Retrait d\'un fichier joint</string>
     <string name="service_error_reading_param">Une lecture demande "%1$s".</string>
     <string name="service_error_reading_source">Une lecture lit les entrées d\'une instance d\'outil, pas d\'un %1$s.</string>
     <string name="service_error_reading_source_unread">L\'outil lu n\'a pas pu être lu ; rien ne dit qu\'il a été supprimé.</string>

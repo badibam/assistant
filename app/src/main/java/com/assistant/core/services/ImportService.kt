@@ -26,9 +26,12 @@ import org.json.JSONObject
  * The core's import (docs/DATA.md, « Import »), into any tool, the same for the screen and, later,
  * the AI and an API: lines of text values named by their column.
  *
- * - detect: `tool_instance_id`, `csv`: a declaration to confirm, column by column (target, type,
+ * The lines come from `csv`, the file's text, or from `file`, the id of a file joined to a message
+ * (the files service), which the AI imports from without reading its lines.
+ *
+ * - detect: `tool_instance_id`, `csv` or `file`: a declaration to confirm, column by column (target, type,
  *   writing, an example read), with the ambiguities to settle and the lines that would be refused
- * - apply: `tool_instance_id`, `csv`, `columns` (a complete declaration): the new fields created
+ * - apply: `tool_instance_id`, `csv` or `file`, `columns` (a complete declaration): the new fields created
  *   in the order of the columns, then each line written — an entry found by its key updated, the
  *   others created; a cell that does not read, or a line the service refuses, refuses that line
  *   alone. Refused whole: an incomplete declaration, naming what is missing, a key twice in the file.
@@ -42,8 +45,12 @@ class ImportService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
         val toolInstanceId = params.optString("tool_instance_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
+        val text = params.optString("file").takeIf { it.isNotEmpty() }?.let { fileId ->
+            AppDatabase.getDatabase(context).attachedFileDao().getById(fileId)?.content
+                ?: return OperationResult.error(s.shared("file_error_not_found").format(fileId))
+        } ?: params.optString("csv")
         val table = try {
-            CsvReader.read(params.optString("csv")) { s.shared(it) }
+            CsvReader.read(text) { s.shared(it) }
         } catch (e: IllegalArgumentException) {
             return OperationResult.error(s.shared("import_error_file").format(e.message ?: ""))
         }
