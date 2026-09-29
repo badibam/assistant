@@ -356,8 +356,30 @@ private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSO
             edit { put("selection", JSONObject(selection.toString()).apply { if (nextPeriod.length() == 0) remove("period") else put("period", nextPeriod) }) }
         }
     }
-    selection.optJSONArray("filters")?.takeIf { it.length() > 0 }?.let {
-        UI.Text(text = s.shared("variable_reading_filters").format(it.length()), type = TextType.CAPTION)
+    // Its filters on the entries' values, relative dates resolved at each reading
+    var editingFilters by rememberSaveable { mutableStateOf(false) }
+    val filters = selection.optJSONArray("filters") ?: org.json.JSONArray()
+    for (i in 0 until filters.length()) {
+        UI.Text(text = com.assistant.core.ui.selectors.PointerDescription.filter(filters.getJSONObject(i), fields, s), type = TextType.CAPTION)
+    }
+    if (toolId != null) {
+        UI.Button(type = ButtonType.DEFAULT, onClick = { editingFilters = true }) {
+            UI.Text(text = s.shared("variable_reading_filters").format(filters.length()), type = TextType.LABEL)
+        }
+    }
+    if (editingFilters && toolId != null) {
+        com.assistant.core.ui.selectors.PointerFiltersDialog(
+            toolInstanceId = toolId,
+            fields = fields,
+            filters = filters,
+            chosenFields = null,
+            relative = true,
+            onDismiss = { editingFilters = false },
+            onConfirm = { chosen, _ ->
+                editingFilters = false
+                edit { put("selection", JSONObject(selection.toString()).apply { if (chosen.length() == 0) remove("filters") else put("filters", chosen) }) }
+            }
+        )
     }
 }
 
