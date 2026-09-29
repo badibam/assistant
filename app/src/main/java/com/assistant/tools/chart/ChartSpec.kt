@@ -1,4 +1,4 @@
-package com.assistant.core.charts
+package com.assistant.tools.chart
 
 import com.assistant.core.selection.EntryPeriod
 import com.assistant.core.selection.EntrySelection
@@ -28,10 +28,11 @@ data class ChartSpec(val period: EntryPeriod, val composition: Composition) {
         /**
          * The chart [config] describes.
          *
-         * @param text The shared strings, for what does not read
+         * @param shared The shared strings, for what the bricks it holds say does not read
+         * @param own The chart tool's strings, for what it says itself
          * @throws IllegalArgumentException naming what does not read
          */
-        fun of(config: JSONObject, text: (String) -> String): ChartSpec = ChartReader(text).chart(config)
+        fun of(config: JSONObject, shared: (String) -> String, own: (String) -> String): ChartSpec = ChartReader(shared, own).chart(config)
     }
 }
 
@@ -107,7 +108,12 @@ enum class MarkType(val key: String) {
 
 enum class Interpolate(val key: String) { LINEAR("linear"), STEP_AFTER("step-after"), MONOTONE("monotone") }
 
-enum class Shape(val key: String) { CIRCLE("circle"), SQUARE("square"), TRIANGLE("triangle"), DIAMOND("diamond"), CROSS("cross") }
+/** A point's shape, by Vega-Lite's name, drawn as the symbol of the same shape. */
+enum class Shape(val key: String, val symbol: com.assistant.core.drawing.SymbolShape) {
+    CIRCLE("circle", com.assistant.core.drawing.SymbolShape.CIRCLE), SQUARE("square", com.assistant.core.drawing.SymbolShape.SQUARE),
+    TRIANGLE("triangle", com.assistant.core.drawing.SymbolShape.TRIANGLE), DIAMOND("diamond", com.assistant.core.drawing.SymbolShape.DIAMOND),
+    CROSS("cross", com.assistant.core.drawing.SymbolShape.CROSS)
+}
 
 /** How a mark is drawn, whatever its data: each style only where its mark type takes it. */
 data class Mark(
@@ -231,30 +237,30 @@ object ChartKeys {
 }
 
 /** Reads a chart's config into its model, naming what does not read. */
-private class ChartReader(private val text: (String) -> String) {
+private class ChartReader(private val text: (String) -> String, private val own: (String) -> String) {
 
-    private fun refuse(key: String, vararg args: Any): Nothing = throw IllegalArgumentException(text(key).format(*args))
+    private fun refuse(key: String, vararg args: Any): Nothing = throw IllegalArgumentException(own(key).format(*args))
 
     fun chart(config: JSONObject): ChartSpec {
         val period = config.optJSONObject(ChartKeys.PERIOD)?.let { EntryPeriod.fromJson(it, text) }
-            ?: refuse("chart_error_missing", ChartKeys.PERIOD)
+            ?: refuse("error_missing", ChartKeys.PERIOD)
         val composition = when (val kind = config.optString(ChartKeys.COMPOSITION).ifEmpty { ChartKeys.SINGLE }) {
             ChartKeys.SINGLE -> Composition.Single(view(config))
             ChartKeys.FACET -> Composition.Facet(
-                field = config.optJSONObject(ChartKeys.FACET)?.optString(ChartKeys.FIELD)?.takeIf { it.isNotEmpty() } ?: refuse("chart_error_missing", "${ChartKeys.FACET}.${ChartKeys.FIELD}"),
+                field = config.optJSONObject(ChartKeys.FACET)?.optString(ChartKeys.FIELD)?.takeIf { it.isNotEmpty() } ?: refuse("error_missing", "${ChartKeys.FACET}.${ChartKeys.FIELD}"),
                 view = view(config),
                 columns = columns(config)
             )
             ChartKeys.REPEAT -> Composition.Repeat(
-                fields = strings(config.optJSONArray(ChartKeys.REPEAT)).takeIf { it.isNotEmpty() } ?: refuse("chart_error_missing", ChartKeys.REPEAT),
+                fields = strings(config.optJSONArray(ChartKeys.REPEAT)).takeIf { it.isNotEmpty() } ?: refuse("error_missing", ChartKeys.REPEAT),
                 view = view(config),
                 columns = columns(config)
             )
             else -> {
                 val direction = ConcatDirection.entries.firstOrNull { it.key == kind }
-                    ?: refuse("chart_error_option", ChartKeys.COMPOSITION, kind, ChartKeys.COMPOSITIONS.joinToString(", "))
+                    ?: refuse("error_option", ChartKeys.COMPOSITION, kind, ChartKeys.COMPOSITIONS.joinToString(", "))
                 val children = config.optJSONArray(direction.key)?.let { array -> (0 until array.length()).map { view(array.getJSONObject(it)) } }
-                    ?.takeIf { it.isNotEmpty() } ?: refuse("chart_error_missing", direction.key)
+                    ?.takeIf { it.isNotEmpty() } ?: refuse("error_missing", direction.key)
                 Composition.Concat(direction, children, columns(config))
             }
         }
@@ -265,26 +271,26 @@ private class ChartReader(private val text: (String) -> String) {
 
     private fun view(json: JSONObject): View {
         val layers = json.optJSONArray(ChartKeys.LAYER)?.let { array -> (0 until array.length()).map { layer(array.getJSONObject(it), it) } }
-        return View(layers?.takeIf { it.isNotEmpty() } ?: refuse("chart_error_missing", ChartKeys.LAYER), json.optString(ChartKeys.TITLE).takeIf { it.isNotBlank() })
+        return View(layers?.takeIf { it.isNotEmpty() } ?: refuse("error_missing", ChartKeys.LAYER), json.optString(ChartKeys.TITLE).takeIf { it.isNotBlank() })
     }
 
     private fun layer(json: JSONObject, index: Int): Layer {
         val source = when (val kind = json.optString(ChartKeys.SOURCE)) {
             ChartKeys.ENTRIES -> Source.Entries(EntrySelection.fromJson(
-                json.optJSONObject(ChartKeys.SELECTION)?.takeIf { it.has("target") } ?: refuse("chart_error_missing", ChartKeys.SELECTION), text))
+                json.optJSONObject(ChartKeys.SELECTION)?.takeIf { it.has("target") } ?: refuse("error_missing", ChartKeys.SELECTION), text))
             ChartKeys.GRID -> Source.Grid(
                 step = ChartKeys.STEPS[json.optString(ChartKeys.STEP)]
-                    ?: refuse("chart_error_option", ChartKeys.STEP, json.optString(ChartKeys.STEP), ChartKeys.STEPS.keys.joinToString(", ")),
+                    ?: refuse("error_option", ChartKeys.STEP, json.optString(ChartKeys.STEP), ChartKeys.STEPS.keys.joinToString(", ")),
                 columns = json.optJSONArray(ChartKeys.COLUMNS)?.let { array -> (0 until array.length()).map { i ->
                     val column = array.getJSONObject(i)
-                    val name = column.optString(ChartKeys.NAME).takeIf { it.isNotEmpty() } ?: refuse("chart_error_missing", "${ChartKeys.COLUMNS}.${ChartKeys.NAME}")
-                    GridColumn(name, Term.fromJson(column.optJSONObject(ChartKeys.TERM) ?: refuse("chart_error_missing", "$name.${ChartKeys.TERM}"), name, text))
-                } }?.takeIf { it.isNotEmpty() } ?: refuse("chart_error_missing", ChartKeys.COLUMNS)
+                    val name = column.optString(ChartKeys.NAME).takeIf { it.isNotEmpty() } ?: refuse("error_missing", "${ChartKeys.COLUMNS}.${ChartKeys.NAME}")
+                    GridColumn(name, Term.fromJson(column.optJSONObject(ChartKeys.TERM) ?: refuse("error_missing", "$name.${ChartKeys.TERM}"), name, text))
+                } }?.takeIf { it.isNotEmpty() } ?: refuse("error_missing", ChartKeys.COLUMNS)
             )
-            else -> refuse("chart_error_option", ChartKeys.SOURCE, kind, "${ChartKeys.ENTRIES}, ${ChartKeys.GRID}")
+            else -> refuse("error_option", ChartKeys.SOURCE, kind, "${ChartKeys.ENTRIES}, ${ChartKeys.GRID}")
         }
         val transforms = json.optJSONArray(ChartKeys.TRANSFORM)?.let { array -> (0 until array.length()).map { transform(array.getJSONObject(it)) } } ?: emptyList()
-        val markJson = json.optJSONObject(ChartKeys.MARK) ?: refuse("chart_error_missing", "${ChartKeys.LAYER}[$index].${ChartKeys.MARK}")
+        val markJson = json.optJSONObject(ChartKeys.MARK) ?: refuse("error_missing", "${ChartKeys.LAYER}[$index].${ChartKeys.MARK}")
         val encoding = json.optJSONObject(ChartKeys.ENCODING) ?: JSONObject()
         return Layer(source, transforms, mark(markJson), Channel.entries.mapNotNull { channel ->
             encoding.optJSONObject(channel.key)?.let { channel to channelDef(channel, it) }
@@ -297,21 +303,21 @@ private class ChartReader(private val text: (String) -> String) {
         return when {
             fold.isNotEmpty() && flatten.isEmpty() -> {
                 val names = strings(json.optJSONArray(ChartKeys.AS))
-                if (names.isNotEmpty() && names.size != 2) refuse("chart_error_fold_as")
+                if (names.isNotEmpty() && names.size != 2) refuse("error_fold_as")
                 Transform.Fold(fold, names.getOrElse(0) { ChartKeys.FOLD_KEY }, names.getOrElse(1) { ChartKeys.FOLD_VALUE })
             }
             flatten.isNotEmpty() && fold.isEmpty() -> Transform.Flatten(flatten)
-            else -> refuse("chart_error_transform")
+            else -> refuse("error_transform")
         }
     }
 
     private fun mark(json: JSONObject): Mark {
         val type = MarkType.of(json.optString(ChartKeys.TYPE))
-            ?: refuse("chart_error_option", "${ChartKeys.MARK}.${ChartKeys.TYPE}", json.optString(ChartKeys.TYPE), MarkType.entries.joinToString(", ") { it.key })
+            ?: refuse("error_option", "${ChartKeys.MARK}.${ChartKeys.TYPE}", json.optString(ChartKeys.TYPE), MarkType.entries.joinToString(", ") { it.key })
         return Mark(
             type = type,
             interpolate = json.optString(ChartKeys.INTERPOLATE).takeIf { it.isNotEmpty() }?.let { key ->
-                Interpolate.entries.firstOrNull { it.key == key } ?: refuse("chart_error_option", ChartKeys.INTERPOLATE, key, Interpolate.entries.joinToString(", ") { it.key })
+                Interpolate.entries.firstOrNull { it.key == key } ?: refuse("error_option", ChartKeys.INTERPOLATE, key, Interpolate.entries.joinToString(", ") { it.key })
             } ?: Interpolate.LINEAR,
             point = json.optBoolean(ChartKeys.POINT, false),
             strokeDash = json.optJSONArray(ChartKeys.STROKE_DASH)?.let { array -> (0 until array.length()).map { (array.get(it) as Number).toFloat() } }?.takeIf { it.isNotEmpty() },
@@ -320,7 +326,7 @@ private class ChartReader(private val text: (String) -> String) {
             size = (json.opt(ChartKeys.SIZE) as? Number)?.toFloat(),
             filled = if (json.has(ChartKeys.FILLED)) json.getBoolean(ChartKeys.FILLED) else null,
             shape = json.optString(ChartKeys.SHAPE).takeIf { it.isNotEmpty() }?.let { key ->
-                Shape.entries.firstOrNull { it.key == key } ?: refuse("chart_error_option", ChartKeys.SHAPE, key, Shape.entries.joinToString(", ") { it.key })
+                Shape.entries.firstOrNull { it.key == key } ?: refuse("error_option", ChartKeys.SHAPE, key, Shape.entries.joinToString(", ") { it.key })
             }
         )
     }
@@ -331,7 +337,7 @@ private class ChartReader(private val text: (String) -> String) {
         return ChannelDef(
             field = json.optString(ChartKeys.FIELD).takeIf { it.isNotEmpty() },
             type = json.optString(ChartKeys.TYPE).takeIf { it.isNotEmpty() }?.let { key ->
-                Measure.entries.firstOrNull { it.key == key } ?: refuse("chart_error_option", "${channel.key}.${ChartKeys.TYPE}", key, Measure.entries.joinToString(", ") { it.key })
+                Measure.entries.firstOrNull { it.key == key } ?: refuse("error_option", "${channel.key}.${ChartKeys.TYPE}", key, Measure.entries.joinToString(", ") { it.key })
             },
             scale = ScaleDef(
                 domain = scale?.optJSONArray(ChartKeys.DOMAIN)?.let { array -> (0 until array.length()).map { array.get(it) } }?.takeIf { it.isNotEmpty() },
@@ -343,17 +349,17 @@ private class ChartReader(private val text: (String) -> String) {
             axis = AxisDef(
                 grid = axis?.takeIf { it.has(ChartKeys.GRID_LINES) }?.getBoolean(ChartKeys.GRID_LINES),
                 orient = axis?.optString(ChartKeys.ORIENT)?.takeIf { it.isNotEmpty() }?.let { key ->
-                    Orient.entries.firstOrNull { it.key == key } ?: refuse("chart_error_option", ChartKeys.ORIENT, key, Orient.entries.joinToString(", ") { it.key })
+                    Orient.entries.firstOrNull { it.key == key } ?: refuse("error_option", ChartKeys.ORIENT, key, Orient.entries.joinToString(", ") { it.key })
                 } ?: Orient.LEFT
             ),
             legend = json.optBoolean(ChartKeys.LEGEND, true),
             stack = json.optString(ChartKeys.STACK).takeIf { it.isNotEmpty() }?.let { key ->
-                Stack.entries.firstOrNull { it.key == key } ?: refuse("chart_error_option", ChartKeys.STACK, key, Stack.entries.joinToString(", ") { it.key })
+                Stack.entries.firstOrNull { it.key == key } ?: refuse("error_option", ChartKeys.STACK, key, Stack.entries.joinToString(", ") { it.key })
             },
             condition = json.optJSONObject(ChartKeys.CONDITION)?.let { condition ->
                 ChannelCondition(
-                    test = condition.optJSONObject(ChartKeys.TEST) ?: refuse("chart_error_missing", "${channel.key}.${ChartKeys.CONDITION}.${ChartKeys.TEST}"),
-                    value = value(channel, condition.opt(ChartKeys.VALUE) ?: refuse("chart_error_missing", "${channel.key}.${ChartKeys.CONDITION}.${ChartKeys.VALUE}"))
+                    test = condition.optJSONObject(ChartKeys.TEST) ?: refuse("error_missing", "${channel.key}.${ChartKeys.CONDITION}.${ChartKeys.TEST}"),
+                    value = value(channel, condition.opt(ChartKeys.VALUE) ?: refuse("error_missing", "${channel.key}.${ChartKeys.CONDITION}.${ChartKeys.VALUE}"))
                 )
             },
             value = json.opt(ChartKeys.VALUE)?.takeIf { it != JSONObject.NULL }?.let { value(channel, it) }
@@ -363,12 +369,12 @@ private class ChartReader(private val text: (String) -> String) {
     /** A value written for a channel: a palette name for a color, a number for the others that take one. */
     private fun value(channel: Channel, raw: Any): Any = when (channel) {
         Channel.COLOR -> color(raw.toString())
-        Channel.SHAPE -> Shape.entries.firstOrNull { it.key == raw } ?: refuse("chart_error_option", Channel.SHAPE.key, raw, Shape.entries.joinToString(", ") { it.key })
-        else -> (raw as? Number)?.toFloat() ?: refuse("chart_error_value", channel.key, raw)
+        Channel.SHAPE -> Shape.entries.firstOrNull { it.key == raw } ?: refuse("error_option", Channel.SHAPE.key, raw, Shape.entries.joinToString(", ") { it.key })
+        else -> (raw as? Number)?.toFloat() ?: refuse("error_value", channel.key, raw)
     }
 
     private fun color(name: String): TagColor = TagColor.entries.firstOrNull { it.name == name }
-        ?: refuse("chart_error_option", ChartKeys.RANGE, name, TagColor.entries.joinToString(", ") { it.name })
+        ?: refuse("error_option", ChartKeys.RANGE, name, TagColor.entries.joinToString(", ") { it.name })
 
     private fun strings(array: JSONArray?): List<String> = array?.let { (0 until it.length()).map { i -> it.getString(i) } } ?: emptyList()
 

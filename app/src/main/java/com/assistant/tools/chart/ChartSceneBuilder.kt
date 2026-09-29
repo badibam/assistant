@@ -1,6 +1,16 @@
-package com.assistant.core.charts
+package com.assistant.tools.chart
 
 import com.assistant.core.conditions.Condition
+import com.assistant.core.drawing.DrawColor
+import com.assistant.core.drawing.DrawPoint
+import com.assistant.core.drawing.DrawRect
+import com.assistant.core.drawing.DrawShape
+import com.assistant.core.drawing.Drawing
+import com.assistant.core.drawing.InkLevel
+import com.assistant.core.drawing.PathStep
+import com.assistant.core.drawing.SymbolShape
+import com.assistant.core.drawing.TextAnchor
+import com.assistant.core.drawing.TextBaseline
 import com.assistant.core.conditions.ConditionJudge
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
@@ -33,8 +43,11 @@ interface ChartText {
     /** A number with [decimals] decimals, as the app writes numbers. */
     fun number(value: Double, decimals: Int): String
 
-    /** The shared string of [key], for what the drawing writes of its own (a weekday, « % »). */
+    /** The shared string of [key], for what the bricks a chart holds say (a condition that does not read). */
     fun shared(key: String): String
+
+    /** The chart tool's string of [key], for what the drawing writes of its own (« % », a share). */
+    fun own(key: String): String
 }
 
 /** The sizes of a chart's drawing, in pixels. */
@@ -58,8 +71,8 @@ data class ChartMetrics(val density: Float) {
 }
 
 /**
- * Lays out a chart (ChartSpec) over the tables its layers read, [width] pixels wide: the scene
- * its theme draws. Nothing here reads data or knows a screen: the tables come in whole, the
+ * Lays out a chart (ChartSpec) over the tables its layers read, [width] pixels wide: the drawing
+ * its theme draws (Drawing), written once here, and what a touch finds on it. Nothing here reads data or knows a screen: the tables come in whole, the
  * sizes of texts from [text].
  *
  * @param now The instant the chart is shown at, which a condition's relative dates resolve against
@@ -71,7 +84,7 @@ class ChartSceneBuilder(
     private val weekStartDay: String,
     private val now: Long
 ) {
-    private val shapes = mutableListOf<SceneShape>()
+    private val shapes = mutableListOf<DrawShape>()
     private val hits = mutableListOf<Hit>()
     private val legends = LinkedHashMap<String, Legend>()
     private lateinit var colors: ColorScales
@@ -87,7 +100,7 @@ class ChartSceneBuilder(
      * @param tables The table of each layer, in the order of ChartSpec.layers
      * @param period The displayed period's instants, a side absent without limit
      */
-    fun build(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Long?>, width: Float): ChartScene {
+    fun build(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Long?>, width: Float): ChartLayout {
         require(tables.size == spec.layers.size) { "a table per layer" }
         shapes.clear(); hits.clear(); legends.clear()
         periodStart = period.first?.toDouble()
@@ -117,9 +130,9 @@ class ChartSceneBuilder(
             val left = (i % columns) * (cellWidth + metrics.cellGap)
             val top = (i / columns) * (cellHeight + titleHeight + metrics.cellGap)
             cell.title?.let {
-                shapes.add(SceneShape.Label(it, ScenePoint(left + cellWidth / 2, top + metrics.gap), TextAnchor.MIDDLE, TextBaseline.TOP, null, SceneRole.CELL_TITLE))
+                shapes.add(DrawShape.Label(it, DrawPoint(left + cellWidth / 2, top + metrics.gap), TextAnchor.MIDDLE, TextBaseline.TOP, DrawColor.Ink(InkLevel.STRONG)))
             }
-            val rect = SceneRect(left, top + titleHeight, left + cellWidth, top + titleHeight + cellHeight)
+            val rect = DrawRect(left, top + titleHeight, left + cellWidth, top + titleHeight + cellHeight)
             if (cell.layers.all { it.layer.mark.type == MarkType.ARC || (it.layer.mark.type == MarkType.TEXT && it.layer.channel(Channel.THETA) != null) }) {
                 drawArcs(cell, rect)
             } else {
@@ -128,7 +141,7 @@ class ChartSceneBuilder(
             bottom = max(bottom, rect.bottom)
         }
         val height = drawLegends(bottom + metrics.cellGap, width)
-        return ChartScene(width, height, shapes.toList(), hits.toList())
+        return ChartLayout(Drawing(width, height, shapes.toList()), hits.toList())
     }
 
     // ---------------------------------------------------------------------------------------
@@ -313,7 +326,7 @@ class ChartSceneBuilder(
         }
     }
 
-    private fun drawCartesian(cell: Cell, rect: SceneRect, shared: List<Bound>?) {
+    private fun drawCartesian(cell: Cell, rect: DrawRect, shared: List<Bound>?) {
         val prepared = cell.layers.map { Prepared(it) }
         val sharedPrepared = shared?.map { Prepared(it) } ?: prepared
         val sides = listOf(Orient.LEFT, Orient.RIGHT).filter { side -> prepared.any { it.side == side && it.yDef != null } || (side == Orient.LEFT && prepared.none { it.yDef != null }) }
@@ -340,17 +353,17 @@ class ChartSceneBuilder(
         val left = rect.left + (margins[Orient.LEFT] ?: metrics.gap)
         val right = rect.right - (margins[Orient.RIGHT] ?: metrics.gap * 2)
         val xAxis = axis(sharedPrepared, vertical = false, kind = xKind, start = left, end = right)
-        val plot = SceneRect(left, top, right, bottom)
+        val plot = DrawRect(left, top, right, bottom)
 
         // Behind the marks: the grid
         yAxes.forEach { (side, axis) ->
             val grid = prepared.firstOrNull { it.side == side }?.yDef?.axis?.grid ?: (side == Orient.LEFT && axis.kind != AxisKind.BAND)
             if (grid) axis.ticks.forEach { tick -> axis.number(tick.value)?.let { y ->
-                shapes.add(SceneShape.Segment(ScenePoint(plot.left, y), ScenePoint(plot.right, y), null, metrics.axisWidth, null, SceneRole.GRID))
+                shapes.add(DrawShape.Segment(DrawPoint(plot.left, y), DrawPoint(plot.right, y), DrawColor.Ink(InkLevel.FAINT), metrics.axisWidth, null))
             } }
         }
         if (prepared.firstOrNull()?.xDef?.axis?.grid == true) xAxis.ticks.forEach { tick -> xAxis.number(tick.value)?.let { x ->
-            shapes.add(SceneShape.Segment(ScenePoint(x, plot.top), ScenePoint(x, plot.bottom), null, metrics.axisWidth, null, SceneRole.GRID))
+            shapes.add(DrawShape.Segment(DrawPoint(x, plot.top), DrawPoint(x, plot.bottom), DrawColor.Ink(InkLevel.FAINT), metrics.axisWidth, null))
         } }
 
         // The marks, layer over layer, then the holes over them
@@ -361,28 +374,28 @@ class ChartSceneBuilder(
         prepared.forEach { p -> drawHoles(p, xAxis, plot) }
 
         // The axes over everything
-        shapes.add(SceneShape.Segment(ScenePoint(plot.left, plot.bottom), ScenePoint(plot.right, plot.bottom), null, metrics.axisWidth, null, SceneRole.AXIS))
+        shapes.add(DrawShape.Segment(DrawPoint(plot.left, plot.bottom), DrawPoint(plot.right, plot.bottom), DrawColor.Ink(InkLevel.MEDIUM), metrics.axisWidth, null))
         xAxis.ticks.forEach { tick ->
             val x = (if (xAxis.kind == AxisKind.BAND) xAxis.band?.center(categoryOf(xAxis, tick)) else xAxis.number(tick.value)) ?: return@forEach
-            shapes.add(SceneShape.Segment(ScenePoint(x, plot.bottom), ScenePoint(x, plot.bottom + metrics.tickLength), null, metrics.axisWidth, null, SceneRole.TICK))
-            shapes.add(SceneShape.Label(tick.label, ScenePoint(x, plot.bottom + metrics.tickLength + metrics.gap), TextAnchor.MIDDLE, TextBaseline.TOP, null, SceneRole.AXIS_LABEL))
+            shapes.add(DrawShape.Segment(DrawPoint(x, plot.bottom), DrawPoint(x, plot.bottom + metrics.tickLength), DrawColor.Ink(InkLevel.MEDIUM), metrics.axisWidth, null))
+            shapes.add(DrawShape.Label(tick.label, DrawPoint(x, plot.bottom + metrics.tickLength + metrics.gap), TextAnchor.MIDDLE, TextBaseline.TOP, DrawColor.Ink(InkLevel.MEDIUM)))
         }
         xTitle?.let {
-            shapes.add(SceneShape.Label(it, ScenePoint((plot.left + plot.right) / 2, rect.bottom), TextAnchor.MIDDLE, TextBaseline.BOTTOM, null, SceneRole.AXIS_TITLE))
+            shapes.add(DrawShape.Label(it, DrawPoint((plot.left + plot.right) / 2, rect.bottom), TextAnchor.MIDDLE, TextBaseline.BOTTOM, DrawColor.Ink(InkLevel.STRONG)))
         }
         yAxes.forEach { (side, axis) ->
             val x = if (side == Orient.LEFT) plot.left else plot.right
             val outward = if (side == Orient.LEFT) -1 else 1
-            shapes.add(SceneShape.Segment(ScenePoint(x, plot.top), ScenePoint(x, plot.bottom), null, metrics.axisWidth, null, SceneRole.AXIS))
+            shapes.add(DrawShape.Segment(DrawPoint(x, plot.top), DrawPoint(x, plot.bottom), DrawColor.Ink(InkLevel.MEDIUM), metrics.axisWidth, null))
             axis.ticks.forEach { tick ->
                 val y = (if (axis.kind == AxisKind.BAND) axis.band?.center(categoryOf(axis, tick)) else axis.number(tick.value)) ?: return@forEach
-                shapes.add(SceneShape.Segment(ScenePoint(x, y), ScenePoint(x + outward * metrics.tickLength, y), null, metrics.axisWidth, null, SceneRole.TICK))
-                shapes.add(SceneShape.Label(tick.label, ScenePoint(x + outward * (metrics.tickLength + metrics.gap), y),
-                    if (side == Orient.LEFT) TextAnchor.END else TextAnchor.START, TextBaseline.MIDDLE, null, SceneRole.AXIS_LABEL))
+                shapes.add(DrawShape.Segment(DrawPoint(x, y), DrawPoint(x + outward * metrics.tickLength, y), DrawColor.Ink(InkLevel.MEDIUM), metrics.axisWidth, null))
+                shapes.add(DrawShape.Label(tick.label, DrawPoint(x + outward * (metrics.tickLength + metrics.gap), y),
+                    if (side == Orient.LEFT) TextAnchor.END else TextAnchor.START, TextBaseline.MIDDLE, DrawColor.Ink(InkLevel.MEDIUM)))
             }
             yTitles[side]?.let { title ->
-                shapes.add(SceneShape.Label(title, ScenePoint(if (side == Orient.LEFT) rect.left else rect.right, rect.top + metrics.gap),
-                    if (side == Orient.LEFT) TextAnchor.START else TextAnchor.END, TextBaseline.TOP, null, SceneRole.AXIS_TITLE))
+                shapes.add(DrawShape.Label(title, DrawPoint(if (side == Orient.LEFT) rect.left else rect.right, rect.top + metrics.gap),
+                    if (side == Orient.LEFT) TextAnchor.START else TextAnchor.END, TextBaseline.TOP, DrawColor.Ink(InkLevel.STRONG)))
             }
         }
     }
@@ -400,12 +413,12 @@ class ChartSceneBuilder(
     /** An axis's title: its column's name with its unit, « Poids (kg) »; a share once normalized. */
     private fun yTitle(p: Prepared): String? {
         val field = p.yField ?: return null
-        return if (p.stack == Stack.NORMALIZE && !p.horizontal) text.shared("chart_axis_share").format(field.displayName) else title(field)
+        return if (p.stack == Stack.NORMALIZE && !p.horizontal) text.own("axis_share").format(field.displayName) else title(field)
     }
 
     private fun xTitleOf(prepared: List<Prepared>): String? {
         val p = prepared.firstOrNull { it.xField != null } ?: return null
-        return if (p.stack == Stack.NORMALIZE && p.horizontal) text.shared("chart_axis_share").format(p.xField!!.displayName) else title(p.xField!!)
+        return if (p.stack == Stack.NORMALIZE && p.horizontal) text.own("axis_share").format(p.xField!!.displayName) else title(p.xField!!)
     }
 
     private fun title(field: FieldDefinition): String =
@@ -495,7 +508,7 @@ class ChartSceneBuilder(
     /** Graduations of a quantity, written as its field writes it: durations as durations, hours as hours, shares as percents. */
     private fun numberTicks(lo: Double, hi: Double, count: Int, field: FieldDefinition?, normalized: Boolean): List<Tick> {
         if (normalized) return ChartTicks.multiples(lo, hi, ChartTicks.numberStep(lo, hi, count.coerceAtMost(5)))
-            .map { Tick(it, text.shared("chart_percent").format(text.number(it * 100, 0))) }
+            .map { Tick(it, text.own("percent").format(text.number(it * 100, 0))) }
         return when (field?.type) {
             FieldType.DURATION -> {
                 val step = ChartTicks.roundStep(hi - lo, count, ChartTicks.DURATION_STEPS).toDouble()
@@ -519,7 +532,7 @@ class ChartSceneBuilder(
     // Marks
     // ---------------------------------------------------------------------------------------
 
-    private fun drawLayer(p: Prepared, xAxis: Axis, yAxis: Axis, plot: SceneRect) {
+    private fun drawLayer(p: Prepared, xAxis: Axis, yAxis: Axis, plot: DrawRect) {
         when (p.layer.mark.type) {
             MarkType.LINE, MarkType.AREA -> if (p.horizontal) drawBars(p, xAxis, yAxis, plot) else drawSeries(p, xAxis, yAxis, plot)
             MarkType.BAR, MarkType.RECT -> drawBars(p, xAxis, yAxis, plot)
@@ -556,7 +569,7 @@ class ChartSceneBuilder(
         else -> null
     }
 
-    private fun drawBars(p: Prepared, xAxis: Axis, yAxis: Axis, plot: SceneRect) {
+    private fun drawBars(p: Prepared, xAxis: Axis, yAxis: Axis, plot: DrawRect) {
         val base = if (p.horizontal) xAxis else yAxis
         val cross = if (p.horizontal) yAxis else xAxis
         val free = freeWidth(p.rows.mapNotNull { r -> ((if (p.horizontal) r.y else r.x) as? Pos.Num)?.let { cross.number(it.value) } })
@@ -574,9 +587,9 @@ class ChartSceneBuilder(
                 // A rect on two bands, or on a band and a point
                 extent(base, if (p.horizontal) r.x else r.y, if (p.horizontal) r.x2 else r.y2, null, free) ?: return@forEach
             }
-            val rect = if (p.horizontal) SceneRect(along.first, across.first, along.second, across.second)
-                else SceneRect(across.first, along.first, across.second, along.second)
-            shapes.add(SceneShape.Box(rect, colorOf(p, r.row), opacityOf(p, r.row), SceneRole.MARK))
+            val rect = if (p.horizontal) DrawRect(along.first, across.first, along.second, across.second)
+                else DrawRect(across.first, along.first, across.second, along.second)
+            shapes.add(DrawShape.Box(rect, colorOf(p, r.row), opacityOf(p, r.row)))
             hits.add(Hit(r.row, p.table.columns, area = rect))
         }
     }
@@ -585,24 +598,24 @@ class ChartSceneBuilder(
     private fun beyond(p: Prepared, r: Placed, base: Axis, across: Pair<Float, Float>) {
         val (edge, towardStart) = base.edge(r.to ?: return) ?: return
         val center = (across.first + across.second) / 2
-        mark(p, r, if (p.horizontal) ScenePoint(edge, center) else ScenePoint(center, edge), towardStart)
+        mark(p, r, if (p.horizontal) DrawPoint(edge, center) else DrawPoint(center, edge), towardStart)
     }
 
     /** The mark of a value past fixed bounds at [at], pointing [up], touched like the value. */
-    private fun mark(p: Prepared, r: Placed, at: ScenePoint, up: Boolean) {
-        shapes.add(SceneShape.Beyond(at, up, metrics.beyond, colorOf(p, r.row)))
+    private fun mark(p: Prepared, r: Placed, at: DrawPoint, up: Boolean) {
+        shapes.add(DrawShape.Arrowhead(at, up, metrics.beyond, colorOf(p, r.row)))
         hits.add(Hit(r.row, p.table.columns, point = at))
     }
 
     /** Lines and areas: a series per color, detail and dash, in the order of the horizontal axis, broken where a value is missing. */
-    private fun drawSeries(p: Prepared, xAxis: Axis, yAxis: Axis, plot: SceneRect) {
+    private fun drawSeries(p: Prepared, xAxis: Axis, yAxis: Axis, plot: DrawRect) {
         val bySeries = p.rows.groupBy { colors.seriesKey(p.layer, it.row) }
         bySeries.values.sortedBy { rows -> colors.rank(p.layer, rows.first().row) }.forEach { rows ->
             val sorted = rows.sortedBy { r -> xAxis.position(r.x) ?: Float.MAX_VALUE }
-            val runs = mutableListOf<MutableList<Pair<ScenePoint, Placed>>>()
-            var current = mutableListOf<Pair<ScenePoint, Placed>>()
-            val baselines = mutableListOf<MutableList<ScenePoint>>()
-            var baseline = mutableListOf<ScenePoint>()
+            val runs = mutableListOf<MutableList<Pair<DrawPoint, Placed>>>()
+            var current = mutableListOf<Pair<DrawPoint, Placed>>()
+            val baselines = mutableListOf<MutableList<DrawPoint>>()
+            var baseline = mutableListOf<DrawPoint>()
             fun cut() {
                 if (current.isNotEmpty()) { runs.add(current); baselines.add(baseline) }
                 current = mutableListOf(); baseline = mutableListOf()
@@ -613,13 +626,13 @@ class ChartSceneBuilder(
                 if (r.failure != null || x == null || value == null) { cut(); return@forEach }
                 if (!yAxis.inside(value)) {
                     cut()
-                    yAxis.edge(value)?.let { (edge, up) -> mark(p, r, ScenePoint(x, edge), up) }
+                    yAxis.edge(value)?.let { (edge, up) -> mark(p, r, DrawPoint(x, edge), up) }
                     return@forEach
                 }
                 val y = (if (r.y is Pos.Cat) yAxis.position(r.y) else yAxis.number(value)) ?: return@forEach
-                current.add(ScenePoint(x, y) to r)
+                current.add(DrawPoint(x, y) to r)
                 val from = r.from ?: yAxis.linear?.let { max(it.min, min(it.max, 0.0)) } ?: 0.0
-                baseline.add(ScenePoint(x, yAxis.number(from) ?: plot.bottom))
+                baseline.add(DrawPoint(x, yAxis.number(from) ?: plot.bottom))
             }
             cut()
             runs.forEachIndexed { i, run ->
@@ -631,14 +644,14 @@ class ChartSceneBuilder(
                     val back = baselines[i].reversed()
                     steps.addAll(path(back, p.layer.mark.interpolate).drop(1).let { rest -> listOf<PathStep>(PathStep.LineTo(back.first())) + rest })
                     steps.add(PathStep.Close)
-                    shapes.add(SceneShape.Path(steps, color, opacityOf(p, first, default = 0.7f), 0f, null, filled = true, role = SceneRole.MARK))
+                    shapes.add(DrawShape.Path(steps, color, opacityOf(p, first, default = 0.7f), 0f, null, filled = true))
                 } else {
-                    shapes.add(SceneShape.Path(path(points, p.layer.mark.interpolate), color, opacityOf(p, first),
-                        p.layer.mark.strokeWidth?.let { metrics.dp(it) } ?: metrics.strokeWidth, dashOf(p, first), filled = false, role = SceneRole.MARK))
+                    shapes.add(DrawShape.Path(path(points, p.layer.mark.interpolate), color, opacityOf(p, first),
+                        p.layer.mark.strokeWidth?.let { metrics.dp(it) } ?: metrics.strokeWidth, dashOf(p, first), filled = false))
                 }
                 run.forEach { (point, r) ->
                     if (p.layer.mark.point) {
-                        shapes.add(SceneShape.Symbol(point, metrics.dp(6f), Shape.CIRCLE, colorOf(p, r.row), opacityOf(p, r.row), filled = true, role = SceneRole.MARK))
+                        shapes.add(DrawShape.Symbol(point, metrics.dp(6f), SymbolShape.CIRCLE, colorOf(p, r.row), opacityOf(p, r.row), filled = true))
                     }
                     hits.add(Hit(r.row, p.table.columns, point = point))
                 }
@@ -647,13 +660,13 @@ class ChartSceneBuilder(
     }
 
     /** The steps drawing a line through [points]: straight, in stairs, or smoothed without overshooting. */
-    private fun path(points: List<ScenePoint>, interpolate: Interpolate): List<PathStep> {
+    private fun path(points: List<DrawPoint>, interpolate: Interpolate): List<PathStep> {
         if (points.isEmpty()) return emptyList()
         val steps = mutableListOf<PathStep>(PathStep.MoveTo(points.first()))
         when (interpolate) {
             Interpolate.LINEAR -> points.drop(1).forEach { steps.add(PathStep.LineTo(it)) }
             Interpolate.STEP_AFTER -> points.zipWithNext { a, b ->
-                steps.add(PathStep.LineTo(ScenePoint(b.x, a.y)))
+                steps.add(PathStep.LineTo(DrawPoint(b.x, a.y)))
                 steps.add(PathStep.LineTo(b))
             }
             Interpolate.MONOTONE -> steps.addAll(Monotone.curve(points))
@@ -661,7 +674,7 @@ class ChartSceneBuilder(
         return steps
     }
 
-    private fun drawPoints(p: Prepared, xAxis: Axis, yAxis: Axis, plot: SceneRect) {
+    private fun drawPoints(p: Prepared, xAxis: Axis, yAxis: Axis, plot: DrawRect) {
         val sizeDef = p.layer.channel(Channel.SIZE)
         val sizeField = sizeDef?.field?.let { p.table.columns[it] }
         val sizes = sizeField?.let { f -> p.table.rows.mapNotNull { ChartValues.number(f, it.value(sizeDef.field!!), zone) } }
@@ -670,11 +683,11 @@ class ChartSceneBuilder(
             val x = xAxis.position(r.x) ?: return@forEach
             val value = (r.y as? Pos.Num)?.value
             if (value != null && !yAxis.inside(value)) {
-                yAxis.edge(value)?.let { (edge, up) -> mark(p, r, ScenePoint(x, edge), up) }
+                yAxis.edge(value)?.let { (edge, up) -> mark(p, r, DrawPoint(x, edge), up) }
                 return@forEach
             }
             val y = yAxis.position(r.y) ?: ((plot.top + plot.bottom) / 2)
-            val point = ScenePoint(x, y)
+            val point = DrawPoint(x, y)
             val color = colorOf(p, r.row)
             val opacity = opacityOf(p, r.row)
             when (p.layer.mark.type) {
@@ -684,21 +697,21 @@ class ChartSceneBuilder(
                         ?: sizeField?.let { f -> ChartValues.number(f, r.row.value(sizeDef.field!!), zone)?.let { v -> scaled(v, sizes!!, 20f, 400f) } }
                         ?: (sizeDef?.value as? Float) ?: p.layer.mark.size ?: 30f
                     val shape = shapeOf(p, r.row)
-                    shapes.add(SceneShape.Symbol(point, metrics.dp(sqrt(area)), shape, color, opacity, p.layer.mark.filled ?: false, SceneRole.MARK))
+                    shapes.add(DrawShape.Symbol(point, metrics.dp(sqrt(area)), shape.symbol, color, opacity, p.layer.mark.filled ?: false))
                 }
                 MarkType.TEXT -> {
                     val textDef = p.layer.channel(Channel.TEXT)
                     val raw = textDef?.field?.let { r.row.value(it) } ?: return@forEach
                     val shown = p.table.columns[textDef.field]?.let { text.value(it, raw) } ?: raw.toString()
-                    shapes.add(SceneShape.Label(shown, point, TextAnchor.MIDDLE, TextBaseline.MIDDLE, color, SceneRole.MARK))
+                    shapes.add(DrawShape.Label(shown, point, TextAnchor.MIDDLE, TextBaseline.MIDDLE, color))
                 }
                 MarkType.TICK -> {
                     // Across the band it stands on, or short and level against two quantities
                     val vertical = yAxis.kind == AxisKind.BAND && xAxis.kind != AxisKind.BAND
                     val half = (if (vertical) yAxis.band?.bandwidth else xAxis.band?.bandwidth)?.let { it * 0.4f } ?: (metrics.tickMark / 2)
                     val width = p.layer.mark.strokeWidth?.let { metrics.dp(it) } ?: metrics.strokeWidth
-                    shapes.add(if (vertical) SceneShape.Segment(ScenePoint(x, y - half), ScenePoint(x, y + half), color, width, null, SceneRole.MARK)
-                        else SceneShape.Segment(ScenePoint(x - half, y), ScenePoint(x + half, y), color, width, null, SceneRole.MARK))
+                    shapes.add(if (vertical) DrawShape.Segment(DrawPoint(x, y - half), DrawPoint(x, y + half), color, width, null)
+                        else DrawShape.Segment(DrawPoint(x - half, y), DrawPoint(x + half, y), color, width, null))
                 }
                 else -> Unit
             }
@@ -714,11 +727,11 @@ class ChartSceneBuilder(
     }
 
     /** A hole per row that could not be read, across the plot at its place, touched for its cause. */
-    private fun drawHoles(p: Prepared, xAxis: Axis, plot: SceneRect) {
+    private fun drawHoles(p: Prepared, xAxis: Axis, plot: DrawRect) {
         p.rows.filter { it.failure != null }.forEach { r ->
             val (a, b) = extent(xAxis, r.x, null, r.row.span, metrics.holeWidth) ?: return@forEach
-            val rect = SceneRect(a, plot.top, b, plot.bottom)
-            shapes.add(SceneShape.Box(rect, null, 1f, SceneRole.HOLE))
+            val rect = DrawRect(a, plot.top, b, plot.bottom)
+            shapes.add(DrawShape.Box(rect, DrawColor.Ink(InkLevel.MEDIUM), missing = true))
             hits.add(Hit(r.row, p.table.columns, area = rect))
         }
     }
@@ -728,8 +741,8 @@ class ChartSceneBuilder(
     // ---------------------------------------------------------------------------------------
 
     /** Slices of a whole: the theta of each row piled round the circle, in the colors' order. */
-    private fun drawArcs(cell: Cell, rect: SceneRect) {
-        val center = ScenePoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2)
+    private fun drawArcs(cell: Cell, rect: DrawRect) {
+        val center = DrawPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2)
         val outer = min(rect.right - rect.left, rect.bottom - rect.top) / 2 - metrics.gap * 2
         cell.layers.forEach { b ->
             val p = Prepared(b)
@@ -749,15 +762,15 @@ class ChartSceneBuilder(
                 val r = if (radii != null && maxRadius != null) (outer * sqrt(radii[i] / maxRadius)).toFloat() else outer
                 val middle = Math.toRadians((angle + sweep / 2).toDouble())
                 if (b.layer.mark.type == MarkType.ARC) {
-                    shapes.add(SceneShape.Arc(center, 0f, r, angle, sweep, colorOf(p, row), opacityOf(p, row), SceneRole.MARK))
-                    val at = ScenePoint(center.x + (r * 0.6f * kotlin.math.sin(middle)).toFloat(), center.y - (r * 0.6f * kotlin.math.cos(middle)).toFloat())
+                    shapes.add(DrawShape.Arc(center, 0f, r, angle, sweep, colorOf(p, row), opacityOf(p, row)))
+                    val at = DrawPoint(center.x + (r * 0.6f * kotlin.math.sin(middle)).toFloat(), center.y - (r * 0.6f * kotlin.math.cos(middle)).toFloat())
                     hits.add(Hit(row, b.table.columns, point = at))
                 } else {
                     val raw = b.layer.channel(Channel.TEXT)?.field?.let { row.value(it) }
                     val shown = raw?.let { v -> b.table.columns[b.layer.channel(Channel.TEXT)!!.field]?.let { text.value(it, v) } ?: v.toString() }
                     if (shown != null) {
-                        val at = ScenePoint(center.x + (r * 0.75f * kotlin.math.sin(middle)).toFloat(), center.y - (r * 0.75f * kotlin.math.cos(middle)).toFloat())
-                        shapes.add(SceneShape.Label(shown, at, TextAnchor.MIDDLE, TextBaseline.MIDDLE, null, SceneRole.MARK))
+                        val at = DrawPoint(center.x + (r * 0.75f * kotlin.math.sin(middle)).toFloat(), center.y - (r * 0.75f * kotlin.math.cos(middle)).toFloat())
+                        shapes.add(DrawShape.Label(shown, at, TextAnchor.MIDDLE, TextBaseline.MIDDLE, DrawColor.Ink(InkLevel.STRONG)))
                     }
                 }
                 angle += sweep
@@ -840,23 +853,23 @@ class ChartSceneBuilder(
     private data class Legend(val title: String, val items: List<Pair<LegendSample, String>>)
 
     private sealed interface LegendSample {
-        data class Square(val color: SceneColor) : LegendSample
-        data class Line(val color: SceneColor, val dash: List<Float>?) : LegendSample
-        data class Symbol(val color: SceneColor, val shape: Shape) : LegendSample
+        data class Square(val color: DrawColor) : LegendSample
+        data class Line(val color: DrawColor, val dash: List<Float>?) : LegendSample
+        data class Symbol(val color: DrawColor, val shape: Shape) : LegendSample
     }
 
     private fun ColorScales.legendOf(b: Bound, def: ChannelDef, name: String, field: FieldDefinition, measure: Measure, channel: Channel = Channel.COLOR) {
         val key = "${channel.key}:$name"
         if (key in legends) return
-        val base = SceneColor.Tag(PALETTE[b.index % PALETTE.size])
+        val base = DrawColor.Palette(PALETTE[b.index % PALETTE.size])
         val items = if (channel == Channel.COLOR && !isBand(measure)) {
             val (lo, hi) = quantity(name) ?: return
             val (from, to) = ramp(def)
-            listOf(LegendSample.Square(SceneColor.Mix(from, to, 0f)) to text.value(field, number(field, lo)),
-                LegendSample.Square(SceneColor.Mix(from, to, 1f)) to text.value(field, number(field, hi)))
+            listOf(LegendSample.Square(DrawColor.Mix(from, to, 0f)) to text.value(field, number(field, lo)),
+                LegendSample.Square(DrawColor.Mix(from, to, 1f)) to text.value(field, number(field, hi)))
         } else categories(name).mapIndexed { i, category ->
             val label = rawOf(name, category)?.let { text.value(field, it) } ?: category
-            val color = if (channel == Channel.COLOR) SceneColor.Tag(color(name, category) ?: PALETTE[i % PALETTE.size]) else base
+            val color = if (channel == Channel.COLOR) DrawColor.Palette(color(name, category) ?: PALETTE[i % PALETTE.size]) else base
             val sample = when {
                 channel == Channel.SHAPE -> LegendSample.Symbol(color, Shape.entries[i % Shape.entries.size])
                 channel == Channel.STROKE_DASH -> LegendSample.Line(color, DASHES[i % DASHES.size])
@@ -885,23 +898,23 @@ class ChartSceneBuilder(
         val lineHeight = max(text.height, metrics.swatch) + metrics.gap
         legends.values.forEach { legend ->
             var x = 0f
-            fun place(itemWidth: Float): ScenePoint {
+            fun place(itemWidth: Float): DrawPoint {
                 if (x > 0 && x + itemWidth > width) { x = 0f; y += lineHeight }
-                return ScenePoint(x, y).also { x += itemWidth + metrics.gap * 3 }
+                return DrawPoint(x, y).also { x += itemWidth + metrics.gap * 3 }
             }
             val titleWidth = text.width(legend.title)
             val at = place(titleWidth)
-            shapes.add(SceneShape.Label(legend.title, ScenePoint(at.x, at.y + lineHeight / 2), TextAnchor.START, TextBaseline.MIDDLE, null, SceneRole.LEGEND_TITLE))
+            shapes.add(DrawShape.Label(legend.title, DrawPoint(at.x, at.y + lineHeight / 2), TextAnchor.START, TextBaseline.MIDDLE, DrawColor.Ink(InkLevel.STRONG)))
             legend.items.forEach { (sample, label) ->
                 val itemAt = place(metrics.swatch + metrics.gap + text.width(label))
                 val middle = itemAt.y + lineHeight / 2
                 val s = metrics.swatch
                 shapes.add(when (sample) {
-                    is LegendSample.Square -> SceneShape.Box(SceneRect(itemAt.x, middle - s / 2, itemAt.x + s, middle + s / 2), sample.color, 1f, SceneRole.LEGEND_SWATCH)
-                    is LegendSample.Line -> SceneShape.Segment(ScenePoint(itemAt.x, middle), ScenePoint(itemAt.x + s, middle), sample.color, metrics.strokeWidth, sample.dash?.map { metrics.dp(it) }, SceneRole.LEGEND_SWATCH)
-                    is LegendSample.Symbol -> SceneShape.Symbol(ScenePoint(itemAt.x + s / 2, middle), s * 0.8f, sample.shape, sample.color, 1f, true, SceneRole.LEGEND_SWATCH)
+                    is LegendSample.Square -> DrawShape.Box(DrawRect(itemAt.x, middle - s / 2, itemAt.x + s, middle + s / 2), sample.color, 1f)
+                    is LegendSample.Line -> DrawShape.Segment(DrawPoint(itemAt.x, middle), DrawPoint(itemAt.x + s, middle), sample.color, metrics.strokeWidth, sample.dash?.map { metrics.dp(it) })
+                    is LegendSample.Symbol -> DrawShape.Symbol(DrawPoint(itemAt.x + s / 2, middle), s * 0.8f, sample.shape.symbol, sample.color, 1f, true)
                 })
-                shapes.add(SceneShape.Label(label, ScenePoint(itemAt.x + s + metrics.gap, middle), TextAnchor.START, TextBaseline.MIDDLE, null, SceneRole.LEGEND_LABEL))
+                shapes.add(DrawShape.Label(label, DrawPoint(itemAt.x + s + metrics.gap, middle), TextAnchor.START, TextBaseline.MIDDLE, DrawColor.Ink(InkLevel.MEDIUM)))
             }
             y += lineHeight
         }
@@ -909,8 +922,8 @@ class ChartSceneBuilder(
     }
 
     /** A row's color: its condition's when it holds, its category's, its quantity's, the value written, or its layer's own. */
-    private fun colorOf(p: Prepared, row: Row): SceneColor {
-        (conditioned(p, Channel.COLOR, row) as? TagColor)?.let { return SceneColor.Tag(it) }
+    private fun colorOf(p: Prepared, row: Row): DrawColor {
+        (conditioned(p, Channel.COLOR, row) as? TagColor)?.let { return DrawColor.Palette(it) }
         val def = p.layer.channel(Channel.COLOR)
         val name = def?.field
         if (name != null) {
@@ -918,19 +931,19 @@ class ChartSceneBuilder(
             val measure = def.type ?: field?.let(ChartValues::measureOf)
             if (isBand(measure)) {
                 val category = ChartValues.category(row.value(name))
-                category?.let { colors.color(name, it) }?.let { return SceneColor.Tag(it) }
+                category?.let { colors.color(name, it) }?.let { return DrawColor.Palette(it) }
             } else if (field != null) {
                 val value = ChartValues.number(field, row.value(name), zone)
                 val range = colors.quantity(name)
                 if (value != null && range != null) {
                     val (from, to) = ramp(def)
                     val t = if (range.second == range.first) 1f else ((value - range.first) / (range.second - range.first)).toFloat()
-                    return SceneColor.Mix(from, to, t)
+                    return DrawColor.Mix(from, to, t)
                 }
             }
         }
-        (def?.value as? TagColor)?.let { return SceneColor.Tag(it) }
-        return SceneColor.Tag(PALETTE[p.bound.index % PALETTE.size])
+        (def?.value as? TagColor)?.let { return DrawColor.Palette(it) }
+        return DrawColor.Palette(PALETTE[p.bound.index % PALETTE.size])
     }
 
     private fun opacityOf(p: Prepared, row: Row, default: Float = 1f): Float {
@@ -1000,7 +1013,7 @@ class ChartSceneBuilder(
  * Fritsch–Carlson): a smoothed line that does not invent a peak between two measures.
  */
 internal object Monotone {
-    fun curve(points: List<ScenePoint>): List<PathStep> {
+    fun curve(points: List<DrawPoint>): List<PathStep> {
         val n = points.size
         if (n < 3) return points.drop(1).map { PathStep.LineTo(it) }
         val dx = (0 until n - 1).map { points[it + 1].x - points[it].x }
@@ -1024,7 +1037,7 @@ internal object Monotone {
         }
         return (0 until n - 1).map { i ->
             val p0 = points[i]; val p1 = points[i + 1]; val h = dx[i] / 3
-            PathStep.CubicTo(ScenePoint(p0.x + h, p0.y + tangents[i] * h), ScenePoint(p1.x - h, p1.y - tangents[i + 1] * h), p1)
+            PathStep.CubicTo(DrawPoint(p0.x + h, p0.y + tangents[i] * h), DrawPoint(p1.x - h, p1.y - tangents[i + 1] * h), p1)
         }
     }
 }

@@ -182,4 +182,17 @@
     <string name="screen_problem">Ce graphique ne peut pas être dessiné : %1$s</string>
     <string name="screen_empty">Rien à dessiner dans cette période.</string>
     <string name="screen_touch">Touchez une marque pour voir ses valeurs.</string>
+    <string name="axis_share">Part de %1$s</string>
+    <string name="entry_not_found">Cette entrée n\'existe plus.</string>
+    <string name="error_fold_as">Un fold nomme ses deux colonnes dans as, une clé puis une valeur : [\"key\", \"value\"].</string>
+    <string name="error_missing">Un graphique demande %1$s.</string>
+    <string name="error_option">%1$s : « %2$s » n\'est pas une option. Acceptées : %3$s.</string>
+    <string name="error_transform">Une transformation est un fold ou un flatten, l\'un des deux.</string>
+    <string name="error_value">%1$s : %2$s n\'est pas une valeur que ce canal prend.</string>
+    <string name="format_day">d MMM</string>
+    <string name="format_hour">HH:mm</string>
+    <string name="format_month">MMM</string>
+    <string name="format_year">yyyy</string>
+    <string name="open_entry">Ouvrir l\'entrée</string>
+    <string name="percent">%1$s %%</string>
 </resources>

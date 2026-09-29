@@ -1,4 +1,4 @@
-package com.assistant.core.charts
+package com.assistant.tools.chart
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

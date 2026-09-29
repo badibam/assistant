@@ -1,4 +1,4 @@
-package com.assistant.core.charts
+package com.assistant.tools.chart
 
 import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.FieldDefinition

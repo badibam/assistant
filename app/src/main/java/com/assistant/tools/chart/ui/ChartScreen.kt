@@ -16,11 +16,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.assistant.core.charts.ChartDetails
-import com.assistant.core.charts.ChartSpec
-import com.assistant.core.charts.ChartTable
-import com.assistant.core.charts.ChartView
-import com.assistant.core.charts.Hit
+import com.assistant.tools.chart.ChartSpec
+import com.assistant.tools.chart.ChartTable
+import com.assistant.tools.chart.Hit
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.selection.TimeResolver
 import com.assistant.core.strings.Strings
@@ -68,7 +66,7 @@ fun ChartScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureC
         config = loaded
         val now = System.currentTimeMillis()
         drawn = try {
-            val spec = ChartSpec.of(loaded) { s.shared(it) }
+            val spec = ChartSpec.of(loaded, { s.shared(it) }, { s.tool(it) })
             Drawn(spec, ChartSources(context).tables(spec, now), spec.period.instants(TimeResolver.at(now)), now).also { problem = null }
         } catch (e: IllegalArgumentException) {
             problem = e.message; null

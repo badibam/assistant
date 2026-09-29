@@ -1,16 +1,6 @@
 package com.assistant.tools.chart
 
 import android.content.Context
-import com.assistant.core.charts.Cell
-import com.assistant.core.charts.ChartKeys
-import com.assistant.core.charts.ChartSpec
-import com.assistant.core.charts.ChartTable
-import com.assistant.core.charts.GridColumn
-import com.assistant.core.charts.GridSteps
-import com.assistant.core.charts.Layer
-import com.assistant.core.charts.Row
-import com.assistant.core.charts.Source
-import com.assistant.core.charts.Transform
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.ChoiceSettings

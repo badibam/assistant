@@ -687,12 +687,12 @@ object DefaultTheme : ThemeContract {
     }
 
     @Composable
-    override fun chartTextStyle(): androidx.compose.ui.text.TextStyle =
+    override fun drawingTextStyle(): androidx.compose.ui.text.TextStyle =
         MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
 
     @Composable
-    override fun ChartScene(scene: com.assistant.core.charts.ChartScene, modifier: Modifier) {
-        DefaultChart.Draw(scene, chartTextStyle(), com.assistant.core.themes.CurrentTheme.currentPaletteId == "default_dark", modifier)
+    override fun Drawing(drawing: com.assistant.core.drawing.Drawing, modifier: Modifier) {
+        DefaultDrawing.Draw(drawing, drawingTextStyle(), com.assistant.core.themes.CurrentTheme.currentPaletteId == "default_dark", modifier)
     }
 
     @Composable

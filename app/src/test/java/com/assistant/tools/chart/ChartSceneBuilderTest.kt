@@ -1,8 +1,10 @@
-package com.assistant.core.charts
+package com.assistant.tools.chart
 
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.themes.TagColor
+import com.assistant.core.drawing.DrawColor
+import com.assistant.core.drawing.DrawShape
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -29,6 +31,7 @@ class ChartSceneBuilderTest {
         override fun instant(instant: Long, step: ChartTicks.CalendarStep) = instant.toString()
         override fun number(value: Double, decimals: Int) = "%.${decimals}f".format(value)
         override fun shared(key: String) = "$key %1\$s"
+        override fun own(key: String) = "$key %1\$s"
     }
 
     private fun builder() = ChartSceneBuilder(ChartMetrics(1f), text, zone, "monday", day(30))
@@ -36,7 +39,7 @@ class ChartSceneBuilderTest {
     private fun numeric(name: String) = FieldDefinition(name, name, null, FieldType.NUMERIC, false, null)
     private val period = """"period": {"start": 0}"""
 
-    private fun spec(layers: String) = ChartSpec.of(JSONObject("""{$period, "layer": [$layers]}""")) { it }
+    private fun spec(layers: String) = ChartSpec.of(JSONObject("""{$period, "layer": [$layers]}"""), { it }, { it })
 
     /** Three days, each a step: two columns folded into kinds. */
     private fun kcal(failedOn: Int? = null) = ChartTable(
@@ -56,24 +59,36 @@ class ChartSceneBuilderTest {
         "mark": {"type": "bar"}, "encoding": {"x": {"field": "timestamp"}, "y": {"field": "kcal", "stack": "zero"},
         "color": {"field": "kind", "scale": {"range": ["GREEN", "RED"]}}}}"""
 
-    private fun marks(scene: ChartScene) = scene.shapes.filter { it.role == SceneRole.MARK }
+    /** The marks: shapes in a color of the palette, the theme's inks being axes and texts. */
+    private fun marks(layout: ChartLayout) = layout.drawing.shapes.filter { shape ->
+        val color = when (shape) {
+            is DrawShape.Box -> shape.color.takeIf { !shape.missing }
+            is DrawShape.Path -> shape.color
+            is DrawShape.Symbol -> shape.color
+            is DrawShape.Arc -> shape.color
+            else -> null
+        }
+        color is DrawColor.Palette || color is DrawColor.Mix
+    }
+    private fun labels(layout: ChartLayout) = layout.drawing.shapes.filterIsInstance<DrawShape.Label>().map { it.text }
 
     @Test
     fun `stacked bars pile at each step, each category in its color`() {
         val scene = builder().build(spec(stackedBars), listOf(kcal()), day(1) to day(4) - 1, 400f)
-        val bars = marks(scene).filterIsInstance<SceneShape.Box>()
-        assertEquals(6, bars.size)
+        // The bars, and the legend's two squares after them
+        val bars = marks(scene).filterIsInstance<DrawShape.Box>().take(6)
+        assertEquals(8, marks(scene).filterIsInstance<DrawShape.Box>().size)
         val (food, empty) = bars.take(2)
-        assertEquals(SceneColor.Tag(TagColor.GREEN), food.color)
-        assertEquals(SceneColor.Tag(TagColor.RED), empty.color)
+        assertEquals(DrawColor.Palette(TagColor.GREEN), food.color)
+        assertEquals(DrawColor.Palette(TagColor.RED), empty.color)
         // The second sits on the first: its bottom is the first's top
         assertEquals(food.rect.top, empty.rect.bottom, 0.01f)
         assertEquals(food.rect.left, empty.rect.left, 0.01f)
         // Food's 1500 is five times empty's 300
         assertEquals(5f, (food.rect.bottom - food.rect.top) / (empty.rect.bottom - empty.rect.top), 0.01f)
         // Its legend names both kinds
-        val legend = scene.shapes.filter { it.role == SceneRole.LEGEND_LABEL }.map { (it as SceneShape.Label).text }
-        assertEquals(listOf("food", "empty"), legend)
+        assertEquals(1, labels(scene).count { it == "food" })
+        assertEquals(1, labels(scene).count { it == "empty" })
         // A touch on a bar finds its row
         val hit = scene.hitAt((food.rect.left + food.rect.right) / 2, (food.rect.top + food.rect.bottom) / 2, 24f)
         assertEquals("food", hit!!.row.value("kind"))
@@ -82,11 +97,11 @@ class ChartSceneBuilderTest {
     @Test
     fun `a value that could not be read is a hole, touched for its cause`() {
         val scene = builder().build(spec(stackedBars), listOf(kcal(failedOn = 2)), day(1) to day(4) - 1, 400f)
-        val hole = scene.shapes.filterIsInstance<SceneShape.Box>().single { it.role == SceneRole.HOLE }
+        val hole = scene.drawing.shapes.filterIsInstance<DrawShape.Box>().single { it.missing }
         val hit = scene.hitAt((hole.rect.left + hole.rect.right) / 2, hole.rect.top + 2, 24f)
         assertEquals("no entry", hit!!.row.failure("kcal")!!.message)
-        // Not drawn as a bar: five of the six remain
-        assertEquals(5, marks(scene).filterIsInstance<SceneShape.Box>().size)
+        // Not drawn as a bar: five of the six remain, beside the legend's two squares
+        assertEquals(7, marks(scene).filterIsInstance<DrawShape.Box>().size)
     }
 
     @Test
@@ -99,11 +114,11 @@ class ChartSceneBuilderTest {
         val layer = """{"source": "entries", "selection": {"target": {"kind": "TOOL_INSTANCE", "id": "t"}}, "mark": {"type": "point"},
             "encoding": {"x": {"field": "timestamp"}, "y": {"field": "w", "scale": {"domain": [60, 80]}}}}"""
         val scene = builder().build(spec(layer), listOf(weight), day(1) to day(3), 400f)
-        assertEquals(2, marks(scene).filterIsInstance<SceneShape.Symbol>().size)
-        val beyond = scene.shapes.filterIsInstance<SceneShape.Beyond>().single()
+        assertEquals(2, marks(scene).filterIsInstance<DrawShape.Symbol>().size)
+        val beyond = scene.drawing.shapes.filterIsInstance<DrawShape.Arrowhead>().single()
         assertTrue(beyond.up)
         // The bound passed: the top of the plot, where 80 stands
-        val top = scene.shapes.filterIsInstance<SceneShape.Label>().single { it.role == SceneRole.AXIS_LABEL && it.text == "80" }.at.y
+        val top = scene.drawing.shapes.filterIsInstance<DrawShape.Label>().single { it.text == "80" }.at.y
         assertEquals(top, beyond.at.y, 0.01f)
     }
 
@@ -115,7 +130,7 @@ class ChartSceneBuilderTest {
         val layer = """{"source": "entries", "selection": {"target": {"kind": "TOOL_INSTANCE", "id": "t"}}, "mark": {"type": "line"},
             "encoding": {"x": {"field": "timestamp"}, "y": {"field": "w", "scale": {"zero": false}}}}"""
         val scene = builder().build(spec(layer), listOf(table), day(1) to day(5), 400f)
-        assertEquals(2, marks(scene).filterIsInstance<SceneShape.Path>().size)
+        assertEquals(2, marks(scene).filterIsInstance<DrawShape.Path>().size)
     }
 
     @Test
@@ -127,10 +142,10 @@ class ChartSceneBuilderTest {
         val layer = """{"source": "entries", "selection": {"target": {"kind": "TOOL_INSTANCE", "id": "t"}}, "mark": {"type": "arc"},
             "encoding": {"theta": {"field": "g"}, "color": {"field": "macro"}}}"""
         val scene = builder().build(spec(layer), listOf(table), null to null, 400f)
-        val arcs = marks(scene).filterIsInstance<SceneShape.Arc>()
+        val arcs = marks(scene).filterIsInstance<DrawShape.Arc>()
         assertEquals(listOf(90f, 270f), arcs.map { it.sweep })
         assertEquals(90f, arcs[1].start, 0.01f)
         assertNotNull(scene.hitAt(arcs[0].center.x + 30f, arcs[0].center.y - 60f, 40f))
-        assertNull(scene.hitAt(0f, scene.height, 1f))
+        assertNull(scene.hitAt(0f, scene.drawing.height, 1f))
     }
 }

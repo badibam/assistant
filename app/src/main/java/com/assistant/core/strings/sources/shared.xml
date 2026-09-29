@@ -1728,17 +1728,4 @@
     <string name="service_error_tool_keeps_no_entries">A %1$s keeps no entries of its own: it shows those of other tools.</string>
     <string name="verbalize_unknown_operation">Unknown operation: %1$s</string>
     <string name="tools_config_error_zone_update">Unable to move the tool to that zone</string>
-    <string name="chart_error_missing">A chart needs %1$s.</string>
-    <string name="chart_error_option">%1$s: « %2$s » is not an option. Accepted: %3$s.</string>
-    <string name="chart_error_fold_as">A fold names its two columns in as, a key then a value: [\"key\", \"value\"].</string>
-    <string name="chart_error_transform">A transform is a fold or a flatten, one of the two.</string>
-    <string name="chart_error_value">%1$s: %2$s is not a value this channel takes.</string>
-    <string name="chart_axis_share">Share of %1$s</string>
-    <string name="chart_percent">%1$s %%</string>
-    <string name="chart_format_hour">HH:mm</string>
-    <string name="chart_format_day">MMM d</string>
-    <string name="chart_format_month">MMM</string>
-    <string name="chart_format_year">yyyy</string>
-    <string name="chart_open_entry">Open the entry</string>
-    <string name="chart_entry_not_found">This entry no longer exists.</string>
 </resources>

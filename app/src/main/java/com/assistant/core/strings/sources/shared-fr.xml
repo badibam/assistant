@@ -1728,17 +1728,4 @@
     <string name="service_error_tool_keeps_no_entries">Un outil %1$s ne garde pas d\'entrées à lui : il montre celles d\'autres outils.</string>
     <string name="verbalize_unknown_operation">Opération inconnue : %1$s</string>
     <string name="tools_config_error_zone_update">Impossible de déplacer l\'outil dans cette zone</string>
-    <string name="chart_error_missing">Un graphique demande %1$s.</string>
-    <string name="chart_error_option">%1$s : « %2$s » n\'est pas une option. Acceptées : %3$s.</string>
-    <string name="chart_error_fold_as">Un fold nomme ses deux colonnes dans as, une clé puis une valeur : [\"key\", \"value\"].</string>
-    <string name="chart_error_transform">Une transformation est un fold ou un flatten, l\'un des deux.</string>
-    <string name="chart_error_value">%1$s : %2$s n\'est pas une valeur que ce canal prend.</string>
-    <string name="chart_axis_share">Part de %1$s</string>
-    <string name="chart_percent">%1$s %%</string>
-    <string name="chart_format_hour">HH:mm</string>
-    <string name="chart_format_day">d MMM</string>
-    <string name="chart_format_month">MMM</string>
-    <string name="chart_format_year">yyyy</string>
-    <string name="chart_open_entry">Ouvrir l\'entrée</string>
-    <string name="chart_entry_not_found">Cette entrée n\'existe plus.</string>
 </resources>

@@ -2,15 +2,6 @@ package com.assistant.tools.chart
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import com.assistant.core.charts.ChartKeys
-import com.assistant.core.charts.Channel
-import com.assistant.core.charts.ConcatDirection
-import com.assistant.core.charts.Interpolate
-import com.assistant.core.charts.MarkType
-import com.assistant.core.charts.Measure
-import com.assistant.core.charts.Orient
-import com.assistant.core.charts.Shape
-import com.assistant.core.charts.Stack
 import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.CoreFieldUsage
 import com.assistant.core.fields.EntryFields
@@ -35,7 +26,7 @@ import org.json.JSONObject
  * own grammar, declared setting by setting so that its form and schema are generated like any
  * other: a displayed period, layers each reading one source — a tool's entries, or a grid of
  * readings and variables at each step of the period — into a table of named columns, and marks
- * whose channels name those columns (core/charts).
+ * whose channels name those columns, laid out here (ChartSceneBuilder) into a drawing the theme draws.
  *
  * It keeps no entries: a chart only shows those of others.
  */

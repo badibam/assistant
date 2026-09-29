@@ -1,19 +1,6 @@
 package com.assistant.tools.chart
 
 import android.content.Context
-import com.assistant.core.charts.Channel
-import com.assistant.core.charts.ChannelDef
-import com.assistant.core.charts.ChartKeys
-import com.assistant.core.charts.ChartSpec
-import com.assistant.core.charts.ChartValues
-import com.assistant.core.charts.Composition
-import com.assistant.core.charts.Layer
-import com.assistant.core.charts.MarkType
-import com.assistant.core.charts.Measure
-import com.assistant.core.charts.Orient
-import com.assistant.core.charts.Source
-import com.assistant.core.charts.Stack
-import com.assistant.core.charts.Transform
 import com.assistant.core.conditions.Condition
 import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.ChoiceShape
@@ -37,7 +24,7 @@ class ChartCheck(private val context: Context) {
 
     /** Why [config] cannot be stored, or null when it can. */
     suspend fun refuse(config: JSONObject): String? {
-        val spec = try { ChartSpec.of(config) { s.shared(it) } } catch (e: IllegalArgumentException) { return e.message }
+        val spec = try { ChartSpec.of(config, { s.shared(it) }, { s.tool(it) }) } catch (e: IllegalArgumentException) { return e.message }
         if (spec.layers.any { it.source is Source.Grid } && spec.period.start == null) return s.tool("error_grid_start")
 
         val sources = ChartSources(context)

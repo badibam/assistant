@@ -1,4 +1,4 @@
-package com.assistant.core.charts
+package com.assistant.tools.chart.ui
 
 import android.content.Context
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -25,6 +25,14 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.tools.chart.Cell
+import com.assistant.tools.chart.ChartMetrics
+import com.assistant.tools.chart.ChartSceneBuilder
+import com.assistant.tools.chart.ChartSpec
+import com.assistant.tools.chart.ChartTable
+import com.assistant.tools.chart.ChartText
+import com.assistant.tools.chart.ChartTicks
+import com.assistant.tools.chart.Hit
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
@@ -42,9 +50,9 @@ import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.launch
 
 /**
- * A chart on a screen: laid out by the core at the width it is given (ChartSceneBuilder), its
- * texts measured in the theme's style, drawn by the theme. A touch hands back what it found, or
- * null beside every mark.
+ * A chart on a screen: laid out at the width it is given (ChartSceneBuilder), its texts measured
+ * in the theme's style for drawings, drawn by the theme (UI.Drawing). A touch hands back what it
+ * found, or null beside every mark.
  *
  * @param tables The table of each layer, in the order of ChartSpec.layers
  * @param period The displayed period's instants, resolved at [now]
@@ -53,18 +61,18 @@ import kotlinx.coroutines.launch
 fun ChartView(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Long?>, now: Long, onTap: (Hit?) -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val density = LocalDensity.current.density
-    val style = UI.chartTextStyle()
+    val style = UI.drawingTextStyle()
     val measurer = rememberTextMeasurer()
     val text = remember(style, measurer) { AppChartText(context, measurer, style) }
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val width = constraints.maxWidth.toFloat()
         val metrics = remember(density) { ChartMetrics(density) }
-        val scene = remember(spec, tables, period, width, text) {
+        val layout = remember(spec, tables, period, width, text) {
             val calendar = com.assistant.core.utils.AppConfigManager
             ChartSceneBuilder(metrics, text, calendar.getDateTimeConfig().getZoneId(), calendar.getWeekStartDay(), now).build(spec, tables, period, width)
         }
-        UI.ChartScene(scene, Modifier.pointerInput(scene) {
-            detectTapGestures { offset -> onTap(scene.hitAt(offset.x, offset.y, metrics.slop)) }
+        UI.Drawing(layout.drawing, Modifier.pointerInput(layout) {
+            detectTapGestures { offset -> onTap(layout.hitAt(offset.x, offset.y, metrics.slop)) }
         })
     }
 }
@@ -75,7 +83,7 @@ fun ChartView(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Lon
  * theme's chart style.
  */
 private class AppChartText(private val context: Context, private val measurer: TextMeasurer, private val style: TextStyle) : ChartText {
-    private val s = Strings.`for`(context = context)
+    private val s = Strings.`for`(tool = "chart", context = context)
 
     override fun width(text: String): Float = measurer.measure(text, style).size.width.toFloat()
 
@@ -87,15 +95,17 @@ private class AppChartText(private val context: Context, private val measurer: T
         else field.formatValue(value, context)
 
     override fun instant(instant: Long, step: ChartTicks.CalendarStep): String = DateUtils.format(instant, when (step.unit) {
-        ChronoUnit.MINUTES, ChronoUnit.HOURS -> s.shared("chart_format_hour")
-        ChronoUnit.DAYS, ChronoUnit.WEEKS -> s.shared("chart_format_day")
-        ChronoUnit.MONTHS -> s.shared("chart_format_month")
-        else -> s.shared("chart_format_year")
+        ChronoUnit.MINUTES, ChronoUnit.HOURS -> s.tool("format_hour")
+        ChronoUnit.DAYS, ChronoUnit.WEEKS -> s.tool("format_day")
+        ChronoUnit.MONTHS -> s.tool("format_month")
+        else -> s.tool("format_year")
     })
 
     override fun number(value: Double, decimals: Int): String = NumericPrecision.format(value, decimals)
 
     override fun shared(key: String): String = s.shared(key)
+
+    override fun own(key: String): String = s.tool(key)
 }
 
 /**
@@ -106,7 +116,7 @@ private class AppChartText(private val context: Context, private val measurer: T
 @Composable
 fun ChartDetails(hit: Hit) {
     val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
+    val s = remember { Strings.`for`(tool = "chart", context = context) }
     val scope = rememberCoroutineScope()
     UI.Card(type = CardType.DEFAULT) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -127,7 +137,7 @@ fun ChartDetails(hit: Hit) {
             }
             if (hit.row.entryId != null) {
                 UI.Button(type = ButtonType.DEFAULT, onClick = { scope.launch { openEntry(context, hit.row.entryId) } }) {
-                    UI.Text(s.shared("chart_open_entry"), TextType.LABEL)
+                    UI.Text(s.tool("open_entry"), TextType.LABEL)
                 }
             }
         }
@@ -158,5 +168,5 @@ private suspend fun openEntry(context: Context, id: String) {
     val result = Coordinator(context).processUserAction("tool_data.get_single", mapOf("entry_id" to id))
     val toolId = (result.data?.get("entry") as? Map<*, *>)?.get("tool_instance_id") as? String
     if (toolId != null) ToolRequests.open(toolId, id)
-    else UI.Toast(context, result.error ?: Strings.`for`(context = context).shared("chart_entry_not_found"))
+    else UI.Toast(context, result.error ?: Strings.`for`(tool = "chart", context = context).tool("entry_not_found"))
 }

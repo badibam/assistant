@@ -1,4 +1,4 @@
-package com.assistant.core.charts
+package com.assistant.tools.chart
 
 import com.assistant.core.selection.TimePoint
 import com.assistant.core.terms.Term
@@ -16,7 +16,7 @@ import org.junit.Test
  */
 class ChartSpecTest {
 
-    private fun read(json: String) = ChartSpec.of(JSONObject(json)) { key -> key + ":%1\$s:%2\$s:%3\$s" }
+    private fun read(json: String) = ChartSpec.of(JSONObject(json), { it }) { key -> key + ":%1\$s:%2\$s:%3\$s" }
 
     private val period = """"period": {"start": {"relative": {"unit": "DAY", "offset": -29, "edge": "START"}}, "end": {"relative": "NOW"}}"""
 
@@ -76,7 +76,7 @@ class ChartSpecTest {
     fun `what does not read is named`() {
         val layer = """{"source": "entries", "selection": {"target": {"kind": "TOOL_INSTANCE", "id": "t1"}}, "mark": {"type": "rule"}}"""
         val error = assertThrows(IllegalArgumentException::class.java) { read("""{$period, "layer": [$layer]}""") }
-        assertTrue(error.message!!.startsWith("chart_error_option:mark.type:rule"))
+        assertTrue(error.message!!.startsWith("error_option:mark.type:rule"))
         assertThrows(IllegalArgumentException::class.java) { read("""{"layer": []}""") }
         val color = """{"source": "entries", "selection": {"target": {"kind": "TOOL_INSTANCE", "id": "t1"}}, "mark": {"type": "bar"}, "encoding": {"color": {"value": "#ff0000"}}}"""
         assertThrows(IllegalArgumentException::class.java) { read("""{$period, "layer": [$color]}""") }

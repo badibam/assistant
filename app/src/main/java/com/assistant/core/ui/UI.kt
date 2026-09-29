@@ -130,13 +130,13 @@ object UI {
     @Composable
     fun Gauge(fraction: Float) = CurrentTheme.current.Gauge(fraction.coerceIn(0f, 1f))
 
-    /** A chart laid out by the core, drawn by the theme (ThemeContract.ChartScene). */
+    /** A drawing laid out by whoever made it, drawn by the theme (ThemeContract.Drawing). */
     @Composable
-    fun ChartScene(scene: com.assistant.core.charts.ChartScene, modifier: Modifier = Modifier) = CurrentTheme.current.ChartScene(scene, modifier)
+    fun Drawing(drawing: com.assistant.core.drawing.Drawing, modifier: Modifier = Modifier) = CurrentTheme.current.Drawing(drawing, modifier)
 
-    /** The style the theme writes a chart's texts in, which the core measures them in. */
+    /** The style the theme writes a drawing's texts in, which whoever lays it out measures them in. */
     @Composable
-    fun chartTextStyle(): androidx.compose.ui.text.TextStyle = CurrentTheme.current.chartTextStyle()
+    fun drawingTextStyle(): androidx.compose.ui.text.TextStyle = CurrentTheme.current.drawingTextStyle()
 
     /** A horizontal line parting two parts of a screen or a card, drawn by the theme. */
     @Composable
