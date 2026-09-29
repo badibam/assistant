@@ -46,7 +46,7 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 
 ## Le temps relatif
 
-- **Une référence, fournie par le contexte** : un choix relatif (« la veille ») se résout par rapport à elle, comme `resolveRelativePeriod` le fait déjà avec l'heure prévue d'une automation. Automation : l'heure prévue de l'exécution ; Objectif : la fin de la tentative ; terme de variable : l'instant lu ; colonne d'une grille de Graphique : l'instant de sa ligne.
+- **Une référence, fournie par le contexte** : un choix relatif (« la veille ») se résout par rapport à elle, comme `resolveRelativePeriod` le fait déjà avec l'heure prévue d'une automation. Automation : l'heure prévue de l'exécution ; Objectif : la fin de la tentative ; terme de variable : l'instant lu ; Graphique : le moment de son affichage, pour sa période affichée (« les 30 derniers jours » avance avec le temps ; une date personnalisée la fige), et l'instant de sa ligne pour une colonne de grille.
 - **Une seule notion de « maintenant » par contexte.** Sans référence (le chat, la saisie d'une entrée), l'horloge sert de référence au moment du choix, et ce qui s'enregistre est une date fixe : « hier » n'est que l'étiquette d'une période fixe par rapport à l'horloge. Avec référence, un choix relatif s'enregistre comme une description, résolue à chaque fois, et l'horloge n'est pas proposée.
 - **Les étiquettes ne composent jamais la référence** : le sélecteur l'affiche une fois, « Par rapport à : fin de la tentative », une chaîne que le contexte fournit et qui se lit seule ; les étiquettes relatives restent les mêmes partout (« Le jour-même », « La veille », « Il y a 2 jours »), traduites une fois. Un résumé hors du sélecteur met la référence à part (« poids, dernière · la veille · réf. : fin de la tentative »). Aucune grammaire à assembler.
 - **Un sélecteur d'instant, un seul**, pour toute date de l'app : la saisie DATE ou DATETIME d'une entrée, la cible d'une condition sur une date, chaque borne d'une période, l'instant qu'écrira un relevé. Il propose :
@@ -185,7 +185,7 @@ Décidé le 2026-09-29 : Calcul n'est pas un type d'outil (il n'a pas d'entrées
   - **Entrées** : une sélection d'entrées (outil, filtres, champs choisis), une ligne par entrée, son instant et ses champs. Chaque pesée à son heure, un nuage sommeil × humeur.
   - **Grille** : des instants réguliers (chaque jour, chaque semaine…), une ligne par instant, et des colonnes qui sont chacune une Lecture, variable ou lecture de champ à la volée ; chaque instant est la référence de sa ligne. « Sport › durée, somme, Le jour-même · début → Le moment même » donne le total de chaque jour sans créer de variable ; la réduction reste celle du cœur, avec ses échecs.
 
-  La période affichée leur est commune : elle choisit les entrées, et borne la grille.
+  La période affichée leur est commune : elle choisit les entrées, et borne la grille. Elle est relative au moment de l'affichage (« Par rapport à : l'affichage »), et s'enregistre donc comme description.
 - **Ouvert** : le sous-ensemble du dessin retenu (marques, couches, empilement, échelles et second axe, interactions).
 
 ## Objectif
