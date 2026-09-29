@@ -55,7 +55,7 @@ Une brique ne connaît pas l'écran qui l'utilise ; il lui donne ce dont elle a 
 |---|---|---|---|---|---|
 | **Instant** | une date relative (unité, décalage, début ou fin), une date personnalisée, maintenant, sans limite | la forme stockée du champ (millisecondes, `"2026-09-15"`), `{"relative": {"unit", "offset", "edge"}}`, `{"relative": "NOW"}`, absente pour sans limite | `TimePoint`, `TimePoint.read`, résolu par `TimeResolver` | `InstantPicker` | complète |
 | **Période** | deux Instants | `{"start", "end"}`, chaque borne facultative | `EntryPeriod` | `PeriodPicker` | complète |
-| **Chose** | par le fil d'Ariane App › zone › outil ou variable › entrée | `{"kind", "id"}` ; ce qu'un champ accepte : `{"kinds", "tool_instances"}` | `Reference`, `ReferenceTarget`, `ThingPath` ; service `references` | `ThingBrowser` | complète, sans les variables : `ReferenceKind` n'en a pas, et un critère d'Objectif tape le nom de la sienne |
+| **Chose** | par le fil d'Ariane App › zone › outil ou variable › entrée | `{"kind", "id"}` ; ce qu'un champ accepte : `{"kinds", "tool_instances"}` | `Reference`, `ReferenceTarget`, `ThingPath` ; service `references` | `ThingBrowser`, une zone montrée groupe par groupe comme son écran | complète |
 | **Valeur d'un champ** | une valeur d'un type de champ | celle du type (`FieldType`) | `FieldValueSchema`, `FieldValueValidator` | `FieldInput` (saisie), `FieldValue` (affichage) | complète |
 | **Planification** | une récurrence : quotidienne, hebdomadaire, mensuelle, annuelle, dates précises | `ScheduleConfig` | `ScheduleSettings.group` | `ScheduleConfigEditor` ; `ScheduleSettingEditor` sur un formulaire de réglages | complète |
 | **Champ** | un champ des entrées d'un outil, ou aucun pour compter | un chemin : `timestamp`, `name`, `data.x`, `extra.x`, une clé d'état filtrable | `ToolFields.filterable` | `FieldPicker` : le nom seul, le chemin en plus quand deux champs portent le même nom ; gardé par son chemin | complète |
@@ -88,7 +88,6 @@ Le détail de chaque étape, et ce qui reste à y trancher : `docs/design/bricks
 
 Chaque brique arrive avec la réécriture de ses usages existants, sans rien laisser en double :
 
-4. **Chose** : les variables, choisies dans leur zone ; le critère d'Objectif ne tape plus un nom.
 5. **Terme** : sorti de `core/variables`, sa constante de tout type ; son sélecteur remplace `TermEditor`.
 6. **Condition** : sortie de `EntryFilters`, jugée une fois ou sur chaque entrée (en SQL pour un filtre), sa forme `{"left", "op", "right"}` avec la migration des filtres enregistrés ; son sélecteur remplace `FilterValueInput` et les réglages d'opérateur et de cible de l'Objectif.
 7. **Lecture** et **Sélection d'entrées** : leurs sélecteurs remplacent `ReadingEditor` et l'assemblage du pointeur.

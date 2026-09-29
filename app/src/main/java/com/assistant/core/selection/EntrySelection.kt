@@ -58,6 +58,8 @@ data class EntrySelection(
     /** What the target does not take, in words ([text], the shared strings); null when it all fits. */
     fun problem(text: (String) -> String): String? = when {
         target.kind == ReferenceKind.TOOL_INSTANCE -> null
+        // A variable has no entries: it is read, never selected from
+        target.kind == ReferenceKind.VARIABLE -> text("selection_problem_variable")
         filters.length() > 0 || fields != null -> text("selection_problem_filters").format(target.kind.name)
         !period.isEmpty && target.kind != ReferenceKind.ZONE -> text("selection_problem_period").format(target.kind.name)
         else -> null

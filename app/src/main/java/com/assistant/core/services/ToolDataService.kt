@@ -1128,6 +1128,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     ReferenceKind.APP -> null
                     ReferenceKind.ZONE -> s.shared("field_value_reference_not_found").takeIf { database.zoneDao().getZoneById(reference.id!!) == null }
                     ReferenceKind.TOOL_INSTANCE -> s.shared("field_value_reference_not_found").takeIf { database.toolInstanceDao().getToolInstanceById(reference.id!!) == null }
+                    ReferenceKind.VARIABLE -> s.shared("field_value_reference_not_found").takeIf { database.variableDao().getById(reference.id!!) == null }
                     ReferenceKind.ENTRY -> when (val entry = getToolDataDao().getById(reference.id!!)) {
                         null -> s.shared("field_value_reference_not_found")
                         else -> s.shared("field_value_reference_wrong_tool").takeIf { !ReferenceTarget.fromConfig(field.config).acceptsEntryOf(entry.toolInstanceId) }

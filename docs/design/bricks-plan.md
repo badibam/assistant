@@ -10,13 +10,6 @@
 - Rappel : rien de ce qui a été codé depuis la base 46 n'a tourné sur le téléphone (`device-checks.md`).
 - Ailleurs, et à relire avant l'étape qui les cite : dans `docs/design/missing-tools.md`, « Le temps relatif » (la référence, les libellés relatifs, « = » refusé sur un DATETIME) et « Les formes enregistrées » (Instant, période, sélection, pointeur) ; sa section « Objectif » ; dans `docs/design/unified-fields.md`, le réglage de champ réservé à l'utilisateur.
 
-## 4. Chose : les variables
-
-- `ReferenceKind.VARIABLE` ; le service `references` les nomme et les liste dans leur zone ; `ThingBrowser` les montre sous la zone, à côté des outils ; la vérification des champs RÉFÉRENCE les accepte selon `kinds`.
-- Le critère d'Objectif qui tape le nom d'une variable passe à une RÉFÉRENCE (réécrit en entier à l'étape 8).
-- À valider : l'ordre dans une zone (outils puis variables, ou mêlés selon leurs groupes).
-- En passant : choisir une entrée comme cible du pointeur devient possible (`docs/design/pointer.md`), et reste en attente d'un besoin (`TODO.md`).
-
 ## 5. Terme
 
 - `Term` sort de `core/variables` pour le cœur ; sa constante devient de tout type ; un sélecteur commun (constante, variable, Lecture) remplace `TermEditor`.

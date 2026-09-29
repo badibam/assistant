@@ -20,7 +20,7 @@
     <string name="kind_entered_duration">Saisi : une durée</string>
     <string name="kind_entered_scale">Saisi : une échelle de 1 à 10</string>
     <string name="field_variable">Variable</string>
-    <string name="schema_variable">Le nom d\'une variable, lue à la fin de la période de la tentative</string>
+    <string name="schema_variable">La variable, lue à la fin de la période de la tentative</string>
     <string name="field_tool">Outil</string>
     <string name="schema_tool">L\'outil dont les entrées sont lues sur la période de la tentative</string>
     <string name="field_field">Champ</string>

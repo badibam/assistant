@@ -18,14 +18,18 @@ import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
 import com.assistant.core.utils.LogManager
 
-/** One place one level down: where it leads, its name, and what situates it (a tool's zone). */
-private data class Place(val path: ThingPath, val detail: String? = null)
+/**
+ * One place one level down: where it leads, what situates it (a tool's zone, that it is a
+ * variable), and in a zone the group it sits in, null outside the zone's groups.
+ */
+private data class Place(val path: ThingPath, val detail: String? = null, val group: String? = null)
 
 /**
- * The one way to reach a thing of the app (docs/design/missing-tools.md, « Les sélecteurs,
- * recomposés »), for the pointer and the REFERENCE field: the trail App › zone › tool › entry,
- * each step a way back up, and the places one level down, among those that lead to something
- * [target] takes (references.choices). An entry is searched by its label.
+ * The one way to reach a thing of the app (the Chose brick, docs/BRICKS.md), for the pointer and
+ * the REFERENCE field: the trail App › zone › tool › entry, each step a way back up, and the places
+ * one level down, among those that lead to something [target] takes (references.choices). In a
+ * zone, its tools then its variables, group by group as its screen shows them, those outside any
+ * group last. An entry is searched by its label.
  *
  * It only moves [path]: what the place reached means, and whether it can be chosen, is the
  * caller's.
@@ -37,14 +41,15 @@ fun ThingBrowser(path: ThingPath, onPath: (ThingPath) -> Unit, target: Reference
     var query by rememberSaveable(path.tool?.id) { mutableStateOf("") }
     // Reloaded, never saved: null while they are read
     var places by remember { mutableStateOf<List<Place>?>(null) }
+    var groups by remember { mutableStateOf<List<String>>(emptyList()) }
     var failed by remember { mutableStateOf(false) }
     val searching = path.kind == ReferenceKind.TOOL_INSTANCE && ReferenceKind.ENTRY in target.kinds
-    // Nothing is listed below a place when nothing deeper is taken (a tool, for the pointer);
-    // ReferenceKind runs from the app down
-    val deeper = target.kinds.any { it.ordinal > path.kind.ordinal }
+    // Nothing is listed below a place when nothing deeper is taken (a tool, for the pointer)
+    val deeper = target.kinds.any { it in path.kind.below }
 
-    LaunchedEffect(path.zone?.id, path.tool?.id, path.entry?.id, query) {
+    LaunchedEffect(path.zone?.id, path.tool?.id, path.variable?.id, path.entry?.id, query) {
         places = null
+        groups = emptyList()
         failed = false
         if (!deeper) { places = emptyList(); return@LaunchedEffect }
         val result = Coordinator(context).processUserAction("references.choices", buildMap {
@@ -61,14 +66,16 @@ fun ThingBrowser(path: ThingPath, onPath: (ThingPath) -> Unit, target: Reference
             return@LaunchedEffect
         }
         fun rows(key: String) = (result.data?.get(key) as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<*, *>>()
+        groups = (result.data?.get("groups") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
         fun named(row: Map<*, *>, tooltype: Boolean = false) =
             Named(row["id"] as String, row["name"] as? String ?: "", if (tooltype) row["tooltype"] as? String else null)
         places = rows("zones").map { Place(ThingPath(named(it))) } +
             rows("tool_instances").map { row ->
                 // A tool listed at the app, without its zone reached first, says which it is in
                 val zone = path.zone ?: Named(row["zone_id"] as String, row["zone_name"] as? String ?: "")
-                Place(ThingPath(zone, named(row, tooltype = true)), (row["zone_name"] as? String).takeIf { path.zone == null })
+                Place(ThingPath(zone, named(row, tooltype = true)), (row["zone_name"] as? String).takeIf { path.zone == null }, row["group"] as? String)
             } +
+            rows("variables").map { row -> Place(ThingPath(path.zone, variable = named(row)), s.shared("reference_kind_variable"), row["group"] as? String) } +
             rows("entries").map { Place(path.copy(entry = named(it))) }
     }
 
@@ -83,30 +90,45 @@ fun ThingBrowser(path: ThingPath, onPath: (ThingPath) -> Unit, target: Reference
             !deeper -> Unit
             current == null -> UI.LoadingIndicator()
             current.isEmpty() -> UI.Text(text = s.shared("scope_no_options"), type = TextType.BODY)
-            else -> current.forEach { place ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        UI.Text(text = place.path.entry?.name ?: place.path.tool?.name ?: place.path.zone!!.name, type = TextType.BODY)
-                        place.detail?.let { UI.Text(text = it, type = TextType.CAPTION) }
+            // Without groups, one list; with them, a title over each group holding something
+            groups.isEmpty() -> current.forEach { PlaceRow(it, onPath) }
+            else -> {
+                (groups.map { it to it } + (null to s.shared("label_ungrouped"))).forEach { (group, title) ->
+                    val inGroup = current.filter { it.group == group }
+                    if (inGroup.isNotEmpty()) {
+                        UI.Text(text = title, type = TextType.SUBTITLE)
+                        inGroup.forEach { PlaceRow(it, onPath) }
                     }
-                    UI.ActionButton(action = ButtonAction.SELECT, onClick = { onPath(place.path) })
                 }
             }
         }
     }
 }
 
-/** App › zone › tool › entry, each step but the last taking the user back up to it. */
+/** A place, its detail under it, and the button that goes to it. */
+@Composable
+private fun PlaceRow(place: Place, onPath: (ThingPath) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            UI.Text(text = place.path.entry?.name ?: place.path.variable?.name ?: place.path.tool?.name ?: place.path.zone!!.name, type = TextType.BODY)
+            place.detail?.let { UI.Text(text = it, type = TextType.CAPTION) }
+        }
+        UI.ActionButton(action = ButtonAction.SELECT, onClick = { onPath(place.path) })
+    }
+}
+
+/** App › zone › tool or variable › entry, each step but the last taking the user back up to it. */
 @Composable
 private fun Trail(path: ThingPath, appName: String, onUp: (ReferenceKind) -> Unit) {
     val steps = listOfNotNull(
         ReferenceKind.APP to appName,
         path.zone?.let { ReferenceKind.ZONE to it.name },
         path.tool?.let { ReferenceKind.TOOL_INSTANCE to it.name },
+        path.variable?.let { ReferenceKind.VARIABLE to it.name },
         path.entry?.let { ReferenceKind.ENTRY to it.name }
     )
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {

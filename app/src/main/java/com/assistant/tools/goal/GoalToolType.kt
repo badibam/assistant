@@ -112,7 +112,8 @@ object GoalToolType : ToolTypeContract {
                     choice(CriterionKind.entries.map { it.name }) { s.tool("kind_${it.lowercase()}") }), required = true),
                 cases = mapOf(
                     CriterionKind.VARIABLE.name to listOf(
-                        SettingNode.Field(field("variable", s.tool("field_variable"), FieldType.TEXT, s.tool("schema_variable"), mapOf("length" to TextLength.SHORT.name)), required = true),
+                        SettingNode.Field(field("variable", s.tool("field_variable"), FieldType.REFERENCE, s.tool("schema_variable"),
+                            mapOf("target" to mapOf("kinds" to listOf(ReferenceKind.VARIABLE.name)))), required = true),
                         op(), target(), targetUnit()
                     ),
                     CriterionKind.FIELD.name to listOf(

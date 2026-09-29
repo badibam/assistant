@@ -263,7 +263,7 @@ class EnrichmentProcessor(
                 if (pointer.entries) addAll(entriesQueries(toolInstanceId, pointer.selection, isRelative))
             }
             // No selector designates them yet
-            ReferenceKind.APP, ReferenceKind.ENTRY -> {
+            ReferenceKind.APP, ReferenceKind.ENTRY, ReferenceKind.VARIABLE -> {
                 LogManager.aiEnrichment("POINTER: a ${pointer.target.kind} target cannot be read yet", "WARN")
                 emptyList()
             }

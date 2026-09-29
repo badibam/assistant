@@ -98,7 +98,7 @@ class GoalService(private val context: Context) : ExecutableService {
                 continue
             }
             val result = when (criterion.kind) {
-                CriterionKind.VARIABLE -> coordinator.processUserAction("variables.evaluate", mapOf("name" to criterion.variable, "at" to listOf(at)))
+                CriterionKind.VARIABLE -> coordinator.processUserAction("variables.evaluate", mapOf("variable_id" to criterion.variable, "at" to listOf(at)))
                 else -> coordinator.processUserAction("readings.read", mapOf(
                     "selection" to JsonUtils.toMap(EntrySelection(
                         target = Reference(ReferenceKind.TOOL_INSTANCE, criterion.tool ?: ""),

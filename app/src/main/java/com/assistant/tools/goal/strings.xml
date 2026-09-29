@@ -20,7 +20,7 @@
     <string name="kind_entered_duration">Entered: a duration</string>
     <string name="kind_entered_scale">Entered: a scale from 1 to 10</string>
     <string name="field_variable">Variable</string>
-    <string name="schema_variable">The name of a variable, read at the end of the attempt's period</string>
+    <string name="schema_variable">The variable, read at the end of the attempt's period</string>
     <string name="field_tool">Tool</string>
     <string name="schema_tool">The tool whose entries are read over the attempt's period</string>
     <string name="field_field">Field</string>

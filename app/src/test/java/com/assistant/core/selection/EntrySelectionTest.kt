@@ -61,6 +61,8 @@ class EntrySelectionTest {
         assertNull(EntrySelection(zone, yesterday).problem { it })
         assertNotNull(EntrySelection(zone, fields = listOf("data.kcal")).problem { it })
         assertNotNull(EntrySelection(Reference(ReferenceKind.APP, null), yesterday).problem { it })
+        // A variable has no entries at all, even with nothing narrowing it
+        assertNotNull(EntrySelection(Reference(ReferenceKind.VARIABLE, "v1")).problem { it })
     }
 
     @Test

@@ -2,12 +2,21 @@ package com.assistant.core.selection
 
 import org.json.JSONObject
 
-/** What a reference designates, from the widest to the narrowest. */
+/** What a reference designates: the app, a zone, a tool or a variable in a zone, an entry of a tool. */
 enum class ReferenceKind {
     APP,
     ZONE,
     TOOL_INSTANCE,
-    ENTRY
+    ENTRY,
+    VARIABLE;
+
+    /** The kinds reached by going down from this one: what a browser standing here can still lead to. */
+    val below: Set<ReferenceKind> get() = when (this) {
+        APP -> setOf(ZONE, TOOL_INSTANCE, VARIABLE, ENTRY)
+        ZONE -> setOf(TOOL_INSTANCE, VARIABLE, ENTRY)
+        TOOL_INSTANCE -> setOf(ENTRY)
+        ENTRY, VARIABLE -> emptySet()
+    }
 }
 
 /**

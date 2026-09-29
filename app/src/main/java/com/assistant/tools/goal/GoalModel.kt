@@ -95,7 +95,7 @@ data class Criterion(
             op = json.optString("op", "="),
             target = json.opt("target")?.takeIf { it != JSONObject.NULL },
             targetUnit = json.optString("target_unit").takeIf { it.isNotEmpty() }?.let { TargetUnit.valueOf(it) } ?: TargetUnit.NUMBER,
-            variable = json.optString("variable").takeIf { it.isNotEmpty() },
+            variable = json.opt("variable")?.let { ReferenceTarget.referenceOf(it)?.id },
             tool = json.opt("tool")?.let { ReferenceTarget.referenceOf(it)?.id ?: it as? String },
             field = json.optString("field").takeIf { it.isNotEmpty() },
             reduction = json.optString("reduction").takeIf { it.isNotEmpty() }?.let { Reduction.valueOf(it) },

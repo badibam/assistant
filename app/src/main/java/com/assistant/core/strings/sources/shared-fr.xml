@@ -1084,7 +1084,7 @@
     <string name="field_type_duration_form_description">COMPOSED écrit plusieurs unités (1 h 25 min), SINGLE écrit la précision seule (85 min)</string>
     <string name="field_type_reference_display_name">Référence</string>
     <string name="field_type_reference_description">Un lien vers une autre chose de l\'app (une entrée, un outil, une zone), affiché sous son nom actuel</string>
-    <string name="field_type_reference_kinds_description">Ce qu\'une valeur peut désigner : APP, ZONE, TOOL_INSTANCE, ENTRY, une ou plusieurs</string>
+    <string name="field_type_reference_kinds_description">Ce qu\'une valeur peut désigner : APP, ZONE, TOOL_INSTANCE, ENTRY, VARIABLE, une ou plusieurs</string>
     <string name="field_type_reference_tool_instances_description">Avec ENTRY, seulement les entrées de ces outils ; n\'importe quelle entrée si la liste est vide</string>
     <string name="field_config_reference_target">Ce qu\'elle désigne</string>
     <string name="field_config_reference_kinds">Sortes de choses</string>
@@ -1093,9 +1093,10 @@
     <string name="reference_kind_zone">Zone</string>
     <string name="reference_kind_tool_instance">Outil</string>
     <string name="reference_kind_entry">Entrée</string>
+    <string name="reference_kind_variable">Variable</string>
     <string name="field_reading_reference">Désigne : %1$s, écrit {"kind", "id"}.</string>
     <string name="field_reading_reference_tools">Seulement les entrées des outils %1$s.</string>
-    <string name="field_validation_reference_kinds">Une référence dit ce qu\'elle peut désigner : au moins une sorte parmi APP, ZONE, TOOL_INSTANCE, ENTRY.</string>
+    <string name="field_validation_reference_kinds">Une référence dit ce qu\'elle peut désigner : au moins une sorte parmi APP, ZONE, TOOL_INSTANCE, ENTRY, VARIABLE.</string>
     <string name="field_validation_reference_tool_instances">Les outils auxquels une référence se limite ne valent que pour des entrées : ajoutez ENTRY à ce qu\'elle peut désigner.</string>
     <string name="field_value_reference_invalid">Pas une référence : %1$s. Attendu {"kind": "ENTRY", "id": "..."}, sans id pour l\'app.</string>
     <string name="field_value_reference_kind">Désigne un %1$s, que ce champ n\'accepte pas (il accepte %2$s).</string>
@@ -1178,6 +1179,7 @@
     <string name="import_error_declaration">La déclaration de l\'import est incomplète : %1$s</string>
     <string name="selection_problem_filters">Filtres et champs restreignent les entrées d\'une instance d\'outil, pas d\'un %1$s.</string>
     <string name="selection_problem_period">Une période restreint les entrées d\'une instance d\'outil ou d\'une zone, pas d\'un %1$s.</string>
+    <string name="selection_problem_variable">Une variable n\'a pas d\'entrées à sélectionner : elle se lit, comme terme ou par READING.</string>
     <string name="import_missing_column">colonne « %1$s » : non déclarée</string>
     <string name="import_missing_in_file">colonne « %1$s » : absente du fichier</string>
     <string name="import_missing_key">colonne « %1$s » : cet outil ne retrouve pas ses entrées par leur nom</string>
