@@ -198,12 +198,14 @@ Décidé le 2026-09-29 : Calcul n'est pas un type d'outil (il n'a pas d'entrées
   - Calculs, que fait la source : `aggregate`, `timeUnit`, `bin`, et les `transform` autres que `fold` (`calculate`, `filter`, `window`, `joinaggregate`, `lookup`, `regression`, `loess`, `density`, `pivot`, `impute`).
   - Données : `data` (`values`, `url`), que remplace la source.
   - Marques : `rule` (un nombre tapé ; un seuil est une variable), `text`, `arc`, `tick`, `rect`, `trail`, `boxplot`, `errorbar`, `errorband`, `geoshape`, `image`.
+  - Échelles : `log` (des graduations à part) ; `scheme` et `range` de couleurs (une couleur est un nom de la palette).
+  - Interactions : `params` (glisser et pincer dans le temps : la relecture d'une longue grille à concevoir), sélections, encodages conditionnels.
+- **À trancher** (jamais discutés) :
   - Style de marque : `interpolate` (dont `step-after`, pour qu'un seuil change de niveau en marche plutôt qu'en pente), `strokeDash` (le pointillé d'une limite), épaisseur, opacité.
   - Canaux : `size`, `shape`, `opacity`, `strokeDash`, `detail`, `order`, `text`, `href`.
   - Composition : `facet`, `repeat`, `concat`, `hconcat`, `vconcat`.
-  - Échelles : `log`, `pow`, `sqrt`, `symlog` (des graduations à part) ; `scheme` et `range` de couleurs (une couleur est un nom de la palette).
+  - Échelles : `pow`, `sqrt`, `symlog`.
   - Axes et légende : `format`, `tickCount`, `labelAngle`, `orient` et les autres réglages fins.
-  - Interactions : `params` (glisser et pincer dans le temps : la relecture d'une longue grille à concevoir), sélections, encodages conditionnels.
   - `projection` (cartes).
 
 ## Objectif
