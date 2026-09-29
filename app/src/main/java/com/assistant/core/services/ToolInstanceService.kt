@@ -12,6 +12,7 @@ import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.LogManager
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.fields.toFieldDefinition
 import com.assistant.core.fields.toJsonArray
@@ -62,6 +63,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "list" -> handleGetByZone(params, token)  // zones/{id}/tools pattern
                 "list_all" -> handleListAll(params, token) // All tool instances across zones
                 "get" -> handleGetById(params, token)      // tools/{id} pattern
+                "waiting" -> handleWaiting(params, token)
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
@@ -483,6 +485,35 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     /**
      * Get tool instances by zone
      */
+    /**
+     * What waits for the user (ToolTypeContract.getWaiting): how many entries of each tool pass
+     * its tool type's conditions, the tools of `zone_id` or all of them, and the sum by zone. A
+     * tool type that declares none is left out; a tool whose count cannot be read is logged and
+     * left out, a tile never lying about a count it does not have.
+     */
+    private suspend fun handleWaiting(params: JSONObject, token: CancellationToken): OperationResult {
+        val zoneId = params.optString("zone_id").takeIf { it.isNotEmpty() }
+        val tools = if (zoneId != null) toolInstanceDao.getToolInstancesByZone(zoneId) else toolInstanceDao.getAllToolInstances()
+        val coordinator = com.assistant.core.coordinator.Coordinator(context)
+        val counts = mutableMapOf<String, Int>()
+        for (tool in tools) {
+            if (token.isCancelled) return OperationResult.cancelled()
+            val conditions = ToolTypeManager.getToolType(tool.tooltype)?.getWaiting(JSONObject(tool.config_json)).orEmpty()
+            if (conditions.isEmpty()) continue
+            val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id, "filters" to conditions, "limit" to 1))
+            val total = ((result.data?.get("pagination") as? Map<*, *>)?.get("total_entries") as? Number)?.toInt()
+            if (!result.isSuccess || total == null) {
+                LogManager.service("ToolInstanceService: waiting of ${tool.id} not read: ${result.error}", "ERROR")
+                continue
+            }
+            counts[tool.id] = total
+        }
+        return OperationResult.success(mapOf(
+            "tools" to counts,
+            "zones" to tools.groupBy { it.zone_id }.mapValues { (_, inZone) -> inZone.sumOf { counts[it.id] ?: 0 } }
+        ))
+    }
+
     private suspend fun handleGetByZone(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -651,6 +682,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                     ?: s.shared("content_unnamed")
                 s.shared("action_verbalize_delete_tool").format(toolName)
             }
+            "waiting" -> s.shared("action_verbalize_tools_waiting")
             else -> s.shared("action_verbalize_unknown")
         }
     }

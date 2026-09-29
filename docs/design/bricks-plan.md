@@ -12,9 +12,8 @@
 
 ## 9. Attente
 
-- Un type d'outil déclare ce qui attend : une Condition jugée une fois, une Lecture d'un côté (« compte de ses entrées où … `>` 0 ») ; Questionnaire `state.status = TO_FILL`, Objectif `TO_VALIDATE`, Messages `status = sent` et `read = false`.
-- L'indicateur sur la tuile de l'outil et la somme sur celle de sa zone, dessinés par le thème ; toucher la tuile ouvre la plus ancienne entrée qui attend (l'écran d'un type d'outil reçoit une entrée à ouvrir, chacun dit ce que « ouvrir » veut dire) ; une notification désigne une chose, que l'app ouvre par le même chemin (l'intent, puis zone, outil, entrée).
-- À valider : comment un type d'outil déclare une sélection sur « sa propre instance », que le contexte fournit ; la forme de l'indicateur (un nombre, une pastille) dans le contrat du thème.
+- Fait : un type d'outil déclare les conditions de ses entrées qui attendent (`getWaiting`) ; le cœur les compte (`tools.waiting`) et marque d'un point la tuile de l'outil et celle de sa zone (`WaitingMark`, du thème ; un nombre plus tard, peut-être).
+- Reste : toucher la tuile ouvre la plus ancienne entrée qui attend (l'écran d'un type d'outil reçoit une entrée à ouvrir, chacun dit ce que « ouvrir » veut dire) ; une notification désigne une chose, que l'app ouvre par le même chemin (l'intent, puis zone, outil, entrée).
 - Écartés le 2026-09-29, à ne pas reproposer : l'échéance d'une Liste (un champ de l'utilisateur, qu'il faudrait interpréter), l'absence d'une entrée de Suivi ou de Journal, les erreurs du journal.
 
 ## Hors de ce plan, en TODO

@@ -415,12 +415,18 @@ object UI {
     // SPECIALIZED COMPONENTS
     // =====================================
     
+    /** The theme's mark that something waits for the user (ToolTypeContract.getWaiting). */
+    @Composable
+    fun WaitingMark() = CurrentTheme.current.WaitingMark()
+
+    /** Something waiting in one of its tools (LocalWaiting) is marked beside its name. */
     @Composable
     fun ZoneCard(
         zone: Zone,
         onClick: () -> Unit,
         onLongClick: () -> Unit = { }
     ) {
+        val waiting = LocalWaiting.current.zone(zone.id)
         // Themed container + standard content with UI.*
         CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
             Column {
@@ -430,6 +436,7 @@ object UI {
                 ) {
                     zone.icon_name?.let { Icon(iconName = it, size = 24.dp) }
                     Text(zone.name, TextType.TITLE)
+                    if (waiting) WaitingMark()
                 }
                 zone.description?.let { desc ->
                     Text(desc, TextType.BODY)
@@ -457,10 +464,12 @@ object UI {
         CurrentTheme.current.PageHeader(title, subtitle, icon, leftButton, rightButton, onLeftClick, onRightClick)
     }
     
+    /** @param waiting Whether something waits among its entries, marked beside its name */
     @Composable
     fun ToolCardHeader(
         tool: ToolInstance,
-        context: android.content.Context
+        context: android.content.Context,
+        waiting: Boolean = false
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -477,6 +486,7 @@ object UI {
             // Instance name
             val toolInstanceName = settings.string("name")!!
             Text(toolInstanceName, TextType.BODY)
+            if (waiting) WaitingMark()
         }
     }
     
@@ -488,6 +498,8 @@ object UI {
         onClick: () -> Unit,
         onLongClick: () -> Unit = { }
     ) {
+        // Something waiting among its entries (LocalWaiting) is marked beside its name
+        val waiting = LocalWaiting.current.tool(tool.id)
         // Content defined at core level + tool types with UI.*
         val toolType = requireNotNull(ToolTypeManager.getToolType(tool.tooltype)) { "No tool type '${tool.tooltype}' for tool ${tool.id}" }
         CurrentTheme.current.ToolCardContainer(
@@ -501,7 +513,7 @@ object UI {
                     Text("T", TextType.BODY) // Placeholder
                 }
                 DisplayMode.MINIMAL -> {
-                    ToolCardHeader(tool, context)
+                    ToolCardHeader(tool, context, waiting)
                 }
                 DisplayMode.LINE -> {
                     Row(
@@ -513,7 +525,7 @@ object UI {
                             modifier = Modifier.weight(1f).fillMaxHeight(),
                             contentAlignment = Alignment.Center
                         ) {
-                            ToolCardHeader(tool, context)
+                            ToolCardHeader(tool, context, waiting)
                         }
                         
                         // Right half: what the tool type shows there
@@ -528,7 +540,7 @@ object UI {
                     Column {
                         Row {
                             // Icon + title on left (fixed part)
-                            ToolCardHeader(tool, context)
+                            ToolCardHeader(tool, context, waiting)
                             // Free zone at top right defined by tool type
                             Box {
                                 // TODO: Top free content defined by tool type according to mode

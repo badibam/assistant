@@ -76,7 +76,7 @@ Une brique ne connaît pas l'écran qui l'utilise ; il lui donne ce dont elle a 
 | Terme d'une variable | Terme, la période de sa Lecture relative à l'instant lu | fait, avec ses propres sélecteurs |
 | Critère lu d'Objectif | Condition jugée une fois, « Par rapport à : la fin de la tentative (maintenant tant qu'elle court) » ; une Lecture sans période lit celle de la tentative, une période choisie la remplace | fait |
 | Critère saisi d'Objectif | Condition posée à la tentative : le champ saisi d'un côté | fait |
-| Attente (l'indicateur d'une tuile, ce qu'ouvrent la tuile et la notification) | Condition jugée une fois, une Lecture d'un côté | à faire |
+| Attente (l'indicateur d'une tuile, ce qu'ouvrent la tuile et la notification) | les conditions de ses entrées qui attendent, comptées par le cœur (`getWaiting`, `tools.waiting`) ; un point du thème (`WaitingMark`) | le point fait ; l'ouverture de l'entrée qui attend, à faire |
 | Graphique | par couche, une Sélection d'entrées ou une grille de Termes, chaque ligne lue à son instant ; une Période affichée ; ses conditions de dessin, des Conditions sur les colonnes de la ligne | en conception (`docs/design/missing-tools.md`) |
 | Tentatives d'Objectif, invitations de Questionnaire, envois de Messages, automations | Planification | fait |
 | Relevé (automation directe) | Terme + Chose (un Suivi) + Champ + Instant | à concevoir |
@@ -88,4 +88,4 @@ Le détail de chaque étape, et ce qui reste à y trancher : `docs/design/bricks
 
 Chaque brique arrive avec la réécriture de ses usages existants, sans rien laisser en double :
 
-9. **Attente** : une Condition jugée une fois, une Lecture d'un côté.
+9. **Attente** : ce que la tuile et la notification ouvrent.

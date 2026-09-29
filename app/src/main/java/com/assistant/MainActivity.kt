@@ -91,7 +91,12 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    MainScreen()
+                    // What waits for the user, marked on every tile of every screen
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null)
+                    ) {
+                        MainScreen()
+                    }
                 }
             }
         }

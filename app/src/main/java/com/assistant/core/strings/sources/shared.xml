@@ -355,6 +355,7 @@
     <string name="action_verbalize_schema_get">Retrieval of the schema \"%1$s\"</string>
     <string name="action_verbalize_schema_list">Retrieval of the list of schemas</string>
     <string name="action_verbalize_unknown">Unknown action</string>
+    <string name="action_verbalize_tools_waiting">Count what waits in the tools</string>
 
     <!-- AI Errors - Network and System -->
     <string name="ai_error_network_unavailable">Network unavailable</string>

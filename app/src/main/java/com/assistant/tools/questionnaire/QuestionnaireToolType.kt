@@ -97,6 +97,10 @@ object QuestionnaireToolType : ToolTypeContract {
         )
     }
 
+    /** An invitation not filled yet waits. */
+    override fun getWaiting(config: JSONObject): List<JSONObject> =
+        listOf(com.assistant.core.conditions.Conditions.onField("state.$STATUS", "in", listOf(Status.TO_FILL)))
+
     override fun getService(context: Context): ExecutableService = QuestionnaireService(context)
     override fun getScheduler(): ToolScheduler = QuestionnaireScheduler
 

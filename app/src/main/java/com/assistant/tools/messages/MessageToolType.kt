@@ -251,6 +251,12 @@ object MessageToolType : ToolTypeContract {
     // Discovery pattern
     // ========================================
 
+    /** A message sent and not read yet waits. */
+    override fun getWaiting(config: JSONObject): List<JSONObject> = listOf(
+        com.assistant.core.conditions.Conditions.onField("state.status", "in", listOf("sent")),
+        com.assistant.core.conditions.Conditions.onField("state.read", "=", false)
+    )
+
     override fun getService(context: Context): ExecutableService {
         return MessageService(context)
     }

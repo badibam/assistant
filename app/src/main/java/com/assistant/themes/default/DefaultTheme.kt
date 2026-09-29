@@ -977,6 +977,11 @@ object DefaultTheme : ThemeContract {
     }
     
     @Composable
+    override fun WaitingMark() {
+        Box(modifier = Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+    }
+
+    @Composable
     override fun ToolCardContainer(
         displayMode: DisplayMode,
         onClick: () -> Unit,

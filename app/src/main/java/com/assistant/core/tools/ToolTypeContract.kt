@@ -170,6 +170,14 @@ interface ToolTypeContract {
     fun completeConfig(config: JSONObject, previous: JSONObject?): JSONObject = config
 
     /**
+     * What waits for the user among an instance's entries (the waiting, docs/BRICKS.md): the
+     * conditions an entry passes when it does (Conditions.onField), a questionnaire to fill, an
+     * attempt to validate. The core counts them on the instance's tile and its zone's; none,
+     * nothing ever waits.
+     */
+    fun getWaiting(config: JSONObject): List<JSONObject> = emptyList()
+
+    /**
      * Why [entry] may not be changed or deleted by an ordinary write, or null when it may: a
      * goal's validated attempt changes only by its own operation, reopening it. ToolDataService
      * asks it before every update and delete, whoever the caller.

@@ -215,6 +215,10 @@ object GoalToolType : ToolTypeContract {
 
     fun statusOf(entry: ToolDataEntity): String? = entry.state?.takeIf { it.isNotBlank() }?.let { JSONObject(it).optString(STATUS) }
 
+    /** An attempt to validate waits. */
+    override fun getWaiting(config: JSONObject): List<JSONObject> =
+        listOf(Conditions.onField("state.$STATUS", "in", listOf(Status.TO_VALIDATE)))
+
     override fun getService(context: Context): ExecutableService = GoalService(context)
 
     override fun getScheduler(): ToolScheduler = GoalScheduler

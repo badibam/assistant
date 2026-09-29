@@ -215,6 +215,10 @@ interface ThemeContract {
         content: @Composable () -> Unit
     )
     
+    /** The mark beside a tool's or a zone's name when something waits for the user there. */
+    @Composable
+    fun WaitingMark()
+
     @Composable
     fun ToolCardContainer(
         displayMode: DisplayMode,
