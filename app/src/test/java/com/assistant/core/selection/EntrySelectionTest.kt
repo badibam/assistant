@@ -80,4 +80,21 @@ class EntrySelectionTest {
         )
         assertEquals(1, EntryPeriod(end = TimePoint.Now).timestampFilters(resolver).size)
     }
+
+    @Test
+    fun `a filter on a relative date moves with the instant read, a written value does not`() {
+        val relative = TimePoint.Relative(PeriodType.DAY, -7, Edge.START).toJson()
+        assertEquals(false, EntrySelection(tool, yesterday, JSONArray().put(Conditions.onField("data.kcal", ">=", 500))).filtersMove)
+        assertEquals(true, EntrySelection(tool, filters = JSONArray().put(Conditions.onField("data.day", ">=", relative))).filtersMove)
+        assertEquals(true, EntrySelection(tool, filters = JSONArray().put(Conditions.onField("data.day", "between", listOf("2026-09-01", relative)))).filtersMove)
+        assertEquals(false, EntrySelection(tool, filters = JSONArray().put(Conditions.onField("data.mood", "in", listOf("good", "bad")))).filtersMove)
+    }
+
+    @Test
+    fun `a period's instants, a side without limit being null`() {
+        val resolver = TimeResolver(LocalDateTime.of(2026, 9, 15, 12, 0).atZone(ZoneId.of("Europe/Paris")).toInstant().toEpochMilli(), ZoneId.of("Europe/Paris"), 0, "MONDAY")
+        val (start, end) = EntryPeriod(start = TimePoint.Relative(PeriodType.DAY, 0, Edge.START)).instants(resolver)
+        assertEquals(LocalDateTime.of(2026, 9, 15, 0, 0).atZone(ZoneId.of("Europe/Paris")).toInstant().toEpochMilli(), start)
+        assertNull(end)
+    }
 }

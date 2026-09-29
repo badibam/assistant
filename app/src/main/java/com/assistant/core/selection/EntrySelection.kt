@@ -15,6 +15,9 @@ data class EntryPeriod(val start: TimePoint? = null, val end: TimePoint? = null)
 
     val isEmpty: Boolean get() = start == null && end == null
 
+    /** The period's two instants, resolved by [resolver]; null for a side without limit. */
+    fun instants(resolver: TimeResolver): Pair<Long?, Long?> = start?.let { resolver.instant(it) } to end?.let { resolver.instant(it) }
+
     fun toJson(): JSONObject = JSONObject().apply {
         start?.let { put("start", it.toJson()) }
         end?.let { put("end", it.toJson()) }
@@ -65,6 +68,18 @@ data class EntrySelection(
         filters.length() > 0 || fields != null -> text("selection_problem_filters").format(target.kind.name)
         !period.isEmpty && target.kind != ReferenceKind.ZONE -> text("selection_problem_period").format(target.kind.name)
         else -> null
+    }
+
+    /**
+     * Whether a filter compares with a relative date: its entries then change with the instant
+     * they are read at, beyond the period.
+     */
+    val filtersMove: Boolean get() = (0 until filters.length()).any { i ->
+        when (val right = Conditions.right(filters.getJSONObject(i))) {
+            is Conditions.Right.Written -> (right.value as? JSONArray)?.let { pair -> (0 until pair.length()).any { TimePoint.isRelative(pair.opt(it)) } }
+                ?: TimePoint.isRelative(right.value)
+            else -> false
+        }
     }
 
     /**

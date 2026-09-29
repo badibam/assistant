@@ -10,8 +10,10 @@ import com.assistant.core.reading.FailureReason
 import com.assistant.core.reading.FieldReading
 import com.assistant.core.reading.ReadingResult
 import com.assistant.core.reading.Reduction
+import com.assistant.core.selection.EntryPeriod
 import com.assistant.core.selection.EntrySelection
 import com.assistant.core.selection.ReferenceKind
+import com.assistant.core.selection.TimePoint
 import com.assistant.core.selection.TimeResolver
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.JsonUtils
@@ -28,6 +30,10 @@ import org.json.JSONObject
  *   variable is read at), `field` (a path, absent to count) and `reduction`. It gives `value` with
  *   `field`, the type and settings of the result, or `failure` with its causes as data: a reading
  *   without a value is an answer, which each reader decides what to do with.
+ * - read, a field at several instants: `at` in place of `reference`, the instants a reader reads a
+ *   range at (a chart's grid, a step each); `field` once, and `values`, a value or a failure per
+ *   instant in the same order, `{"at", "value" | "failure"}`. One read of the entries serves them
+ *   all when the filters say no relative date: only the period then moves with the instant.
  */
 class ReadingService(private val context: Context) : ExecutableService {
 
@@ -60,8 +66,12 @@ class ReadingService(private val context: Context) : ExecutableService {
         if (selection.target.kind != ReferenceKind.TOOL_INSTANCE) {
             return OperationResult.error(s.shared("service_error_reading_source").format(selection.target.kind.name))
         }
+        // One instant, or several read in one go
+        val instants = params.optJSONArray("at")?.let { array ->
+            (0 until array.length()).map { (array.opt(it) as? Number)?.toLong() ?: return OperationResult.error(s.shared("service_error_reading_param").format("at")) }
+        }
         val reference = (params.opt("reference") as? Number)?.toLong()
-            ?: return OperationResult.error(s.shared("service_error_reading_param").format("reference"))
+        if (instants == null && reference == null) return OperationResult.error(s.shared("service_error_reading_param").format("reference"))
         val reduction = Reduction.entries.firstOrNull { it.name == params.optString("reduction") }
             ?: return OperationResult.error(s.shared("service_error_reading_reduction").format(
                 params.optString("reduction"), Reduction.entries.joinToString(", ") { it.name }))
@@ -71,7 +81,10 @@ class ReadingService(private val context: Context) : ExecutableService {
         // A read that fails is an error, never taken for a deletion
         when (sourceGone(toolInstanceId)) {
             null -> return OperationResult.error(s.shared("service_error_reading_source_unread"))
-            true -> return OperationResult.success(failure(ReadingResult.Failure(FailureReason.SOURCE_NOT_FOUND, null)))
+            true -> {
+                val gone = failure(ReadingResult.Failure(FailureReason.SOURCE_NOT_FOUND, null))
+                return OperationResult.success(if (instants == null) gone else mapOf("values" to instants.map { mapOf("at" to it) + gone }))
+            }
             false -> {}
         }
 
@@ -84,22 +97,65 @@ class ReadingService(private val context: Context) : ExecutableService {
                 reduction.name, field?.type?.name ?: "-", Reduction.forType(field?.type).joinToString(", ") { it.name }))
         }
 
-        val filters = try {
-            selection.storedFilters(fields, TimeResolver.at(reference)) { s.shared(it) }
+        if (instants == null) {
+            val rows = try { entries(toolInstanceId, selection.storedFilters(fields, TimeResolver.at(reference!!)) { s.shared(it) }) }
+                catch (e: IllegalArgumentException) { return OperationResult.error(e.message ?: "") }
+                catch (e: IllegalStateException) { return OperationResult.error(e.message ?: "") }
+            return OperationResult.success(result(FieldReading.reduce(rows, path, field, reduction, reference)))
+        }
+
+        // Several instants: the filters on values are the same at each when none holds a relative
+        // date, and the entries of every period are then read at once, each instant keeping those
+        // its own period takes. Otherwise each instant reads its own
+        val values = try {
+            if (selection.filtersMove) {
+                instants.map { at -> at to FieldReading.reduce(entries(toolInstanceId, selection.storedFilters(fields, TimeResolver.at(at)) { s.shared(it) }), path, field, reduction, at) }
+            } else {
+                val ranges = instants.map { at -> at to selection.period.instants(TimeResolver.at(at)) }
+                // Every period at once: from the earliest start to the latest end, a side without
+                // limit at one instant being without limit for all
+                val union = EntryPeriod(
+                    start = ranges.map { it.second.first }.takeIf { starts -> starts.none { it == null } }?.minOfOrNull { it!! }?.let { TimePoint.Fixed(it) },
+                    end = ranges.map { it.second.second }.takeIf { ends -> ends.none { it == null } }?.maxOfOrNull { it!! }?.let { TimePoint.Fixed(it) }
+                )
+                val rows = entries(toolInstanceId, selection.copy(period = union).storedFilters(fields, TimeResolver.at(instants.first())) { s.shared(it) })
+                ranges.map { (at, range) ->
+                    val (start, end) = range
+                    at to FieldReading.reduce(rows.filter { row ->
+                        val timestamp = (row["timestamp"] as? Number)?.toLong() ?: return@filter false
+                        (start == null || timestamp >= start) && (end == null || timestamp <= end)
+                    }, path, field, reduction, at)
+                }
+            }
         } catch (e: IllegalArgumentException) {
             return OperationResult.error(e.message ?: "")
+        } catch (e: IllegalStateException) {
+            return OperationResult.error(e.message ?: "")
         }
+        return OperationResult.success(mapOf(
+            "field" to JsonUtils.toMap((field ?: FieldReading.COUNT_FIELD).toJson()),
+            "values" to values.map { (at, result) -> mapOf("at" to at) + result(result).filterKeys { it != "field" } }
+        ))
+    }
+
+    /**
+     * The entries of [toolInstanceId] the stored [filters] keep, newest first.
+     *
+     * @throws IllegalStateException when they cannot be read
+     */
+    private suspend fun entries(toolInstanceId: String, filters: org.json.JSONArray): List<Map<String, Any?>> {
         val entries = Coordinator(context).processUserAction("tool_data.get", mapOf(
             "tool_instance_id" to toolInstanceId,
             "filters" to JsonUtils.toList(filters)
         ))
-        if (!entries.isSuccess) return OperationResult.error(entries.error ?: "")
-        val rows = (entries.data?.get("entries") as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<String, Any?>>()
+        if (!entries.isSuccess) throw IllegalStateException(entries.error ?: "")
+        return (entries.data?.get("entries") as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<String, Any?>>()
+    }
 
-        return OperationResult.success(when (val result = FieldReading.reduce(rows, path, field, reduction, reference)) {
-            is ReadingResult.Value -> mapOf("value" to result.value, "field" to JsonUtils.toMap(result.field.toJson()))
-            is ReadingResult.Failure -> failure(result)
-        })
+    /** A result as data: its value with its field, or its failure. */
+    private fun result(result: ReadingResult): Map<String, Any> = when (result) {
+        is ReadingResult.Value -> mapOf("value" to result.value, "field" to JsonUtils.toMap(result.field.toJson()))
+        is ReadingResult.Failure -> failure(result)
     }
 
     /** Whether the tool instance was deleted; null when that cannot be read. */
