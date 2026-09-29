@@ -13,6 +13,7 @@ Guide pour comprendre et créer des outils dans l'architecture modulaire.
 - **Objectif** : 1 objectif avec sous-objectifs et critères
 - **Graphique** : 1 groupe de visualisations cohérentes
 - **Liste** : 1 liste thématique (courses, tâches)
+- **Données structurées** : 1 table de fiches (aliments, livres, contacts)
 - **Journal** : 1 type de journal (réflexions, rêves)
 - **Note** : 1 note individuelle
 - **Message** : 1 message/rappel planifié
@@ -164,6 +165,11 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 **Usage** : L'état présent de ce qui reste à faire (courses, tâches, check-list), sans historique : ce qui a été fait et quand relève d'un suivi « occurrence »
 **Configuration** : `remove_when_checked`, un élément coché est supprimé aussitôt (les courses) ; ce qu'un élément porte au-delà de son nom (quantité, échéance) est un champ personnalisé
 **Données** : Une entrée par élément : son nom, et dans `state` sa position (`ManualOrder`) et `checked_at`, l'instant où il a été coché, absent sinon ; décocher l'efface. L'écran montre les non cochés dans l'ordre manuel, réordonnés en glissant, puis, sous un trait, les cochés dans l'ordre où ils l'ont été ; « Tout décocher » agit en un lot. La tuile se coche sans ouvrir l'outil (`ListTile`)
+
+### Données structurées (Structured)
+**Usage** : Des fiches faites des champs de l'utilisateur, chacune retrouvée par son nom (les aliments et leurs calories, que lit une RÉFÉRENCE d'un repas)
+**Configuration** : les colonnes sont les champs de l'utilisateur (`extra_fields`) ; `table_columns`, combien d'entre eux le tableau montre après le nom (2 par défaut)
+**Données** : Une entrée par fiche : son nom, obligatoire et unique dans l'outil sans compter la casse ni les espaces autour (`EntryFields.nameUnique` : `ToolDataService` refuse un doublon dans sa transaction en nommant la fiche existante, un filtre sur `name` compare de même), pas de date, `data` vide. L'écran (`StructuredScreen`) : un tableau trié au toucher d'un en-tête, l'écran d'une fiche où un glissement mène aux voisines, un en-tête de filtre commun aux deux (recherche, filtres, tri) replié en une ligne qui les résume avec la position, gardé le temps de la visite ; une fiche se modifie entière et s'écrit en une fois, une nouvelle rien avant « Enregistrer ». La tuile compte les fiches
 
 ### Note (Note)
 **Usage** : Titre et contenu libre

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings of the structured data tooltype -->
+
+    <!-- Metadata -->
+    <string name="display_name">Données structurées</string>
+    <string name="description">Des fiches faites de vos champs, chacune retrouvée par son nom : aliments et leurs calories, livres, contacts</string>
+
+    <!-- Setting -->
+    <string name="field_table_columns">Colonnes du tableau</string>
+    <string name="schema_config_table_columns">Combien des champs de l\'utilisateur (extra_fields, dans leur ordre) le tableau montre après le nom</string>
+
+    <!-- Screen -->
+    <string name="table_empty">Aucune fiche pour l\'instant</string>
+    <string name="no_match">Aucune fiche ne correspond</string>
+    <string name="search">Rechercher par nom</string>
+    <string name="filters">Filtres</string>
+    <string name="sort_by">Trié par %1$s</string>
+    <string name="position">%1$d / %2$d</string>
+    <string name="count">%1$d fiche(s)</string>
+    <string name="new_sheet">Nouvelle fiche</string>
+    <string name="action_edit">Modifier</string>
+    <string name="delete_confirm">Supprimer « %1$s » ?</string>
+    <string name="previous">Précédente</string>
+    <string name="next">Suivante</string>
+
+    <!-- Tile on a zone -->
+    <string name="tile_count_one">1 fiche</string>
+    <string name="tile_count_many">%1$s fiches</string>
+</resources>

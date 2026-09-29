@@ -50,9 +50,14 @@ data class StateField(
  * the core's name and timestamp, stored in their columns; the tool type's fixed fields in
  * "data"; the entry's state in "state". The user's own fields, in "extra", come from the tool
  * instance's config and are not part of the declaration.
+ *
+ * @property nameUnique Whether no two entries of a tool instance share a name, the case and the
+ *   spaces around not counted: the name is what finds an entry (a sheet of structured data), and
+ *   the service refuses a duplicate, naming the entry that has it
  */
 data class EntryFields(
     val name: CoreFieldUsage = CoreFieldUsage.REQUIRED,
+    val nameUnique: Boolean = false,
     val timestamp: CoreFieldUsage = CoreFieldUsage.OPTIONAL,
     val data: List<FixedField> = emptyList(),
     val state: List<StateField> = emptyList()
@@ -69,15 +74,24 @@ data class EntryFields(
  */
 object CoreFields {
 
-    /** A short text naming the entry. */
-    fun name(text: (String) -> String) = FieldDefinition(
+    /**
+     * A short text naming the entry; [unique] when no two entries of a tool share it, which a
+     * filter on it then compares the same way, the case and the spaces around not counted.
+     */
+    fun name(text: (String) -> String, unique: Boolean = false) = FieldDefinition(
         name = "name",
         displayName = text("label_name"),
-        description = text("tools_base_schema_data_name"),
+        description = text(if (unique) "tools_base_schema_data_name_unique" else "tools_base_schema_data_name"),
         type = FieldType.TEXT,
         alwaysVisible = false,
-        config = mapOf("length" to TextLength.SHORT.name)
+        config = mapOf("length" to TextLength.SHORT.name) + (if (unique) mapOf(UNIQUE to true) else emptyMap())
     )
+
+    /** The config key marking a unique name. */
+    const val UNIQUE = "unique"
+
+    /** A name as uniqueness compares it: the case and the spaces around not counted. */
+    fun uniqueKey(name: String): String = name.trim().lowercase()
 
     /** The moment the entry is about, which can be set in the past. */
     fun timestamp(text: (String) -> String) = FieldDefinition(

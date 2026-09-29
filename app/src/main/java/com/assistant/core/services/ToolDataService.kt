@@ -31,6 +31,7 @@ import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.FieldContainer
+import com.assistant.core.fields.CoreFieldUsage
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.FieldValueValidator
 import com.assistant.core.fields.RunningDurations
@@ -107,7 +108,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Milliseconds are the contract. An absent timestamp means now, which is a default
         // written into the contract; any number is taken as milliseconds, Int and Double
         // included, since JSON decides the width on its own. Anything else is refused.
+        val timestampAbsent = ToolTypeManager.getToolType(tooltype)?.getEntryFields(target.config, context)?.timestamp == CoreFieldUsage.ABSENT
         val timestamp = when {
+            // A tool type whose entries have no date gets none; one sent is refused by the schema
+            !params.has("timestamp") && timestampAbsent -> null
             !params.has("timestamp") -> System.currentTimeMillis()
             params.opt("timestamp") is Number -> (params.opt("timestamp") as Number).toLong()
             else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
@@ -141,8 +145,13 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
 
         val dao = getToolDataDao()
-        storeSettled(tooltype, dao.getByToolInstance(toolInstanceId) + entity, entity.id, checked.grown(grownConfig)) { settled ->
-            dao.insert(settled ?: entity)
+        try {
+            storeSettled(tooltype, dao.getByToolInstance(toolInstanceId) + entity, entity.id, checked.grown(grownConfig)) { settled ->
+                refuseTakenName(checked, entity)
+                dao.insert(settled ?: entity)
+            }
+        } catch (taken: NameTaken) {
+            return OperationResult.error(taken.message ?: "")
         }
 
         // Notify UI of data change in this tool instance, and of its config when the entry grew it
@@ -158,6 +167,24 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "created_at" to entity.createdAt
             )
         )
+    }
+
+    /** A name another entry of the tool already has, where names are unique. */
+    private class NameTaken(message: String) : Exception(message)
+
+    /**
+     * Refuses [entry] when its tool type keeps names unique (EntryFields.nameUnique) and another
+     * entry of the tool has the same one, the case and the spaces around not counted, naming it.
+     * Run inside the write's transaction.
+     */
+    private suspend fun refuseTakenName(target: WriteTarget.Ready, entry: ToolDataEntity) {
+        val name = entry.name ?: return
+        val declared = ToolTypeManager.getToolType(target.tool.tooltype)?.getEntryFields(target.config, context) ?: return
+        if (!declared.nameUnique) return
+        val key = com.assistant.core.fields.CoreFields.uniqueKey(name)
+        getToolDataDao().getByToolInstance(entry.toolInstanceId)
+            .firstOrNull { it.id != entry.id && it.name != null && com.assistant.core.fields.CoreFields.uniqueKey(it.name) == key }
+            ?.let { throw NameTaken(s.shared("service_error_name_taken").format(it.name, it.id)) }
     }
 
     /**
@@ -269,8 +296,13 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val after = dao.getByToolInstance(existingEntity.toolInstanceId)
             .map { if (it.id == updatedEntity.id) updatedEntity else it }
-        storeSettled(existingEntity.tooltype, after, updatedEntity.id, checked.grown(grownConfig)) { settled ->
-            dao.update(settled ?: updatedEntity)
+        try {
+            storeSettled(existingEntity.tooltype, after, updatedEntity.id, checked.grown(grownConfig)) { settled ->
+                refuseTakenName(checked, updatedEntity)
+                dao.update(settled ?: updatedEntity)
+            }
+        } catch (taken: NameTaken) {
+            return OperationResult.error(taken.message ?: "")
         }
 
         // Notify UI of data change in this tool instance, and of its config when the entry grew it

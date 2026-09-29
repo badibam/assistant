@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings of the structured data tooltype -->
+
+    <!-- Metadata -->
+    <string name="display_name">Structured data</string>
+    <string name="description">Sheets of your own fields, each found by its name: foods and their calories, books, contacts</string>
+
+    <!-- Setting -->
+    <string name="field_table_columns">Columns of the table</string>
+    <string name="schema_config_table_columns">How many of the user\'s fields (extra_fields, in their order) the table shows after the name</string>
+
+    <!-- Screen -->
+    <string name="table_empty">No sheet yet</string>
+    <string name="no_match">No sheet matches</string>
+    <string name="search">Search by name</string>
+    <string name="filters">Filters</string>
+    <string name="sort_by">Sorted by %1$s</string>
+    <string name="position">%1$d / %2$d</string>
+    <string name="count">%1$d sheet(s)</string>
+    <string name="new_sheet">New sheet</string>
+    <string name="action_edit">Change</string>
+    <string name="delete_confirm">Delete \"%1$s\"?</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+
+    <!-- Tile on a zone -->
+    <string name="tile_count_one">1 sheet</string>
+    <string name="tile_count_many">%1$s sheets</string>
+</resources>

@@ -741,6 +741,8 @@
     <string name="tools_base_schema_data_tool_instance_id">Identifiant de l\'outil auquel appartient l\'entrée</string>
     <string name="tools_base_schema_data_tooltype">Type de l\'outil auquel appartient l\'entrée, posé par le système</string>
     <string name="tools_base_schema_data_name">Nom de l\'entrée</string>
+    <string name="tools_base_schema_data_name_unique">Le nom de l\'entrée, unique dans l\'outil (sans compter la casse ni les espaces autour) : c\'est par lui qu\'on la retrouve</string>
+    <string name="service_error_name_taken">Une autre entrée de cet outil s\'appelle déjà « %1$s » (id %2$s) : les noms y sont uniques. Modifiez cette entrée plutôt que d\'en ajouter une seconde.</string>
     <string name="tools_base_schema_data_timestamp">Moment auquel se rapporte l\'entrée ; maintenant s\'il est omis, et peut être dans le passé</string>
     <string name="tools_base_schema_data_created_at">Date de création de l\'entrée, posée par le système</string>
     <string name="tools_base_schema_data_updated_at">Date de dernière modification de l\'entrée, posée par le système</string>

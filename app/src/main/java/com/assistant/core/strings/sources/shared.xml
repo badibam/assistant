@@ -741,6 +741,8 @@
     <string name="tools_base_schema_data_tool_instance_id">Identifier of the tool the entry belongs to</string>
     <string name="tools_base_schema_data_tooltype">Type of the tool the entry belongs to, set by the system</string>
     <string name="tools_base_schema_data_name">Name of the entry</string>
+    <string name="tools_base_schema_data_name_unique">The name of the entry, unique in the tool (the case and the spaces around not counted): it is what finds the entry</string>
+    <string name="service_error_name_taken">Another entry of this tool is already named "%1$s" (id %2$s): names are unique here. Change that entry rather than add a second one.</string>
     <string name="tools_base_schema_data_timestamp">Moment the entry refers to; the present if omitted, and can be set in the past</string>
     <string name="tools_base_schema_data_created_at">When the entry was created, set by the system</string>
     <string name="tools_base_schema_data_updated_at">When the entry was last changed, set by the system</string>

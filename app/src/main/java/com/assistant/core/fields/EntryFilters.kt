@@ -91,7 +91,7 @@ object EntryFilters {
         extra: List<FieldDefinition>,
         text: (String) -> String
     ): Map<String, FieldDefinition> = buildMap {
-        if (declared.name != CoreFieldUsage.ABSENT) put("name", CoreFields.name(text))
+        if (declared.name != CoreFieldUsage.ABSENT) put("name", CoreFields.name(text, declared.nameUnique))
         if (declared.timestamp != CoreFieldUsage.ABSENT) put("timestamp", CoreFields.timestamp(text))
         put("created_at", CoreFields.createdAt(text))
         put("updated_at", CoreFields.updatedAt(text))
@@ -276,6 +276,9 @@ object EntryFilters {
             }
             // lower() folds ASCII only: "É" and "é" stay apart
             FilterOperator.CONTAINS -> SqlCondition("instr(lower($expr), lower(?)) > 0", exprArgs + (filter.value as String))
+            // A unique name is found as uniqueness compares it: the case and the spaces around not counted
+            FilterOperator.EQUAL if field.config?.get(CoreFields.UNIQUE) == true ->
+                SqlCondition("lower(trim($expr)) = lower(trim(?))", exprArgs + (filter.value as String))
             // A reference is compared by the id it holds
             else -> if (field.type == FieldType.REFERENCE) {
                 SqlCondition("json_extract($container, ?) = ?", listOf("$jsonPath.id", filter.value!!))

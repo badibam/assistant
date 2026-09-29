@@ -108,3 +108,10 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Supprimer « kcal » : « reste » affiche « pas de valeur — variable supprimée ».
 - Après la migration 47 : l'app démarre, une sauvegarde exportée contient `variables` et se réimporte.
 
+## Données structurées
+
+- Créer une table « Aliments » avec deux champs (kcal_100g, catégorie) : « + » ouvre une fiche vide, rien n'apparaît avant « Enregistrer » ; une fiche nommée « pomme » alors que « Pomme » existe est refusée en nommant l'existante.
+- Le tableau montre le nom et les deux champs ; toucher un en-tête trie, retoucher inverse. Toucher une ligne ouvre la fiche ; glisser mène aux voisines dans l'ordre et le filtre du tableau ; la ligne repliée de l'en-tête dit la position (« 3 / 12 »).
+- Filtrer « catégorie = fruit », ouvrir une fiche, lui changer sa catégorie : elle reste affichée jusqu'à ce qu'on la quitte. Tourner l'écran : filtre, tri et fiche ouverte restent ; quitter l'outil et revenir : tout repart à zéro.
+- La tuile compte les fiches.
+
