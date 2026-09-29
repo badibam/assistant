@@ -9,6 +9,7 @@ import com.assistant.core.ai.data.Automation
 import com.assistant.core.ai.data.MessageSegment
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.ai.ui.components.RichComposer
+import com.assistant.core.fields.settings.scheduleSummary
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.ScheduleConfig
@@ -76,9 +77,7 @@ fun AutomationEditorFooter(
                     ) {
                         UI.Icon(iconName = "clock", size = 20.dp)
                         UI.Text(
-                            text = scheduleConfig?.let {
-                                generateScheduleLabel(context, it)
-                            } ?: s.shared("automation_schedule_not_configured"),
+                            text = scheduleConfig?.let { scheduleSummary(it, s) } ?: s.shared("schedule_summary_none"),
                             type = TextType.BODY
                         )
                     }
@@ -149,53 +148,6 @@ fun AutomationEditorFooter(
                 display = ButtonDisplay.LABEL,
                 onClick = onSave
             )
-        }
-    }
-}
-
-/**
- * Generate human-readable schedule label for button display
- *
- * Examples:
- * - "Quotidien 9h, 14h, 18h"
- * - "Lun/Mer/Ven 9h"
- * - "15 de Jan/Mar/Juin 10h"
- * - "Manuel" (if no schedule)
- */
-private fun generateScheduleLabel(
-    context: android.content.Context,
-    scheduleConfig: ScheduleConfig
-): String {
-    val s = Strings.`for`(context = context)
-
-    return when (val pattern = scheduleConfig.pattern) {
-        is com.assistant.core.utils.SchedulePattern.DailyMultiple -> {
-            val times = pattern.times.joinToString(", ")
-            s.shared("automation_schedule_daily").format(times)
-        }
-        is com.assistant.core.utils.SchedulePattern.WeeklySimple -> {
-            val days = pattern.daysOfWeek.joinToString("/") { day ->
-                s.shared("day_of_week_short_$day")
-            }
-            s.shared("automation_schedule_weekly").format(days, pattern.time)
-        }
-        is com.assistant.core.utils.SchedulePattern.MonthlyRecurrent -> {
-            val months = pattern.months.joinToString("/") { month ->
-                s.shared("month_short_$month")
-            }
-            s.shared("automation_schedule_monthly").format(pattern.dayOfMonth, months, pattern.time)
-        }
-        is com.assistant.core.utils.SchedulePattern.WeeklyCustom -> {
-            val count = pattern.moments.size
-            s.shared("automation_schedule_weekly_custom").format(count)
-        }
-        is com.assistant.core.utils.SchedulePattern.YearlyRecurrent -> {
-            val count = pattern.dates.size
-            s.shared("automation_schedule_yearly").format(count)
-        }
-        is com.assistant.core.utils.SchedulePattern.SpecificDates -> {
-            val count = pattern.timestamps.size
-            s.shared("automation_schedule_specific").format(count)
         }
     }
 }

@@ -10,10 +10,10 @@ import com.assistant.core.ai.data.Automation
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.ai.scheduling.AutomationScheduler
+import com.assistant.core.fields.settings.scheduleSummary
 import com.assistant.core.ai.scheduling.NextExecution
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
-import com.assistant.core.utils.SchedulePattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -128,9 +128,9 @@ fun AutomationCard(
                     automation.schedule != null && automation.triggerIds.isNotEmpty() -> {
                         // Hybrid: schedule + triggers
                         val triggerCount = automation.triggerIds.size
-                        "${getScheduleLabel(context, automation.schedule!!.pattern)} + ${s.shared("automation_triggers_count").format(triggerCount)}"
+                        "${scheduleSummary(automation.schedule!!, s)} + ${s.shared("automation_triggers_count").format(triggerCount)}"
                     }
-                    automation.schedule != null -> getScheduleLabel(context, automation.schedule!!.pattern)
+                    automation.schedule != null -> scheduleSummary(automation.schedule!!, s)
                     else -> s.shared("automation_triggers_count").format(automation.triggerIds.size)
                 }
 
@@ -215,45 +215,6 @@ fun AutomationCard(
                     onClick = onEdit
                 )
             }
-        }
-    }
-}
-
-/**
- * Generate human-readable schedule label for card display
- * Compact format for small space
- */
-private fun getScheduleLabel(context: android.content.Context, pattern: SchedulePattern): String {
-    val s = Strings.`for`(context = context)
-
-    return when (pattern) {
-        is SchedulePattern.DailyMultiple -> {
-            if (pattern.times.size == 1) {
-                s.shared("automation_schedule_daily").format(pattern.times[0])
-            } else {
-                s.shared("automation_schedule_daily").format("${pattern.times.size}x")
-            }
-        }
-        is SchedulePattern.WeeklySimple -> {
-            val days = pattern.daysOfWeek.joinToString("/") { day ->
-                s.shared("day_of_week_short_$day")
-            }
-            s.shared("automation_schedule_weekly").format(days, pattern.time)
-        }
-        is SchedulePattern.MonthlyRecurrent -> {
-            val months = pattern.months.joinToString("/") { month ->
-                s.shared("month_short_$month")
-            }
-            s.shared("automation_schedule_monthly").format(pattern.dayOfMonth, months, pattern.time)
-        }
-        is SchedulePattern.WeeklyCustom -> {
-            s.shared("automation_schedule_weekly_custom").format(pattern.moments.size)
-        }
-        is SchedulePattern.YearlyRecurrent -> {
-            s.shared("automation_schedule_yearly").format(pattern.dates.size)
-        }
-        is SchedulePattern.SpecificDates -> {
-            s.shared("automation_schedule_specific").format(pattern.timestamps.size)
         }
     }
 }

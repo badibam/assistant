@@ -1,4 +1,4 @@
-package com.assistant.core.ai.ui.automation
+package com.assistant.core.fields.settings
 
 import kotlinx.serialization.builtins.serializer
 import com.assistant.core.utils.DateUtils
@@ -33,9 +33,7 @@ import java.util.*
  * - YearlyRecurrent: Recurring yearly dates
  * - SpecificDates: One-shot specific dates
  *
- * Usage:
- * - Automation schedules (primary use case)
- * - Alerts, reminders, any recurring tasks
+ * Opened by an automation's editor, and by ScheduleSettingEditor for a tool's schedule.
  */
 @Composable
 fun ScheduleConfigEditor(

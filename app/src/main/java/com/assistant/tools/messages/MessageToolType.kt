@@ -122,7 +122,7 @@ object MessageToolType : ToolTypeContract {
             // The recurrence and the life of the occurrences it creates
             SettingNode.Section(s.tool("section_schedule"), listOf(
                 // Absent: nothing fires on its own, the tool is a channel fed on demand
-                SettingNode.Group("schedule", s.tool("field_schedule"), ScheduleSettings.nodes(shared::shared)),
+                ScheduleSettings.group(s.tool("field_schedule"), shared::shared),
                 // How far ahead occurrences are created, and how long a missed one may still go out
                 field("creation_horizon", FieldType.DURATION, default = 2 * 86_400_000L,
                     config = mapOf("precision" to "DAY", "form" to "SINGLE")),
@@ -131,10 +131,6 @@ object MessageToolType : ToolTypeContract {
             ))
         )
     }
-
-    /** The recurrence is edited by the schedule editor, with a line saying what it is. */
-    override fun getConfigEditors(context: Context): Map<String, com.assistant.core.fields.settings.SettingEditor> =
-        mapOf("schedule" to com.assistant.tools.messages.ui.ScheduleSettingEditor(Strings.`for`(tool = "messages", context = context)))
 
     /** Send now: an occurrence due at once, which the scheduler sends as it sends the others. */
     override fun getOperations(context: Context): List<com.assistant.core.tools.ToolOperation> {

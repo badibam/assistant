@@ -69,7 +69,7 @@ object AutomationSettings {
                 mapOf("length" to TextLength.SHORT.name))),
             SettingNode.Field(FieldDefinition("is_enabled", s.shared("automation_is_enabled"), null, FieldType.BOOLEAN, false, null), default = true),
             // Absent: the automation runs on demand only
-            SettingNode.Group("schedule", s.shared("automation_schedule"), ScheduleSettings.nodes(s::shared)),
+            ScheduleSettings.group(s.shared("automation_schedule"), s::shared),
             // Present with the schedule, and only with it (AutomationService)
             SettingNode.Group("catch_up", s.shared("automation_catch_up_title"), catchUpNodes(context))
         )

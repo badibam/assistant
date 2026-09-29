@@ -10,6 +10,12 @@ import com.assistant.core.fields.FieldType
  */
 object ScheduleSettings {
 
+    /** The name a schedule is stored under in the object holding it, and by which SettingsForm knows it. */
+    const val NAME = "schedule"
+
+    /** A schedule labelled [label], as a config or an automation declares it. */
+    fun group(label: String, text: (String) -> String) = SettingNode.Group(NAME, label, nodes(text))
+
     /** The pattern types, as ScheduleConfig's SchedulePattern names them. */
     private val PATTERNS = listOf("DailyMultiple", "WeeklySimple", "MonthlyRecurrent", "WeeklyCustom", "YearlyRecurrent", "SpecificDates")
 

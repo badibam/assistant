@@ -53,7 +53,7 @@ Dossier tools/[type]/ contient :
 Interface principale avec méthodes pour :
 - **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultIconName(), getDefaultDisplayMode(), getDefaultShowFieldLabels()
 - **Déclarations** : getEntryFields() (champs des entrées), getConfigSettings() (réglages propres, à côté de la partie commune `ToolConfigSettings`) ; schémas, config par défaut et lecture en sont générés ; configWithOptionsAdded() pour un type qui déclare un choix ouvert dans `data` ; getOperations() (défaut : aucune), les opérations que son service mène sur ses entrées à côté des écritures génériques, chacune un nom, une phrase et ses paramètres déclarés en champs (`ToolOperation`)
-- **Interface utilisateur** : getUsageScreen() @Composable ; TileContent() @Composable, ce que montre la tuile de l'outil sur une zone à côté de son en-tête (la moitié droite d'une tuile LINE, le dessous des plus grandes ; par défaut, le nom du type en LINE et rien ailleurs) ; l'écran de config est généré depuis la déclaration (`ToolConfigScreen`, `SettingsForm`), et getConfigEditors() y branche les parties qu'un type dessine lui-même, par nom de réglage (la planification de Messages)
+- **Interface utilisateur** : getUsageScreen() @Composable ; TileContent() @Composable, ce que montre la tuile de l'outil sur une zone à côté de son en-tête (la moitié droite d'une tuile LINE, le dessous des plus grandes ; par défaut, le nom du type en LINE et rien ailleurs) ; l'écran de config est généré depuis la déclaration (`ToolConfigScreen`, `SettingsForm`), une planification (`ScheduleSettings.group`) comprise
 - **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations(), getScheduler()
 - **Enrichissement** : enrichData() (défaut identity, enrichissement automatique avant persistence)
 - **Règle entre entrées** : settleEntries() (défaut : rien à changer), voir plus bas
@@ -91,7 +91,7 @@ Class implémentant ExecutableService avec :
 Class implémentant ToolTypeContract avec :
 - getDisplayName(), getDescription(), getDefaultDisplayMode()
 - getEntryFields(), getConfigSettings()
-- getUsageScreen() @Composable, getConfigEditors() si besoin
+- getUsageScreen() @Composable
 - getService(), getDao(), getDatabaseEntities()
 
 ### enrichData Pattern

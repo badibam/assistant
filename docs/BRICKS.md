@@ -57,7 +57,7 @@ Une brique ne connaît pas l'écran qui l'utilise ; il lui donne ce dont elle a 
 | **Période** | deux Instants | `{"start", "end"}`, chaque borne facultative | `EntryPeriod` | `PeriodPicker` | complète |
 | **Chose** | par le fil d'Ariane App › zone › outil ou variable › entrée | `{"kind", "id"}` ; ce qu'un champ accepte : `{"kinds", "tool_instances"}` | `Reference`, `ReferenceTarget`, `ThingPath` ; service `references` | `ThingBrowser` | complète, sans les variables : `ReferenceKind` n'en a pas, et un critère d'Objectif tape le nom de la sienne |
 | **Valeur d'un champ** | une valeur d'un type de champ | celle du type (`FieldType`) | `FieldValueSchema`, `FieldValueValidator` | `FieldInput` (saisie), `FieldValue` (affichage) | complète |
-| **Planification** | une récurrence : quotidienne, hebdomadaire, mensuelle, annuelle, dates précises | `ScheduleConfig` | `ScheduleSettings.nodes` | `ScheduleConfigEditor` | complète ; son éditeur de réglage est rangé dans Messages (`tools/messages/ui/ScheduleSettingEditor`) alors qu'automations, Objectif, Questionnaire et Messages s'en servent |
+| **Planification** | une récurrence : quotidienne, hebdomadaire, mensuelle, annuelle, dates précises | `ScheduleConfig` | `ScheduleSettings.group` | `ScheduleConfigEditor` ; `ScheduleSettingEditor` sur un formulaire de réglages | complète |
 | **Champ** | un champ des entrées d'un outil, ou aucun pour compter | un chemin : `timestamp`, `name`, `data.x`, `extra.x`, une clé d'état filtrable | `ToolFields.filterable` | aucun commun : `ToolFieldChoice` dans les réglages, une liste à la main dans les filtres, une autre dans la lecture d'une variable | modèle sans sélecteur |
 | **Réduction** | dernière, somme, moyenne, min, max, compte, la plus tôt, la plus tard | `"SUM"` | `Reduction`, `Reduction.forType` | aucun : une liste dans la lecture d'une variable, un CHOICE dans les réglages d'Objectif | modèle sans sélecteur |
 | **Terme** | une constante, une variable, une Lecture | `{"constant"}`, `{"variable"}`, `{"reading"}` | `Term`, dans `core/variables` | aucun commun : `TermEditor`, privé à l'écran d'une variable | la constante n'est qu'un nombre ; l'Objectif le redéclare (`kind: VARIABLE`, `kind: FIELD`) |
@@ -88,7 +88,6 @@ Le détail de chaque étape, et ce qui reste à y trancher : `docs/design/bricks
 
 Chaque brique arrive avec la réécriture de ses usages existants, sans rien laisser en double :
 
-1. **Planification** : son éditeur de réglage rangé au cœur.
 2. **Champ** : un sélecteur commun ; les filtres, la lecture d'une variable et les réglages s'en servent.
 3. **Réduction** : un sélecteur commun, les réductions permises selon le type du champ choisi.
 4. **Chose** : les variables, choisies dans leur zone ; le critère d'Objectif ne tape plus un nom.

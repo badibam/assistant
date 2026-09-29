@@ -8,6 +8,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Réglages après la mise à jour : format (fuseau, début de semaine, 24 h) inchangé et enregistrable, validation avec ses quatre choix, limites IA à 10, 20, 15 000 et 100 000.
 - Écran des journaux : il s'ouvre, et filtré sur « Error » il montre aussi les erreurs anciennes. Y chercher des lignes `MIGRATION` et `No JSON form`.
 - Volume du journal : compter les lignes par niveau sur deux minutes d'usage normal, pour voir ce que produit encore le DEBUG.
+- Après la migration 51 : chaque automation planifiée, chaque Messages, Objectif et Questionnaire récurrent garde sa récurrence (résumé lisible, pas d'erreur « illisible »), et le journal ne montre aucune ligne `MIGRATION 50->51` en erreur.
 - Après la migration 43 : un suivi numérique qui avait une unité dans les réglages de sa valeur la retrouve en tête de ses unités, et ses anciennes entrées l'affichent toujours ; un compteur garde son unité (« 3 verres »).
 
 ## Chat IA
@@ -132,6 +133,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Objectif
 
+- Objectif, Questionnaire et Messages : la récurrence de la config s'affiche en une ligne de résumé sous le titre propre à l'outil, s'édite par le bouton « Configurer la récurrence » et son dialogue ; « Aucune » la retire. Le résumé est le même que sur la carte et l'éditeur d'une automation.
 - Créer un objectif ponctuel sans échéance avec trois critères (une variable « kcal » ≤ 2100, un champ « poids, dernière » ≤ 80, une saisie oui/non indispensable), au moins 2 : sa tentative s'ouvre au tick suivant ; chaque critère montre sa valeur face à sa condition, la saisie oui/non se coche sur place ; « Valider » avant d'avoir saisi est refusé en nommant le critère ; après, la tentative est réussie ou échouée, « par vous ».
 - Une tentative validée : la modifier par l'IA est refusé ; « Rouvrir » la remet à valider et garde la date de réouverture.
 - Renommer un critère saisi : sa valeur reste ; le supprimer puis le recréer : la confirmation de la config compte la valeur retirée.

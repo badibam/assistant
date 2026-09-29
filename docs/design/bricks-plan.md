@@ -10,12 +10,6 @@
 - Rappel : rien de ce qui a été codé depuis la base 46 n'a tourné sur le téléphone (`device-checks.md`).
 - Ailleurs, et à relire avant l'étape qui les cite : dans `docs/design/missing-tools.md`, « Le temps relatif » (la référence, les libellés relatifs, « = » refusé sur un DATETIME) et « Les formes enregistrées » (Instant, période, sélection, pointeur) ; sa section « Objectif » ; dans `docs/design/unified-fields.md`, le réglage de champ réservé à l'utilisateur.
 
-## 1. Planification : l'éditeur rangé au cœur
-
-- `tools/messages/ui/ScheduleSettingEditor.kt` passe au cœur (à côté de `ScheduleSettings`), et le formulaire de réglages (`SettingsForm`) l'utilise pour **tout** groupe de planification, sans que chaque type d'outil le déclare.
-- Constat : Objectif et Questionnaire déclarent une planification (`ScheduleSettings.nodes`) sans l'éditeur ; leur récurrence passe aujourd'hui par le formulaire générique. Messages le déclare via `getConfigEditors`, qui perd cette entrée.
-- À valider : rien, sauf si l'éditeur ne convient pas tel quel à l'un des quatre usages (automations, Messages, Objectif, Questionnaire).
-
 ## 2. Champ
 
 - Un sélecteur commun : les champs d'un outil (`ToolFields.filterable`), restreints aux types permis par le contexte, « aucun » proposé seulement pour compter.
@@ -57,7 +51,7 @@
 ## 8. Critères d'Objectif
 
 - Un critère : sa clé, son nom, indispensable ou non, et une Condition — jugée une fois pour un critère lu (« Par rapport à : la fin de la tentative (maintenant tant qu'elle court) », la période d'une Lecture préremplie à celle de la tentative), posée à la tentative pour un critère saisi (son champ déclaré d'un côté).
-- Disparaissent : `kind`, `target`, `target_unit`, `TargetUnit`, `Criterion.meets`, le CHOICE de réduction ; le formulaire du critère devient un éditeur branché (`getConfigEditors`) sur les sélecteurs.
+- Disparaissent : `kind`, `target`, `target_unit`, `TargetUnit`, `Criterion.meets`, le CHOICE de réduction ; le formulaire du critère devient un éditeur fait des sélecteurs, que l'Objectif branche sur son formulaire de réglages (le crochet est à recréer : sans usage, il a été retiré).
 - Pas de migration : aucun Objectif n'existe encore (confirmé le 2026-09-29).
 - Ce qui ne change pas vient de `missing-tools.md`, « Objectif » (comptage, indispensables, verrouillage, `goal.validate` et `goal.reopen`) ; le verdict réservé à l'utilisateur, du réglage de champ de `unified-fields.md`.
 - Côté IA : le schéma de config, la doc et les exemples de l'Objectif.

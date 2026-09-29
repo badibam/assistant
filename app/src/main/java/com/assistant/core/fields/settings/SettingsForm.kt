@@ -52,7 +52,7 @@ interface SettingEditor {
  * input of its field type, a group as a card, a list with add, remove and reorder, a variant with
  * the settings of the option chosen, a section as a titled card over settings stored beside it.
  * A setting the app writes itself (SettingNode.Field.systemWritten) is not shown; a secret one
- * is entered masked.
+ * is entered masked; a schedule (ScheduleSettings.group) opens its own editor.
  *
  * Stateless: [config] is the object being edited, and every change hands a new one to [onChange].
  *
@@ -152,7 +152,9 @@ private fun NodeForm(
         }
 
         is SettingNode.Group -> {
+            // A schedule is drawn by its editor on every screen, without its owner attaching it
             val editor = editors[node.name]
+                ?: if (node.name == ScheduleSettings.NAME) ScheduleSettingEditor(node.label, Strings.`for`(context = context)) else null
             if (editor != null) editor.Edit(config.optJSONObject(node.name)) { set(node.name, it) }
             else Titled(node.label) {
                 SettingsForm(node.nodes, config.optJSONObject(node.name) ?: JSONObject(), { set(node.name, it) }, context)

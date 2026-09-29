@@ -1355,7 +1355,6 @@
     <string name="automation_enrichments_label">Enrichissements</string>
     <string name="automation_no_message">Aucun message configuré</string>
     <string name="automation_none_configured">Aucune automation configurée</string>
-    <string name="automation_schedule_not_configured">Pas de horaire</string>
     <string name="automation_triggers_none">Aucun déclencheur</string>
     <string name="automation_triggers_count">%1$d déclencheur(s)</string>
     <string name="automation_triggers_config_title">Configuration déclencheurs</string>
@@ -1386,12 +1385,15 @@
     <string name="automation_execution_detail_title">Détail de l\'exécution</string>
 
     <!-- AUTOMATIONS - Schedule patterns (short labels for buttons) -->
-    <string name="automation_schedule_daily">Quotidien %1$s</string>
-    <string name="automation_schedule_weekly">%1$s %2$s</string>
-    <string name="automation_schedule_monthly">Le %1$d de %2$s %3$s</string>
-    <string name="automation_schedule_weekly_custom">%1$d moments/semaine</string>
-    <string name="automation_schedule_yearly">%1$d dates/an</string>
-    <string name="automation_schedule_specific">%1$d dates spécifiques</string>
+    <string name="schedule_summary_daily">Quotidien %1$s</string>
+    <string name="schedule_summary_weekly">%1$s %2$s</string>
+    <string name="schedule_summary_monthly">Le %1$d de %2$s %3$s</string>
+    <string name="schedule_summary_weekly_custom">%1$d moments/semaine</string>
+    <string name="schedule_summary_yearly">%1$d dates/an</string>
+    <string name="schedule_summary_specific">%1$d dates spécifiques</string>
+    <string name="schedule_summary_none">Aucune récurrence</string>
+    <string name="action_configure_schedule">Configurer la récurrence</string>
+    <string name="schedule_unreadable">Récurrence enregistrée illisible (%1$s). Refais-la : sinon l\'enregistrement sera refusé, et elle restera telle quelle.</string>
 
     <!-- AUTOMATIONS - Errors -->
     <string name="error_automation_not_found">Automatisation introuvable</string>

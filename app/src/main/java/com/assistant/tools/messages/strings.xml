@@ -51,7 +51,6 @@
     <string name="field_triggered_by">Triggered by</string>
 
     <!-- LABELS - UI labels -->
-    <string name="label_schedule">Schedule</string>
     <string name="section_common">Common part</string>
     <string name="section_channel">Channel</string>
     <string name="section_schedule">Recurrence</string>
@@ -86,20 +85,12 @@
     <string name="badge_unread">Unread</string>
 
     <!-- SCHEDULE - Schedule summaries -->
-    <string name="schedule_summary_not_configured">No recurrence: nothing goes out on its own</string>
-    <string name="schedule_summary_daily">Every day, %1$d times</string>
-    <string name="schedule_summary_weekly">Every week</string>
-    <string name="schedule_summary_weekly_custom">Every week, varying times</string>
-    <string name="schedule_summary_monthly">Every month</string>
-    <string name="schedule_summary_yearly">Every year</string>
-    <string name="schedule_summary_specific_dates">Specific dates</string>
 
     <!-- DIALOG - Preparing an upcoming sending -->
     <string name="edit_occurrence_title">Prepare this sending</string>
     <string name="edit_occurrence_hint">What is written here is added to the common title and body of the message.</string>
     <string name="label_title">Title of the day</string>
     <string name="label_content">Content of the day</string>
-    <string name="action_configure_schedule">Configure the recurrence</string>
     <string name="occurrence_due_at">Due on %1$s</string>
     <string name="occurrence_nothing_written">Nothing written for this sending: only the common part will go out</string>
 
@@ -129,5 +120,4 @@
     <string name="error_delete">Error while deleting</string>
 
     <string name="schedule_unreadable_warning">The recurrence cannot be read, so no new message is being scheduled; those already planned still go out (%1$s). Open the configuration to set it again.</string>
-    <string name="schedule_unreadable_config">Stored recurrence unreadable (%1$s). Set it again: otherwise saving is refused and it stays as it is.</string>
 </resources>

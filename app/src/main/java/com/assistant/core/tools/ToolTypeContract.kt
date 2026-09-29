@@ -134,12 +134,6 @@ interface ToolTypeContract {
     fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode>
 
     /**
-     * The parts of the config screen this tool type draws itself, by the name of the setting
-     * they edit (a schedule editor and its summary). The rest is the form of the declaration.
-     */
-    fun getConfigEditors(context: Context): Map<String, com.assistant.core.fields.settings.SettingEditor> = emptyMap()
-
-    /**
      * The operations this tool type's service runs on its entries beside the generic writes
      * (ToolOperation). The AI receives them with a tool's entries schema and calls them with
      * TOOL_OPERATION; a type that declares none offers only the generic writes.

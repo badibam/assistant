@@ -40,8 +40,8 @@ import org.json.JSONObject
 
 /**
  * The config screen of any tool (docs/DATA.md): the form of its
- * declaration (ToolConfigSettings), with the parts the core draws itself -- the icon picker, the
- * zone's tool groups -- and those its tool type attaches (ToolTypeContract.getConfigEditors).
+ * declaration (ToolConfigSettings), with the parts the core draws itself: the icon picker, the
+ * zone's tool groups.
  *
  * It saves through the service and shows its refusal. A change that loses recorded data is
  * refused by the service until the user agrees: the screen shows what it costs, and sends it
@@ -149,7 +149,7 @@ fun ToolConfigScreen(
     val editors = mapOf(
         "icon_name" to iconEditor(toolType.getSuggestedIcons(), toolType.getDefaultIconName()),
         "group" to groupEditor(groups, s.shared("label_group"))
-    ) + toolType.getConfigEditors(context)
+    )
 
     Column(
         modifier = Modifier

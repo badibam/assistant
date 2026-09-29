@@ -537,7 +537,7 @@ private fun SeedMode(
 
     // Schedule editor dialog
     if (showScheduleEditor) {
-        com.assistant.core.ai.ui.automation.ScheduleConfigEditor(
+        com.assistant.core.fields.settings.ScheduleConfigEditor(
             existingConfig = scheduleConfig,
             onDismiss = { showScheduleEditor = false },
             onConfirm = { newSchedule ->

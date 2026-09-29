@@ -51,7 +51,6 @@
     <string name="field_triggered_by">Déclenché par</string>
 
     <!-- LABELS - UI labels -->
-    <string name="label_schedule">Planning</string>
     <string name="section_common">Partie commune</string>
     <string name="section_channel">Canal</string>
     <string name="section_schedule">Récurrence</string>
@@ -86,20 +85,12 @@
     <string name="badge_unread">Non lu</string>
 
     <!-- SCHEDULE - Résumés de planning -->
-    <string name="schedule_summary_not_configured">Aucune récurrence : rien ne part tout seul</string>
-    <string name="schedule_summary_daily">Chaque jour, %1$d fois</string>
-    <string name="schedule_summary_weekly">Chaque semaine</string>
-    <string name="schedule_summary_weekly_custom">Chaque semaine, horaires variables</string>
-    <string name="schedule_summary_monthly">Chaque mois</string>
-    <string name="schedule_summary_yearly">Chaque année</string>
-    <string name="schedule_summary_specific_dates">Dates précises</string>
 
     <!-- DIALOG - Préparation d'un envoi à venir -->
     <string name="edit_occurrence_title">Préparer cet envoi</string>
     <string name="edit_occurrence_hint">Ce qui est écrit ici s\'ajoute au titre et au corps communs du message.</string>
     <string name="label_title">Titre du jour</string>
     <string name="label_content">Contenu du jour</string>
-    <string name="action_configure_schedule">Configurer la récurrence</string>
     <string name="occurrence_due_at">Prévu le %1$s</string>
     <string name="occurrence_nothing_written">Rien d\'écrit pour cet envoi : seule la part commune partira</string>
 
@@ -129,5 +120,4 @@
     <string name="error_delete">Erreur lors de la suppression</string>
 
     <string name="schedule_unreadable_warning">La récurrence est illisible : aucun nouveau message n\'est planifié, ceux déjà prévus partent quand même (%1$s). Rouvre la configuration pour la refaire.</string>
-    <string name="schedule_unreadable_config">Récurrence enregistrée illisible (%1$s). Refais-la : sinon l\'enregistrement sera refusé, et elle restera telle quelle.</string>
 </resources>

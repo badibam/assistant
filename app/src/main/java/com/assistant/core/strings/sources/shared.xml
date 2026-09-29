@@ -1355,7 +1355,6 @@
     <string name="automation_enrichments_label">Enrichments</string>
     <string name="automation_no_message">No message configured</string>
     <string name="automation_none_configured">No automation configured</string>
-    <string name="automation_schedule_not_configured">No schedule</string>
     <string name="automation_triggers_none">No trigger</string>
     <string name="automation_triggers_count">%1$d trigger(s)</string>
     <string name="automation_triggers_config_title">Trigger configuration</string>
@@ -1386,12 +1385,15 @@
     <string name="automation_execution_detail_title">Detail of the run</string>
 
     <!-- AUTOMATIONS - Schedule patterns (short labels for buttons) -->
-    <string name="automation_schedule_daily">Daily %1$s</string>
-    <string name="automation_schedule_weekly">%1$s %2$s</string>
-    <string name="automation_schedule_monthly">On the %1$d of %2$s %3$s</string>
-    <string name="automation_schedule_weekly_custom">%1$d times/week</string>
-    <string name="automation_schedule_yearly">%1$d dates/year</string>
-    <string name="automation_schedule_specific">%1$d specific dates</string>
+    <string name="schedule_summary_daily">Daily %1$s</string>
+    <string name="schedule_summary_weekly">%1$s %2$s</string>
+    <string name="schedule_summary_monthly">On the %1$d of %2$s %3$s</string>
+    <string name="schedule_summary_weekly_custom">%1$d times/week</string>
+    <string name="schedule_summary_yearly">%1$d dates/year</string>
+    <string name="schedule_summary_specific">%1$d specific dates</string>
+    <string name="schedule_summary_none">No recurrence</string>
+    <string name="action_configure_schedule">Configure the recurrence</string>
+    <string name="schedule_unreadable">Stored recurrence unreadable (%1$s). Set it again: otherwise saving is refused and it stays as it is.</string>
 
     <!-- AUTOMATIONS - Errors -->
     <string name="error_automation_not_found">Automation not found</string>

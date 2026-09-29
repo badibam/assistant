@@ -158,7 +158,7 @@ object GoalToolType : ToolTypeContract {
             SettingNode.Section(s.tool("section_time"), listOf(
                 SettingNode.Field(field("start", s.tool("field_start"), FieldType.DATETIME, s.tool("schema_start"))),
                 SettingNode.Field(field("deadline", s.tool("field_deadline"), FieldType.DATETIME, s.tool("schema_deadline"))),
-                SettingNode.Group("schedule", s.tool("field_schedule"), ScheduleSettings.nodes(shared::shared)),
+                ScheduleSettings.group(s.tool("field_schedule"), shared::shared),
                 SettingNode.Field(field("duration", s.tool("field_duration"), FieldType.DURATION, s.tool("schema_duration"))),
                 SettingNode.Field(field("enabled", s.tool("field_enabled"), FieldType.BOOLEAN, s.tool("schema_enabled")), required = true, default = true),
                 SettingNode.Field(field("expiry_delay", s.tool("field_expiry_delay"), FieldType.DURATION, s.tool("schema_expiry_delay")), required = true, default = DEFAULT_EXPIRY),
