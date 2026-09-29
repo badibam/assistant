@@ -101,49 +101,16 @@ interface ToolTypeContract {
 
     /**
      * The tile of [tool] (ToolTile): its summary and its body, placed by UI.ToolCard as its
-     * display mode lays them out. [open] opens the tool on one of its entries, as this tool type
-     * understands opening one (getUsageScreen's openEntry): a tile opens an entry it shows when
-     * touched, or a new one from a button that writes one.
+     * display mode lays them out. Every tool type fills every mode: there is no tile by default.
+     * [open] opens the tool on one of its entries, as this tool type understands opening one
+     * (getUsageScreen's openEntry): a tile opens an entry it shows when touched, or a new one from
+     * a button that writes one.
      *
-     * While a tool type still shows its tile through TileContent, the summary is its LINE content
-     * and the body its EXTENDED, SQUARE or FULL one.
+     * A tile that shows something the tool's entries hold loads it once for both parts and
+     * reloads on their change (DataChangeNotifier).
      */
     @Composable
-    fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (EntryToOpen) -> Unit): ToolTile =
-        androidx.compose.runtime.remember(tool) {
-            object : ToolTile {
-                @Composable
-                override fun Summary() = TileContent(tool, com.assistant.core.ui.DisplayMode.LINE)
-
-                @Composable
-                override fun Body(rows: Int?) = TileContent(tool, when (rows) {
-                    null -> com.assistant.core.ui.DisplayMode.FULL
-                    1 -> com.assistant.core.ui.DisplayMode.EXTENDED
-                    else -> com.assistant.core.ui.DisplayMode.SQUARE
-                })
-            }
-        }
-
-    /**
-     * What a tool of this type shows in its tile on a zone, beside the header UI.ToolCard draws:
-     * the right half of a LINE tile, the space under the header of a CONDENSED, EXTENDED, SQUARE
-     * or FULL one. The ICON and MINIMAL tiles have no room for it and never ask.
-     *
-     * A tile that shows something the tool's entries hold loads them itself and reloads on
-     * their change (DataChangeNotifier). By default, a LINE tile names the tool type and the
-     * larger ones show nothing more than their header.
-     */
-    @Composable
-    fun TileContent(tool: com.assistant.core.database.entities.ToolInstance, displayMode: com.assistant.core.ui.DisplayMode) {
-        if (displayMode == com.assistant.core.ui.DisplayMode.LINE) {
-            com.assistant.core.ui.UI.Text(
-                text = getDisplayName(androidx.compose.ui.platform.LocalContext.current),
-                type = com.assistant.core.ui.TextType.BODY,
-                fillMaxWidth = true,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        }
-    }
+    fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (EntryToOpen) -> Unit): ToolTile
 
     /**
      * The fields of this tool type's entries, for a tool instance whose config is [config]:
