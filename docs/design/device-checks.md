@@ -13,6 +13,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Chat IA
 
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
+- DeepSeek, sur une dizaine de réponses : aucune ne commence par du texte ou `<thinking>` ; si l'une le fait, le message `FORMAT_ERROR` cite ce texte et la réponse suivante commence par `{`.
 - Après la mise à jour : une ancienne session affiche ses tokens et un coût en « ≥ » ; une nouvelle, un coût exact, le même dans la fiche de coût et sur la carte d'historique d'automation.
 - Démarrer l'app en mode avion après l'avoir déjà utilisée en ligne : une session affiche quand même son coût (prix gardés sur le téléphone).
 - Importer une sauvegarde faite avant la mise à jour : les conversations reviennent, leur coût en « ≥ ».
