@@ -81,6 +81,8 @@ object CommandTransformer {
                         params = command.params.filterKeys { it == "zone_id" }.mapValues { it.value!! }
                     )
                     "READING" -> transformReadingCommand(command, s, reference)
+                    "FILE" -> transformFileCommand(command)
+                    "IMPORT_PLAN" -> transformImportPlanCommand(command)
                     else -> {
                         val error = s.shared("ai_error_command_unknown_type").format(command.type)
                         LogManager.aiPrompt("Unknown command type: ${command.type}", "WARN")
@@ -160,6 +162,24 @@ object CommandTransformer {
             }
         }
         return ExecutableCommand(resource = "readings", operation = "read", params = mapOf("variable" to name, "at" to at))
+    }
+
+    /** What an import of a joined file would do, column by column: the file read by the service itself. */
+    private fun transformImportPlanCommand(command: DataCommand): ExecutableCommand? {
+        val file = command.params["file"] as? String ?: return null
+        val toolInstanceId = command.params["tool_instance_id"] as? String ?: return null
+        return ExecutableCommand(resource = "imports", operation = "detect", params = mapOf("file" to file, "tool_instance_id" to toolInstanceId))
+    }
+
+    /** A joined file read by lines: `id`, and `start_line` and `lines`, whole numbers a JSON reader may hand over as 1.0. */
+    private fun transformFileCommand(command: DataCommand): ExecutableCommand? {
+        val id = command.params["id"] as? String ?: return null
+        fun whole(key: String): Int? = (command.params[key] as? Number)?.takeIf { it.toDouble() % 1.0 == 0.0 }?.toInt()
+        return ExecutableCommand(resource = "files", operation = "read", params = buildMap {
+            put("id", id)
+            whole("start_line")?.let { put("start_line", it) }
+            whole("lines")?.let { put("lines", it) }
+        })
     }
 
     private fun transformSchemaCommand(command: DataCommand): ExecutableCommand? {

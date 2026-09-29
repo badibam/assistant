@@ -173,9 +173,14 @@ class ImportService(private val context: Context) : ExecutableService {
 
     override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
-        return when (operation) {
-            "detect" -> s.shared("action_verbalize_imports_detect")
-            else -> s.shared("action_verbalize_imports_apply")
-        }
+        if (operation == "detect") return s.shared("action_verbalize_imports_detect")
+        // A joined file is named, with its lines and the tool it goes into, for the validation card
+        val file = params.optString("file").takeIf { it.isNotEmpty() }?.let { AppDatabase.getDatabase(context).attachedFileDao().getById(it) }
+            ?: return s.shared("action_verbalize_imports_apply")
+        val tool = Coordinator(context).processUserAction("tools.get", mapOf("tool_instance_id" to params.optString("tool_instance_id")))
+        @Suppress("UNCHECKED_CAST")
+        val toolName = ((tool.data?.get("tool_instance") as? Map<*, *>)?.get("config") as? Map<String, Any?>)?.get("name") as? String
+            ?: return s.shared("action_verbalize_imports_apply")
+        return s.shared("action_verbalize_imports_apply_file").format(file.name, file.lineCount, toolName)
     }
 }

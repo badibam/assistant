@@ -237,6 +237,8 @@ The query commands read the data without changing it.
 
 Data the user attached (POINTER enrichments) is already in your context, as earlier system messages, complete for the tool, period and filters it names. Use it directly; query only what is missing, filtered differently, or changed since.
 
+A file the user joined (FILE enrichment) comes as a system message too: its `id`, `name`, `mime_type` and `line_count`, with its whole text, or only its first lines when the user chose a preview. Read the rest with FILE; import a table from it with IMPORT_PLAN then IMPORT_DATA, which read the file themselves: never copy its lines into CREATE_DATA.
+
 ### TOOL_DATA
 
 Retrieves the entries of one tool.
@@ -325,6 +327,29 @@ Returns `values`, one per instant in the same order: `{ "at", "value" }`, or `{ 
 ```json
 { "type": "READING", "params": { "variable": "kcal", "at": [{ "relative": "NOW" }, { "relative": { "unit": "DAY", "offset": -1, "edge": "END" } }] } }
 ```
+
+### FILE
+
+Reads a file the user joined to a message, by lines.
+
+**Parameters**:
+
+- `id` (string, **required**): the file\'s id, given with it
+- `start_line` (integer, optional): the first line to read, from 1; 1 by default
+- `lines` (integer, optional): how many lines; the rest of the file by default
+
+Returns `name`, `mime_type`, `line_count`, `start_line`, `lines` (how many were read) and `text`. A long file is read in parts: each answer is held to the same size threshold as any data.
+
+### IMPORT_PLAN
+
+Proposes how to import a joined file (a CSV) into a tool: what IMPORT_DATA will need, column by column.
+
+**Parameters**:
+
+- `file` (string, **required**): the file\'s id
+- `tool_instance_id` (string, **required**): the tool to import into
+
+Returns `lines` (the file\'s line count) and `columns`, one per column of the file: its `column` (its header), its proposed `target` — `KEY` (the entry\'s name, which recognises an entry already there), `FIELD` (an existing field, its path in `field`: `"extra.kcal"`, `"timestamp"`), `NEW` (a field to create, defined in `new_field` as a custom field is) or `IGNORE` —, its `writing` (how its cells are written: `DECIMAL_COMMA`, `DAY_MONTH_YEAR`…), an `example` read, the `ambiguous` writings you must choose between, and the `unreadable_lines`. Start from it, fix what is wrong or ambiguous, and send it to IMPORT_DATA.
 
 ### CURRENT_DATETIME
 
@@ -550,7 +575,19 @@ Deletes a variable. A formula naming it no longer computes.
 
 **Parameters**:
 
-- `variable_id` (string, **required**)]]></string>
+- `variable_id` (string, **required**)
+
+### IMPORT_DATA
+
+Imports a joined file into a tool, following a complete declaration: the new fields are created in the order of the columns, then each line is written, an entry found by its name updated when the tool\'s names are unique, the others created. A cell that does not read refuses its line alone; a name twice in the file refuses the whole import. The answer counts the lines created, updated and refused, each refusal with its reason.
+
+**Parameters**:
+
+- `file` (string, **required**): the file\'s id
+- `tool_instance_id` (string, **required**)
+- `columns` (array, **required**): one declaration per column of the file, in their order, as IMPORT_PLAN returns them (without `example`, `ambiguous` and `unreadable_lines`), each ambiguity settled
+
+A new table for a file: CREATE_TOOL first, then IMPORT_PLAN and IMPORT_DATA at the next turn, with the id it returned.]]></string>
 
     <!-- C.3 Response format [DEGREE 2] -->
     <string name="ai_chunk_commands_response_format"><![CDATA[## Format of the answers to the commands

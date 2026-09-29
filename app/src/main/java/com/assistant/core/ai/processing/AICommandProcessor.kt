@@ -257,6 +257,9 @@ class AICommandProcessor(private val context: Context) {
                 isActionCommand = true
             )
 
+            // An import of a joined file, following the AI's declaration: the file read by the service itself
+            "IMPORT_DATA" -> importCommand(command)
+
             else -> {
                 LogManager.aiService("Unknown action command type: ${command.type}", "WARN")
                 null
@@ -350,12 +353,22 @@ class AICommandProcessor(private val context: Context) {
                 isActionCommand = true
             )
 
+            "IMPORT_DATA" -> importCommand(command)
+
             else -> {
                 LogManager.aiService("Unknown action command type for verbalization: ${command.type}", "WARN")
                 null
             }
         }
     }
+
+    /** IMPORT_DATA as the imports service takes it: the file, the tool, the declaration as written. */
+    private fun importCommand(command: DataCommand) = ExecutableCommand(
+        resource = "imports",
+        operation = "apply",
+        params = command.params.filterKeys { it in setOf("file", "tool_instance_id", "columns") },
+        isActionCommand = true
+    )
 
     /**
      * A variable's params with what the model writes in ISO 8601 in the stored form: a constant

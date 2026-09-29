@@ -350,6 +350,10 @@ class ValidationResolver(private val context: Context) {
             action.type in listOf("START_DURATION", "STOP_DURATION") ->
                 ParsedActionType(ActionScope.TOOL_DATA, "update")
 
+            // An import creates and updates the tool's entries, and may add fields to it: its data validation applies
+            action.type == "IMPORT_DATA" ->
+                ParsedActionType(ActionScope.TOOL_DATA, "create")
+
             // A tool type's own operation writes its entries: the tool's data validation applies
             action.type == "TOOL_OPERATION" ->
                 ParsedActionType(ActionScope.TOOL_DATA, "update")

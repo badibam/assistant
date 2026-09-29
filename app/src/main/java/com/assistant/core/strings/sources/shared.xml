@@ -1178,6 +1178,7 @@
     <string name="import_refused_cell">"%1$s" does not read as %2$s</string>
     <string name="action_verbalize_imports_detect">Reading a file to import</string>
     <string name="action_verbalize_imports_apply">Importing a file</string>
+    <string name="action_verbalize_imports_apply_file">Import of « %1$s » (%2$d lines) into %3$s</string>
     <string name="import_action">Import a file</string>
     <string name="import_title">Import</string>
     <string name="import_lines">%1$d line(s) in the file</string>

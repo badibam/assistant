@@ -73,7 +73,7 @@ object AIMessageSchemas {
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["TOOL_DATA", "TOOL_CONFIG", "TOOL_INSTANCES", "ZONE_CONFIG", "ZONES", "APP_STATE", "CURRENT_DATETIME", "SCHEMA", "ICONS", "VARIABLES", "READING"]
+                    "enum": ["TOOL_DATA", "TOOL_CONFIG", "TOOL_INSTANCES", "ZONE_CONFIG", "ZONES", "APP_STATE", "CURRENT_DATETIME", "SCHEMA", "ICONS", "VARIABLES", "READING", "FILE", "IMPORT_PLAN"]
                   },
                   "params": {
                     "type": "object",
@@ -93,7 +93,7 @@ object AIMessageSchemas {
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["CREATE_DATA", "UPDATE_DATA", "DELETE_DATA", "START_DURATION", "STOP_DURATION", "TOOL_OPERATION", "CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL", "CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE", "CREATE_VARIABLE", "UPDATE_VARIABLE", "DELETE_VARIABLE"]
+                    "enum": ["CREATE_DATA", "UPDATE_DATA", "DELETE_DATA", "START_DURATION", "STOP_DURATION", "TOOL_OPERATION", "CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL", "CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE", "CREATE_VARIABLE", "UPDATE_VARIABLE", "DELETE_VARIABLE", "IMPORT_DATA"]
                   },
                   "params": {
                     "type": "object"
