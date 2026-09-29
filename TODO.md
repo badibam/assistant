@@ -4,7 +4,12 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Implémenter les outils manquants (`docs/design/missing-tools.md`), par étapes : la sélection du cœur, RÉFÉRENCE, la lecture du cœur et les variables sont faites ; restent les Données structurées avec l'import, puis Objectif et le Questionnaire. Les sélecteurs recomposés viennent avec la première étape qui les montre : la brique Instant, et la brique Chose, une seule saisie pour le pointeur et la RÉFÉRENCE (aujourd'hui `PointerSelector` et `ReferencePicker`).
+- Les outils manquants sont posés (sélection du cœur, RÉFÉRENCE, lecture du cœur, variables, Données structurées et import, Objectif, Questionnaire) ; rien n'a tourné sur un téléphone : passer `docs/design/device-checks.md`, puis élaguer de `docs/design/missing-tools.md` ce qui est codé, ses garanties devenant des tests (le Graphique y est encore en conception).
+- La brique Instant : une seule saisie de date pour toute l'app ; aujourd'hui trois — le sélecteur de période du pointeur, l'éditeur de borne de l'écran d'une variable (`BoundEditor`), les champs DATE et DATETIME (`docs/design/missing-tools.md`, « Les sélecteurs, recomposés »).
+- La brique Chose : une seule navigation App › Zone › Outil › Entrée, sortie de `PointerSelector` dans le cœur, dont se servent le pointeur et la RÉFÉRENCE (`ReferencePicker`).
+- Insérer au curseur, et non à la fin, depuis les boutons de l'éditeur de formule : `UI.FormField` ne donne pas la sélection ; il faut un champ du thème qui la porte.
+- La notification d'une invitation de Questionnaire ouvre l'app, pas la passation ; toucher la tuile quand une entrée attend ouvre l'outil, pas sa passation — l'app n'a pas encore de lien profond vers un écran.
+- « Créer une table depuis un fichier » (création de l'outil puis import) ; l'import par l'IA, qui attend un enrichissement « fichier ».
 - DeepSeek fait précéder son JSON de texte (une phrase, ou `<thinking>…</thinking>`), malgré l'interdit du L1 : un appel perdu par `FORMAT_ERROR` à chaque fois (3 sur 9 réponses le 2026-09-28). Essayer dans le L1 « ta réponse commence par `{` », et un `FORMAT_ERROR` qui nomme le texte trouvé avant le `{` au lieu de « format invalide ».
 - L'IA utilise dans une réponse un identifiant qu'une action de cette même réponse crée (`"zone_id": "PLACEHOLDER_ZONE"` avec le `CREATE_ZONE` qui précède) : les actions échouent et se refont au tour suivant. Dire dans le L1 qu'un identifiant créé n'est connu qu'au tour suivant.
 - Deux messages `FORMAT_ERROR` écrits en dur en français dans `AIEventProcessor.parseAIResponse` (« Erreurs de format JSON : », « Erreur technique lors du parsing : ») : les passer au système de strings, comme celui de l'échec de lecture du JSON.
