@@ -84,11 +84,13 @@ class CommandExecutor(private val context: Context) {
      * @param messageType Type of SystemMessage (DATA_ADDED or ACTIONS_EXECUTED)
      * @param level The level name for logging purposes
      * @param sessionId Session ID for schema deduplication (null = no deduplication)
+     * @param origin Who the commands come from: the AI's, the user's pointers, the app's prompt
      * @return CommandExecutionResult with prompt data and system message
      */
     suspend fun executeCommands(
         commands: List<ExecutableCommand>,
         messageType: SystemMessageType,
+        origin: com.assistant.core.coordinator.Source,
         level: String = "unknown",
         sessionId: String? = null
     ): CommandExecutionResult {
@@ -187,7 +189,7 @@ class CommandExecutor(private val context: Context) {
             }
 
             // Execute command normally (not a duplicate or not a schema)
-            val result = executeCommand(command)
+            val result = executeCommand(command, origin)
 
             if (result != null) {
                 promptResults.add(result.promptResult)
@@ -246,7 +248,7 @@ class CommandExecutor(private val context: Context) {
      *
      * The services check what they are given, whoever the caller.
      */
-    private suspend fun executeCommand(command: ExecutableCommand): InternalCommandResult? {
+    private suspend fun executeCommand(command: ExecutableCommand, origin: com.assistant.core.coordinator.Source): InternalCommandResult? {
         LogManager.aiPrompt("Executing ExecutableCommand: resource=${command.resource}, operation=${command.operation}, isActionCommand=${command.isActionCommand}", "DEBUG")
 
         return withContext(Dispatchers.IO) {
@@ -258,7 +260,7 @@ class CommandExecutor(private val context: Context) {
                 LogManager.aiPrompt("Calling coordinator: $commandString with ${paramsMap.size} params", "VERBOSE")
 
                 // Note: Coordinator.executeServiceOperation() handles recursive Map→JSON conversion
-                val result = coordinator.processUserAction(commandString, paramsMap)
+                val result = coordinator.process(origin, commandString, paramsMap)
 
                 if (result.isSuccess) {
                     val data = result.data ?: emptyMap()

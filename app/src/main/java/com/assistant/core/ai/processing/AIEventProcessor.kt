@@ -472,6 +472,7 @@ class AIEventProcessor(
             val result = executor.executeCommands(
                 commands = executableCommands,
                 messageType = SystemMessageType.DATA_ADDED,
+                origin = com.assistant.core.coordinator.Source.USER,
                 level = "enrichments",
                 sessionId = sessionId  // Enable schema deduplication
             )
@@ -1232,6 +1233,7 @@ class AIEventProcessor(
             val result = executor.executeCommands(
                 commands = transformationResult.executableCommands,
                 messageType = SystemMessageType.DATA_ADDED,
+                origin = com.assistant.core.coordinator.Source.AI,
                 level = "ai_data",
                 sessionId = sessionId  // Enable schema deduplication
             )
@@ -1359,6 +1361,7 @@ class AIEventProcessor(
                     val result = executor.executeCommands(
                         commands = transformationResult.executableCommands,
                         messageType = SystemMessageType.ACTIONS_EXECUTED,
+                        origin = com.assistant.core.coordinator.Source.AI,
                         level = "ai_actions",
                         sessionId = sessionId
                     )

@@ -72,6 +72,7 @@ object PromptManager {
         val level2Result = commandExecutor.executeCommands(
             commands = level2Executable,
             messageType = SystemMessageType.DATA_ADDED,
+            origin = com.assistant.core.coordinator.Source.SYSTEM,
             level = "L2",
             sessionId = sessionId  // Enable schema deduplication
         )

@@ -133,6 +133,8 @@ Vérification status avec result.status == CommandStatus.SUCCESS.
 ### Pattern de commandes
 coordinator.processUserAction(), processAICommand(), processScheduledTask() avec resource.operation
 
+**Origine d'un appel** (`Source` : USER, AI, SCHEDULER, SYSTEM) : le coordinateur l'exécute avec son origine dans le contexte de la coroutine (`Origin`), que tout appel fait depuis l'opération garde — un import lancé par l'IA écrit ses lignes en tant qu'IA. `processAICommand` pose AI, `processScheduledTask` SCHEDULER, `process(source, …)` celle qu'on lui donne (`CommandExecutor` : AI pour les commandes de l'IA, USER pour les pointeurs, SYSTEM pour le prompt) ; `processUserAction` garde celle de l'opération en cours, USER hors de toute opération (un écran). Le tick de `CoreScheduler` tourne en SCHEDULER. Un service lit l'origine par `currentOrigin()`, pour ce que seule une personne peut faire ; hors d'une opération, il n'y en a pas, et la demander est une erreur.
+
 ### Pattern d'utilisation du Coordinator - Référence
 
 **Imports requis** :

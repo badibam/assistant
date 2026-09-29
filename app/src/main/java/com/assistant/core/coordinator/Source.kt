@@ -1,12 +1,15 @@
 package com.assistant.core.coordinator
 
 /**
- * Source of command execution
- * Identifies who/what initiated the command for proper handling
+ * Who a command comes from (Origin carries it through the calls it makes).
  */
 enum class Source {
-    USER,       // Actions UI directes utilisateur
-    AI,         // Commandes IA (future)
-    SCHEDULER,  // Tâches périodiques planifiées
-    SYSTEM      // Opérations système : démarrage, migrations, maintenance
+    /** A person, from a screen */
+    USER,
+    /** The AI, in a chat or an automation */
+    AI,
+    /** A scheduler's task, which no one is watching */
+    SCHEDULER,
+    /** The app itself: its start, what it builds for a prompt */
+    SYSTEM
 }

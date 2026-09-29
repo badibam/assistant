@@ -88,7 +88,8 @@ object CoreScheduler {
      * Error handling: Each component logs errors independently,
      * one failure doesn't block others.
      */
-    suspend fun tick() {
+    suspend fun tick() = kotlinx.coroutines.withContext(com.assistant.core.coordinator.Origin(com.assistant.core.coordinator.Source.SCHEDULER)) {
+        // Everything a tick starts is the scheduler's, unless it is the AI's (processAICommand)
 
         try {
             // 1. AI scheduling (AIOrchestrator handles automations + session management)

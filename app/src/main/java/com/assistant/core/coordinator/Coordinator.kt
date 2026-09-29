@@ -42,27 +42,31 @@ class Coordinator(context: Context) {
     private val tokens = ConcurrentHashMap<String, CancellationToken>()
     
     /**
-     * Process user action from UI - simple interface for UI layer
+     * An action of the user, from a screen; called from inside an operation (a service calling
+     * another), it keeps that operation's origin: the AI's import writes its lines as the AI.
      */
     suspend fun processUserAction(action: String, params: Map<String, Any?> = emptyMap()): CommandResult {
-        val command = convertToDispatchCommand(action, params, Source.USER)
+        val command = convertToDispatchCommand(action, params, kotlin.coroutines.coroutineContext[Origin]?.source ?: Source.USER)
         val queuedOp = QueuedOperation(command)
         return enqueueAndProcess(queuedOp)
     }
     
-    /**
-     * Process AI command - simplified for new resource.operation format
-     * AI must now send actions in format: "zones.create", "tools.update", etc.
-     */
+    /** A command of the AI, whatever runs it: a chat, or an automation the scheduler started. */
     suspend fun processAICommand(action: String, params: Map<String, Any?> = emptyMap()): CommandResult {
         val command = convertToDispatchCommand(action, params, Source.AI)
         val queuedOp = QueuedOperation(command)
         return enqueueAndProcess(queuedOp)
     }
     
-    /**
-     * Process scheduled task - simple interface for scheduler
-     */
+    /** A command of [source], for a caller that runs commands of several origins (CommandExecutor). */
+    suspend fun process(source: Source, action: String, params: Map<String, Any?> = emptyMap()): CommandResult = when (source) {
+        Source.USER -> processUserAction(action, params)
+        Source.AI -> processAICommand(action, params)
+        Source.SCHEDULER -> processScheduledTask(action, params)
+        Source.SYSTEM -> enqueueAndProcess(QueuedOperation(convertToDispatchCommand(action, params, Source.SYSTEM)))
+    }
+
+    /** A task of a scheduler, which no one is watching. */
     suspend fun processScheduledTask(task: String, params: Map<String, Any?> = emptyMap()): CommandResult {
         val command = convertToDispatchCommand(task, params, Source.SCHEDULER)
         val queuedOp = QueuedOperation(command)
@@ -237,7 +241,8 @@ class Coordinator(context: Context) {
                 put("phase", phase)
             }
 
-            val result = service.execute(operation, params, token)
+            // The origin goes with the operation, for its service and every call made from it
+            val result = kotlinx.coroutines.withContext(Origin(command.source)) { service.execute(operation, params, token) }
             LogManager.coordination("Service result: success=${result.success}, error=${result.error}, requiresContinuation=${result.requiresContinuation}", "VERBOSE")
             
             CommandResult(
