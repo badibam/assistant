@@ -112,6 +112,17 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     // Sheets changed while open that the filter may no longer keep, shown until the sheet is left
     var kept by remember { mutableStateOf<Map<String, Sheet>>(emptyMap()) }
+    // A file picked to import, its text; too large to be kept across a rotation, it is picked again
+    var importing by remember { mutableStateOf<String?>(null) }
+    val pickFile = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            importing = try {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+            } catch (e: java.io.IOException) {
+                errorMessage = s.shared("import_error_file").format(e.message ?: ""); null
+            }
+        }
+    }
 
     LaunchedEffect(toolInstanceId, configVersion) {
         val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
@@ -219,7 +230,12 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
             SheetsTable(shown, columns, sortKey, ascending, loadedSheets.isEmpty() && search.isBlank() && JSONArray(filters).length() == 0, s, context,
                 onSort = { key -> if (key == sortKey) ascending = !ascending else { sortKey = key; ascending = true } },
                 onOpen = { open(it) })
-            UI.ActionButton(action = ButtonAction.ADD, onClick = { open(null) })
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                UI.ActionButton(action = ButtonAction.ADD, onClick = { open(null) })
+                UI.Button(type = ButtonType.SECONDARY, onClick = { pickFile.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel")) }) {
+                    UI.Text(s.shared("import_action"), TextType.LABEL)
+                }
+            }
         } else if (editing) {
             UI.FormField(label = s.shared("label_name"), value = draftName, onChange = { draftName = it }, fieldType = FieldType.TEXT, required = true)
             CustomFieldsInput(customFieldsMetadata = fields, values = draftExtra, onValuesChange = { draftExtra = it }, context = context, newEntry = openId == "")
@@ -269,6 +285,9 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
             confirmDelete = false
             write({ coordinator.processUserAction("tool_data.delete", mapOf("tool_instance_id" to toolInstanceId, "id" to openSheet.id)) }) { close() }
         }) { UI.Text(s.tool("delete_confirm").format(openSheet.name), TextType.BODY) }
+    }
+    importing?.let { csv ->
+        com.assistant.core.ui.imports.ImportDialog(toolInstanceId = toolInstanceId, csv = csv, onDismiss = { importing = null })
     }
     if (editingFilters) {
         PointerFiltersDialog(

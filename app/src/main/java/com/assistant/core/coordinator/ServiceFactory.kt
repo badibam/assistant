@@ -9,6 +9,7 @@ import com.assistant.core.services.AppConfigService
 import com.assistant.core.services.BackupService
 import com.assistant.core.services.SchemaService
 import com.assistant.core.services.IconService
+import com.assistant.core.services.ImportService
 import com.assistant.core.services.ReadingService
 import com.assistant.core.services.ReferenceService
 import com.assistant.core.services.VariableService
@@ -39,6 +40,7 @@ object ServiceFactory {
             ReferenceService::class -> ReferenceService(context)
             ReadingService::class -> ReadingService(context)
             VariableService::class -> VariableService(context)
+            ImportService::class -> ImportService(context)
             AISessionService::class -> AISessionService(context)
             AIProviderConfigService::class -> AIProviderConfigService(context)
             AutomationService::class -> AutomationService(context)

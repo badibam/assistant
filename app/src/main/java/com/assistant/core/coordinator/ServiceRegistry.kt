@@ -9,6 +9,7 @@ import com.assistant.core.services.AppConfigService
 import com.assistant.core.services.BackupService
 import com.assistant.core.services.SchemaService
 import com.assistant.core.services.IconService
+import com.assistant.core.services.ImportService
 import com.assistant.core.services.ReadingService
 import com.assistant.core.services.ReferenceService
 import com.assistant.core.services.VariableService
@@ -38,6 +39,7 @@ class ServiceRegistry(private val context: Context) {
         "references" to ReferenceService::class,
         "readings" to ReadingService::class,
         "variables" to VariableService::class,
+        "imports" to ImportService::class,
         "ai_sessions" to AISessionService::class,
         "ai_provider_config" to AIProviderConfigService::class,
         "automations" to AutomationService::class,
