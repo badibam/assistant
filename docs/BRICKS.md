@@ -84,6 +84,8 @@ Une brique ne connaît pas l'écran qui l'utilise ; il lui donne ce dont elle a 
 
 ## Ordre de construction
 
+Le détail de chaque étape, et ce qui reste à y trancher : `docs/design/bricks-plan.md`.
+
 Chaque brique arrive avec la réécriture de ses usages existants, sans rien laisser en double :
 
 1. **Planification** : son éditeur de réglage rangé au cœur.

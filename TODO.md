@@ -5,7 +5,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## En cours
 
 - Les outils manquants sont posés (sélection du cœur, RÉFÉRENCE, lecture du cœur, variables, Données structurées et import, Objectif, Questionnaire) ; rien n'a tourné sur un téléphone : passer `docs/design/device-checks.md`, puis élaguer de `docs/design/missing-tools.md` ce qui est codé, ses garanties devenant des tests (le Graphique y est encore en conception).
-- Finir les briques, dans l'ordre de `docs/BRICKS.md` (« Ordre de construction ») : Planification rangée au cœur, Champ, Réduction, Chose avec les variables, Terme, Condition (forme `{"left", "op", "right"}`, filtres migrés), Lecture et Sélection d'entrées, critères d'Objectif. La dernière étape est l'attente : Questionnaire, Objectif et Messages déclarent ce qui attend, la tuile de l'outil et celle de sa zone l'indiquent, toucher la tuile ou la notification ouvre l'entrée qui attend.
+- Finir les briques : le plan d'action est `docs/design/bricks-plan.md` (neuf étapes, de la Planification rangée au cœur jusqu'à l'attente sur les tuiles), le modèle `docs/BRICKS.md`.
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur
@@ -19,6 +19,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Marquer les lignes que les migrations 13→14 et 14→15 n'ont pas su transformer, et le dire une fois au démarrage (jamais les supprimer) — si des lignes `MIGRATION` apparaissent en « Error » dans l'écran des journaux.
 - Validation désactivée par défaut, que l'IA contourne donc sans rien demander (`docs/design/architecture-audit-debt.md`) — décision reportée le 2026-09-22.
 - D'autres sources de l'attente (`docs/BRICKS.md`) : une automation qui attend une validation, un message de l'IA arrivé dans une session pendant qu'on était ailleurs — à concevoir.
+- Joindre un fichier au message de départ d'une automation : son composeur n'a pas toujours de session, à laquelle un fichier joint appartient.
 - Joindre une image à un message : un stockage de fichiers (le texte d'un fichier joint vit en base avec son message), et ce que chaque modèle d'IA accepte.
 - Outils jamais livrés : le Graphique, en conception dans `docs/design/missing-tools.md`, et l'Alerte, laissée pour plus tard (outil ou event du cœur, sans doute une lecture et une condition).
 - L'automation directe : des commandes que l'app exécute elle-même, sans IA. Premier usage connu, le relevé (une écriture qui accepte une valeur lue à l'exécution : un Suivi qui garde un chiffre de Calcul, `docs/design/missing-tools.md`) ; à concevoir avec les events du cœur et l'Alerte, qu'elle croise (`NOTES.md`, « Events et badges »), et à trancher : la date de l'entrée écrite, le doublon d'une exécution relancée.
