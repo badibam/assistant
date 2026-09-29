@@ -307,7 +307,10 @@ fun MainScreen() {
             },
             onAutomationStartChat = { seedSessionId ->
                 coroutineScope.launch {
-                    com.assistant.core.ai.orchestration.AIOrchestrator.startNewChatSession(seedId = seedSessionId)
+                    // The chat opens with the automation's starting message, to send or change
+                    val seed = com.assistant.core.ai.orchestration.AIOrchestrator.loadSeedMessages(seedSessionId)
+                    val prefill = seed.firstOrNull { it.sender == com.assistant.core.ai.data.MessageSender.USER }?.richContent?.segments ?: emptyList()
+                    com.assistant.core.ai.orchestration.AIOrchestrator.startNewChatSession(prefill)
                     // Close ZoneScreen to return to MainScreen where AIFloatingChat is rendered
                     selectedZoneId = null
                     showAIChat = true

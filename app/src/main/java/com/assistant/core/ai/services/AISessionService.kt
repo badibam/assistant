@@ -75,7 +75,6 @@ class AISessionService(private val context: Context) : ExecutableService {
                 "set_end_reason" -> setEndReason(params, token)
 
                 // SEED pre-fill management
-                "clear_seed" -> clearSeed(params, token)
 
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
@@ -190,7 +189,6 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "type" to sessionEntity.type.name, // Convert enum to string
                     "require_validation" to sessionEntity.requireValidation,
                     "automation_id" to sessionEntity.automationId,
-                    "seed_id" to sessionEntity.seedId,
                     "scheduled_execution_time" to sessionEntity.scheduledExecutionTime,
                     "provider_id" to sessionEntity.providerId,
                     "provider_session_id" to sessionEntity.providerSessionId,
@@ -882,36 +880,6 @@ class AISessionService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             LogManager.aiSession("Failed to update session end reason for $sessionId: ${e.message}", "ERROR", e)
             return OperationResult.error("Failed to update session end reason")
-        }
-    }
-
-    /**
-     * Clear seedId from session after SEED messages have been loaded for composer pre-fill
-     */
-    private suspend fun clearSeed(params: JSONObject, token: CancellationToken): OperationResult = withContext(Dispatchers.IO) {
-        if (token.isCancelled) return@withContext OperationResult.cancelled()
-
-        val sessionId = params.optString("session_id")
-        if (sessionId.isEmpty()) {
-            return@withContext OperationResult.error("session_id is required")
-        }
-
-        try {
-            val dao = getAIDao()
-            val session = dao.getSession(sessionId)
-                ?: return@withContext OperationResult.error("Session not found: $sessionId")
-
-            // Update seedId to null
-            dao.updateSession(session.copy(seedId = null))
-
-            LogManager.aiSession("Cleared seedId for session $sessionId", "DEBUG")
-
-            return@withContext OperationResult.success(mapOf(
-                "session_id" to sessionId
-            ))
-        } catch (e: Exception) {
-            LogManager.aiSession("Failed to clear seedId for $sessionId: ${e.message}", "ERROR", e)
-            return@withContext OperationResult.error("Failed to clear seedId")
         }
     }
 

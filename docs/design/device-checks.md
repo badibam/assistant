@@ -106,6 +106,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Faire écrire à l'IA une formule avec un nom inconnu, ou deux variables qui se lisent l'une l'autre : refusées, le chemin de la boucle nommé.
 - Dans une zone, « + » puis Variable : créer « objectif » (constante 2100 kcal), puis « kcal » (formule `mange`, terme lecture de Repas, formule par entrée, somme, du jour-même · début au moment même) et « reste » (`objectif - kcal`) : chaque groupe montre ses variables sur une ligne avec la valeur actuelle ; ajouter un repas met la ligne à jour ; toucher une ligne rouvre la variable, un nom inconnu tapé dans la formule s'affiche en erreur sous la saisie ; tourner l'écran en cours d'édition garde le brouillon.
 - Supprimer « kcal » : « reste » affiche « pas de valeur — variable supprimée ».
+- Après la migration 48 : les anciennes sessions s'ouvrent ; le bouton de chat d'une carte d'automation ouvre une conversation dont la saisie porte son message de départ, pointeurs compris, à envoyer ou modifier.
 - Après la migration 47 : l'app démarre, une sauvegarde exportée contient `variables` et se réimporte.
 
 ## Données structurées

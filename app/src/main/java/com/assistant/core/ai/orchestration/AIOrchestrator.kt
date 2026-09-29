@@ -331,10 +331,9 @@ object AIOrchestrator {
     /**
      * Create a new CHAT session (always creates, never reuses).
      *
-     * @param seedId Optional ID of SEED session to pre-fill composer from
      * @return The created session ID
      */
-    private suspend fun createNewChatSession(seedId: String? = null): String {
+    private suspend fun createNewChatSession(): String {
         val newSessionId = java.util.UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
 
@@ -352,7 +351,6 @@ object AIOrchestrator {
             lastEventTime = now,
             lastUserInteractionTime = now,
             automationId = null,
-            seedId = seedId,  // ID of SEED session to pre-fill from (null if normal chat)
             scheduledExecutionTime = null,
             providerId = providerId,
             providerSessionId = java.util.UUID.randomUUID().toString(),
@@ -363,7 +361,7 @@ object AIOrchestrator {
         )
 
         aiDao.insertSession(session)
-        LogManager.aiSession("Created new CHAT session: $newSessionId (seedId=$seedId)", "INFO")
+        LogManager.aiSession("Created new CHAT session: $newSessionId", "INFO")
 
         return newSessionId
     }
@@ -390,8 +388,8 @@ object AIOrchestrator {
             LogManager.aiSession("Reusing existing CHAT session: $currentSessionId", "DEBUG")
             currentSessionId
         } else {
-            // Create new CHAT session (no seedId for normal chat flow)
-            createNewChatSession(seedId = null)
+            // Create new CHAT session
+            createNewChatSession()
         }
 
         // Request activation via scheduler
@@ -459,20 +457,23 @@ object AIOrchestrator {
      *
      * Used when:
      * - User clicks "Interrupt" in ChatOptionsDialog
-     * - User clicks chat button on automation card (with seedId pre-fill)
+     * - A content opens a chat prefilled: an automation's starting message, a questionnaire's
+     *   message to the AI with its pointer
      *
-     * @param seedId Optional ID of SEED session to pre-fill composer from (for automation button)
+     * @param prefill What the composer of the new chat holds, sent by the user when they choose:
+     *   its draft, text and pointers alike
      *
      * Note: AUTOMATION sessions will be resumed automatically by the scheduler
      * when the slot becomes free again (after CHAT ends or becomes inactive).
      */
-    suspend fun startNewChatSession(seedId: String? = null) {
-        LogManager.aiSession("startNewChatSession called (seedId=$seedId)", "INFO")
+    suspend fun startNewChatSession(prefill: List<MessageSegment> = emptyList()) {
+        LogManager.aiSession("startNewChatSession called (prefill=${prefill.size} segments)", "INFO")
 
         val currentState = stateRepository.state.value
 
-        // Step 1: Create NEW CHAT session (always creates, never reuses)
-        val sessionId = createNewChatSession(seedId)
+        // Step 1: Create NEW CHAT session (always creates, never reuses), its composer prefilled
+        val sessionId = createNewChatSession()
+        if (prefill.isNotEmpty()) saveDraftMessage(sessionId, prefill)
 
         // Step 2: Request activation via scheduler (will enqueue if slot occupied)
         val activationResult = SessionSlotPolicy.requestSession(
@@ -498,7 +499,7 @@ object AIOrchestrator {
                 LogManager.aiSession("startNewChatSession: Current session evicted, new CHAT enqueued (will auto-activate)", "INFO")
             }
             is com.assistant.core.ai.scheduling.ActivationResult.Enqueue -> {
-                // AUTOMATION active - enqueue and auto-suspend (for seedId-based chat from automation button)
+                // AUTOMATION active - enqueue and auto-suspend: a chat asked for now takes the slot
                 enqueueSession(sessionId, SessionType.CHAT, ExecutionTrigger.MANUAL, activationResult.priority)
 
                 // Auto-suspend AUTOMATION (specific behavior for automation button chat)

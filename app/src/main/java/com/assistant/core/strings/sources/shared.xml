@@ -1663,7 +1663,6 @@
     <!-- Keys the code asked for and nobody had written -->
     <string name="ai_provider_error">AI provider error</string>
     <string name="ai_provider_openai_temperature_help">Between 0 and 2: lower answers are steadier, higher ones more varied</string>
-    <string name="ai_error_load_seed">Unable to load the automation's starting message</string>
     <string name="label_ai_provider">AI provider</string>
     <string name="label_yes">Yes</string>
     <string name="label_with_default">%1$s (default: %2$s)</string>

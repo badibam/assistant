@@ -1663,7 +1663,6 @@
     <!-- Clés que le code demandait et que personne n'avait écrites -->
     <string name="ai_provider_error">Erreur du fournisseur IA</string>
     <string name="ai_provider_openai_temperature_help">Entre 0 et 2 : plus bas, des réponses plus stables ; plus haut, plus variées</string>
-    <string name="ai_error_load_seed">Impossible de charger le message de départ de l\'automation</string>
     <string name="label_ai_provider">Fournisseur IA</string>
     <string name="label_yes">Oui</string>
     <string name="label_with_default">%1$s (par défaut : %2$s)</string>

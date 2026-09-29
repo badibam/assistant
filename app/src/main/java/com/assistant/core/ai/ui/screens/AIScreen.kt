@@ -104,7 +104,6 @@ fun AIScreen(
                             requireValidation = sessionData["require_validation"] as? Boolean ?: false,
                             waitingStateJson = sessionData["waiting_state_json"] as? String,
                             automationId = sessionData["automation_id"] as? String,
-                            seedId = sessionData["seed_id"] as? String,
                             scheduledExecutionTime = (sessionData["scheduled_execution_time"] as? Number)?.toLong(),
                             providerId = sessionData["provider_id"] as String,
                             providerSessionId = sessionData["provider_session_id"] as String,
@@ -128,24 +127,7 @@ fun AIScreen(
             }
         } else {
             // Active session: use reactive type from aiState (immediate, no DB read needed)
-            // BUT still query DB for seedId if needed (for CHAT pre-fill from automation button)
             if (aiState.sessionType != null) {
-                // Quick DB query to get seedId if session is CHAT (needed for SEED pre-fill)
-                var dbSeedId: String? = null
-                if (aiState.sessionType == SessionType.CHAT) {
-                    try {
-                        val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("session_id" to sessionId))
-                        if (result.status == CommandStatus.SUCCESS) {
-                            @Suppress("UNCHECKED_CAST")
-                            val sessionData = result.data?.get("session") as? Map<String, Any>
-                            dbSeedId = sessionData?.get("seed_id") as? String
-                            LogManager.aiUI("AIScreen active session: loaded seedId from DB: $dbSeedId", "DEBUG")
-                        }
-                    } catch (e: Exception) {
-                        LogManager.aiUI("AIScreen active session: failed to load seedId: ${e.message}", "WARN")
-                    }
-                }
-
                 session = AISession(
                     id = sessionId,
                     name = "", // Name not needed for routing
@@ -153,7 +135,6 @@ fun AIScreen(
                     requireValidation = false,
                     waitingStateJson = null,
                     automationId = null,
-                    seedId = dbSeedId, // Load from DB for CHAT sessions (needed for SEED pre-fill)
                     scheduledExecutionTime = null,
                     providerId = "claude",
                     providerSessionId = "",
@@ -246,44 +227,12 @@ private fun ChatMode(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showStats by rememberSaveable { mutableStateOf(false) }
 
-    // Load SEED message for pre-fill if seedId present
-    LaunchedEffect(session.seedId) {
-        val seedId = session.seedId
-        if (seedId != null && segments.isEmpty()) {
-            try {
-                LogManager.aiUI("ChatMode loading SEED messages from $seedId for pre-fill", "INFO")
-                val seedMessages = AIOrchestrator.loadSeedMessages(seedId)
-
-                // Extract segments from first USER message
-                val userMessage = seedMessages.firstOrNull { it.sender == MessageSender.USER }
-                val seedSegments = userMessage?.richContent?.segments
-
-                if (seedSegments != null && seedSegments.isNotEmpty()) {
-                    segments = seedSegments
-                    LogManager.aiUI("ChatMode pre-filled composer with ${seedSegments.size} segments from SEED", "INFO")
-
-                    // Clear seedId from session after successful pre-fill
-                    val coordinator = com.assistant.core.coordinator.Coordinator(context)
-                    coordinator.processUserAction("ai_sessions.clear_seed", mapOf("session_id" to session.id))
-                } else {
-                    LogManager.aiUI("ChatMode: No USER message with segments found in SEED $seedId", "WARN")
-                }
-            } catch (e: Exception) {
-                LogManager.aiUI("ChatMode failed to load SEED messages: ${e.message}", "ERROR", e)
-                errorMessage = s.shared("ai_error_load_seed")
-            }
-        }
-    }
-
-    // Load draft message on mount (after SEED pre-fill attempt)
+    // The draft on mount: what was being written, or what the chat was opened with
     LaunchedEffect(session.id) {
-        // Only load draft if no SEED pre-fill happened
-        if (session.seedId == null) {
-            val draft = AIOrchestrator.getDraftMessage(session.id)
-            if (draft.isNotEmpty()) {
-                segments = draft
-                LogManager.aiUI("ChatMode loaded draft: ${draft.size} segments", "DEBUG")
-            }
+        val draft = AIOrchestrator.getDraftMessage(session.id)
+        if (draft.isNotEmpty()) {
+            segments = draft
+            LogManager.aiUI("ChatMode loaded draft: ${draft.size} segments", "DEBUG")
         }
     }
 
