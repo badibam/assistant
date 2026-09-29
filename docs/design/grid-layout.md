@@ -51,6 +51,32 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
   └─────────┴─────────┴─────────┴─────────┘
   ```
 
+Pour les outils suivants, la tuile se décrit par sa LINE, sa façon de grandir et sa FULL ; la CONDENSED reprend la LINE, et l'EXTENDED et la SQUARE se déduisent (une rangée de plus sous l'en-tête pour l'une, trois pour l'autre). Un toucher sur une entrée montrée l'ouvre.
+
+### Journal
+
+- **LINE** : le bouton « Écrire une entrée », qui crée une entrée et l'ouvre en modification ; sur la deuxième ligne, la date de la dernière.
+- **Grandir** : le bouton passe en haut à droite ; chaque rangée montre deux entrées de plus, une par ligne, titre et date relative.
+- **FULL** : les dix dernières entrées.
+
+### Notes
+
+- **LINE** : le bouton « Nouvelle note », qui ouvre l'outil sur une note neuve ; sur la deuxième ligne, le nombre de notes.
+- **Grandir** : le bouton passe en haut à droite ; chaque rangée montre deux notes de plus, côte à côte, chacune en carte de 2×1 (le début de son texte sur deux lignes), dans l'ordre manuel.
+- **FULL** : toutes les notes.
+
+### Liste
+
+- **LINE** : le nombre de non cochés (« 3 non cochés ») ; sur le total si la config garde les cochés (« 3 / 8 »).
+- **Grandir** : le bouton « Ajouter », qui ouvre l'outil sur son champ d'ajout, en haut à droite ; chaque rangée montre quatre non cochés de plus, sur deux colonnes, chacun avec sa case, qui se coche sans ouvrir l'outil.
+- **FULL** : tous les non cochés ; les cochés restent dans l'outil.
+
+### Messages
+
+- **LINE** : « 5 non lus » et, sur la deuxième ligne, le titre du plus ancien non lu (ce qu'ouvre le toucher de la tuile) ; « Tous lus » et le prochain envoi (« Prochain : demain 8:00 », ou « Aucun envoi prévu »).
+- **Grandir** : le prochain envoi en haut à droite ; chaque rangée montre deux messages de plus, un par ligne, titre (en gras s'il n'est pas lu) et date relative : les non lus du plus ancien au plus récent, puis les derniers lus. Ouvrir un message le marque lu.
+- **FULL** : tous les non lus, puis les derniers lus, jusqu'à dix au total.
+
 ## Positions
 
 - **Chaque outil garde sa place** : `grid_x` (0 à 3) et `grid_y` (sa ligne dans son groupe), deux colonnes de `tool_instances`. `order_index` disparaît des outils : rien ne le change aujourd'hui.
@@ -88,6 +114,6 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 
 ## Hors de cette spec
 
-- Ce que chaque type d'outil montre dans chaque mode (`TileContent`) : la Liste les remplit tous ; l'Objectif, le Questionnaire et les Données structurées n'ont que LINE ; ICON affiche encore un « T » provisoire (`UI.ToolCard`). Les modes de Messages : `messages-display-modes.md`.
+- Ce que chaque type d'outil montre dans chaque mode (`TileContent`) : la Liste les remplit tous ; l'Objectif, le Questionnaire et les Données structurées n'ont que LINE ; ICON affiche encore un « T » provisoire (`UI.ToolCard`).
 - L'aperçu dessiné d'un Graphique sur sa tuile (`missing-tools.md`).
 - Changer un outil de zone (`NOTES.md`).
