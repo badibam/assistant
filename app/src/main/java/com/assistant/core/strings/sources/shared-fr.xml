@@ -193,6 +193,9 @@
     <string name="ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>
     <string name="ai_error_format_text_before_json">Ta réponse commence par du texte au lieu de `{` : « %1$s ». Réponds à nouveau en commençant par `{` : rien avant le JSON, ni raisonnement, ni balise.</string>
     <string name="ai_error_format_invalid_json">Ta réponse n\'est pas un JSON valide selon le schéma AIMessage. Réponds à nouveau avec ce JSON seul.</string>
+    <string name="ai_error_format_errors">Erreurs de format dans ta réponse : %1$s. Réponds à nouveau en les corrigeant.</string>
+    <string name="ai_error_parsing_technical">Erreur technique à la lecture de ta réponse : %1$s</string>
+    <string name="ai_error_communication_module_invalid">Module de communication invalide : %1$s</string>
 
     <!-- AI Response Validation Errors -->
     <string name="ai_error_validation_multiple_action_types">Plusieurs types de commandes présents: %1$s. Un seul type autorisé par réponse.</string>
@@ -352,10 +355,8 @@
     <string name="ai_error_timeout">Délai dépassé</string>
     <string name="ai_error_limit_reached">Limite atteinte</string>
     <string name="ai_error_system_generic">Erreur système</string>
-    <string name="ai_error_format_errors">Erreurs de format dans la réponse IA:\n%1$s</string>
     <string name="ai_error_missing_required_field">Champ obligatoire manquant: %1$s</string>
     <string name="ai_error_unknown">Erreur inconnue</string>
-    <string name="ai_error_parsing_unknown">Erreur de parsing inconnue</string>
 
     <!-- AI Phases (V2) - getPhaseLabel() for header display -->
     <string name="ai_phase_idle">En attente</string>

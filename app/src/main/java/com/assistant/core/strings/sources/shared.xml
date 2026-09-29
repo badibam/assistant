@@ -193,6 +193,9 @@
     <string name="ai_response_invalid_format">Answer format not respected by the AI - raw text:</string>
     <string name="ai_error_format_text_before_json">Your answer starts with text instead of `{`: "%1$s". Answer again, starting with `{`: nothing before the JSON, no reasoning, no tag.</string>
     <string name="ai_error_format_invalid_json">Your answer is not valid JSON following the AIMessage schema. Answer again with that JSON alone.</string>
+    <string name="ai_error_format_errors">Format errors in your answer: %1$s. Answer again with them corrected.</string>
+    <string name="ai_error_parsing_technical">Technical error while reading your answer: %1$s</string>
+    <string name="ai_error_communication_module_invalid">Invalid communication module: %1$s</string>
 
     <!-- AI Response Validation Errors -->
     <string name="ai_error_validation_multiple_action_types">Several command types present: %1$s. Only one type is allowed per answer.</string>
@@ -352,10 +355,8 @@
     <string name="ai_error_timeout">Timed out</string>
     <string name="ai_error_limit_reached">Limit reached</string>
     <string name="ai_error_system_generic">System error</string>
-    <string name="ai_error_format_errors">Format errors in the AI answer:\n%1$s</string>
     <string name="ai_error_missing_required_field">Mandatory field missing: %1$s</string>
     <string name="ai_error_unknown">Unknown error</string>
-    <string name="ai_error_parsing_unknown">Unknown parsing error</string>
 
     <!-- AI Phases (V2) - getPhaseLabel() for header display -->
     <string name="ai_phase_idle">Waiting</string>

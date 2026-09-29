@@ -884,7 +884,7 @@ class AIEventProcessor(
                 // Check the communication module's fields before anything reads them
                 cleanedAIMessage.communicationModule?.let { module ->
                     com.assistant.core.ai.data.CommunicationModules.check(module.declaration, context)?.let {
-                        formatErrors.add("Invalid communication module: $it")
+                        formatErrors.add(s.shared("ai_error_communication_module_invalid").format(it))
                     }
                 }
 
@@ -904,7 +904,7 @@ class AIEventProcessor(
                         systemMessage = com.assistant.core.ai.data.SystemMessage(
                             type = SystemMessageType.FORMAT_ERROR,
                             commandResults = emptyList(),
-                            summary = "Erreurs de format JSON : ${formatErrors.joinToString("; ")}",
+                            summary = s.shared("ai_error_format_errors").format(formatErrors.joinToString("; ")),
                             formattedData = null
                         ),
                         executionMetadata = null,
@@ -1014,7 +1014,7 @@ class AIEventProcessor(
                     systemMessage = com.assistant.core.ai.data.SystemMessage(
                         type = SystemMessageType.FORMAT_ERROR,
                         commandResults = emptyList(),
-                        summary = "Erreur technique lors du parsing : ${e.message}",
+                        summary = com.assistant.core.strings.Strings.`for`(context = context).shared("ai_error_parsing_technical").format(e.message ?: e.javaClass.simpleName),
                         formattedData = null
                     ),
                     executionMetadata = null,
