@@ -74,7 +74,7 @@ Une brique ne connaît pas l'écran qui l'utilise ; il lui donne ce dont elle a 
 | Champ DATE ou DATETIME d'une entrée | Instant, sans référence | fait |
 | Pointeur d'un message à l'IA | Chose (zone, outil) + Période + Filtres + champs + joindre ou mentionner | fait, sa sélection assemblée à la main |
 | Terme d'une variable | Terme, la période de sa Lecture relative à l'instant lu | fait, avec ses propres sélecteurs |
-| Critère lu d'Objectif | Condition jugée une fois, « Par rapport à : la fin de la tentative (maintenant tant qu'elle court) » ; la période d'une Lecture préremplie à celle de la tentative (« Depuis : il y a 6 jours, début », « Jusqu'à : le moment même » pour une semaine), qu'on peut changer — aujourd'hui fixée par le code, du début de la tentative à l'instant de lecture, et jamais montrée | fait |
+| Critère lu d'Objectif | Condition jugée une fois, « Par rapport à : la fin de la tentative (maintenant tant qu'elle court) » ; une Lecture sans période lit celle de la tentative, une période choisie la remplace | fait |
 | Critère saisi d'Objectif | Condition posée à la tentative : le champ saisi d'un côté | fait |
 | Attente (l'indicateur d'une tuile, ce qu'ouvrent la tuile et la notification) | Condition jugée une fois, une Lecture d'un côté | à faire |
 | Graphique | par couche, une Sélection d'entrées ou une grille de Termes, chaque ligne lue à son instant ; une Période affichée ; ses conditions de dessin, des Conditions sur les colonnes de la ligne | en conception (`docs/design/missing-tools.md`) |
