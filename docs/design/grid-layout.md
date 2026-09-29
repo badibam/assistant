@@ -25,7 +25,7 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
   | EXTENDED | 2×1 en haut à gauche | 2×1 en haut à droite | 4×1 |
   | SQUARE | 2×1 en haut à gauche | 2×1 en haut à droite | 4×3 |
   | FULL | 2×1 en haut à gauche | 2×1 en haut à droite | 4 × ce qu'il faut, arrondi à la case |
-- **Deux pastilles sur l'icône**, dessinées par le thème dans tous les modes, chacune dans son coin : l'attente (`bricks-plan.md`, étape 9), et un chronomètre en cours sur une entrée de l'outil (un champ durée qui tourne, lu par `tool_data.get` avec `running`, pour tout type d'outil).
+- **Deux pastilles sur l'icône**, dessinées par le thème dans tous les modes, chacune dans son coin : l'attente (`WaitingMark`, un point pour l'instant), et un chronomètre en cours sur une entrée de l'outil (un champ durée qui tourne, lu par `tool_data.get` avec `running`, pour tout type d'outil).
 - **Jamais de défilement à l'intérieur d'une tuile.** Ce qui ne tient pas, et comment le signaler, est l'affaire du type d'outil ; FULL grandit avec ce que le type d'outil y montre.
 - **Une tuile porte ses raccourcis d'utilisation** : un élément tactile de la tuile fait son action, un toucher ailleurs ouvre l'outil (ou l'entrée qui attend), l'appui long sa config. La taille minimale d'un élément tactile est celle du thème. En édition, rien ne réagit.
 - **Tous les modes sont proposés pour tout outil**, et chaque type d'outil remplit chacun : `TileContent` n'a plus de rendu par défaut. S'il a trop peu à montrer dans un mode, l'utilisateur en change.
@@ -132,7 +132,7 @@ Une tuile se décrit par son résumé (sa LINE) et son corps : ce que montre cha
 
 - **L'accueil range ses zones comme une zone ses outils** : une grille par groupe de zones (`zone_groups`), `grid_x` et `grid_y` sur la zone à la place de `order_index`, une zone qui arrive se pose en bas, la même règle quand une tuile grandit, et le même mode d'édition, depuis le titre du groupe.
 - **Quatre modes, sans corps** : ICON (l'icône), MINIMAL (l'icône et le nom), LINE (l'en-tête à gauche, la description en résumé à droite), CONDENSED (l'en-tête, la description dessous). Une zone n'a rien d'autre à montrer. Le mode est un réglage de la zone, LINE par défaut.
-- **Les deux pastilles sur l'icône de la zone** : la somme des attentes de ses outils (`bricks-plan.md`, étape 9), et un chronomètre en cours dans l'un d'eux.
+- **Les deux pastilles sur l'icône de la zone** : la somme des attentes de ses outils (`tools.waiting`), et un chronomètre en cours dans l'un d'eux.
 
 ## Hors de cette spec
 

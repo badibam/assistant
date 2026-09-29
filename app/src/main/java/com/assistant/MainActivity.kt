@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.assistant.core.ui.screens.MainScreen
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.ui.UI
@@ -39,10 +41,23 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
+
+        /** The tool a notification opens, on its oldest entry that waits. */
+        const val EXTRA_TOOL_INSTANCE_ID = "tool_instance_id"
+    }
+
+    /** The tool asked for by the notification that opened the app, until the screens have opened it. */
+    private var openToolId by androidx.compose.runtime.mutableStateOf<String?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.getStringExtra(EXTRA_TOOL_INSTANCE_ID)?.let { openToolId = it }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Once only: a rotation recreates the activity with the same intent
+        if (savedInstanceState == null) openToolId = intent.getStringExtra(EXTRA_TOOL_INSTANCE_ID)
 
         // Initialize LogManager first (for DB persistence)
         LogManager.initialize(this)
@@ -95,7 +110,7 @@ class MainActivity : ComponentActivity() {
                     androidx.compose.runtime.CompositionLocalProvider(
                         com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null)
                     ) {
-                        MainScreen()
+                        MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
                     }
                 }
             }

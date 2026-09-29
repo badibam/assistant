@@ -35,8 +35,12 @@ import com.assistant.core.utils.LogManager
  * Migrated to use new UI.* system
  */
 @OptIn(ExperimentalFoundationApi::class)
+/**
+ * @param openToolId A tool to open, on its oldest entry that waits, the way its tile opens it: the
+ *   one a touched notification is about; [onToolOpened] once its zone shows it
+ */
 @Composable
-fun MainScreen() {
+fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val coordinator = remember { Coordinator(context) }
@@ -73,6 +77,23 @@ fun MainScreen() {
             selectedZoneId = null
             showAIChat = true
         }
+    }
+    // The tool a notification asked for, with its oldest entry that waits, handed to its zone
+    var opening by remember { mutableStateOf<Pair<String, String?>?>(null) }
+    LaunchedEffect(openToolId) {
+        val toolId = openToolId ?: return@LaunchedEffect
+        val tool = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolId))
+        val zoneId = (tool.data?.get("tool_instance") as? Map<*, *>)?.get("zone_id") as? String
+        if (zoneId == null) {
+            // Deleted since the notification: the app opens as it is
+            LogManager.ui("MainScreen: tool $toolId of a notification not found: ${tool.error}", "WARN")
+            onToolOpened()
+            return@LaunchedEffect
+        }
+        val waiting = coordinator.processUserAction("tools.waiting", mapOf("zone_id" to zoneId))
+        opening = toolId to ((waiting.data?.get("oldest") as? Map<*, *>)?.get(toolId) as? String)
+        selectedZoneId = zoneId
+        onToolOpened()
     }
     var showHistory by rememberSaveable { mutableStateOf(false) }
     var showExitConfirm by remember { mutableStateOf(false) }
@@ -302,6 +323,8 @@ fun MainScreen() {
     selectedZone?.let { zone ->
         ZoneScreen(
             zone = zone,
+            opening = opening,
+            onOpened = { opening = null },
             onBack = {
                 selectedZoneId = null
             },

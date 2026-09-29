@@ -399,7 +399,8 @@ object MessageScheduler : ToolScheduler {
         if (settings.boolean("external_notifications")) {
             val params = mutableMapOf<String, Any>(
                 "title" to title,
-                "priority" to priority
+                "priority" to priority,
+                "tool_instance_id" to toolInstanceId
             )
             if (content != null) params["content"] = content
 

@@ -91,6 +91,8 @@ class NotificationService(private val context: Context) : ExecutableService {
             }
 
             val content = params.optString("content", null)
+            // The tool it is about, opened on its oldest entry that waits when it is touched
+            val toolInstanceId = params.optString("tool_instance_id").takeIf { it.isNotEmpty() }
             val notificationId = if (params.has("notification_id")) params.getInt("notification_id") else generateNotificationId()
 
             // Get channel ID for priority
@@ -105,7 +107,9 @@ class NotificationService(private val context: Context) : ExecutableService {
             val notification = buildNotification(
                 channelId = channelId,
                 title = title,
-                content = content
+                content = content,
+                toolInstanceId = toolInstanceId,
+                requestCode = notificationId
             )
 
             // Send notification
@@ -130,21 +134,26 @@ class NotificationService(private val context: Context) : ExecutableService {
      * @param channelId Notification channel ID
      * @param title Notification title
      * @param content Notification body (optional)
+     * @param toolInstanceId The tool the app opens when it is touched, null for the app alone
+     * @param requestCode Its own, so that two notifications keep their own tool
      * @return NotificationCompat.Builder configured notification
      */
     private fun buildNotification(
         channelId: String,
         title: String,
-        content: String?
+        content: String?,
+        toolInstanceId: String?,
+        requestCode: Int
     ): NotificationCompat.Builder {
         // Create intent to open app when notification clicked
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            toolInstanceId?.let { putExtra(MainActivity.EXTRA_TOOL_INSTANCE_ID, it) }
         }
 
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            requestCode,
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )

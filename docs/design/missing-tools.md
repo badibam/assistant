@@ -61,7 +61,7 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 
 ## Les sélecteurs, recomposés
 
-Devenu le catalogue des briques, `docs/BRICKS.md` (le modèle terme et condition décidé le 2026-09-29), et son plan de construction, `docs/design/bricks-plan.md`. Instant et Chose sont faits.
+Devenu le catalogue des briques, `docs/BRICKS.md`, toutes faites.
 
 ## Les formes enregistrées
 

@@ -31,7 +31,7 @@ Application Android native (Kotlin + Jetpack Compose, persistance Room) : un ass
 - `docs/CORE.md` — architecture système : dispatcher de commandes, registre de services, scheduling, pattern de découverte, strings, logs.
 - `docs/DATA.md` — navigation hiérarchique dans les données, validation par schéma, propagation des modifications, versioning et migrations.
 - `docs/UI.md` — composants d'interface, formulaires, thèmes, patterns Compose.
-- `docs/BRICKS.md` — les briques (instant, période, chose, champ, réduction, condition, filtre, sélection d'entrées, lecture, terme) : ce que chacune choisit, sa forme stockée, son modèle, son sélecteur, son état ; qui les assemble, et l'ordre dans lequel finir les manquantes.
+- `docs/BRICKS.md` — les briques (instant, période, chose, champ, réduction, condition, filtre, sélection d'entrées, lecture, terme) : ce que chacune choisit, sa forme stockée, son modèle, son sélecteur, son état ; qui les assemble.
 - `docs/TOOLS.md` — architecture des outils (tooltypes), extension sans toucher au core.
 - `docs/AI.md` — système IA : machine à états, sessions, prompts, automations, providers.
 - `docs/design/` — conception transitoire, écrite pour être implémentée puis élaguée. Le code et les commits deviennent le registre.

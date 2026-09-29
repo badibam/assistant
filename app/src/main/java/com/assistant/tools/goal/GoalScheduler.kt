@@ -72,7 +72,8 @@ object GoalScheduler : ToolScheduler {
                         coordinator.processUserAction("notifications.send", mapOf(
                             "title" to (config.optString("name").ifEmpty { s.tool("display_name") }),
                             "content" to s.tool("notification_to_validate"),
-                            "priority" to "default"
+                            "priority" to "default",
+                            "tool_instance_id" to id
                         ))
                         setState(coordinator, attempt.id, mapOf(GoalToolType.NOTIFIED to true))
                     }

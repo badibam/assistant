@@ -34,6 +34,8 @@ import kotlinx.coroutines.launch
 fun ZoneScreen(
     zone: Zone,
     onBack: () -> Unit,
+    opening: Pair<String, String?>? = null,
+    onOpened: () -> Unit = {},
     onNavigateToSeedEditor: ((seedSessionId: String) -> Unit)? = null,
     onNavigateToAutomationHistory: ((automationId: String) -> Unit)? = null,
     onConfigureZone: ((zoneId: String) -> Unit)? = null,
@@ -73,6 +75,13 @@ fun ZoneScreen(
     // The entry the tool opens on: the oldest waiting one when its tile was touched with one
     var openEntryId by rememberSaveable { mutableStateOf<String?>(null) }
     val waiting = com.assistant.core.ui.LocalWaiting.current
+    // A tool asked for from outside (a notification), opened as its tile would be
+    LaunchedEffect(opening) {
+        val (toolId, entryId) = opening ?: return@LaunchedEffect
+        openEntryId = entryId
+        selectedToolInstanceId = toolId
+        onOpened()
+    }
 
     // State for automation creation dialog - with pre-selected group
     var showCreateAutomationDialog by rememberSaveable { mutableStateOf(false) }
