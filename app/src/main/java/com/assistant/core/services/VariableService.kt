@@ -155,7 +155,7 @@ class VariableService(private val context: Context) : ExecutableService {
         definition.terms.keys.firstOrNull { !NAME.matches(it) }?.let { throw Refused(s.shared("variable_error_name").format(it)) }
 
         // The formula as written, then every name that is no term read as a variable's id
-        val written = when (val parsed = Formula.parse(definition.formula)) {
+        val written = when (val parsed = Formula.parse(definition.formula, aliases)) {
             is Formula.Parsed.Unreadable -> throw Refused(s.shared("variable_error_formula").format(parsed.position + 1, s.shared("formula_problem_${parsed.problem.name.lowercase()}"), parsed.detail))
             is Formula.Parsed.Read -> parsed.formula
         }
@@ -175,8 +175,17 @@ class VariableService(private val context: Context) : ExecutableService {
         loop(id, reads, others)?.let { path -> throw Refused(s.shared("variable_error_loop").format((listOf(name) + path.map { p -> others.first { it.id == p }.name } + name).joinToString(" → "))) }
 
         val field = if (json.has("field")) definition.field else deduce(stored, definition.terms, others, name)
-        return VariableDefinition.Computed(stored.text { "{var:$it}" }, definition.terms, field)
+        // Stored with each function under its English name, a formula per entry too
+        val terms = definition.terms.mapValues { (_, term) ->
+            if (term is Term.Reading && term.perEntry != null) {
+                term.copy(perEntry = (Formula.parse(term.perEntry, aliases) as Formula.Parsed.Read).formula.text({ it }))
+            } else term
+        }
+        return VariableDefinition.Computed(stored.text({ "{var:$it}" }), terms, field)
     }
+
+    /** The functions under their names in the app's language, which a formula written on screen uses. */
+    private val aliases: Map<String, Formula.Function> by lazy { Formula.Function.localized { s.shared(it) } }
 
     /** A term that can be read: its tool and field, a reduction its type takes, a variable that exists. */
     private suspend fun checkTerm(name: String, term: Term, others: List<VariableEntity>) {
@@ -192,7 +201,7 @@ class VariableService(private val context: Context) : ExecutableService {
                     throw Refused(s.shared("variable_error_term").format(name) + " " + (e.message ?: ""))
                 }
                 if (term.perEntry != null) {
-                    if (Formula.parse(term.perEntry) is Formula.Parsed.Unreadable) throw Refused(s.shared("variable_error_term").format(name))
+                    if (Formula.parse(term.perEntry, aliases) is Formula.Parsed.Unreadable) throw Refused(s.shared("variable_error_term").format(name))
                     return
                 }
                 val field = term.field?.let { fields[it] ?: throw Refused(s.shared("service_error_filter_unknown_field").format(it, fields.keys.joinToString(", "))) }
@@ -257,7 +266,7 @@ class VariableService(private val context: Context) : ExecutableService {
         val definition = JSONObject(entity.definitionJson)
         val names = dao.getAll().associate { it.id to it.name }
         (Formula.parse(definition.optString("formula")) as? Formula.Parsed.Read)?.let { read ->
-            definition.put("formula", read.formula.text { names[it] ?: s.shared("pointer_target_deleted") })
+            definition.put("formula", read.formula.text({ names[it] ?: s.shared("pointer_target_deleted") }))
         }
         return mapOf(
             "id" to entity.id,

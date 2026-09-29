@@ -13,9 +13,12 @@ import org.junit.Test
  */
 class FormulaTest {
 
-    private fun read(text: String): Formula = (Formula.parse(text) as Formula.Parsed.Read).formula
+    /** The French names of the functions, as the screen gives them in French. */
+    private val french = mapOf("heures" to Formula.Function.HOURS, "minutes" to Formula.Function.MINUTES, "secondes" to Formula.Function.SECONDS)
 
-    private fun unreadable(text: String): Formula.Parsed.Unreadable = Formula.parse(text) as Formula.Parsed.Unreadable
+    private fun read(text: String): Formula = (Formula.parse(text, french) as Formula.Parsed.Read).formula
+
+    private fun unreadable(text: String): Formula.Parsed.Unreadable = Formula.parse(text, french) as Formula.Parsed.Unreadable
 
     private fun value(text: String, names: Map<String, Double> = emptyMap()): Double =
         (read(text).evaluate { leaf -> Outcome.Value(names.getValue((leaf as Formula.Name).name)) } as Outcome.Value).number
@@ -44,17 +47,19 @@ class FormulaTest {
     @Test
     fun `a variable is stored by its id and written back under its current name`() {
         val stored = read("mange - depense").mapNames { if (it == "depense") Formula.VariableRef("v42") else null }
-        val text = stored.text { "{var:$it}" }
+        val text = stored.text({ "{var:$it}" })
         assertEquals("mange - {var:v42}", text)
         assertEquals(listOf("v42"), read(text).variableIds())
-        assertEquals("mange - sport", read(text).text { "sport" })
+        assertEquals("mange - sport", read(text).text({ "sport" }))
     }
 
     @Test
-    fun `written back, the parentheses that matter stay and a function keeps its spelling`() {
-        assertEquals("(mange - depense) ÷ 7", read("(mange-depense)/7").text { it })
-        assertEquals("a - (b - c)", read("a - (b - c)").text { it })
-        assertEquals("km ÷ hours(temps)", read("km / hours(temps)").text { it })
+    fun `written back, the parentheses that matter stay and a function takes its English name, or the screen's`() {
+        assertEquals("(mange - depense) ÷ 7", read("(mange-depense)/7").text({ it }))
+        assertEquals("a - (b - c)", read("a - (b - c)").text({ it }))
+        assertEquals("km ÷ hours(temps)", read("km / heures(temps)").text({ it }))
+        assertEquals("km ÷ heures(temps)", read("km / hours(temps)").text({ it }, { f -> french.entries.first { it.value == f }.key }))
+        assertEquals(Formula.Problem.UNKNOWN_FUNCTION, (Formula.parse("heures(t)") as Formula.Parsed.Unreadable).problem)
     }
 
     @Test

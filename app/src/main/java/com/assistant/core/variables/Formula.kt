@@ -7,7 +7,9 @@ package com.assistant.core.variables
  *
  * A name is a word of letters, digits and `_`, accents included (`quantité`), possibly dotted to
  * read through a reference (`aliment.kcal_100g`). A variable named in a stored formula is written
- * `{var:ID}`, which the text shows under its current name.
+ * `{var:ID}`, which the text shows under its current name. A function is stored and read by the AI
+ * under its English name (`hours()`); the screen shows it and accepts it in the app's language
+ * (`heures()`), from the strings.
  */
 sealed interface Formula {
     data class Number(val value: Double) : Formula
@@ -15,22 +17,20 @@ sealed interface Formula {
     data class VariableRef(val id: String) : Formula
     data class Negate(val operand: Formula) : Formula
     data class Binary(val op: Operator, val left: Formula, val right: Formula) : Formula
-    /** [spelled] is the function's name as written, kept when the text is written back. */
-    data class Call(val function: Function, val argument: Formula, val spelled: String) : Formula
+    data class Call(val function: Function, val argument: Formula) : Formula
 
     enum class Operator(val symbol: String) { PLUS("+"), MINUS("-"), TIMES("×"), DIVIDE("÷") }
 
-    /** A function, added for a real case only: the first ones turn a duration into a number of units. */
-    enum class Function(val millis: Double) {
-        HOURS(3_600_000.0), MINUTES(60_000.0), SECONDS(1_000.0);
+    /**
+     * A function, added for a real case only: the first ones turn a duration into a number of
+     * units. [canonical] is its name as stored and as the AI writes it.
+     */
+    enum class Function(val canonical: String, val millis: Double) {
+        HOURS("hours", 3_600_000.0), MINUTES("minutes", 60_000.0), SECONDS("seconds", 1_000.0);
 
         companion object {
-            /** The names a formula calls them by, in either language. */
-            val byName: Map<String, Function> = mapOf(
-                "heures" to HOURS, "hours" to HOURS,
-                "minutes" to MINUTES,
-                "secondes" to SECONDS, "seconds" to SECONDS
-            )
+            /** Each function under its name in the app's language ([text], the shared strings), for the screen. */
+            fun localized(text: (String) -> String): Map<String, Function> = entries.associateBy { text("formula_function_${it.canonical}") }
         }
     }
 
@@ -88,27 +88,27 @@ sealed interface Formula {
         is Name -> replace(name) ?: this
         is Negate -> Negate(operand.mapNames(replace))
         is Binary -> Binary(op, left.mapNames(replace), right.mapNames(replace))
-        is Call -> Call(function, argument.mapNames(replace), spelled)
+        is Call -> Call(function, argument.mapNames(replace))
     }
 
-    /** The formula written back as text, a variable by [variableName]. */
-    fun text(variableName: (String) -> String): String = write(this, variableName, 0)
+    /** The formula written back as text, a variable by [variableName], a function by [functionName] (its English name by default). */
+    fun text(variableName: (String) -> String, functionName: (Function) -> String = { it.canonical }): String = write(this, variableName, functionName, 0)
 
     companion object {
-        /** Reads [text], or says where it does not read. */
-        fun parse(text: String): Parsed = Parser(text).parse()
+        /** Reads [text], or says where it does not read; a function by its English name, or by one of [aliases]. */
+        fun parse(text: String, aliases: Map<String, Function> = emptyMap()): Parsed = Parser(text, aliases).parse()
 
-        private fun write(node: Formula, variableName: (String) -> String, parent: Int): String = when (node) {
+        private fun write(node: Formula, variableName: (String) -> String, functionName: (Function) -> String, parent: Int): String = when (node) {
             is Number -> if (node.value % 1.0 == 0.0 && kotlin.math.abs(node.value) < 1e15) node.value.toLong().toString() else node.value.toString()
             is Name -> node.name
             is VariableRef -> variableName(node.id)
-            is Negate -> "-" + write(node.operand, variableName, 3)
-            is Call -> node.spelled + "(" + write(node.argument, variableName, 0) + ")"
+            is Negate -> "-" + write(node.operand, variableName, functionName, 3)
+            is Call -> functionName(node.function) + "(" + write(node.argument, variableName, functionName, 0) + ")"
             is Binary -> {
                 val level = if (node.op == Operator.PLUS || node.op == Operator.MINUS) 1 else 2
                 // The right side of - and ÷ keeps its parentheses at the same level: a - (b - c)
-                val right = write(node.right, variableName, if (node.op == Operator.MINUS || node.op == Operator.DIVIDE) level + 1 else level)
-                val inner = write(node.left, variableName, level) + " ${node.op.symbol} " + right
+                val right = write(node.right, variableName, functionName, if (node.op == Operator.MINUS || node.op == Operator.DIVIDE) level + 1 else level)
+                val inner = write(node.left, variableName, functionName, level) + " ${node.op.symbol} " + right
                 if (level < parent) "($inner)" else inner
             }
         }
@@ -125,7 +125,7 @@ sealed interface Formula {
 }
 
 /** A recursive descent over the text: sums of products of signed factors. */
-private class Parser(private val text: String) {
+private class Parser(private val text: String, private val aliases: Map<String, Formula.Function>) {
     private var at = 0
 
     private class Stop(val position: Int, val problem: Formula.Problem, val detail: String = "") : Exception()
@@ -195,13 +195,14 @@ private class Parser(private val text: String) {
                 (text[at] == '.' && text.getOrNull(at + 1)?.let { it.isLetter() || it == '_' } == true))) at++
         val name = text.substring(start, at)
         if (peek() != '(') return Formula.Name(name)
-        val function = Formula.Function.byName[name.lowercase()] ?: throw Stop(start, Formula.Problem.UNKNOWN_FUNCTION, name)
+        val function = Formula.Function.entries.firstOrNull { it.canonical == name.lowercase() } ?: aliases[name.lowercase()]
+            ?: throw Stop(start, Formula.Problem.UNKNOWN_FUNCTION, name)
         val open = at
         at++
         val argument = sum()
         if (peek() != ')') throw Stop(open, Formula.Problem.MISSING_CLOSING)
         at++
-        return Formula.Call(function, argument, name)
+        return Formula.Call(function, argument)
     }
 
     private fun variableRef(): Formula {

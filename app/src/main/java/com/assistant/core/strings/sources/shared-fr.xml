@@ -1134,6 +1134,9 @@
     <string name="formula_problem_missing_operand">une valeur manque</string>
     <string name="formula_problem_unknown_function">fonction inconnue</string>
     <string name="formula_problem_bad_number">nombre illisible</string>
+    <string name="formula_function_hours">heures</string>
+    <string name="formula_function_minutes">minutes</string>
+    <string name="formula_function_seconds">secondes</string>
     <string name="variable_cause_no_entry">aucune entrée dans la période</string>
     <string name="variable_cause_missing_value">%2$d entrée(s) sans %1$s</string>
     <string name="variable_cause_source_not_found">l\'outil lu n\'existe plus</string>

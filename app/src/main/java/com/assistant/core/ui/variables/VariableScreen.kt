@@ -78,7 +78,16 @@ fun VariableScreen(zoneId: String, variableId: String?, group: String?, onDone: 
             if (variable != null) {
                 name = variable["name"] as String
                 @Suppress("UNCHECKED_CAST")
-                draft = JsonUtils.toJSONObject(variable["definition"] as Map<String, Any?>).toString()
+                val definition = JsonUtils.toJSONObject(variable["definition"] as Map<String, Any?>)
+                // Shown with each function in the app's language, as it is written here
+                fun localized(text: String) = (Formula.parse(text) as? Formula.Parsed.Read)?.formula?.text({ it }, { f -> s.shared("formula_function_${f.canonical}") }) ?: text
+                definition.optString("formula").takeIf { it.isNotEmpty() }?.let { definition.put("formula", localized(it)) }
+                definition.optJSONObject("terms")?.let { terms ->
+                    terms.keys().forEach { key ->
+                        terms.getJSONObject(key).optJSONObject("reading")?.let { r -> r.optString("per_entry").takeIf { it.isNotEmpty() }?.let { r.put("per_entry", localized(it)) } }
+                    }
+                }
+                draft = definition.toString()
                 loaded = true
             } else error = result.error
         }
@@ -201,7 +210,7 @@ fun VariableScreen(zoneId: String, variableId: String?, group: String?, onDone: 
 private fun FormulaEditor(formula: String, terms: List<String>, variables: List<String>, s: StringsContext, onChange: (String) -> Unit) {
     UI.FormField(label = s.shared("variable_formula"), value = formula, onChange = onChange, required = true,
         fieldType = com.assistant.core.ui.FieldType.TEXT_MEDIUM)
-    val problem = when (val parsed = Formula.parse(formula)) {
+    val problem = when (val parsed = Formula.parse(formula, Formula.Function.localized { s.shared(it) })) {
         is Formula.Parsed.Unreadable -> if (formula.isBlank()) null
             else s.shared("variable_error_formula").format(parsed.position + 1, s.shared("formula_problem_${parsed.problem.name.lowercase()}"), parsed.detail)
         is Formula.Parsed.Read -> parsed.formula.names().filter { it !in terms && it !in variables }.distinct()
@@ -209,7 +218,7 @@ private fun FormulaEditor(formula: String, terms: List<String>, variables: List<
     }
     problem?.let { UI.Text(text = it, type = TextType.ERROR) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        (terms + variables + listOf("+", "-", "×", "÷", "(", ")", "heures(")).forEach { token ->
+        (terms + variables + listOf("+", "-", "×", "÷", "(", ")") + Formula.Function.entries.map { s.shared("formula_function_${it.canonical}") + "(" }).forEach { token ->
             UI.Button(type = ButtonType.SECONDARY, onClick = { onChange(formula.trimEnd() + (if (formula.isBlank()) "" else " ") + token) }) {
                 UI.Text(text = token, type = TextType.LABEL)
             }

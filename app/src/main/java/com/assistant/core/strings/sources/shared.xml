@@ -1134,6 +1134,9 @@
     <string name="formula_problem_missing_operand">a value is missing</string>
     <string name="formula_problem_unknown_function">unknown function</string>
     <string name="formula_problem_bad_number">unreadable number</string>
+    <string name="formula_function_hours">hours</string>
+    <string name="formula_function_minutes">minutes</string>
+    <string name="formula_function_seconds">seconds</string>
     <string name="variable_cause_no_entry">no entry in the period</string>
     <string name="variable_cause_missing_value">%2$d entr(ies) without %1$s</string>
     <string name="variable_cause_source_not_found">the tool read no longer exists</string>
