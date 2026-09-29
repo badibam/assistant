@@ -12,9 +12,7 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.tools.ToolTypeContract
-import com.assistant.core.ui.DisplayMode
 import com.assistant.tools.structured.ui.StructuredScreen
-import com.assistant.tools.structured.ui.StructuredTile
 import org.json.JSONObject
 
 /**
@@ -85,11 +83,10 @@ object StructuredToolType : ToolTypeContract {
         onLongClick: () -> Unit,
         openEntry: com.assistant.core.tools.EntryToOpen?
     ) {
-        StructuredScreen(toolInstanceId = toolInstanceId, onNavigateBack = onNavigateBack, onConfigureClick = onLongClick)
+        StructuredScreen(toolInstanceId = toolInstanceId, onNavigateBack = onNavigateBack, onConfigureClick = onLongClick, openEntry = openEntry)
     }
 
     @Composable
-    override fun TileContent(tool: ToolInstance, displayMode: DisplayMode) {
-        StructuredTile(tool = tool, displayMode = displayMode)
-    }
+    override fun rememberTile(tool: ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
+        com.assistant.tools.structured.ui.rememberStructuredTile(tool, open)
 }
