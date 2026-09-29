@@ -314,7 +314,7 @@ Les réglages d'une automation (nom, fournisseur, groupe, activation, planificat
 
 La recherche de la prochaine occurrence démarre au plus tôt à `maintenant − fenêtre` (`AutomationScheduler.searchStart`). La plus récente due se trouve par dichotomie sur le départ de la recherche (`lastDueOccurrence`) : le calculateur ne répond que « la première après cet instant », et cette réponse ne décroît jamais quand l'instant grandit.
 
-**Résolution temporelle** : une session AUTOMATION résout ses périodes relatives et le marqueur `NOW` sur son `scheduledExecutionTime`, pas sur l'horloge — sinon toutes les exécutions de rattrapage lisent le même jour. L'instant est choisi par `AIEventProcessor.periodReference()` et traverse `UserCommandProcessor`/`AICommandProcessor` jusqu'à `CommandTransformer`. `resolveRelativePeriod` l'exige, sans valeur par défaut. Le prompt porte les deux dates (cf. §8) : les données lues sont ancrées sur la date prévue, ce que l'IA fait reste au présent.
+**Résolution temporelle** : une session AUTOMATION résout ses dates relatives, `{"relative": "NOW"}` compris, sur son `scheduledExecutionTime`, pas sur l'horloge — sinon toutes les exécutions de rattrapage lisent le même jour. L'instant est choisi par `AIEventProcessor.periodReference()` et traverse `UserCommandProcessor`/`AICommandProcessor` jusqu'à `CommandTransformer`. `resolveRelativePeriod` l'exige, sans valeur par défaut. Le prompt porte les deux dates (cf. §8) : les données lues sont ancrées sur la date prévue, ce que l'IA fait reste au présent.
 
 **Données antérieures** : une automation programmée enregistrée avant ces réglages est lue « sans limite, la plus récente seulement » (`LegacyCatchUp`) — règle appliquée par la migration 22→23 et par l'import d'une sauvegarde qui ne porte pas le champ.
 
@@ -500,7 +500,7 @@ class EnrichmentProcessor {
 }
 ```
 
-**Périodes** : CHAT (isRelative=false) → timestamps absolus via Period, AUTOMATION (isRelative=true) → périodes relatives format "offset_TYPE".
+**Périodes** : CHAT (isRelative=false) → dates fixes, AUTOMATION (isRelative=true) → dates relatives `{"relative": {"unit", "offset", "edge"}}` (`TimePoint`).
 
 **Flow** : EnrichmentProcessor → DataCommand → CommandTransformer → CommandExecutor → SystemMessage.
 
@@ -558,7 +558,7 @@ suspend fun buildPromptData(sessionId: String): PromptData {
 
 ### Dual mode résolution
 **CHAT** (isRelative=false) : Périodes absolues (Period timestamps fixes).
-**AUTOMATION** (isRelative=true) : Périodes relatives (RelativePeriod "offset_TYPE") résolues via AppConfigManager.
+**AUTOMATION** (isRelative=true) : dates relatives (`TimePoint`), résolues à chaque exécution par `TimeResolver` sur l'heure prévue.
 
 ## 11. Provider abstraction
 

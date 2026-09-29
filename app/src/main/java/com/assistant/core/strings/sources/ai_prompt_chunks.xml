@@ -251,10 +251,11 @@ Retrieves the entries of one tool.
   - **State**: `"state.read"`, `"state.running"`, and so on: what the app and its actions wrote on the entry. `state.running` holds the start of each DURATION field running now
   - **No wildcard**: each field is listed on its own
   - **Refused**: `"data"`, `"extra"` and `"state"` alone. They are containers: name a field inside one (`"data.value"`). A path one level deeper is refused too: a field holding an object or a list is asked for whole (`"extra.sleep"`, not `"extra.sleep.start"`)
+- `period` (object, optional): the entries whose `timestamp` falls in it, `{"start": ..., "end": ...}`, both bounds included, either left out for no limit. Each bound is a date (Part E)
 - `filters` (array, optional): which entries to return, by the values of their fields. **Every filter must hold**. Each is `{"field": ..., "op": ..., "value": ...}`:
   - `field`: a path as in `fields` (`"timestamp"`, `"name"`, `"data.value"`, `"extra.mood"`, `"state.read"`)
   - `op`, by the type of the field: a number, scale, duration, moment, day or time of day takes `<`, `<=`, `=`, `>=`, `>`, `between` (value `[low, high]`); a TEXT `=` or `contains`; a CHOICE `in` (value: a list of options, an entry matching if it holds one of them); a BOOLEAN `=` (`true` or `false`). Any field takes `absent` or `present`, with no value: a field missing from an entry is one left unanswered
-  - A period is a filter on `timestamp`. Dates, periods and durations in Part E
+  - Dates, relative dates and durations in Part E
   - No OR between two fields: make two queries
 - `limit` (number, optional): entries per page
 - `page` (number, optional): page number, starting at 1 (there is no `offset`)
@@ -584,10 +585,7 @@ Returns its whole config, extra fields included:
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value", "data.unit", "extra.mood"],
-    "filters": [
-      { "field": "timestamp", "op": ">=", "value": "2024-01-01T00:00:00+01:00" },
-      { "field": "timestamp", "op": "<", "value": "2024-02-01T00:00:00+01:00" }
-    ],
+    "period": { "start": "2024-01-01T00:00:00+01:00", "end": "2024-01-31T23:59:59+01:00" },
     "limit": 50
   }
 }
@@ -636,9 +634,7 @@ The entries of a tool, before writing them:
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id"],
-    "filters": [
-      { "field": "timestamp", "op": "between", "value": ["2024-01-01T00:00:00+01:00", "2024-01-31T23:59:59+01:00"] }
-    ]
+    "period": { "start": "2024-01-01T00:00:00+01:00", "end": "2024-01-31T23:59:59+01:00" }
   }
 }
 ```
@@ -822,27 +818,27 @@ A date or a duration, in a value you read or write, is ISO 8601:
 - a length of time: `"PT1H25M"` (1 hour 25 minutes), `"PT90S"`, `"P2DT3H"`
 - a day alone (a DATE field): `"2025-11-23"`; a time of day alone (a TIME field): `"09:00"`
 
-### Periods in filters
+### Relative dates
 
-A filter on a moment (`timestamp`, a DATETIME field) or a day (a DATE field) takes three forms of value:
+A period's bound, or a filter's value on a moment (`timestamp`, a DATETIME field) or a day (a DATE field), takes three forms:
 
-**1. Relative periods (recommended)**: `offset_TYPE`
-- `"-1_DAY"` = yesterday, `"0_WEEK"` = this week, `"-7_DAY"` = the day 7 days ago
-- Types: HOUR, DAY, WEEK, MONTH, YEAR
-- They follow the user\'s settings (start of the day, start of the week)
+**1. Relative (recommended)**: `{"relative": {"unit": "DAY", "offset": -1, "edge": "START"}}`
+- `unit`: HOUR, DAY, WEEK, MONTH, YEAR; `offset`: 0 the current one, -1 the one before, 1 the one after
+- `edge`: `START` or `END` of that period, **always given**: the start of yesterday, the end of last week
+- They follow the user's settings (start of the day, start of the week) and resolve when the query runs
 
-**2. `"NOW"`**: this exact instant (or today, for a day), not a period
+**2. Now**: `{"relative": "NOW"}`, this exact instant (or today, for a day)
 
 **3. Fixed**: an ISO 8601 moment with its offset, or a day `"2025-11-23"`
 
-A relative period is a span, and the condition says which edge of it counts: `>=` and `<` its start, `>` and `<=` its end, `=` the whole of it, `between` from the start of the first value to the end of the second. The forms mix: `["-7_DAY", "NOW"]`.]]></string>
+A relative date is a point, the edge it says; the condition compares with that point. The whole of yesterday is a period from its START to its END. The forms mix. They read back as you write them, in the pointers and variables you are shown.]]></string>
 
 
     <!-- E.2 Period examples [DEGREE 2] -->
 
     <string name="ai_chunk_temporal_examples"><![CDATA[## Time period examples
 
-### Example 1: the whole of last week (relative period)
+### Example 1: the whole of last week
 
 ```json
 {
@@ -850,12 +846,15 @@ A relative period is a span, and the condition says which edge of it counts: `>=
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value"],
-    "filters": [{ "field": "timestamp", "op": "=", "value": "-1_WEEK" }]
+    "period": {
+      "start": { "relative": { "unit": "WEEK", "offset": -1, "edge": "START" } },
+      "end": { "relative": { "unit": "WEEK", "offset": -1, "edge": "END" } }
+    }
   }
 }
 ```
 
-### Example 2: the last 7 days up to now (relative + NOW)
+### Example 2: the last 7 days up to now
 
 ```json
 {
@@ -863,7 +862,10 @@ A relative period is a span, and the condition says which edge of it counts: `>=
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value"],
-    "filters": [{ "field": "timestamp", "op": "between", "value": ["-7_DAY", "NOW"] }]
+    "period": {
+      "start": { "relative": { "unit": "DAY", "offset": -6, "edge": "START" } },
+      "end": { "relative": "NOW" }
+    }
   }
 }
 ```
@@ -876,7 +878,7 @@ A relative period is a span, and the condition says which edge of it counts: `>=
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value"],
-    "filters": [{ "field": "timestamp", "op": ">=", "value": "0_MONTH" }]
+    "period": { "start": { "relative": { "unit": "MONTH", "offset": 0, "edge": "START" } } }
   }
 }
 ```
@@ -889,10 +891,28 @@ A relative period is a span, and the condition says which edge of it counts: `>=
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value", "extra.mood"],
+    "period": {
+      "start": { "relative": { "unit": "MONTH", "offset": 0, "edge": "START" } },
+      "end": { "relative": { "unit": "MONTH", "offset": 0, "edge": "END" } }
+    },
     "filters": [
-      { "field": "timestamp", "op": "=", "value": "0_MONTH" },
       { "field": "data.value", "op": ">", "value": 80 },
       { "field": "extra.mood", "op": "present" }
+    ]
+  }
+}
+```
+
+### Example 5: items checked since the start of yesterday (a relative date in a filter)
+
+```json
+{
+  "type": "TOOL_DATA",
+  "params": {
+    "id": "list_groceries_456",
+    "fields": ["id", "name", "state.checked_at"],
+    "filters": [
+      { "field": "state.checked_at", "op": ">=", "value": { "relative": { "unit": "DAY", "offset": -1, "edge": "START" } } }
     ]
   }
 }
