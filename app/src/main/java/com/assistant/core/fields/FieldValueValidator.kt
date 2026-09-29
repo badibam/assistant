@@ -57,7 +57,25 @@ object FieldValueValidator {
 
             // DURATION: a whole number of milliseconds, which the schema checks
             FieldType.DURATION -> ValidationResult(isValid = true)
+
+            // REFERENCE: a kind the field takes, and an id for anything but the app. That the
+            // thing exists is the service's to check, with the database
+            FieldType.REFERENCE -> validateReferenceValue(fieldDef, value, context)
         }
+    }
+
+    private fun validateReferenceValue(fieldDef: FieldDefinition, value: Any?, context: Context): ValidationResult {
+        val s = Strings.`for`(context = context)
+        val target = ReferenceTarget.fromConfig(fieldDef.config)
+        val reference = ReferenceTarget.referenceOf(value)
+            ?: return ValidationResult(isValid = false, errorMessage = s.shared("field_value_reference_invalid").format(value.toString()))
+        if (!target.acceptsKind(reference)) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = s.shared("field_value_reference_kind").format(reference.kind.name, target.kinds.joinToString(", ") { it.name })
+            )
+        }
+        return ValidationResult(isValid = true)
     }
 
     /**

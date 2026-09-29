@@ -145,7 +145,23 @@ object FieldConfigValidator {
             FieldType.TIME -> validateTimeConfig(config, s)
             FieldType.DATETIME -> validateDateTimeConfig(config, s)
             FieldType.DURATION -> validateDurationConfig(config, s)
+            FieldType.REFERENCE -> validateReferenceConfig(config, s)
         }
+    }
+
+    /**
+     * Validates REFERENCE field config.
+     * Config: {target: {kinds (at least one), tool_instances? (with ENTRY among the kinds)}}
+     */
+    private fun validateReferenceConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
+        val target = ReferenceTarget.fromConfig(config)
+        if (target.kinds.isEmpty()) {
+            return ValidationResult(isValid = false, errorMessage = s.shared("field_validation_reference_kinds"))
+        }
+        if (target.toolInstances.isNotEmpty() && com.assistant.core.selection.ReferenceKind.ENTRY !in target.kinds) {
+            return ValidationResult(isValid = false, errorMessage = s.shared("field_validation_reference_tool_instances"))
+        }
+        return ValidationResult(isValid = true)
     }
 
     /**

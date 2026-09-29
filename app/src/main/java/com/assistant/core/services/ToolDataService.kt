@@ -8,6 +8,8 @@ import com.assistant.core.commands.CommandStatus
 import com.assistant.core.coordinator.Operation
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.database.dao.BaseToolDataDao
+import com.assistant.core.selection.ReferenceKind
+import com.assistant.core.fields.ReferenceTarget
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
@@ -121,6 +123,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val checked = grownConfig?.let { target.withConfig(it) } ?: target
 
         validateEntry(checked, name, timestamp, finalDataJson, finalExtraJson, stateJson)
+            ?.let { return OperationResult.error(it) }
+        checkReferences(checked, finalDataJson, finalExtraJson, before = null)
             ?.let { return OperationResult.error(it) }
 
         val now = System.currentTimeMillis()
@@ -261,6 +265,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
         validateEntry(
             checked, updatedEntity.name, updatedEntity.timestamp, updatedEntity.data, updatedEntity.extra, updatedEntity.state
         )?.let { return OperationResult.error(it) }
+        checkReferences(checked, updatedEntity.data, updatedEntity.extra, before = existingEntity)
+            ?.let { return OperationResult.error(it) }
 
         val after = dao.getByToolInstance(existingEntity.toolInstanceId)
             .map { if (it.id == updatedEntity.id) updatedEntity else it }
@@ -1077,6 +1083,41 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 val fieldResult = FieldValueValidator.validate(field, values?.get(field.name), context)
                 if (!fieldResult.isValid) {
                     return s.shared("error_custom_field_validation_failed").format(field.displayName, fieldResult.errorMessage ?: "")
+                }
+            }
+        }
+        return null
+    }
+
+    /**
+     * Check that each REFERENCE value an entry is given designates something that exists, and for
+     * an entry, one of a tool instance the field takes. Only the values that change are checked:
+     * a reference whose target was deleted since keeps its address, and the entry holding it stays
+     * writable ([before], the entry as stored, null for a new one).
+     *
+     * @return The error to hand back, or null when every reference holds
+     */
+    private suspend fun checkReferences(target: WriteTarget.Ready, dataJson: String, extraJson: String?, before: ToolDataEntity?): String? {
+        val database = AppDatabase.getDatabase(context)
+        val containers = listOf(
+            Triple(declaredFields(target), JsonUtils.toMap(dataJson), before?.data?.let { JsonUtils.toMap(it) }),
+            Triple(userFields(target), extraJson?.let { JsonUtils.toMap(it) } ?: emptyMap<String, Any?>(), before?.extra?.let { JsonUtils.toMap(it) })
+        )
+        for ((fields, values, previous) in containers) {
+            for (field in fields.filter { it.type == FieldType.REFERENCE }) {
+                val reference = ReferenceTarget.referenceOf(values[field.name]) ?: continue
+                if (ReferenceTarget.referenceOf(previous?.get(field.name)) == reference) continue
+                val error = when (reference.kind) {
+                    ReferenceKind.APP -> null
+                    ReferenceKind.ZONE -> s.shared("field_value_reference_not_found").takeIf { database.zoneDao().getZoneById(reference.id!!) == null }
+                    ReferenceKind.TOOL_INSTANCE -> s.shared("field_value_reference_not_found").takeIf { database.toolInstanceDao().getToolInstanceById(reference.id!!) == null }
+                    ReferenceKind.ENTRY -> when (val entry = getToolDataDao().getById(reference.id!!)) {
+                        null -> s.shared("field_value_reference_not_found")
+                        else -> s.shared("field_value_reference_wrong_tool").takeIf { !ReferenceTarget.fromConfig(field.config).acceptsEntryOf(entry.toolInstanceId) }
+                    }
+                }
+                if (error != null) {
+                    return s.shared("error_custom_field_validation_failed").format(field.displayName, error.format(reference.kind.name, reference.id))
                 }
             }
         }

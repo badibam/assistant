@@ -109,6 +109,15 @@ object FieldConfigComparator {
                     }
                 }
 
+                com.assistant.core.fields.FieldType.REFERENCE -> {
+                    // What it accepts changed: the values that no longer fit lose the field
+                    if (oldField.config?.get(com.assistant.core.fields.ReferenceTarget.TARGET) !=
+                        newField.config?.get(com.assistant.core.fields.ReferenceTarget.TARGET)) {
+                        changes.add(FieldChange.ReferenceTargetNarrowed(name, newField.config))
+                        return@forEach
+                    }
+                }
+
                 else -> {
                     // Other types: no structural config changes to check
                 }

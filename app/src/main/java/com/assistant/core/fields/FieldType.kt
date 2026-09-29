@@ -97,7 +97,17 @@ enum class FieldType {
      * The precision is the smallest unit entered and shown; the form writes "1 h 25 min" or "85 min".
      * Example: Sleep, time spent on an activity, a workout
      */
-    DURATION;
+    DURATION,
+
+    /**
+     * Another thing of the app, by its kind and id, never its name: {"kind": "ENTRY", "id": "..."}.
+     * Renaming the thing breaks nothing, and whoever shows the value reads its name as it is now;
+     * a thing deleted since keeps its reference and shows as deleted (ReferenceField).
+     * Config: {target: {kinds (required, among APP, ZONE, TOOL_INSTANCE, ENTRY), tool_instances?}}
+     * - tool_instances: with ENTRY, the entries of these tool instances only
+     * Example: the food a meal is made of, the tool a chart draws
+     */
+    REFERENCE;
 
     /**
      * Get the localized display name for this field type.
@@ -119,6 +129,7 @@ enum class FieldType {
             TIME -> s.shared("field_type_time_display_name")
             DATETIME -> s.shared("field_type_datetime_display_name")
             DURATION -> s.shared("field_type_duration_display_name")
+            REFERENCE -> s.shared("field_type_reference_display_name")
         }
     }
 

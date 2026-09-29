@@ -108,6 +108,8 @@ fun FieldValue(
             }
         }
 
+        FieldType.REFERENCE -> ReferenceValue(value, context)
+
         else -> UI.Text(text = fieldDef.formatValue(value, context), type = TextType.BODY)
     }
 }

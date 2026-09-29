@@ -77,6 +77,8 @@ object EntryFilters {
         FieldType.BOOLEAN -> setOf(FilterOperator.EQUAL) + PRESENCE
         // A pair of numbers: which of the two a comparison would be about is not said by the field
         FieldType.RANGE -> PRESENCE
+        // The same thing, by its id
+        FieldType.REFERENCE -> setOf(FilterOperator.EQUAL) + PRESENCE
     }
 
     /**
@@ -162,6 +164,8 @@ object EntryFilters {
         FieldType.TIME -> (value as? String)?.takeIf { TIME_PATTERN.matches(it) }
         FieldType.TEXT -> value as? String
         FieldType.BOOLEAN -> value as? Boolean
+        // A reference is compared by the id of what it designates, ids being unique across kinds
+        FieldType.REFERENCE -> ReferenceTarget.referenceOf(value)?.id
         FieldType.CHOICE, FieldType.RANGE -> null
     }
 
@@ -177,6 +181,7 @@ object EntryFilters {
             FieldType.DATE -> "filter_value_date"
             FieldType.TIME -> "filter_value_time"
             FieldType.BOOLEAN -> "filter_value_boolean"
+            FieldType.REFERENCE -> "filter_value_reference"
             else -> "filter_value_text"
         }
     }
@@ -271,7 +276,12 @@ object EntryFilters {
             }
             // lower() folds ASCII only: "É" and "é" stay apart
             FilterOperator.CONTAINS -> SqlCondition("instr(lower($expr), lower(?)) > 0", exprArgs + (filter.value as String))
-            else -> SqlCondition("$compared ${filter.operator.key} ?", comparedArgs + bound(filter.value!!))
+            // A reference is compared by the id it holds
+            else -> if (field.type == FieldType.REFERENCE) {
+                SqlCondition("json_extract($container, ?) = ?", listOf("$jsonPath.id", filter.value!!))
+            } else {
+                SqlCondition("$compared ${filter.operator.key} ?", comparedArgs + bound(filter.value!!))
+            }
         }
     }
 

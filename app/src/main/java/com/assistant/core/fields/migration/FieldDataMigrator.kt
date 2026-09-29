@@ -12,6 +12,8 @@ object FieldDataMigrator {
      * @param values Original values of the container (copied, not modified)
      * @param changes List of detected configuration changes
      * @param strategies Map of migration strategies for each change
+     * @param entryInstance The tool instance of an entry a reference designates, null when the
+     *   entry no longer exists: a deleted target keeps its reference
      * @return The values the container keeps
      *
      * Visible to the tests: this is where a configuration change meets real entries, and what it
@@ -20,7 +22,8 @@ object FieldDataMigrator {
     internal fun applyMigrationStrategies(
         values: Map<String, Any?>,
         changes: List<FieldChange>,
-        strategies: Map<FieldChange, MigrationStrategy>
+        strategies: Map<FieldChange, MigrationStrategy>,
+        entryInstance: (String) -> String? = { null }
     ): Map<String, Any?> {
         val result = values.toMutableMap()
 
@@ -72,6 +75,14 @@ object FieldDataMigrator {
                             if (!change.fieldType.permits(result[change.name], change.newConfig)) {
                                 result.remove(change.name)
                             }
+                        }
+                        is FieldChange.ReferenceTargetNarrowed -> {
+                            val reference = com.assistant.core.fields.ReferenceTarget.referenceOf(result[change.name])
+                            val target = com.assistant.core.fields.ReferenceTarget.fromConfig(change.newConfig)
+                            val fits = reference == null || (target.acceptsKind(reference) &&
+                                (reference.kind != com.assistant.core.selection.ReferenceKind.ENTRY ||
+                                    entryInstance(reference.id!!)?.let { target.acceptsEntryOf(it) } ?: true))
+                            if (!fits) result.remove(change.name)
                         }
                         else -> {} // Strategy mismatch, should not happen
                     }

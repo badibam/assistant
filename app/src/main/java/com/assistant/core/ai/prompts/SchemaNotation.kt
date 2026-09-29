@@ -1,5 +1,6 @@
 package com.assistant.core.ai.prompts
 
+import com.assistant.core.fields.FieldValueSchema
 import com.assistant.core.fields.settings.SettingsSchemaGenerator
 import org.json.JSONArray
 import org.json.JSONObject
@@ -116,14 +117,16 @@ object SchemaNotation {
                 val items = schema.optJSONObject("items") ?: JSONObject()
                 check(items, "$path[]")
                 if (isObject(items)) listOf("$head: list of$constraints$text") + objectLines(items, "$indent  ", "$path[]")
-                else listOf("$head: list of ${kind(items)}${constraints(items)}$constraints$text")
+                else listOf("$head: list of ${kind(items)}${constraints(items)}${text(items)}$constraints$text")
             }
             isObject(schema) -> listOf("$head:$constraints$text") + objectLines(schema, "$indent  ", path)
             else -> listOf("$head: ${kind(schema)}$constraints$text")
         }
     }
 
-    private fun isObject(schema: JSONObject) = schema.has("properties") || schema.has("oneOf")
+    /** An object written property by property; a reference is written as one value. */
+    private fun isObject(schema: JSONObject) =
+        (schema.has("properties") || schema.has("oneOf")) && schema.optString("format") != FieldValueSchema.REFERENCE
 
     /** What kind of value: its options, its format, or its type. */
     private fun kind(schema: JSONObject): String {
@@ -133,6 +136,11 @@ object SchemaNotation {
             "date-time" -> return "ISO 8601 date-time with offset"
             "duration" -> return "ISO 8601 duration"
             "date" -> return "date YYYY-MM-DD"
+            FieldValueSchema.REFERENCE -> {
+                val kinds = schema.optJSONObject("properties")?.optJSONObject("kind")?.optJSONArray("enum")
+                    ?.let { options -> (0 until options.length()).joinToString("|") { options.getString(it) } } ?: "any"
+                return "reference {kind: $kinds, id}"
+            }
         }
         return when (val type = schema.opt("type")) {
             is JSONArray -> (0 until type.length()).joinToString("|") { type.getString(it) }

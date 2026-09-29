@@ -4,7 +4,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Mise à jour et démarrage
 
-- Installer la mise à jour par-dessus la version du téléphone (migrations jusqu'à la base 45) : l'app démarre, l'historique des conversations est intact, chaque zone garde ses outils, ses groupes et son icône, les outils et leurs icônes s'ouvrent, une config portant un champ DATE ou DATETIME s'enregistre.
+- Installer la mise à jour par-dessus la version du téléphone (migrations jusqu'à la base 46) : l'app démarre, l'historique des conversations est intact, chaque zone garde ses outils, ses groupes et son icône, les outils et leurs icônes s'ouvrent, une config portant un champ DATE ou DATETIME s'enregistre.
 - Réglages après la mise à jour : format (fuseau, début de semaine, 24 h) inchangé et enregistrable, validation avec ses quatre choix, limites IA à 10, 20, 15 000 et 100 000.
 - Écran des journaux : il s'ouvre, et filtré sur « Error » il montre aussi les erreurs anciennes. Y chercher des lignes `MIGRATION` et `No JSON form`.
 - Volume du journal : compter les lignes par niveau sur deux minutes d'usage normal, pour voir ce que produit encore le DEBUG.
@@ -30,6 +30,8 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Pointeur sur une zone avec « entrées » et une période : l'IA reçoit les entrées de chacun de ses outils sur cette période, chacune avec son schéma ; sans case cochée, elle reçoit les filtres de la période et peut lire outil par outil. Descendre dans un outil garde la période, remonter à la zone garde les entrées et la période.
 - Filtre sur un champ texte (« contient » ou « est ») : sous la saisie, « Valeurs déjà saisies » propose les valeurs de l'outil, les plus fréquentes d'abord ; en toucher une remplit la valeur.
 - Même sélecteur dans le message de départ d'une automation : période et filtre de date en valeurs relatives, recalculées à l'exécution suivante. Le résumé dit le côté de chaque borne : « entre le début de « 7 jours avant » et la fin de « le jour-même » », « Pesé le depuis le début de « la veille » ».
+- Après la migration 46 : une ancienne conversation avec un pointeur à période s'affiche avec la même période ; une automation dont le départ pointe « la veille » lit encore la veille à son exécution suivante (le côté de chaque borne dans le résumé). Importer une sauvegarde d'avant : même chose.
+- Demander à l'IA les entrées d'hier : elle écrit une `period` en dates relatives (`{"relative": …}` avec START et END), la lecture passe.
 - Après la migration 44 : une ancienne conversation qui contenait des pointeurs les affiche encore, et les renvoyer dans une nouvelle session joint les mêmes données.
 - Demander à l'IA une question à plusieurs volets (un choix, un texte, une date) : chaque champ se saisit avec son composant, Confirmer reste grisé tant qu'un champ obligatoire est vide, et la réponse réapparaît dans le fil champ par champ, la date affichée comme telle. Une confirmation sans champ : Confirmer et Annuler seuls. Tourner l'écran en cours de saisie : les valeurs restent.
 - Demander à l'IA de créer une entrée puis de la modifier : elle modifie directement, avec l'id que la création lui a rendu, sans relire l'outil entre les deux.
@@ -90,3 +92,10 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Fuseau de l'app différent de celui du téléphone : l'historique range chaque entrée dans le jour affiché sur elle, le sélecteur de période et l'éditeur de planning montrent l'heure de l'app, « aujourd'hui » et « hier » du journal suivent. Un début de semaine changé est suivi par l'historique et les sélecteurs de période.
 - Icônes : couleur du thème partout, et le sélecteur s'ouvre, cherche et parcourt une catégorie sans lenteur.
 - Touche Retour : outil → zone → accueil → confirmation avant de fermer ; annule sur la création de zone, les réglages Claude/OpenAI et une entrée de journal en modification ; ferme les fenêtres sans effet de bord.
+
+## Champs RÉFÉRENCE
+
+- Ajouter à un outil un champ de l'utilisateur de type Référence, limité aux entrées d'un autre outil : le choix liste ses entrées avec une recherche ; l'entrée enregistrée affiche le nom de la fiche, renommer la fiche change l'affichage, la supprimer affiche « supprimé » et l'entrée reste modifiable.
+- Même champ sans restriction : choisir d'abord un outil puis son entrée. Avec les sortes Zone et Outil : leurs listes s'affichent.
+- Retirer l'outil autorisé de la config : la confirmation compte les valeurs retirées.
+- Faire lire ces entrées par l'IA : chaque référence arrive avec `name` ; lui faire écrire une référence vers un id inventé : refusée avec la raison.

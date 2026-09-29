@@ -47,8 +47,15 @@ object EntryMigration {
 
     /**
      * @param fill For a field of "data" now required, by name, the value an entry without one takes
+     * @param entryInstance The tool instance of an entry a reference designates, null once deleted
      */
-    fun plan(old: Fields, new: Fields, entries: List<ToolDataEntity>, fill: Map<String, Any> = emptyMap()): Plan {
+    fun plan(
+        old: Fields,
+        new: Fields,
+        entries: List<ToolDataEntity>,
+        fill: Map<String, Any> = emptyMap(),
+        entryInstance: (String) -> String? = { null }
+    ): Plan {
         val dataChanges = FieldConfigComparator.compare(old.data.map { it.definition }, new.data.map { it.definition })
         val extraChanges = FieldConfigComparator.compare(old.extra, new.extra)
         val dataStrategies = MigrationPolicy.getStrategies(dataChanges)
@@ -66,8 +73,8 @@ object EntryMigration {
             val data = JsonUtils.toMap(entry.data)
             val extra = JsonUtils.toMap(entry.extra?.takeIf { it.isNotBlank() })
 
-            val newData = FieldDataMigrator.applyMigrationStrategies(data, dataChanges, dataStrategies).toMutableMap()
-            val newExtra = FieldDataMigrator.applyMigrationStrategies(extra, extraChanges, extraStrategies)
+            val newData = FieldDataMigrator.applyMigrationStrategies(data, dataChanges, dataStrategies, entryInstance).toMutableMap()
+            val newExtra = FieldDataMigrator.applyMigrationStrategies(extra, extraChanges, extraStrategies, entryInstance)
 
             // A running DURATION holds its value in the state until stopped: it counts as a value,
             // and it goes with the field when the field loses its values
@@ -149,5 +156,6 @@ object EntryMigration {
             is FieldChange.ChoiceShapeChanged -> name
             is FieldChange.CosmeticChange -> name
             is FieldChange.ConfigRestricted -> name
+            is FieldChange.ReferenceTargetNarrowed -> name
         }
 }

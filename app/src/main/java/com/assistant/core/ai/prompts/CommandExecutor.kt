@@ -6,6 +6,8 @@ import com.assistant.core.ai.data.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.ServiceRegistry
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.fields.ReferenceName
+import com.assistant.core.fields.loadReferenceNames
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.AppConfigManager
@@ -760,10 +762,15 @@ class CommandExecutor(private val context: Context) {
                 data["count"]?.let { reordered["count"] = it }
 
                 // The entries' dates and durations in ISO 8601, found by the tool's entry
-                // schema: its fixed fields, the user's and the core's alike
+                // schema: its fixed fields, the user's and the core's alike; each reference with
+                // the current name of what it designates
                 data["entries"]?.let { entries ->
                     val schema = runBlocking { loadEntrySchema(command) }
-                    reordered["entries"] = (entries as List<*>).map { ModelValues.toModel(it, schema, timezone)!! }
+                    val converted = (entries as List<*>).map { ModelValues.toModel(it, schema, timezone)!! }
+                    val references = converted.flatMap { ModelValues.references(it, schema) }.distinct()
+                    val names = runBlocking { loadReferenceNames(references, context) }
+                        .mapValues { (_, name) -> (name as? ReferenceName.Named)?.name }
+                    reordered["entries"] = converted.map { ModelValues.withReferenceNames(it, schema, names)!! }
                 }
 
                 // Add pagination if present

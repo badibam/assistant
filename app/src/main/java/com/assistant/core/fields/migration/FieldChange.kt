@@ -116,6 +116,19 @@ sealed class FieldChange {
     data class CosmeticChange(val name: String) : FieldChange()
 
     /**
+     * What a REFERENCE field accepts changed: its kinds, or the tool instances whose entries it
+     * takes. Strategy: STRIP_FIELD_IF_VALUE (only the values that no longer fit lose the field:
+     * a kind no longer taken, an entry of a tool no longer taken)
+     *
+     * @param name The field name
+     * @param newConfig The config the stored values are measured against
+     */
+    data class ReferenceTargetNarrowed(
+        val name: String,
+        val newConfig: Map<String, Any>?
+    ) : FieldChange()
+
+    /**
      * A config key that restricts which values are allowed changed, without changing what a
      * stored value means: a numeric bound, the number of decimals, a text length.
      * Strategy: STRIP_FIELD_IF_VALUE (only the entries that no longer fit lose the field)

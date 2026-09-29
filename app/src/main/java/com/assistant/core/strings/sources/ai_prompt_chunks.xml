@@ -528,6 +528,17 @@ A **field definition** says a field\'s label, its type and its type\'s settings.
 
 A CHOICE lists its options as `{ "value", "label"?, "color"? }`; the value is what an entry stores. `"multiple": true` takes several options, `"ordered": true` a ranking of them, `"open": true` accepts a value that is not an option yet: writing it adds it to the options.
 
+A REFERENCE points to another thing of the app by its kind and id, never its name: `{ "kind": "ENTRY", "id": "..." }` (no id for `APP`). Its config says what it takes: `"target": { "kinds": ["ENTRY"], "tool_instances": [{ "kind": "TOOL_INSTANCE", "id": "..." }] }`, the tools restricting an entry to theirs. You read a reference with the current `name` of what it points to, or `"deleted": true`; you write it with its kind and id only, and the app checks that the thing exists. To find an entry\'s id, read the entries of its tool.
+
+```json
+{
+  "name": "food",
+  "display_name": "Food",
+  "type": "REFERENCE",
+  "config": { "target": { "kinds": ["ENTRY"], "tool_instances": [{ "kind": "TOOL_INSTANCE", "id": "structured_foods_789" }] } }
+}
+```
+
 ### The user\'s extra fields
 
 Every tool can carry extra fields, listed in its config under `extra_fields`; their values live in the entries\' `extra`.

@@ -5,7 +5,9 @@ import com.assistant.core.fields.DurationForm
 import com.assistant.core.fields.DurationUnit
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.ReferenceTarget
 import com.assistant.core.fields.TextLength
+import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.themes.TagColor
 
 /**
@@ -54,9 +56,10 @@ object FieldTypeSettings {
         // A number or a range needs its decimals, a scale its bounds and a choice its options:
         // their config is required
         val config = if (settings.isEmpty()) null else SettingNode.Group("config", text("field_config_section_title"), settings,
-            required = type in setOf(FieldType.NUMERIC, FieldType.RANGE, FieldType.SCALE, FieldType.CHOICE))
-        // A fixed day or instant is hardly a suggestion for every new entry: dates have none
-        val default = if (type == FieldType.DATE || type == FieldType.DATETIME) null
+            required = type in setOf(FieldType.NUMERIC, FieldType.RANGE, FieldType.SCALE, FieldType.CHOICE, FieldType.REFERENCE))
+        // A fixed day or instant is hardly a suggestion for every new entry: dates have none, nor
+        // a reference, one thing for all the entries to come
+        val default = if (type == FieldType.DATE || type == FieldType.DATETIME || type == FieldType.REFERENCE) null
             else field("default_value", "field_default_value", type, text, description = "field_type_schema_default_value_description")
                 .copy(valueOfDefined = true)
         return listOfNotNull(config, default)
@@ -123,6 +126,26 @@ object FieldTypeSettings {
             field("form", "field_config_duration_form", FieldType.CHOICE, text,
                 default = DurationForm.DEFAULT.name, description = "field_type_duration_form_description",
                 config = choice(DurationForm.entries.map { it.name }, DurationForm.entries.associate { it.name to text("duration_form_${it.name.lowercase()}_display_name") }))
+        )
+        FieldType.REFERENCE -> listOf(
+            SettingNode.Group(ReferenceTarget.TARGET, text("field_config_reference_target"), listOf(
+                field(ReferenceTarget.KINDS, "field_config_reference_kinds", FieldType.CHOICE, text, required = true,
+                    description = "field_type_reference_kinds_description",
+                    config = choice(ReferenceKind.entries.map { it.name },
+                        ReferenceKind.entries.associate { it.name to text("reference_kind_${it.name.lowercase()}") }) + ("multiple" to true)),
+                // The tools whose entries it takes, each a reference to a tool instance
+                SettingNode.ListOf(
+                    name = ReferenceTarget.TOOL_INSTANCES,
+                    label = text("field_config_reference_tool_instances"),
+                    item = SettingNode.Item.Value(FieldDefinition(
+                        name = "tool_instance", displayName = text("reference_kind_tool_instance"),
+                        description = text("field_type_reference_tool_instances_description"),
+                        type = FieldType.REFERENCE, alwaysVisible = false,
+                        config = mapOf(ReferenceTarget.TARGET to mapOf(ReferenceTarget.KINDS to listOf(ReferenceKind.TOOL_INSTANCE.name)))
+                    )),
+                    distinct = true
+                )
+            ), required = true)
         )
     }
 

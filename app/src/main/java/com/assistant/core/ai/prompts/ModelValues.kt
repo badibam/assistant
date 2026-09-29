@@ -1,6 +1,8 @@
 package com.assistant.core.ai.prompts
 
 import com.assistant.core.fields.FieldValueSchema
+import com.assistant.core.fields.ReferenceTarget
+import com.assistant.core.selection.Reference
 import com.assistant.core.utils.DateTimeConverter
 import org.json.JSONArray
 import org.json.JSONObject
@@ -48,6 +50,9 @@ object ModelValues {
      */
     fun fromModel(value: Any?, schema: JSONObject, zone: ZoneId): Any? =
         walk(value, schema) { format, leaf ->
+            // A reference sent back as it was read carries the name it was shown with: only
+            // its kind and id are stored
+            if (format == FieldValueSchema.REFERENCE) return@walk withoutName(leaf)
             if (leaf !is String) return@walk leaf
             when (format) {
                 FieldValueSchema.EPOCH_MILLIS -> DateTimeConverter.isoToTimestamp(leaf, zone)
@@ -56,11 +61,45 @@ object ModelValues {
             }
         }
 
+    /** The references [value] holds where [schema] marks one (FieldValueSchema.REFERENCE). */
+    fun references(value: Any?, schema: JSONObject): List<Reference> {
+        val found = mutableListOf<Reference>()
+        walk(value, schema) { format, node ->
+            if (format == FieldValueSchema.REFERENCE) ReferenceTarget.referenceOf(node)?.let { found.add(it) }
+            node
+        }
+        return found
+    }
+
+    /**
+     * [value] with each reference the [schema] marks given the current name of what it designates
+     * ([names]), or `"deleted": true` when that no longer exists: the model reads a reference as
+     * the screen shows it.
+     */
+    fun withReferenceNames(value: Any?, schema: JSONObject, names: Map<Reference, String?>): Any? =
+        walk(value, schema) { format, node ->
+            val reference = ReferenceTarget.referenceOf(node).takeIf { format == FieldValueSchema.REFERENCE } ?: return@walk node
+            val shown = linkedMapOf<String, Any?>("kind" to reference.kind.name)
+            reference.id?.let { shown["id"] = it }
+            names[reference]?.let { shown["name"] = it } ?: run { shown["deleted"] = true }
+            shown
+        }
+
+    private fun withoutName(node: Any): Any = when (node) {
+        is JSONObject -> JSONObject(node.toString()).apply { remove("name"); remove("deleted") }
+        is Map<*, *> -> node.filterKeys { it != "name" && it != "deleted" }
+        else -> node
+    }
+
     /**
      * Rebuild [value] along [schema]: objects by their properties, lists by their items, and a
-     * leaf through [convert] with the format its schema carries.
+     * leaf through [convert] with the format its schema carries. An object whose schema is marked
+     * as a reference goes through [convert] whole.
      */
     private fun walk(value: Any?, schema: JSONObject, convert: (String, Any) -> Any): Any? {
+        if (schema.optString("format") == FieldValueSchema.REFERENCE && value != null && value != JSONObject.NULL) {
+            return convert(FieldValueSchema.REFERENCE, value)
+        }
         // A variant: the branch whose selector the value holds. None or several leave the value
         // as it is, for the validation to name what is wrong with it.
         schema.optJSONArray("oneOf")?.let { branches ->

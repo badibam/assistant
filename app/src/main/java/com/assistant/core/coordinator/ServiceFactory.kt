@@ -9,6 +9,7 @@ import com.assistant.core.services.AppConfigService
 import com.assistant.core.services.BackupService
 import com.assistant.core.services.SchemaService
 import com.assistant.core.services.IconService
+import com.assistant.core.services.ReferenceService
 import com.assistant.core.ai.services.AISessionService
 import com.assistant.core.ai.services.AIProviderConfigService
 import com.assistant.core.ai.services.AutomationService
@@ -33,6 +34,7 @@ object ServiceFactory {
             BackupService::class -> BackupService(context)
             SchemaService::class -> SchemaService(context)
             IconService::class -> IconService(context)
+            ReferenceService::class -> ReferenceService(context)
             AISessionService::class -> AISessionService(context)
             AIProviderConfigService::class -> AIProviderConfigService(context)
             AutomationService::class -> AutomationService(context)

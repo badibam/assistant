@@ -334,6 +334,10 @@ fun FieldInput(
         com.assistant.core.fields.FieldType.DURATION -> {
             DurationInput(fieldDef, value, onChange, context, required)
         }
+
+        com.assistant.core.fields.FieldType.REFERENCE -> {
+            ReferenceInput(fieldDef, value, onChange, context, required)
+        }
     }
 }
 

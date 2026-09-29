@@ -27,6 +27,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import com.assistant.core.utils.JsonUtils
+import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.ReferenceTarget
+import com.assistant.core.selection.ReferenceKind
 import org.json.JSONObject
 import com.assistant.core.icons.Icons
 
@@ -285,11 +288,25 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             data = toolType.getEntryFields(config, context).data,
             extra = config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
         )
+        val old = fieldsOf(JSONObject(tool.config_json))
+        val entries = database.toolDataDao().getByToolInstance(tool.id)
+        // The tool instance of each entry the entries' references designate, for a field that
+        // narrows the tools it takes
+        val dataReferences = old.data.map { it.definition }.filter { it.type == FieldType.REFERENCE }
+        val extraReferences = old.extra.filter { it.type == FieldType.REFERENCE }
+        val referenced = entries.flatMap { entry ->
+            val data = JsonUtils.toMap(entry.data)
+            val extra = JsonUtils.toMap(entry.extra?.takeIf { it.isNotBlank() })
+            dataReferences.mapNotNull { ReferenceTarget.referenceOf(data[it.name]) } +
+                extraReferences.mapNotNull { ReferenceTarget.referenceOf(extra[it.name]) }
+        }.filter { it.kind == ReferenceKind.ENTRY }.mapNotNull { it.id }.distinct()
+        val instances = referenced.associateWith { database.toolDataDao().getById(it)?.toolInstanceId }
         return EntryMigration.plan(
-            old = fieldsOf(JSONObject(tool.config_json)),
+            old = old,
             new = fieldsOf(JSONObject(newConfigJson)),
-            entries = database.toolDataDao().getByToolInstance(tool.id),
-            fill = fill
+            entries = entries,
+            fill = fill,
+            entryInstance = { instances[it] }
         )
     }
 

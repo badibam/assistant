@@ -24,6 +24,12 @@ object FieldValueSchema {
     const val DURATION_MILLIS = "duration-millis"
 
     /**
+     * The mark of a value that is a reference to another thing of the app, `{kind, id}`: who
+     * shows it to the model adds the thing's current name (ReferenceNames).
+     */
+    const val REFERENCE = "reference"
+
+    /**
      * The schema of a field's value as a reader gets it -- the AI, an entry or a setting alike:
      * what it is held to, its label as the title, and in its description what the value means
      * ([reading]) before what the field's own description says, and its default value, which a
@@ -80,6 +86,13 @@ object FieldValueSchema {
                     options.takeIf { it.isNotEmpty() }?.let { text("field_reading_options").format(it) },
                     text("field_reading_open").takeIf { choice.open },
                     text("field_reading_ordered").takeIf { choice.shape == ChoiceShape.ORDERED }
+                )
+            }
+            FieldType.REFERENCE -> {
+                val target = ReferenceTarget.fromConfig(config)
+                listOfNotNull(
+                    text("field_reading_reference").format(target.kinds.joinToString(", ") { it.name }),
+                    target.toolInstances.takeIf { it.isNotEmpty() }?.let { text("field_reading_reference_tools").format(it.joinToString(", ")) }
                 )
             }
             else -> emptyList()
@@ -268,6 +281,25 @@ object FieldValueSchema {
                     // the model show it as ISO while the stored form stays a number. A plain
                     // NUMBER field carries no such mark and stays a number on both sides.
                     put("format", EPOCH_MILLIS)
+                    if (fieldDef.description != null) {
+                        put("description", fieldDef.description)
+                    }
+                }
+            }
+
+            FieldType.REFERENCE -> {
+                JSONObject().apply {
+                    // The thing's kind and id, never its name: the kinds the field takes, an id
+                    // for anything but the app (FieldValueValidator), whose existence the service
+                    // checks when the value is written
+                    put("type", "object")
+                    put("properties", JSONObject()
+                        .put("kind", JSONObject().put("type", "string")
+                            .put("enum", JSONArray(ReferenceTarget.fromConfig(fieldDef.config).kinds.map { it.name })))
+                        .put("id", JSONObject().put("type", "string").put("minLength", 1)))
+                    put("required", JSONArray().put("kind"))
+                    put("additionalProperties", false)
+                    put("format", REFERENCE)
                     if (fieldDef.description != null) {
                         put("description", fieldDef.description)
                     }

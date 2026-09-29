@@ -58,6 +58,9 @@ object MigrationPolicy {
 
                 // Remove the field only from the entries whose value no longer fits the config
                 is FieldChange.ConfigRestricted -> MigrationStrategy.STRIP_FIELD_IF_VALUE
+
+                // Remove the field only from the entries whose reference the field no longer takes
+                is FieldChange.ReferenceTargetNarrowed -> MigrationStrategy.STRIP_FIELD_IF_VALUE
             }
         }
     }

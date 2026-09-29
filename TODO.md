@@ -4,6 +4,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
+- Implémenter les outils manquants (`docs/design/missing-tools.md`), par étapes : la sélection du cœur et RÉFÉRENCE sont faites ; restent la lecture du cœur (`readings`, `READING`), les variables, les Données structurées avec l'import, puis Objectif et le Questionnaire. Les sélecteurs recomposés viennent avec la première étape qui les montre : la brique Instant, et la brique Chose, une seule saisie pour le pointeur et la RÉFÉRENCE (aujourd'hui `PointerSelector` et `ReferencePicker`).
 - DeepSeek fait précéder son JSON de texte (une phrase, ou `<thinking>…</thinking>`), malgré l'interdit du L1 : un appel perdu par `FORMAT_ERROR` à chaque fois (3 sur 9 réponses le 2026-09-28). Essayer dans le L1 « ta réponse commence par `{` », et un `FORMAT_ERROR` qui nomme le texte trouvé avant le `{` au lieu de « format invalide ».
 - L'IA utilise dans une réponse un identifiant qu'une action de cette même réponse crée (`"zone_id": "PLACEHOLDER_ZONE"` avec le `CREATE_ZONE` qui précède) : les actions échouent et se refont au tour suivant. Dire dans le L1 qu'un identifiant créé n'est connu qu'au tour suivant.
 - Deux messages `FORMAT_ERROR` écrits en dur en français dans `AIEventProcessor.parseAIResponse` (« Erreurs de format JSON : », « Erreur technique lors du parsing : ») : les passer au système de strings, comme celui de l'échec de lecture du JSON.
@@ -13,7 +14,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En attente d'un déclencheur
 
-- Le type de champ RÉFÉRENCE (`docs/design/unified-fields.md`) — au premier outil qui désigne autre chose (Données structurées, Graphique, les variables, Alerte, Objectif) ; le reste du système de champs est fait. La cible du pointeur devient alors une RÉFÉRENCE, `TOOL` y devenant `TOOL_INSTANCE`.
 - Une entrée précise comme cible du pointeur (conçue dans `docs/design/pointer.md` : étiquette par type d'outil, liste dans le sélecteur, relecture de l'entrée) — si le besoin apparaît : peut-être superflu, un pointeur d'outil filtré couvre la plupart des cas. La cible APP attend que l'IA sache lire les réglages de l'app.
 
 - Les exécutions d'une automation décrites comme des entrées (champs déclarés, schéma généré, dates en ISO par ce schéma) — le jour où l'IA les lit ; ce ne sont pas des réglages.
