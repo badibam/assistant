@@ -95,6 +95,20 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         selectedZoneId = zoneId
         onToolOpened()
     }
+    // A tool asked for from any screen, on one of its entries: handed to its zone as above
+    LaunchedEffect(Unit) {
+        com.assistant.core.tools.ToolRequests.requests.collect { (toolId, entryId) ->
+            val tool = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolId))
+            val zoneId = (tool.data?.get("tool_instance") as? Map<*, *>)?.get("zone_id") as? String
+            if (zoneId == null) {
+                LogManager.ui("MainScreen: tool $toolId asked for not found: ${tool.error}", "WARN")
+                errorMessage = tool.error ?: s.shared("service_error_tool_instance_not_found")
+                return@collect
+            }
+            opening = toolId to entryId
+            selectedZoneId = zoneId
+        }
+    }
     var showHistory by rememberSaveable { mutableStateOf(false) }
     var showExitConfirm by remember { mutableStateOf(false) }
     

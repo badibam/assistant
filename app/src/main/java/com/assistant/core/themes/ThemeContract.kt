@@ -113,6 +113,22 @@ interface ThemeContract {
     @Composable
     fun Gauge(fraction: Float)
 
+    /**
+     * The style of a chart's texts: graduations, titles, legends. The core measures them in it to
+     * lay the chart out (ChartSceneBuilder), so the theme draws them in it too.
+     */
+    @Composable
+    fun chartTextStyle(): androidx.compose.ui.text.TextStyle
+
+    /**
+     * A chart laid out by the core (ChartScene), drawn [modifier] sized to it: every shape at its
+     * place, as its role asks — marks in the palette's colors (a name of TagColor, or a mix of
+     * two for a quantity), axes and texts in the theme's ink, a hole marked as missing, a value
+     * past fixed bounds as a mark at the edge.
+     */
+    @Composable
+    fun ChartScene(scene: com.assistant.core.charts.ChartScene, modifier: Modifier)
+
     /** A horizontal line parting two parts of a screen or a card. */
     @Composable
     fun Divider()

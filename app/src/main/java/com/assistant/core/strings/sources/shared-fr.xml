@@ -1735,4 +1735,10 @@
     <string name="chart_error_value">%1$s : %2$s n\'est pas une valeur que ce canal prend.</string>
     <string name="chart_axis_share">Part de %1$s</string>
     <string name="chart_percent">%1$s %%</string>
+    <string name="chart_format_hour">HH:mm</string>
+    <string name="chart_format_day">d MMM</string>
+    <string name="chart_format_month">MMM</string>
+    <string name="chart_format_year">yyyy</string>
+    <string name="chart_open_entry">Ouvrir l\'entrée</string>
+    <string name="chart_entry_not_found">Cette entrée n\'existe plus.</string>
 </resources>
