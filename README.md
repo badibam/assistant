@@ -96,6 +96,7 @@ cd assistant
 - **Note** : Notes individuelles avec titre et contenu
 - **Liste** : Ce qui reste à faire (courses, tâches, check-list) : un élément est un nom et les champs de la liste, coché avec sa date, réordonné en glissant ; les cochés se décochent d'un geste, ou disparaissent dès qu'on les coche si la liste le demande
 - **Objectif** : Un objectif jugé par le compte de ses critères, une tentative par période : critères lus dans vos entrées ou vos variables, ou saisis ; au moins N, indispensables ; validé en réussite ou en échec, expiré sinon, rouvrable
+- **Questionnaire** : Des questions une par écran, à la demande ou sur invitation planifiée, par vous ou avec l'IA dans une conversation ; à remplir, rempli ou ignoré
 - **Données structurées** : Des fiches faites de vos champs, chacune retrouvée par son nom (aliments, livres, contacts) : un tableau trié, une fiche par écran, une recherche et des filtres
 - **Messages** : Une instance = un message. Sa config porte la part commune de chaque envoi et sa récurrence ; ses entrées sont les envois (à venir, partis, expirés, annulés)
 

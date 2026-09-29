@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings of the questionnaire tooltype -->
+    <string name="display_name">Questionnaire</string>
+    <string name="description">Questions answered one per screen, on demand or at planned times, by you or with the AI</string>
+    <string name="field_schedule">Invitations</string>
+    <string name="field_enabled">On</string>
+    <string name="schema_enabled">Switched off, no invitation is created</string>
+    <string name="field_ai_message">Message to the AI</string>
+    <string name="schema_ai_message">What a chat « with the AI » opens with, to send or change; the pointer to what to fill goes with it</string>
+    <string name="ai_message_default">Ask me the questions of this questionnaire one at a time. If an answer is vague, ask again. Before recording, show me the values you will write, then fill the entry and mark it filled.</string>
+    <string name="field_status">State</string>
+    <string name="schema_status">to_fill, filled or ignored; an entry is filled by the questionnaire's operation complete, after its answers are written</string>
+    <string name="status_to_fill">To fill</string>
+    <string name="status_filled">Filled</string>
+    <string name="status_ignored">Ignored</string>
+    <string name="field_filled_at">Filled on</string>
+    <string name="schema_filled_at">When the entry was filled, which can be later than the moment it is about</string>
+    <string name="field_entry">Entry</string>
+    <string name="operation_complete">Marks an entry filled, once its answers are written (UPDATE_DATA); gaps are allowed</string>
+    <string name="operation_ignore">Marks an entry ignored: a gap chosen, kept in the history</string>
+    <string name="operation_ignore_all">Ignores every entry still to fill</string>
+    <string name="verbalize_complete">Filling a questionnaire</string>
+    <string name="verbalize_ignore">Ignoring a questionnaire</string>
+    <string name="verbalize_ignore_all">Ignoring the questionnaires to fill</string>
+    <string name="notification_to_fill">A questionnaire is to fill</string>
+    <string name="action_fill_now">Fill in now</string>
+    <string name="action_with_ai">With the AI</string>
+    <string name="action_fill">Fill</string>
+    <string name="action_ignore">Ignore</string>
+    <string name="action_ignore_all">Ignore all</string>
+    <string name="tab_to_fill">To fill (%1$d)</string>
+    <string name="history">History</string>
+    <string name="history_empty">Not answered yet</string>
+    <string name="passing_title">Question %1$d / %2$d</string>
+    <string name="no_question">This questionnaire has no question yet: add fields in its settings</string>
+    <string name="action_previous">Previous</string>
+    <string name="action_next">Next</string>
+    <string name="action_finish">Finish</string>
+    <string name="action_edit">Change</string>
+    <string name="tile_last">Answered %1$s</string>
+</resources>

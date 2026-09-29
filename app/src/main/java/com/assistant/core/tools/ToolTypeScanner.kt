@@ -7,6 +7,7 @@ import com.assistant.tools.messages.MessageToolType
 import com.assistant.tools.list.ListToolType
 import com.assistant.tools.structured.StructuredToolType
 import com.assistant.tools.goal.GoalToolType
+import com.assistant.tools.questionnaire.QuestionnaireToolType
 
 /**
  * Simple registry that lists known tool types
@@ -22,7 +23,8 @@ object ToolTypeScanner {
             "messages" to MessageToolType,
             "list" to ListToolType,
             "structured" to StructuredToolType,
-            "goal" to GoalToolType
+            "goal" to GoalToolType,
+            "questionnaire" to QuestionnaireToolType
         )
     }
 }

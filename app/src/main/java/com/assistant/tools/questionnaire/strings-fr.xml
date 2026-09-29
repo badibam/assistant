@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings of the questionnaire tooltype -->
+    <string name="display_name">Questionnaire</string>
+    <string name="description">Des questions posées une par écran, à la demande ou à heures prévues, par vous ou avec l\'IA</string>
+    <string name="field_schedule">Invitations</string>
+    <string name="field_enabled">Actif</string>
+    <string name="schema_enabled">Arrêté, aucune invitation n\'est créée</string>
+    <string name="field_ai_message">Message à l\'IA</string>
+    <string name="schema_ai_message">Ce avec quoi s\'ouvre une conversation « avec l\'IA », à envoyer ou modifier ; le pointeur vers ce qu\'il faut remplir l\'accompagne</string>
+    <string name="ai_message_default">Pose-moi les questions de ce questionnaire une à la fois. Si une réponse est floue, relance-moi. Avant d\'enregistrer, montre-moi les valeurs que tu vas écrire, puis remplis l\'entrée et marque-la remplie.</string>
+    <string name="field_status">État</string>
+    <string name="schema_status">to_fill, filled ou ignored ; une entrée est remplie par l\'opération complete du questionnaire, après que ses réponses sont écrites</string>
+    <string name="status_to_fill">À remplir</string>
+    <string name="status_filled">Rempli</string>
+    <string name="status_ignored">Ignoré</string>
+    <string name="field_filled_at">Rempli le</string>
+    <string name="schema_filled_at">Quand l\'entrée a été remplie, qui peut être plus tard que le moment qu\'elle décrit</string>
+    <string name="field_entry">Entrée</string>
+    <string name="operation_complete">Marque une entrée remplie, une fois ses réponses écrites (UPDATE_DATA) ; les trous sont permis</string>
+    <string name="operation_ignore">Marque une entrée ignorée : un trou assumé, gardé dans l\'historique</string>
+    <string name="operation_ignore_all">Ignore toutes les entrées encore à remplir</string>
+    <string name="verbalize_complete">Remplissage d\'un questionnaire</string>
+    <string name="verbalize_ignore">Questionnaire ignoré</string>
+    <string name="verbalize_ignore_all">Questionnaires à remplir ignorés</string>
+    <string name="notification_to_fill">Un questionnaire est à remplir</string>
+    <string name="action_fill_now">Remplir maintenant</string>
+    <string name="action_with_ai">Avec l\'IA</string>
+    <string name="action_fill">Remplir</string>
+    <string name="action_ignore">Ignorer</string>
+    <string name="action_ignore_all">Tout ignorer</string>
+    <string name="tab_to_fill">À remplir (%1$d)</string>
+    <string name="history">Historique</string>
+    <string name="history_empty">Pas encore rempli</string>
+    <string name="passing_title">Question %1$d / %2$d</string>
+    <string name="no_question">Ce questionnaire n\'a pas encore de question : ajoutez des champs dans ses réglages</string>
+    <string name="action_previous">Précédente</string>
+    <string name="action_next">Suivante</string>
+    <string name="action_finish">Terminer</string>
+    <string name="action_edit">Modifier</string>
+    <string name="tile_last">Rempli %1$s</string>
+</resources>

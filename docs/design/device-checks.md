@@ -125,3 +125,10 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Un objectif récurrent quotidien : une tentative par jour ; à la fin de la période, une notification et « À valider (1) » ; sans validation, expirée après le délai. Arrêté, plus aucune ne s'ouvre.
 - Faire valider par l'IA : « par l'IA ».
 
+## Questionnaire
+
+- Un questionnaire de trois questions (échelle, texte, oui/non) : « Remplir maintenant » pose une question par écran ; quitter en route n'écrit rien ; terminer crée l'entrée remplie, datée de maintenant.
+- Planifié chaque jour à une heure passée : au tick, une entrée « à remplir » datée de cette heure et une notification ; répondre à la première question puis quitter : la réponse reste, et « Remplir » reprend à la deuxième. Une absence de plusieurs jours : autant d'entrées, « Tout ignorer » les passe en ignorées.
+- « Avec l'IA » sur une entrée à remplir : le chat s'ouvre, sa saisie porte le message et les pointeurs vers l'outil et l'entrée ; envoyé, l'IA pose les questions, écrit les réponses et marque l'entrée remplie.
+- Toucher une entrée de l'historique : ses réponses en entier, modifiables.
+
