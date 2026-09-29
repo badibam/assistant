@@ -11,6 +11,7 @@ import com.assistant.core.services.SchemaService
 import com.assistant.core.services.IconService
 import com.assistant.core.services.ReadingService
 import com.assistant.core.services.ReferenceService
+import com.assistant.core.services.VariableService
 import com.assistant.core.ai.services.AISessionService
 import com.assistant.core.ai.services.AIProviderConfigService
 import com.assistant.core.ai.services.AutomationService
@@ -36,6 +37,7 @@ class ServiceRegistry(private val context: Context) {
         "icons" to IconService::class,
         "references" to ReferenceService::class,
         "readings" to ReadingService::class,
+        "variables" to VariableService::class,
         "ai_sessions" to AISessionService::class,
         "ai_provider_config" to AIProviderConfigService::class,
         "automations" to AutomationService::class,

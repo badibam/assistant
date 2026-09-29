@@ -21,7 +21,9 @@ import org.json.JSONObject
  * The core's reading: one value from the entries of one tool instance (docs/DATA.md, « Lecture
  * du cœur »), the door every reader goes through -- a goal's criterion, a variable's term.
  *
- * - read: `selection` (a tool instance, its period and filters, relative dates resolved against
+ * - read, a variable: `variable` (its name) and `at`, the instants to read it at (milliseconds);
+ *   a value or a failure per instant, in the same order (the variables service computes it).
+ * - read, a field: `selection` (a tool instance, its period and filters, relative dates resolved against
  *   `reference`, milliseconds, which the reader gives: a goal's attempt end, the instant a
  *   variable is read at), `field` (a path, absent to count) and `reduction`. It gives `value` with
  *   `field`, the type and settings of the result, or `failure` with its causes as data: a reading
@@ -40,6 +42,15 @@ class ReadingService(private val context: Context) : ExecutableService {
     }
 
     private suspend fun read(params: JSONObject): OperationResult {
+        // A variable: computed at each instant asked, by the variables service
+        params.optString("variable").takeIf { it.isNotEmpty() }?.let { name ->
+            val result = Coordinator(context).processUserAction("variables.evaluate", mapOf(
+                "name" to name,
+                "at" to (params.optJSONArray("at")?.let { JsonUtils.toList(it) }
+                    ?: return OperationResult.error(s.shared("service_error_reading_param").format("at")))
+            ))
+            return if (result.isSuccess) OperationResult.success(result.data ?: emptyMap()) else OperationResult.error(result.error ?: "")
+        }
         val selection = try {
             EntrySelection.fromJson(params.optJSONObject("selection")
                 ?: return OperationResult.error(s.shared("service_error_reading_param").format("selection"))) { s.shared(it) }

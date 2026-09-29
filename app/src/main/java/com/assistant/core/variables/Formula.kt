@@ -230,5 +230,8 @@ data class Cause(val reason: String, val term: String? = null, val field: String
         const val VARIABLE_DELETED = "VARIABLE_DELETED"
         const val REFERENCE_BROKEN = "REFERENCE_BROKEN"
         const val LOOP = "LOOP"
+        const val UNKNOWN_NAME = "UNKNOWN_NAME"
+        const val UNREADABLE = "UNREADABLE"
+        const val NOT_A_NUMBER = "NOT_A_NUMBER"
     }
 }

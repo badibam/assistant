@@ -72,6 +72,15 @@ object DataChangeNotifier {
     }
 
     /**
+     * Notify that variables have changed (created, updated, deleted). Any of them may read
+     * another, in any zone: every screen showing variables rereads them.
+     */
+    fun notifyVariablesChanged() {
+        LogManager.coordination("DataChangeNotifier: variables changed", "DEBUG")
+        _changes.tryEmit(DataChangeEvent.VariablesChanged)
+    }
+
+    /**
      * Notify app configuration changed
      * Triggers settings screens reload
      */
@@ -119,6 +128,9 @@ sealed class DataChangeEvent {
      * App configuration has changed
      */
     object AppConfigChanged : DataChangeEvent()
+
+    /** Variables have changed, in any zone */
+    object VariablesChanged : DataChangeEvent()
 
     /**
      * AI sessions have changed (created, updated, completed)
