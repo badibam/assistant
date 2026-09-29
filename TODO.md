@@ -9,7 +9,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - L'IA utilise dans une réponse un identifiant qu'une action de cette même réponse crée (`"zone_id": "PLACEHOLDER_ZONE"` avec le `CREATE_ZONE` qui précède) : les actions échouent et se refont au tour suivant. Dire dans le L1 qu'un identifiant créé n'est connu qu'au tour suivant.
 - Deux messages `FORMAT_ERROR` écrits en dur en français dans `AIEventProcessor.parseAIResponse` (« Erreurs de format JSON : », « Erreur technique lors du parsing : ») : les passer au système de strings, comme celui de l'échec de lecture du JSON.
 - `LogsScreen` a sa copie privée de `formatRelativeTime`, qui fait ce que fait `FormatUtils.formatRelativeTimePast` : passer par cette dernière et supprimer la copie.
-- La commande IA `TOOL_STATS` est un bouchon (`CommandTransformer.transformToolStatsCommand` rend `null`, `tool_data.stats` ne fait que compter) : la supprimer, ou la brancher sur la lecture de champ de `readings.read` quand elle existera (`docs/design/missing-tools.md`).
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur

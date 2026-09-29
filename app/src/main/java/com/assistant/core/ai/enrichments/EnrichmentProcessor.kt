@@ -308,7 +308,7 @@ class EnrichmentProcessor(
         val queries = mutableListOf<DataCommand>()
         val baseParams = mapOf("id" to toolInstanceId)
 
-        // USE enrichment: TOOL_CONFIG + SCHEMA(config) + SCHEMA(data) + TOOL_DATA_SAMPLE + TOOL_STATS
+        // USE enrichment: TOOL_CONFIG + SCHEMA(config) + SCHEMA(data) + TOOL_DATA_SAMPLE
         queries.add(DataCommand(
             id = buildQueryId("tool_config", baseParams),
             type = "TOOL_CONFIG",
@@ -322,12 +322,6 @@ class EnrichmentProcessor(
         queries.add(DataCommand(
             id = buildQueryId("tool_data_sample", baseParams),
             type = "TOOL_DATA_SAMPLE",
-            params = baseParams,
-            isRelative = isRelative
-        ))
-        queries.add(DataCommand(
-            id = buildQueryId("tool_stats", baseParams),
-            type = "TOOL_STATS",
             params = baseParams,
             isRelative = isRelative
         ))

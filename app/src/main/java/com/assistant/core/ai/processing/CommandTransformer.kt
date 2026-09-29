@@ -67,7 +67,6 @@ object CommandTransformer {
                     "SCHEMA" -> transformSchemaCommand(command)
                     "TOOL_CONFIG" -> transformToolConfigCommand(command)
                     "TOOL_DATA" -> transformToolDataCommand(command, context, s, reference)
-                    "TOOL_STATS" -> transformToolStatsCommand(command)
                     "TOOL_DATA_SAMPLE" -> transformToolDataSampleCommand(command)
                     "ZONE_CONFIG" -> transformZoneConfigCommand(command)
                     "ZONES" -> transformZonesCommand(command)
@@ -208,17 +207,6 @@ object CommandTransformer {
         )
     }
 
-
-    private fun transformToolStatsCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("transformToolStatsCommand() - STUB implementation", "DEBUG")
-
-        // TODO: Transform TOOL_STATS command to tool_data.stats call
-        // - Similar to TOOL_DATA but with aggregate functions
-        // - Generate appropriate groupBy and functions parameters
-        // - IMPORTANT: Convert its filters like TOOL_DATA's (FilterValues)
-
-        return null
-    }
 
     private fun transformToolDataSampleCommand(command: DataCommand): ExecutableCommand? {
         LogManager.aiPrompt("transformToolDataSampleCommand() - STUB implementation", "DEBUG")
