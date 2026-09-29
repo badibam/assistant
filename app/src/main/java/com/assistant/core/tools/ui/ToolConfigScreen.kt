@@ -177,7 +177,7 @@ fun ToolConfigScreen(
         }
 
         // Values given for a former version of the change answer nothing about this one
-        SettingsForm(nodes, config, { config = it; fill = JSONObject() }, context, editors)
+        SettingsForm(nodes, config, { config = it; fill = JSONObject() }, context, editors, rows = toolType.getRowFields())
 
         UI.ToolConfigActions(
             isEditing = isEditing,

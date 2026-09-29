@@ -1042,6 +1042,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val config = JSONObject(tool.config_json)
         val toolType = ToolTypeManager.getToolType(tool.tooltype)
             ?: return WriteTarget.Refused(s.shared("service_error_data_schema_not_found").format("", tool.tooltype))
+        // A tool that shows others' entries keeps none of its own
+        if (!toolType.keepsEntries()) return WriteTarget.Refused(s.shared("service_error_tool_keeps_no_entries").format(toolType.getDisplayName(context)))
         return WriteTarget.Ready(
             tool, config, Schema(
                 id = "entries:${tool.id}",

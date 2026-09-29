@@ -70,10 +70,12 @@ object ToolConfigSettings {
 
     /**
      * The whole config of a tool of [toolType]: the general settings, its type's, then the user's
-     * own fields, which come after the entries' main field they add to.
+     * own fields, which come after the entries' main field they add to — for a tool that keeps
+     * entries only.
      */
     fun nodes(toolType: ToolTypeContract, context: Context): List<SettingNode> =
-        generalNodes(toolType, context) + toolType.getConfigSettings(context) + extraFieldsNodes(toolType, context)
+        generalNodes(toolType, context) + toolType.getConfigSettings(context) +
+            (if (toolType.keepsEntries()) extraFieldsNodes(toolType, context) else emptyList())
 
     /** What a new tool of [toolType] starts from: its declared defaults (SettingDefaults). */
     fun defaults(toolType: ToolTypeContract, context: Context): org.json.JSONObject =

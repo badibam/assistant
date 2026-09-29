@@ -188,6 +188,27 @@ interface ToolTypeContract {
     fun refuseChange(entry: ToolDataEntity, context: Context): String? = null
 
     /**
+     * Whether a tool of this type keeps entries of its own. One that shows others' (a chart) has
+     * none: no fields of the user's in its config, and every write of an entry is refused.
+     */
+    fun keepsEntries(): Boolean = true
+
+    /**
+     * The fields of the rows this tool type's config describes, where a setting chooses among
+     * them (SettingNode.Field.rowField): a chart's columns, per layer. Null for a config without
+     * rows, which then declares no such setting.
+     */
+    fun getRowFields(): com.assistant.core.fields.settings.RowFields? = null
+
+    /**
+     * Why [config] may not be stored, beyond what its schema says, or null when it may: what only
+     * reading the app tells, such as a chart's column that none of its sources gives.
+     * ToolInstanceService asks it on every create and update, whoever the caller, once the schema
+     * holds and the config is complete.
+     */
+    suspend fun refuseConfig(config: JSONObject, context: Context): String? = null
+
+    /**
      * Get scheduler instance for this tool type.
      *
      * Discovery pattern: CoreScheduler discovers schedulers via ToolTypeManager,

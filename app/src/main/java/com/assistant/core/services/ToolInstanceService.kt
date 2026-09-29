@@ -121,6 +121,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             is IconCheck.Kept -> iconCheck.configJson
         }
         checkConfig(toolType, storedConfigJson)?.let { return OperationResult.error(it) }
+        ToolTypeManager.getToolType(toolType)?.refuseConfig(JSONObject(storedConfigJson), context)?.let { return OperationResult.error(it) }
 
         val newToolInstance = ToolInstance(
             zone_id = zoneId,
@@ -197,6 +198,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 configJson = type.completeConfig(JSONObject(configJson), JSONObject(existingTool.config_json)).toString()
             }
             checkConfig(existingTool.tooltype, configJson)?.let { return OperationResult.error(it) }
+            ToolTypeManager.getToolType(existingTool.tooltype)?.refuseConfig(JSONObject(configJson), context)?.let { return OperationResult.error(it) }
         }
 
         // What the change does to the recorded entries: refused while it loses something the
