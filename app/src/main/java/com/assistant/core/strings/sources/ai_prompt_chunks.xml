@@ -297,11 +297,34 @@ Lists every zone.
 
 ### APP_STATE
 
-Retrieves the whole structure of the application: the zones, and the tools of each.
+Retrieves the whole structure of the application: the zones, the tools of each, and the variables.
 
 **Parameters**: none
 
-Use it to learn which zones exist and which tools they hold. For the complete configuration of one tool, use TOOL_CONFIG.
+Use it to learn which zones exist and which tools and variables they hold. For the complete configuration of one tool, use TOOL_CONFIG.
+
+### VARIABLES
+
+Lists the variables: named values the app computes from the entries each time they are read (a daily calorie total, a balance, a goal written once). Each comes with its zone, its formula written with the names it reads, its terms and its `field` (type and settings of its value), never its value.
+
+**Parameters**:
+
+- `zone_id` (string, optional): the variables of that zone alone
+
+### READING
+
+Reads a variable\'s value at one or several instants, each of its terms read relative to that instant.
+
+**Parameters**:
+
+- `variable` (string, **required**): its name
+- `at` (array, optional): the instants, each an ISO 8601 date-time or a relative date; now when left out
+
+Returns `values`, one per instant in the same order: `{ "at", "value" }`, or `{ "at", "failure": { "causes", "message" } }` when it cannot be computed (no entry, an entry without its value, a tool or a variable deleted): tell the user why rather than guess a number. A field of the entries you read yourself with TOOL_DATA.
+
+```json
+{ "type": "READING", "params": { "variable": "kcal", "at": [{ "relative": "NOW" }, { "relative": { "unit": "DAY", "offset": -1, "edge": "END" } }] } }
+```
 
 ### CURRENT_DATETIME
 
@@ -464,7 +487,70 @@ Deletes a zone, with its tools and their entries.
 
 **Parameters**:
 
-- `zone_id` (string, **required**)]]></string>
+- `zone_id` (string, **required**)
+
+### CREATE_VARIABLE
+
+Creates a variable in a zone. Its name is unique in the app and can be written in a formula (letters, digits, `_`).
+
+**Parameters**:
+
+- `zone_id` (string, **required**), `name` (string, **required**), `group` (string, optional): a group of the zone
+- `definition` (object, **required**), one of:
+  - a constant: `{ "kind": "CONSTANT", "value": 2100, "field": { "type": "NUMERIC", "config": { "decimals": 0, "unit": "kcal" } } }`
+  - a formula: `{ "kind": "FORMULA", "formula": "...", "terms": { ... }, "field"?: ... }`
+
+A formula uses `+ - * /`, parentheses, numbers, `hours()`, `minutes()`, `seconds()` (a duration as a number), the names of its terms, and other variables by their name. Each term is:
+
+- a reading: `{ "reading": { "selection": { "target": { "kind": "TOOL_INSTANCE", "id": "..." }, "period"?: ..., "filters"?: [...] }, "field": "data.kcal", "reduction": "SUM" } }`; the period is relative to the instant the variable is read at. Reductions: LAST, SUM, AVERAGE, MIN, MAX (a number, a duration), EARLIEST, LATEST (a date), COUNT (no field)
+- a reading computed in each entry: `"per_entry": "quantity * food.kcal_100g / 100"` instead of `field`, where a name is a field of the entry and `ref.field` reads through its REFERENCE
+- a constant: `{ "constant": 100 }`; another variable: `{ "variable": "variable_id" }`
+
+`field` (NUMERIC, SCALE or DURATION) is deduced from what the formula reads when you leave it out; give it to add a unit. The app refuses an unknown name, an unreadable term, a variable that would read itself.
+
+```json
+{
+  "type": "CREATE_VARIABLE",
+  "params": {
+    "zone_id": "zone_food",
+    "name": "kcal",
+    "definition": {
+      "kind": "FORMULA",
+      "formula": "eaten",
+      "terms": {
+        "eaten": {
+          "reading": {
+            "selection": {
+              "target": { "kind": "TOOL_INSTANCE", "id": "tracking_meals_123" },
+              "period": { "start": { "relative": { "unit": "DAY", "offset": 0, "edge": "START" } }, "end": { "relative": "NOW" } }
+            },
+            "per_entry": "quantity * food.kcal_100g / 100",
+            "reduction": "SUM"
+          }
+        }
+      },
+      "field": { "type": "NUMERIC", "config": { "decimals": 0, "unit": "kcal" } }
+    }
+  }
+}
+```
+
+### UPDATE_VARIABLE
+
+Changes a variable. Only what you give changes; a `definition` given replaces the whole of it.
+
+**Parameters**:
+
+- `variable_id` (string, **required**)
+- `name`, `definition`, `group`, `zone_id` (optional)
+
+### DELETE_VARIABLE
+
+Deletes a variable. A formula naming it no longer computes.
+
+**Parameters**:
+
+- `variable_id` (string, **required**)]]></string>
 
     <!-- C.3 Response format [DEGREE 2] -->
     <string name="ai_chunk_commands_response_format"><![CDATA[## Format of the answers to the commands

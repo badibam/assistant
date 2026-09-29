@@ -99,3 +99,10 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Même champ sans restriction : choisir d'abord un outil puis son entrée. Avec les sortes Zone et Outil : leurs listes s'affichent.
 - Retirer l'outil autorisé de la config : la confirmation compte les valeurs retirées.
 - Faire lire ces entrées par l'IA : chaque référence arrive avec `name` ; lui faire écrire une référence vers un id inventé : refusée avec la raison.
+
+## Variables
+
+- Faire créer par l'IA une variable « kcal du jour » (somme par entrée de Repas à travers la référence aliment) : elle apparaît dans `APP_STATE` d'une nouvelle session, `VARIABLES` la liste avec sa formule sous les noms actuels, `READING` rend sa valeur maintenant et la veille ; un repas sans aliment la fait échouer en le disant.
+- Faire écrire à l'IA une formule avec un nom inconnu, ou deux variables qui se lisent l'une l'autre : refusées, le chemin de la boucle nommé.
+- Après la migration 47 : l'app démarre, une sauvegarde exportée contient `variables` et se réimporte.
+

@@ -791,6 +791,24 @@ class CommandExecutor(private val context: Context) {
                     if (key !in reordered) reordered[key] = value
                 }
             }
+            // A variable's values: each instant in ISO 8601, a duration too
+            "readings", "variables" -> {
+                val duration = (data["field"] as? Map<*, *>)?.get("type") == "DURATION"
+                (data["values"] as? List<*>)?.let { values ->
+                    reordered["values"] = values.map { row ->
+                        (row as Map<*, *>).entries.associate { (key, value) ->
+                            key.toString() to when {
+                                key == "at" && value is Number -> DateTimeConverter.timestampToISO(value.toLong(), timezone)
+                                key == "value" && duration && value is Number -> java.time.Duration.ofMillis(value.toLong()).toString()
+                                else -> value
+                            }
+                        }
+                    }
+                }
+                // A variable's terms: the fixed bounds of their periods in ISO 8601
+                (data["variables"] as? List<*>)?.let { list -> reordered["variables"] = list.map { variableForModel(it, timezone) } }
+                data["variable"]?.let { reordered["variable"] = variableForModel(it, timezone)!! }
+            }
             "zones" -> {
                 // List or single zone
                 data["id"]?.let { reordered["id"] = it }
@@ -818,6 +836,21 @@ class CommandExecutor(private val context: Context) {
         val json = org.json.JSONObject(reordered as Map<*, *>)
         return if (command.resource == "tool_data") json.toString(2)
         else DateTimeConverter.timestampsToISO(json, timezone).toString(2)
+    }
+
+    /** A variable as the model reads it: the fixed bounds of its terms' periods in ISO 8601. */
+    private fun variableForModel(variable: Any?, timezone: java.time.ZoneId): Any? {
+        val row = variable as? Map<*, *> ?: return variable
+        val definition = row["definition"] as? Map<*, *> ?: return variable
+        val terms = definition["terms"] as? Map<*, *> ?: return variable
+        fun iso(bound: Any?) = if (bound is Number) DateTimeConverter.timestampToISO(bound.toLong(), timezone) else bound
+        val converted = terms.entries.associate { (name, term) ->
+            val reading = (term as? Map<*, *>)?.get("reading") as? Map<*, *>
+            val selection = reading?.get("selection") as? Map<*, *>
+            val period = selection?.get("period") as? Map<*, *>
+            name to if (period == null) term else mapOf("reading" to reading + ("selection" to selection + ("period" to period.mapValues { iso(it.value) })))
+        }
+        return row + ("definition" to definition + ("terms" to converted))
     }
 
     /**

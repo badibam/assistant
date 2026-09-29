@@ -7,7 +7,9 @@ import com.assistant.core.fields.ToolFields
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
 import com.assistant.core.selection.EntryPeriod
+import com.assistant.core.selection.TimePoint
 import com.assistant.core.selection.TimeResolver
+import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.JsonUtils
 import com.assistant.core.utils.LogManager
 
@@ -73,6 +75,12 @@ object CommandTransformer {
                     "TOOL_INSTANCES" -> transformToolInstancesCommand(command)
                     "CURRENT_DATETIME" -> transformCurrentDatetimeCommand(command)
                     "ICONS" -> transformIconsCommand(command)
+                    "VARIABLES" -> ExecutableCommand(
+                        resource = "variables",
+                        operation = if (command.params["zone_id"] is String) "list" else "list_all",
+                        params = command.params.filterKeys { it == "zone_id" }.mapValues { it.value!! }
+                    )
+                    "READING" -> transformReadingCommand(command, s, reference)
                     else -> {
                         val error = s.shared("ai_error_command_unknown_type").format(command.type)
                         LogManager.aiPrompt("Unknown command type: ${command.type}", "WARN")
@@ -112,7 +120,7 @@ object CommandTransformer {
      * Use include_config parameter to include full configuration.
      */
     private fun transformAppStateCommand(command: DataCommand): List<ExecutableCommand> {
-        LogManager.aiPrompt("transformAppStateCommand() - generating zones.list + tools.list_all", "VERBOSE")
+        LogManager.aiPrompt("transformAppStateCommand() - generating zones.list + tools.list_all + variables.list_all", "VERBOSE")
 
         // Read include_config parameter (default false for minimal snapshot)
         val includeConfig = command.params["include_config"] as? Boolean ?: false
@@ -127,8 +135,31 @@ object CommandTransformer {
                 resource = "tools",
                 operation = "list_all",
                 params = mapOf("include_config" to includeConfig)
+            ),
+            ExecutableCommand(
+                resource = "variables",
+                operation = "list_all",
+                params = emptyMap()
             )
         )
+    }
+
+    /**
+     * A variable read at instants: `variable` (its name) and `at`, each an ISO 8601 date-time or
+     * a relative date resolved against [reference], in milliseconds for the service.
+     */
+    private fun transformReadingCommand(command: DataCommand, s: StringsContext, reference: Long): ExecutableCommand? {
+        val name = command.params["variable"] as? String ?: return null
+        val resolver = TimeResolver.at(reference)
+        val at = (command.params["at"] as? List<*> ?: listOf(mapOf("relative" to "NOW"))).map { instant ->
+            when {
+                TimePoint.isRelative(instant) -> resolver.instant(TimePoint.read(instant!!) { s.shared(it) })
+                instant is String -> DateTimeConverter.isoToTimestamp(instant, resolver.zone)
+                instant is Number -> instant.toLong()
+                else -> throw IllegalArgumentException(s.shared("ai_error_date_unreadable").format(instant.toString()))
+            }
+        }
+        return ExecutableCommand(resource = "readings", operation = "read", params = mapOf("variable" to name, "at" to at))
     }
 
     private fun transformSchemaCommand(command: DataCommand): ExecutableCommand? {

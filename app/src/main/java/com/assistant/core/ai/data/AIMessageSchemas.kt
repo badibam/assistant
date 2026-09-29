@@ -73,11 +73,11 @@ object AIMessageSchemas {
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["TOOL_DATA", "TOOL_CONFIG", "TOOL_INSTANCES", "ZONE_CONFIG", "ZONES", "APP_STATE", "CURRENT_DATETIME", "SCHEMA", "ICONS"]
+                    "enum": ["TOOL_DATA", "TOOL_CONFIG", "TOOL_INSTANCES", "ZONE_CONFIG", "ZONES", "APP_STATE", "CURRENT_DATETIME", "SCHEMA", "ICONS", "VARIABLES", "READING"]
                   },
                   "params": {
                     "type": "object",
-                    "description": "Command parameters. For temporal filtering, use a filter on timestamp whose value is offset_TYPE (e.g., -7_DAY for 7 days ago, 0_WEEK for current week). Available types: HOUR, DAY, WEEK, MONTH, YEAR. The system automatically applies user's dayStartHour and weekStartDay configuration."
+                    "description": "Command parameters. A relative date is {\"relative\": {\"unit\": \"DAY\", \"offset\": -1, \"edge\": \"START\"}} or {\"relative\": \"NOW\"}; units HOUR, DAY, WEEK, MONTH, YEAR, following the user's start of day and week."
                   }
                 },
                 "additionalProperties": false
@@ -93,7 +93,7 @@ object AIMessageSchemas {
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["CREATE_DATA", "UPDATE_DATA", "DELETE_DATA", "START_DURATION", "STOP_DURATION", "TOOL_OPERATION", "CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL", "CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE"]
+                    "enum": ["CREATE_DATA", "UPDATE_DATA", "DELETE_DATA", "START_DURATION", "STOP_DURATION", "TOOL_OPERATION", "CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL", "CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE", "CREATE_VARIABLE", "UPDATE_VARIABLE", "DELETE_VARIABLE"]
                   },
                   "params": {
                     "type": "object"

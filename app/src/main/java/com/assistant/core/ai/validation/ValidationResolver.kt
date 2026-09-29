@@ -324,7 +324,8 @@ class ValidationResolver(private val context: Context) {
             action.type == "UPDATE_APP_CONFIG" ->
                 ParsedActionType(ActionScope.APP_CONFIG, "update")
 
-            action.type in listOf("CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE") ->
+            // A variable lives in a zone: its changes are the zone's
+            action.type in listOf("CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE", "CREATE_VARIABLE", "UPDATE_VARIABLE", "DELETE_VARIABLE") ->
                 ParsedActionType(ActionScope.ZONE_CONFIG, extractOperation(action.type))
 
             action.type in listOf("CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL") ->

@@ -505,7 +505,7 @@ class EnrichmentProcessor {
 **Flow** : EnrichmentProcessor → DataCommand → CommandTransformer → CommandExecutor → SystemMessage.
 
 ### CommandTransformer
-**Transformations** : SCHEMA → schemas.get, TOOL_CONFIG → tools.get, TOOL_DATA → tool_data.get (dates, périodes relatives et durées de ses `filters` mises en forme stockée d'après le type du champ, `FilterValues`), ZONE_CONFIG → zones.get, ZONES → zones.list, TOOL_INSTANCES → tools.list, ICONS → icons.overview (sans paramètre) ou icons.search (`categories` et/ou `query`).
+**Transformations** : SCHEMA → schemas.get, TOOL_CONFIG → tools.get, TOOL_DATA → tool_data.get (sa `period` en filtres sur timestamp, les dates et durées de ses `filters` mises en forme stockée d'après le type du champ, `FilterValues`), ZONE_CONFIG → zones.get, ZONES → zones.list, TOOL_INSTANCES → tools.list, VARIABLES → variables.list ou list_all, READING → readings.read d'une variable (`at` en ISO ou en dates relatives, résolues sur la référence), ICONS → icons.overview (sans paramètre) ou icons.search (`categories` et/ou `query`). Les actions CREATE_VARIABLE, UPDATE_VARIABLE, DELETE_VARIABLE vont au service `variables`, sous la validation des zones ; la définition s'écrit avec les noms, et le service la vérifie comme l'écran.
 
 ### User vs AI Commands
 **User** : Source EnrichmentBlocks, types POINTER/USE/CREATE/MODIFY_CONFIG uniquement, but données contextuelles, jamais d'actions.
@@ -517,7 +517,7 @@ class EnrichmentProcessor {
 **Level 1: DOC** - Généré par PromptChunks avec degrés d'importance configurables. Inclut rôle IA, documentation API, **limites IA dynamiques** selon SessionType, la légende de la notation des schémas, la définition d'un champ et les schémas de la réponse de l'IA et d'une zone, écrits dans cette notation (`SchemaNotation`, voir `docs/DATA.md`). Pour AUTOMATION : documentation flag `completed: true` obligatoire + continuation automatique après succès actions.
 **Level 2: USER DATA** - Données tool instances avec `always_send: true`.
 
-**APP_STATE** : Zones et tool instances disponibles via command dédiée (à la demande).
+**APP_STATE** : zones, instances d'outils et variables (zones.list, tools.list_all, variables.list_all), envoyé d'office au premier message.
 **Enrichments** : Stockés comme SessionMessage sender=SYSTEM, inclus dans l'historique.
 **RichComposer UI** : Architecture multi-blocs (TextBlock = texte + enrichments), navigation focus-based avec highlight visuel.
 

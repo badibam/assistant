@@ -249,6 +249,14 @@ class AICommandProcessor(private val context: Context) {
                 isActionCommand = true
             )
 
+            // Variable actions: the definition as the model writes it, checked by the service
+            "CREATE_VARIABLE", "UPDATE_VARIABLE", "DELETE_VARIABLE" -> ExecutableCommand(
+                resource = "variables",
+                operation = command.type.substringBefore('_').lowercase(),
+                params = variableToStoredForm(command.params),
+                isActionCommand = true
+            )
+
             else -> {
                 LogManager.aiService("Unknown action command type: ${command.type}", "WARN")
                 null
@@ -334,11 +342,48 @@ class AICommandProcessor(private val context: Context) {
                 isActionCommand = true
             )
 
+            // Variable actions: the definition as the model writes it, checked by the service
+            "CREATE_VARIABLE", "UPDATE_VARIABLE", "DELETE_VARIABLE" -> ExecutableCommand(
+                resource = "variables",
+                operation = command.type.substringBefore('_').lowercase(),
+                params = variableToStoredForm(command.params),
+                isActionCommand = true
+            )
+
             else -> {
                 LogManager.aiService("Unknown action command type for verbalization: ${command.type}", "WARN")
                 null
             }
         }
+    }
+
+    /**
+     * A variable's params with what the model writes in ISO 8601 in the stored form: a constant
+     * DURATION's value, and the fixed bounds of its terms' periods. Relative dates are written by
+     * the model as they are stored.
+     *
+     * @throws IllegalArgumentException on a date or a duration that does not read
+     */
+    private fun variableToStoredForm(params: Map<String, Any?>): Map<String, Any?> {
+        val definition = params["definition"] as? Map<*, *> ?: return params
+        val zone = com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
+        val stored = definition.entries.associate { (key, value) -> key.toString() to value }.toMutableMap()
+        val fieldType = (definition["field"] as? Map<*, *>)?.get("type")
+        (definition["value"] as? String)?.takeIf { fieldType == "DURATION" }?.let { stored["value"] = java.time.Duration.parse(it).toMillis() }
+        (definition["terms"] as? Map<*, *>)?.let { terms ->
+            stored["terms"] = terms.entries.associate { (name, term) ->
+                val reading = (term as? Map<*, *>)?.get("reading") as? Map<*, *>
+                val period = (reading?.get("selection") as? Map<*, *>)?.get("period") as? Map<*, *>
+                name.toString() to if (period == null) term else {
+                    val bounds = period.entries.associate { (edge, bound) ->
+                        edge.toString() to ((bound as? String)?.let { com.assistant.core.utils.DateTimeConverter.isoToTimestamp(it, zone) } ?: bound)
+                    }
+                    val selection = (reading["selection"] as Map<*, *>).entries.associate { (k, v) -> k.toString() to (if (k == "period") bounds else v) }
+                    mapOf("reading" to reading.entries.associate { (k, v) -> k.toString() to (if (k == "selection") selection else v) })
+                }
+            }
+        }
+        return params + ("definition" to stored)
     }
 
     /**
