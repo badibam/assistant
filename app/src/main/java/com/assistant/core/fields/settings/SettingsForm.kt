@@ -48,6 +48,45 @@ interface SettingEditor {
 }
 
 /**
+ * The fields of the rows a config describes, by where a setting stands in it: what a setting
+ * marked SettingNode.Field.rowField chooses among, and a condition put on each row
+ * (SettingNode.Condition.onRow) compares. A chart's columns differ from one layer to another, so
+ * the form's owner, who knows what a row is, answers for each place.
+ */
+interface RowFields {
+    /**
+     * @param root The whole config being edited
+     * @param path The keys and positions leading from [root] to the object holding the setting
+     * @return The fields by name; null while they are read
+     */
+    @Composable
+    fun at(root: JSONObject, path: List<Any>): Map<String, com.assistant.core.fields.FieldDefinition>?
+}
+
+/** Where a form stands in the config it edits, for the settings that depend on it (RowFields). */
+private data class Place(val root: JSONObject, val path: List<Any>, val rows: RowFields?) {
+    fun into(vararg steps: Any) = copy(path = path + steps)
+}
+
+private val LocalPlace = androidx.compose.runtime.compositionLocalOf<Place?> { null }
+
+/** [content] drawn one step further into the config: a group's name, a list's name and a position. */
+@Composable
+private fun Into(vararg steps: Any, content: @Composable () -> Unit) {
+    val place = LocalPlace.current
+    if (place == null) content()
+    else androidx.compose.runtime.CompositionLocalProvider(LocalPlace provides place.into(*steps)) { content() }
+}
+
+/** The fields of the rows where the form stands; a declaration that asks for them without an owner giving them is a mistake. */
+@Composable
+private fun rowFields(): Map<String, com.assistant.core.fields.FieldDefinition>? {
+    val place = LocalPlace.current
+    val rows = place?.rows ?: error("A setting chooses among the fields of rows, and the form was given none (RowFields)")
+    return rows.at(place.root, place.path)
+}
+
+/**
  * The form of any settings declaration (docs/DATA.md): a field by the
  * input of its field type, a group as a card, a list with add, remove and reorder, a variant with
  * the settings of the option chosen, a section as a titled card over settings stored beside it.
@@ -58,6 +97,8 @@ interface SettingEditor {
  *
  * @param editors Parts drawn by their owner, by setting name (SettingEditor), at the top level of
  *   the declaration only: a name inside a group or a list element may mean something else there
+ * @param rows The fields of the rows [config] describes, for the settings that choose among them;
+ *   given where [config] is the whole config, never inside it
  */
 @Composable
 fun SettingsForm(
@@ -65,9 +106,14 @@ fun SettingsForm(
     config: JSONObject,
     onChange: (JSONObject) -> Unit,
     context: Context,
-    editors: Map<String, SettingEditor> = emptyMap()
+    editors: Map<String, SettingEditor> = emptyMap(),
+    rows: RowFields? = null
 ) {
-    NodesForm(nodes, nodes, config, onChange, context, editors)
+    if (rows != null) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalPlace provides Place(config, emptyList(), rows)) {
+            NodesForm(nodes, nodes, config, onChange, context, editors)
+        }
+    } else NodesForm(nodes, nodes, config, onChange, context, editors)
 }
 
 /**
@@ -109,6 +155,8 @@ private fun NodeForm(
             val editor = editors[name]
             when {
                 editor != null -> editor.Edit(stored) { set(name, it) }
+                // A field of the rows where the setting stands, chosen among them
+                node.rowField -> RowFieldChoice(node.definition.displayName, stored as? String, node.required) { set(name, it) }
                 // A field of the tool the setting beside it designates, chosen among its fields
                 node.fieldOf != null -> ToolFieldChoice(node, config.opt(node.fieldOf), stored as? String, context) { set(name, it) }
                 // A value of the field this object defines, entered as that field: its type, and
@@ -158,7 +206,9 @@ private fun NodeForm(
             if (editor != null) editor.Edit(config.optJSONObject(node.name)) { set(node.name, it) }
             // An optional group set can be removed whole: left out, it is none
             else Titled(node.label, onRemove = if (!node.required && config.has(node.name)) {{ set(node.name, null) }} else null) {
-                SettingsForm(node.nodes, config.optJSONObject(node.name) ?: JSONObject(), { set(node.name, it) }, context)
+                Into(node.name) {
+                    SettingsForm(node.nodes, config.optJSONObject(node.name) ?: JSONObject(), { set(node.name, it) }, context)
+                }
             }
         }
 
@@ -166,7 +216,9 @@ private fun NodeForm(
             val editor = editors[node.name]
             if (editor != null) editor.Edit(config.optJSONArray(node.name)) { set(node.name, it) }
             else Titled(node.label) {
-                ListForm(node, config.optJSONArray(node.name) ?: JSONArray(), { set(node.name, it.takeIf { a -> a.length() > 0 }) }, context)
+                Into(node.name) {
+                    ListForm(node, config.optJSONArray(node.name) ?: JSONArray(), { set(node.name, it.takeIf { a -> a.length() > 0 }) }, context)
+                }
             }
         }
 
@@ -183,8 +235,19 @@ private fun NodeForm(
             NodesForm(node.nodes, level, config, onChange, context, editors)
         }
 
-        // Its left side is the value entered beside it once that value has a type
-        is SettingNode.Condition -> {
+        // Put on each row: its sides are the row's fields or written values
+        is SettingNode.Condition -> if (node.onRow) {
+            val fields = rowFields()
+            if (fields == null) UI.LoadingIndicator()
+            else com.assistant.core.ui.selectors.RowConditionSetting(
+                label = node.label,
+                condition = config.optJSONObject(node.name),
+                fields = fields,
+                onChange = { set(node.name, it) },
+                s = Strings.`for`(context = context)
+            )
+        } else {
+            // Its left side is the value entered beside it once that value has a type
             val entered = node.enteredField?.let { config.optJSONObject(it) }?.let { declared ->
                 com.assistant.core.fields.FieldType.entries.firstOrNull { it.name == declared.optString("type") }?.let { type ->
                     com.assistant.core.fields.FieldDefinition(node.name, node.label, null, type, false, declared.optJSONObject("config")?.toFieldConfig())
@@ -199,7 +262,57 @@ private fun NodeForm(
                 where = com.assistant.core.ui.selectors.ReadingContext(node.reference, node.emptyPeriod, perEntry = false)
             )
         }
+
+        is SettingNode.Term -> {
+            val s = Strings.`for`(context = context)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                UI.Text(text = node.label, type = TextType.SUBTITLE)
+                com.assistant.core.ui.selectors.TermPicker(
+                    term = config.optJSONObject(node.name) ?: JSONObject(),
+                    // A constant here has no other side to take its type from: a number
+                    constantField = com.assistant.core.fields.FieldDefinition(node.name, node.label, null, com.assistant.core.fields.FieldType.NUMERIC, false, null),
+                    onChange = { set(node.name, it) },
+                    s = s,
+                    where = com.assistant.core.ui.selectors.ReadingContext(node.reference, node.emptyPeriod, perEntry = false),
+                    kinds = node.kinds
+                )
+            }
+        }
+
+        is SettingNode.Selection -> com.assistant.core.ui.selectors.SelectionSetting(
+            label = node.label,
+            selection = config.optJSONObject(node.name),
+            reference = node.reference,
+            onChange = { set(node.name, it) }
+        )
+
+        is SettingNode.Period -> {
+            val s = Strings.`for`(context = context)
+            val period = config.optJSONObject(node.name)?.let { com.assistant.core.selection.EntryPeriod.fromJson(it) { key -> s.shared(key) } }
+                ?: com.assistant.core.selection.EntryPeriod()
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                UI.FieldLabel(node.label, node.required)
+                com.assistant.core.ui.components.PeriodPicker(period, { set(node.name, it.toJson()) },
+                    com.assistant.core.fields.FieldType.DATETIME, node.reference)
+            }
+        }
     }
+}
+
+/**
+ * The choice of a field of the rows where the form stands (SettingNode.Field.rowField), by
+ * FieldPicker; a name no longer among them shows as it is, for the service to name it.
+ */
+@Composable
+private fun RowFieldChoice(label: String, stored: String?, required: Boolean, onChange: (String?) -> Unit) {
+    val fields = rowFields() ?: return UI.LoadingIndicator()
+    com.assistant.core.ui.selectors.FieldPicker(
+        label = label,
+        fields = fields,
+        selected = stored?.let { com.assistant.core.ui.selectors.FieldPick.Path(it) },
+        onSelect = { pick -> onChange((pick as com.assistant.core.ui.selectors.FieldPick.Path).path) },
+        required = required
+    )
 }
 
 @Composable
@@ -237,7 +350,10 @@ private fun ListForm(
         when (val shape = list.item) {
             is SettingNode.Item.Value -> Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.weight(1f)) {
-                    FieldInput(shape.definition, item.takeIf { it != JSONObject.NULL }, { value ->
+                    if (shape.rowField) RowFieldChoice(shape.definition.displayName, item.takeIf { it != JSONObject.NULL } as? String, required = true) { value ->
+                        publish(values.toMutableList().also { it[index] = value ?: JSONObject.NULL })
+                    }
+                    else FieldInput(shape.definition, item.takeIf { it != JSONObject.NULL }, { value ->
                         publish(values.toMutableList().also { it[index] = value ?: JSONObject.NULL })
                     }, context)
                 }
@@ -266,9 +382,11 @@ private fun ListForm(
                     }
                     if (isOpen) {
                         Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
-                            SettingsForm(shape.nodes, element, { changed ->
-                                publish(values.toMutableList().also { it[index] = changed })
-                            }, context)
+                            Into(index) {
+                                SettingsForm(shape.nodes, element, { changed ->
+                                    publish(values.toMutableList().also { it[index] = changed })
+                                }, context)
+                            }
                         }
                     }
                 }

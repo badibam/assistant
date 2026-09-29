@@ -42,6 +42,9 @@ object SettingVariants {
                         keep(node.cases[option].orEmpty())
                     }
                     is SettingNode.Condition -> config.optJSONObject(node.name)?.let { kept.put(node.name, it) }
+                    is SettingNode.Term -> config.optJSONObject(node.name)?.let { kept.put(node.name, it) }
+                    is SettingNode.Selection -> config.optJSONObject(node.name)?.let { kept.put(node.name, it) }
+                    is SettingNode.Period -> config.optJSONObject(node.name)?.let { kept.put(node.name, it) }
                     is SettingNode.Section -> Unit
                 }
             }

@@ -8,7 +8,8 @@ import com.assistant.core.fields.FieldDefinition
  *
  * Two levels and nothing else. A value is always a field type ([Field]); what assembles values
  * is this fixed set of shapes, which does not grow case by case. What a field type cannot say
- * is not said.
+ * is not said. A brick a config holds whole (docs/BRICKS.md: a condition, a term, a selection of
+ * entries, a period) is a node of its own, stored in the brick's one form and drawn by its selector.
  */
 sealed class SettingNode {
 
@@ -28,6 +29,8 @@ sealed class SettingNode {
      * @property fieldOf The name of the setting beside it that designates a tool instance (a
      *   REFERENCE): this one is the path of one of that tool's fields ("data.kcal"), which the form
      *   offers to choose among rather than to type
+     * @property rowField A field of the rows the config describes where the setting stands (a
+     *   column of a chart's layer), by name: the form offers those its owner gives (RowFields)
      */
     data class Field(
         val definition: FieldDefinition,
@@ -36,7 +39,8 @@ sealed class SettingNode {
         val secret: Boolean = false,
         val systemWritten: Boolean = false,
         val valueOfDefined: Boolean = false,
-        val fieldOf: String? = null
+        val fieldOf: String? = null,
+        val rowField: Boolean = false
     ) : SettingNode()
 
     /** Settings stored together as one object under [name]. */
@@ -85,8 +89,11 @@ sealed class SettingNode {
     sealed class Item {
         /** An object of settings. */
         data class Of(val nodes: List<SettingNode>) : Item()
-        /** A single value; the field's name is not stored, only its value. */
-        data class Value(val definition: FieldDefinition) : Item()
+        /**
+         * A single value; the field's name is not stored, only its value. With [rowField], the
+         * name of a field of the rows, as SettingNode.Field.rowField.
+         */
+        data class Value(val definition: FieldDefinition, val rowField: Boolean = false) : Item()
     }
 
     /**
@@ -108,6 +115,9 @@ sealed class SettingNode {
      * @property enteredField The name of the setting beside it that declares a value entered in
      *   each entry (FieldTypeSettings.valueNodes): when it is set, the condition is put on that
      *   entry, its left side the entry's field, which whoever owns the key writes
+     * @property onRow Put on each row the config describes where it stands, not judged once: its
+     *   sides are fields of the row (RowFields) or written values, `{"field": "kcal"}` and
+     *   `{"constant": 2100}`; [reference] and [emptyPeriod] then say nothing
      */
     data class Condition(
         val name: String,
@@ -115,7 +125,51 @@ sealed class SettingNode {
         val reference: String,
         val emptyPeriod: String?,
         val required: Boolean = false,
-        val enteredField: String? = null
+        val enteredField: String? = null,
+        val onRow: Boolean = false
+    ) : SettingNode()
+
+    /**
+     * A term stored under [name] (the Terme brick, docs/BRICKS.md): `{"constant"}`, `{"variable"}`
+     * or `{"reading"}`, among [kinds]; drawn by TermPicker, read by the service that uses it.
+     *
+     * @property reference The name of the instant it is read at, which its relative dates resolve against
+     * @property emptyPeriod What a reading without a period of its own reads there
+     */
+    data class Term(
+        val name: String,
+        val label: String,
+        val kinds: Set<com.assistant.core.terms.Term.Kind>,
+        val reference: String,
+        val emptyPeriod: String?,
+        val required: Boolean = false
+    ) : SettingNode()
+
+    /**
+     * Entries of one tool stored under [name] (the Sélection d'entrées brick, docs/BRICKS.md):
+     * `{"target", "filters", "fields"}`, without a period, which the config gives elsewhere (a
+     * chart's displayed period); drawn by SelectionSetting.
+     *
+     * @property reference The name of the instant its filters' relative dates resolve against
+     */
+    data class Selection(
+        val name: String,
+        val label: String,
+        val reference: String,
+        val required: Boolean = false
+    ) : SettingNode()
+
+    /**
+     * A period stored under [name] (the Période brick, docs/BRICKS.md): `{"start", "end"}`, each
+     * bound an instant (TimePoint), absent for no limit; drawn by PeriodPicker.
+     *
+     * @property reference The name of the instant its relative bounds resolve against
+     */
+    data class Period(
+        val name: String,
+        val label: String,
+        val reference: String,
+        val required: Boolean = false
     ) : SettingNode()
 
     /** Settings shown together on the screen; nothing of it is stored. */
@@ -137,7 +191,8 @@ fun List<SettingNode>.storedField(name: String): FieldDefinition? {
             is SettingNode.Variant -> node.selector.definition.takeIf { it.name == name }
                 ?: node.cases.values.firstNotNullOfOrNull { it.storedField(name) }
             is SettingNode.Section -> node.nodes.storedField(name)
-            is SettingNode.Group, is SettingNode.ListOf, is SettingNode.Condition -> null
+            is SettingNode.Group, is SettingNode.ListOf, is SettingNode.Condition,
+            is SettingNode.Term, is SettingNode.Selection, is SettingNode.Period -> null
         }
         if (found != null) return found
     }
@@ -159,6 +214,9 @@ fun List<SettingNode>.labelOf(name: String): String? {
                 ?: node.cases.values.firstNotNullOfOrNull { it.labelOf(name) }
             is SettingNode.Section -> node.nodes.labelOf(name)
             is SettingNode.Condition -> node.label.takeIf { node.name == name }
+            is SettingNode.Term -> node.label.takeIf { node.name == name }
+            is SettingNode.Selection -> node.label.takeIf { node.name == name }
+            is SettingNode.Period -> node.label.takeIf { node.name == name }
         }
         if (found != null) return found
     }

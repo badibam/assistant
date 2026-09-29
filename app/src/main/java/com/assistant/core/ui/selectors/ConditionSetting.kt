@@ -127,3 +127,100 @@ fun rememberTermField(term: JSONObject): FieldDefinition? {
         else -> null
     }
 }
+
+/**
+ * A condition put on each row a config describes, as a setting (SettingNode.Condition.onRow): a
+ * field of the row on the left (FieldPicker), the operators its type takes, and on the right a
+ * written value, entered as that field, or another field of the row of the same type
+ * (« kcal > objectif_calorique »).
+ *
+ * @param condition Its stored form, null while none is set
+ * @param fields The fields of the row, by name
+ */
+@Composable
+fun RowConditionSetting(
+    label: String,
+    condition: JSONObject?,
+    fields: Map<String, FieldDefinition>,
+    onChange: (JSONObject) -> Unit,
+    s: StringsContext
+) {
+    val current = condition ?: JSONObject()
+    val path = Conditions.fieldOf(current)
+    val field = path?.let { fields[it] }
+    fun with(change: JSONObject.() -> Unit) = onChange(JSONObject(current.toString()).apply(change))
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        UI.Text(text = label, type = TextType.SUBTITLE)
+        FieldPicker(
+            label = s.shared("pointer_filter_field"),
+            fields = fields,
+            selected = path?.let { FieldPick.Path(it) },
+            // Another field is another type: its operator and right side start over
+            onSelect = { pick -> onChange(JSONObject().put(Conditions.LEFT, JSONObject().put(Conditions.FIELD, (pick as FieldPick.Path).path))) }
+        )
+        if (field == null) return@Column
+
+        val ops = EntryFilters.operatorsFor(field.type).toList()
+        val op = FilterOperator.of(current.optString(Conditions.OP))?.takeIf { it in ops }
+        UI.FormSelection(
+            label = s.shared("pointer_filter_condition"),
+            options = ops.map { PointerDescription.operator(it, s) },
+            selected = op?.let { PointerDescription.operator(it, s) } ?: "",
+            onSelect = { text ->
+                val next = ops.first { PointerDescription.operator(it, s) == text }
+                with {
+                    put(Conditions.OP, next.key)
+                    // The right side keeps its shape when the new operator takes the same
+                    when (next) {
+                        FilterOperator.ABSENT, FilterOperator.PRESENT -> remove(Conditions.RIGHT)
+                        FilterOperator.BETWEEN -> if (opt(Conditions.RIGHT) !is JSONArray) put(Conditions.RIGHT, JSONArray().put(constant()).put(constant()))
+                        else -> if (opt(Conditions.RIGHT) !is JSONObject) put(Conditions.RIGHT, constant())
+                    }
+                }
+            },
+            required = true
+        )
+        // The fields of the row a side may name beside a written value: those of the same type
+        val others = fields.filter { (name, other) -> name != path && other.type == field.type }
+        when (val right = current.opt(Conditions.RIGHT)) {
+            is JSONObject -> RowSide(right, field, others, s) { side -> with { put(Conditions.RIGHT, side) } }
+            is JSONArray -> (0 until right.length()).forEach { i ->
+                UI.Text(text = s.shared(if (i == 0) "filter_low" else "filter_high"), type = TextType.LABEL)
+                RowSide(right.optJSONObject(i) ?: constant(), field, others, s) { side ->
+                    with { put(Conditions.RIGHT, JSONArray(right.toString()).put(i, side)) }
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+
+/** One side on the right of a condition on each row: a written value, or another field of the row. */
+@Composable
+private fun RowSide(side: JSONObject, field: FieldDefinition, others: Map<String, FieldDefinition>, s: StringsContext, onChange: (JSONObject) -> Unit) {
+    val context = LocalContext.current
+    val sideField = Conditions.fieldOf(JSONObject().put(Conditions.LEFT, side))
+    if (others.isNotEmpty()) {
+        FieldPicker(
+            label = s.shared("condition_side"),
+            fields = others,
+            selected = sideField?.let { FieldPick.Path(it) } ?: FieldPick.Other(Conditions.CONSTANT),
+            onSelect = { pick ->
+                onChange(when (pick) {
+                    is FieldPick.Path -> JSONObject().put(Conditions.FIELD, pick.path)
+                    is FieldPick.Other -> constant()
+                })
+            },
+            others = mapOf(Conditions.CONSTANT to s.shared("variable_term_constant"))
+        )
+    }
+    if (sideField == null) {
+        com.assistant.core.fields.FieldInput(
+            field.copy(displayName = s.shared("variable_value")),
+            JsonUtils.toValue(side.opt(Conditions.CONSTANT)?.takeIf { it != JSONObject.NULL }),
+            { value -> onChange(value?.let { com.assistant.core.terms.Term.Constant(it).toJson() } ?: constant()) },
+            context, required = true
+        )
+    }
+}

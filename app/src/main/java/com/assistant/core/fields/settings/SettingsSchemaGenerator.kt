@@ -61,6 +61,9 @@ object SettingsSchemaGenerator {
                 is SettingNode.Group -> Triple(node.name, node.required, objectOf(node.nodes, text).put("title", node.label))
                 is SettingNode.ListOf -> Triple(node.name, node.required, listSchema(node, text))
                 is SettingNode.Condition -> Triple(node.name, node.required, conditionSchema(node, text))
+                is SettingNode.Term -> Triple(node.name, node.required, termSchema(node, text))
+                is SettingNode.Selection -> Triple(node.name, node.required, selectionSchema(node, text))
+                is SettingNode.Period -> Triple(node.name, node.required, periodSchema(node, text))
                 is SettingNode.Variant, is SettingNode.Section -> error("flattened before")
             }
             check(!properties.has(name)) { "Setting '$name' is declared twice in one object" }
@@ -126,13 +129,65 @@ object SettingsSchemaGenerator {
     private fun conditionSchema(node: SettingNode.Condition, text: (String) -> String): JSONObject = JSONObject()
         .put("type", "object")
         .put("title", node.label)
-        .put("description", text(if (node.enteredField != null) "condition_schema_entered_description" else "condition_schema_description"))
+        .put("description", text(when {
+            node.onRow -> "condition_schema_row_description"
+            node.enteredField != null -> "condition_schema_entered_description"
+            else -> "condition_schema_description"
+        }))
         .put("properties", JSONObject()
             .put("left", JSONObject().put("type", "object"))
             .put("op", JSONObject().put("type", "string").put("enum", JSONArray(com.assistant.core.fields.FilterOperator.entries.map { it.key })))
             .put("right", JSONObject().put("type", JSONArray().put("object").put("array"))))
         .put("required", JSONArray().put("op"))
         .put("additionalProperties", false)
+
+    /**
+     * A term: one key, the kind among those offered, its value as the brick stores it (Term);
+     * the description spells out each kind's form.
+     */
+    private fun termSchema(node: SettingNode.Term, text: (String) -> String): JSONObject {
+        val properties = JSONObject()
+        val forms = node.kinds.sortedBy { it.ordinal }.map { kind ->
+            properties.put(kind.key, when (kind) {
+                com.assistant.core.terms.Term.Kind.CONSTANT -> JSONObject().put("type", JSONArray().put("number").put("string").put("boolean").put("array"))
+                com.assistant.core.terms.Term.Kind.VARIABLE -> JSONObject().put("type", "string")
+                com.assistant.core.terms.Term.Kind.READING -> JSONObject().put("type", "object")
+            })
+            text("term_schema_${kind.key}")
+        }
+        return JSONObject()
+            .put("type", "object")
+            .put("title", node.label)
+            .put("description", text("term_schema_description").format(forms.joinToString(" ; ")))
+            .put("properties", properties)
+            .put("additionalProperties", false)
+    }
+
+    /** Entries of one tool, without a period: its target, its filters, the fields kept. */
+    private fun selectionSchema(node: SettingNode.Selection, text: (String) -> String): JSONObject = JSONObject()
+        .put("type", "object")
+        .put("title", node.label)
+        .put("description", text("selection_schema_description"))
+        .put("properties", JSONObject()
+            .put("target", JSONObject().put("type", "object"))
+            .put("filters", JSONObject().put("type", "array").put("items", JSONObject().put("type", "object")))
+            .put("fields", JSONObject().put("type", "array").put("items", JSONObject().put("type", "string"))))
+        .put("required", JSONArray().put("target"))
+        .put("additionalProperties", false)
+
+    /**
+     * A period: each bound a relative date, an object, or a fixed instant, which the model writes
+     * in ISO 8601 like every instant (FieldValueSchema.EPOCH_MILLIS).
+     */
+    private fun periodSchema(node: SettingNode.Period, text: (String) -> String): JSONObject {
+        fun bound() = JSONObject().put("type", JSONArray().put("object").put("integer")).put("format", FieldValueSchema.EPOCH_MILLIS)
+        return JSONObject()
+            .put("type", "object")
+            .put("title", node.label)
+            .put("description", text("period_schema_description"))
+            .put("properties", JSONObject().put("start", bound()).put("end", bound()))
+            .put("additionalProperties", false)
+    }
 
     /** The nodes stored in one object: sections opened, since they store nothing of their own. */
     internal fun flatten(nodes: List<SettingNode>): List<SettingNode> = nodes.flatMap { node ->

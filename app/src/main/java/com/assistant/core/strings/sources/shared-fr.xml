@@ -71,6 +71,7 @@
     <string name="pointer_filter_field">Champ</string>
     <string name="pointer_filter_present_values">Valeurs déjà saisies</string>
     <string name="pointer_filter_condition">Condition</string>
+    <string name="condition_side">Comparé à</string>
     <string name="pointer_choose_fields">Choisir les champs</string>
     <string name="pointer_part_config">la config de %1$s</string>
     <string name="pointer_part_entries">les entrées de %1$s</string>
@@ -219,6 +220,13 @@
     <string name="condition_error_right">La condition de %1$s avec %2$s prend %3$d côté(s) à droite.</string>
     <string name="condition_schema_description">Une condition jugée une fois : {\"left\": côté, \"op\": ..., \"right\": côté}, chaque côté un terme, {\"constant\": ...}, {\"variable\": \"id\"} ou {\"reading\": {\"selection\", \"field\"?, \"reduction\"}} ; right est une paire de côtés pour between, absent pour absent et present. Une constante s\'écrit comme l\'autre côté stocke ses valeurs.</string>
     <string name="condition_schema_entered_description">Une condition sur la valeur saisie dans chaque tentative : {\"op\": ..., \"right\": côté} ; l\'app écrit left, le champ saisi. Un côté est {\"constant\": ...}, {\"variable\": \"id\"} ou {\"reading\": ...} ; right est une paire pour between, absent pour absent et present.</string>
+    <string name="condition_schema_row_description">Une condition sur chaque ligne dessinée : {\"left\": côté, \"op\": ..., \"right\": côté}, chaque côté une colonne de la ligne, {\"field\": \"kcal\"}, ou une valeur écrite, {\"constant\": ...}, écrite comme la colonne d\'en face stocke ses valeurs ; right est une paire de côtés pour between, absent pour absent et present.</string>
+    <string name="term_schema_description">Un terme, une clé parmi : %1$s.</string>
+    <string name="term_schema_constant">{\"constant\": ...}, une valeur écrite comme elle est stockée</string>
+    <string name="term_schema_variable">{\"variable\": \"id\"}, une variable par son id</string>
+    <string name="term_schema_reading">{\"reading\": {\"selection\", \"field\"?, \"reduction\"}}, un champ d\'un outil réduit sur ses entrées, compté sans champ ; la période de sa sélection est relative à l\'instant lu, et sans période elle lit celle que donne le contexte</string>
+    <string name="selection_schema_description">Des entrées d\'un outil : {\"target\": {\"kind\": \"TOOL_INSTANCE\", \"id\"}, \"filters\"?: [conditions sur chaque entrée], \"fields\"?: [chemins gardés]} ; sa période est donnée ailleurs.</string>
+    <string name="period_schema_description">Une période, {\"start\"?, \"end\"?}, bornes comprises, une borne absente pour sans limite : un instant fixe, ou une date relative, {\"relative\": {\"unit\": \"DAY\", \"offset\": -29, \"edge\": \"START\"}} ou {\"relative\": \"NOW\"}.</string>
     <string name="service_error_filter_unknown_field">Filtre sur \'%1$s\' : les entrées de cet outil n\'ont pas ce champ à filtrer. Champs : %2$s</string>
     <string name="service_error_values_not_text">« %1$s » n\'est pas un champ texte : seul un texte a des valeurs à proposer</string>
     <string name="service_error_filter_operator">Filtre sur \'%1$s\' : la condition \'%2$s\' ne s\'applique pas à un champ %3$s. Conditions : %4$s</string>

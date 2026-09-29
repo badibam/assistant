@@ -12,6 +12,10 @@ import org.json.JSONObject
  */
 sealed interface Term {
 
+    /** The kind of a term, which a setting offers among (SettingNode.Term): its stored form's key. */
+    enum class Kind(val key: String) { CONSTANT("constant"), VARIABLE("variable"), READING("reading") }
+
+
     /**
      * A reading of the core without a test: a field reduced across the selected entries, or,
      * with [perEntry], a formula computed in each entry then reduced ("quantité × aliment.kcal_100g

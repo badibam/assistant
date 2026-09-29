@@ -72,7 +72,11 @@ object SchemaModelView {
             result.put("default", ModelValues.toModel(node.get("default"), node, zone))
         }
 
-        result.put("type", "string")
+        // A value that is an instant or something else (a period's bound: an instant or a
+        // relative date) keeps its other types, the number becoming the ISO string
+        val type = node.opt("type")
+        result.put("type", if (type is JSONArray) JSONArray((0 until type.length()).map { type.getString(it) }
+            .map { if (it == "integer" || it == "number") "string" else it }.distinct()) else "string")
         result.put("format", isoFormat)
 
         return result

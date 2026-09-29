@@ -71,6 +71,7 @@
     <string name="pointer_filter_field">Field</string>
     <string name="pointer_filter_present_values">Values already entered</string>
     <string name="pointer_filter_condition">Condition</string>
+    <string name="condition_side">Compared with</string>
     <string name="pointer_choose_fields">Choose the fields</string>
     <string name="pointer_part_config">the config of %1$s</string>
     <string name="pointer_part_entries">the entries of %1$s</string>
@@ -219,6 +220,13 @@
     <string name="condition_error_right">The condition of %1$s with %2$s takes %3$d side(s) on the right.</string>
     <string name="condition_schema_description">A condition judged once: {\"left\": side, \"op\": ..., \"right\": side}, each side a term, {\"constant\": ...}, {\"variable\": \"id\"} or {\"reading\": {\"selection\", \"field\"?, \"reduction\"}}; right is a pair of sides for between, absent for absent and present. A constant is written as the other side stores its values.</string>
     <string name="condition_schema_entered_description">A condition on the value entered in each attempt: {\"op\": ..., \"right\": side}; the app writes left, the entered field. A side is {\"constant\": ...}, {\"variable\": \"id\"} or {\"reading\": ...}; right is a pair for between, absent for absent and present.</string>
+    <string name="condition_schema_row_description">A condition on each row drawn: {\"left\": side, \"op\": ..., \"right\": side}, each side a column of the row, {\"field\": \"kcal\"}, or a written value, {\"constant\": ...}, written as the column on the other side stores its values; right is a pair of sides for between, absent for absent and present.</string>
+    <string name="term_schema_description">A term, one key among: %1$s.</string>
+    <string name="term_schema_constant">{\"constant\": ...}, a value written as it is stored</string>
+    <string name="term_schema_variable">{\"variable\": \"id\"}, a variable by its id</string>
+    <string name="term_schema_reading">{\"reading\": {\"selection\", \"field\"?, \"reduction\"}}, a field of a tool reduced across its entries, counted without a field; its selection\'s period is relative to the instant read, and without one it reads the period the context gives</string>
+    <string name="selection_schema_description">Entries of one tool: {\"target\": {\"kind\": \"TOOL_INSTANCE\", \"id\"}, \"filters\"?: [conditions on each entry], \"fields\"?: [paths kept]}; its period is given elsewhere.</string>
+    <string name="period_schema_description">A period, {\"start\"?, \"end\"?}, both inclusive, a bound absent for no limit: a fixed instant, or a relative date, {\"relative\": {\"unit\": \"DAY\", \"offset\": -29, \"edge\": \"START\"}} or {\"relative\": \"NOW\"}.</string>
     <string name="service_error_filter_unknown_field">Filter on \'%1$s\': the entries of this tool have no such field to filter on. Fields: %2$s</string>
     <string name="service_error_values_not_text">'%1$s' is not a text field: only a text has values to offer</string>
     <string name="service_error_filter_operator">Filter on \'%1$s\': the condition \'%2$s\' does not apply to a %3$s field. Conditions: %4$s</string>
