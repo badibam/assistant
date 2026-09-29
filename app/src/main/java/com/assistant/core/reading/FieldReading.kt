@@ -16,9 +16,9 @@ enum class Reduction {
             null -> setOf(COUNT)
             FieldType.NUMERIC, FieldType.DURATION -> setOf(LAST, SUM, AVERAGE, MIN, MAX)
             FieldType.SCALE -> setOf(LAST, AVERAGE, MIN, MAX)
-            FieldType.BOOLEAN, FieldType.CHOICE, FieldType.TEXT, FieldType.REFERENCE -> setOf(LAST)
+            FieldType.BOOLEAN, FieldType.CHOICE, FieldType.TEXT -> setOf(LAST)
             FieldType.DATE, FieldType.DATETIME, FieldType.TIME -> setOf(LAST, EARLIEST, LATEST)
-            FieldType.RANGE -> emptySet()
+            FieldType.RANGE, FieldType.REFERENCE -> emptySet()
         }
     }
 }
