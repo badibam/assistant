@@ -87,6 +87,12 @@ Une tuile se décrit par son résumé (sa LINE) et son corps : ce que montre cha
 - **Corps** : deux réponses de la dernière entrée remplie par rangée, une par ligne, la question et sa réponse, dans l'ordre des questions.
 - **FULL** : toutes les réponses de la dernière entrée remplie.
 
+### Données structurées
+
+- **Résumé** : le nombre de fiches (« 124 fiches ») et le bouton « Nouvelle fiche », qui ouvre l'outil sur une fiche neuve.
+- **Corps** : deux fiches par rangée, une par ligne, leur nom seul, les plus récemment modifiées d'abord.
+- **FULL** : les dix dernières modifiées.
+
 ## Positions
 
 - **Chaque outil garde sa place** : `grid_x` (0 à 3) et `grid_y` (sa ligne dans son groupe), deux colonnes de `tool_instances`. `order_index` disparaît des outils : rien ne le change aujourd'hui.
