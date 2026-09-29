@@ -62,5 +62,6 @@ enum class EnrichmentType(val iconName: String) {
     POINTER("search"),          // read-only data references
     USE("file-pen"),            // actions on existing tool data
     CREATE("sparkles"),         // new elements (tools, zones)
-    MODIFY_CONFIG("wrench")     // tool configuration changes
+    MODIFY_CONFIG("wrench"),    // tool configuration changes
+    FILE("file-text")           // a text file joined to the message, whole or previewed
 }

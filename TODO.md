@@ -6,7 +6,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 - Les outils manquants sont posés (sélection du cœur, RÉFÉRENCE, lecture du cœur, variables, Données structurées et import, Objectif, Questionnaire) ; rien n'a tourné sur un téléphone : passer `docs/design/device-checks.md`, puis élaguer de `docs/design/missing-tools.md` ce qui est codé, ses garanties devenant des tests (le Graphique y est encore en conception).
 - Finir les briques, dans l'ordre de `docs/BRICKS.md` (« Ordre de construction ») : Planification rangée au cœur, Champ, Réduction, Chose avec les variables, Terme, Condition (forme `{"left", "op", "right"}`, filtres migrés), Lecture et Sélection d'entrées, critères d'Objectif. La dernière étape est l'attente : Questionnaire, Objectif et Messages déclarent ce qui attend, la tuile de l'outil et celle de sa zone l'indiquent, toucher la tuile ou la notification ouvre l'entrée qui attend.
-- Le fichier joint à un message et l'import par l'IA, puis l'état vide d'une table qui propose d'importer (`docs/design/missing-tools.md`, « L'import »).
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur

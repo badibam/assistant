@@ -13,6 +13,9 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Chat IA
 
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
+- Joindre un fichier dans un chat (trombone) : un CSV de quelques centaines de lignes montre nom, type, taille, lignes et début, « Inclure en entier » coché ; le bloc dit « en entier ». Envoyé, l'IA en parle sans le relire ; un fichier au-dessus du seuil demande confirmation à l'envoi. Décoché : « aperçu seulement », l'IA lit la suite par `FILE`. Un fichier binaire ou pas en UTF-8 est refusé en le disant ; annuler après le choix, ou retirer le bloc, ne laisse rien dans la session (sauvegarde : pas de fichier en trop).
+- « Importe ce fichier dans une nouvelle table » avec un CSV joint : l'IA crée la table, puis au tour suivant `IMPORT_PLAN` et `IMPORT_DATA` ; la carte de validation nomme le fichier, ses lignes et la table ; la table a ses colonnes et ses lignes.
+- Le message de départ d'une automation ne propose pas le trombone.
 - DeepSeek, sur une dizaine de réponses : aucune ne commence par du texte ou `<thinking>` ; si l'une le fait, le message `FORMAT_ERROR` cite ce texte et la réponse suivante commence par `{`.
 - Après la mise à jour : une ancienne session affiche ses tokens et un coût en « ≥ » ; une nouvelle, un coût exact, le même dans la fiche de coût et sur la carte d'historique d'automation.
 - Démarrer l'app en mode avion après l'avoir déjà utilisée en ligne : une session affiche quand même son coût (prix gardés sur le téléphone).

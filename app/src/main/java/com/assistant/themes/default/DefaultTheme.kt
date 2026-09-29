@@ -379,7 +379,7 @@ object DefaultTheme : ThemeContract {
     private fun getDefaultButtonType(action: ButtonAction): ButtonType {
         return when (action) {
             // PRIMARY: Actions critiques/importantes
-            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START -> ButtonType.PRIMARY
+            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START, ButtonAction.ATTACH -> ButtonType.PRIMARY
 
             // DANGER: destructive actions, behind a confirmation
             ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
@@ -417,6 +417,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.RESUME -> s.shared("action_resume")
             ButtonAction.START -> s.shared("action_start")
             ButtonAction.VIEW -> s.shared("action_view")
+            ButtonAction.ATTACH -> s.shared("action_attach")
         }
     }
 

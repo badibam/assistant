@@ -22,6 +22,7 @@ import org.json.JSONObject
  * * POINTER: Always generates query
  * * USE: Query for tool instance config
  * * MODIFY_CONFIG: Query for tool instance config
+ * * FILE: the file read, whole or its first lines
  * * CREATE: No query (just orientation)
  * * ORGANIZE: No query (just orientation)
  */
@@ -47,6 +48,7 @@ class EnrichmentProcessor(
                 EnrichmentType.USE -> generateUseSummary(configJson)
                 EnrichmentType.CREATE -> generateCreateSummary(configJson)
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigSummary(configJson)
+                EnrichmentType.FILE -> FileEnrichment.fromJson(configJson).summary(s)
             }
 
             LogManager.aiEnrichment("Generated summary for $type: '$summary'", "DEBUG")
@@ -65,7 +67,7 @@ class EnrichmentProcessor(
 
         return try {
             val shouldGenerate = when (type) {
-                EnrichmentType.POINTER, EnrichmentType.USE, EnrichmentType.MODIFY_CONFIG -> {
+                EnrichmentType.POINTER, EnrichmentType.USE, EnrichmentType.MODIFY_CONFIG, EnrichmentType.FILE -> {
                     LogManager.aiEnrichment("$type enrichment always generates query", "DEBUG")
                     true
                 }
@@ -108,6 +110,7 @@ class EnrichmentProcessor(
                 EnrichmentType.USE -> generateUseQueries(configJson, isRelative)
                 EnrichmentType.CREATE -> generateCreateQueries(configJson, isRelative)
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigQueries(configJson, isRelative)
+                EnrichmentType.FILE -> listOf(FileEnrichment.fromJson(configJson).query(isRelative))
                 else -> {
                     LogManager.aiEnrichment("No query generator for type $type", "WARN")
                     emptyList()

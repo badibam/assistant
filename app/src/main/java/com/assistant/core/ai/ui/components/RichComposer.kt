@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
+import com.assistant.core.coordinator.isSuccess
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -176,9 +178,25 @@ fun UI.RichComposer(
     enrichmentTypes: List<EnrichmentType> = EnrichmentType.values().toList(),
     modifier: Modifier = Modifier,
     sessionType: SessionType = SessionType.CHAT,
+    sessionId: String? = null,
     statusContent: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // A file is kept with its session: without one, none can be joined
+    val offeredTypes = enrichmentTypes.filter { it != EnrichmentType.FILE || sessionId != null }
+
+    /** The files of [enrichments] deleted: taken off the composer, they will never go. */
+    fun deleteFiles(enrichments: List<MessageSegment.EnrichmentBlock>) {
+        val ids = enrichments.filter { it.type == EnrichmentType.FILE }.map { com.assistant.core.ai.enrichments.FileEnrichment.fromJson(it.config).fileId }
+        if (ids.isEmpty()) return
+        scope.launch {
+            ids.forEach { id ->
+                val result = com.assistant.core.coordinator.Coordinator(context).processUserAction("files.delete", mapOf("id" to id))
+                if (!result.isSuccess) LogManager.aiEnrichment("File $id not deleted: ${result.error}", "ERROR")
+            }
+        }
+    }
     val s = remember { Strings.`for`(context = context) }
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
@@ -296,6 +314,7 @@ fun UI.RichComposer(
                     )
                 },
                 onEnrichmentRemove = { enrichment ->
+                    deleteFiles(listOf(enrichment))
                     blocks = blocks.map {
                         if (it.id == block.id) {
                             it.copy(enrichments = it.enrichments.filter { e -> e != enrichment })
@@ -304,6 +323,7 @@ fun UI.RichComposer(
                     updateSegments()
                 },
                 onDeleteBlock = {
+                    deleteFiles(block.enrichments)
                     // Remove this block (if not the last one)
                     if (blocks.size > 1) {
                         val index = blocks.indexOfFirst { it.id == block.id }
@@ -335,7 +355,7 @@ fun UI.RichComposer(
         ) {
             // Enrichment buttons (if enabled)
             if (showEnrichmentButtons) {
-                enrichmentTypes.forEach { type ->
+                offeredTypes.forEach { type ->
                     UI.ActionButton(
                         action = getEnrichmentButtonAction(type),
                         display = ButtonDisplay.ICON,
@@ -410,7 +430,8 @@ fun UI.RichComposer(
                 updateSegments()
                 showEnrichmentDialog = null
             },
-            sessionType = sessionType
+            sessionType = sessionType,
+            sessionId = sessionId
         )
     }
 }
@@ -579,6 +600,7 @@ private fun getEnrichmentButtonAction(type: EnrichmentType): ButtonAction {
         EnrichmentType.USE -> ButtonAction.EDIT
         EnrichmentType.CREATE -> ButtonAction.ADD
         EnrichmentType.MODIFY_CONFIG -> ButtonAction.CONFIGURE
+        EnrichmentType.FILE -> ButtonAction.ATTACH
     }
 }
 
@@ -591,9 +613,16 @@ private fun EnrichmentConfigDialog(
     existingConfig: String?,
     onDismiss: () -> Unit,
     onConfirm: (config: String) -> Unit,
-    sessionType: SessionType = SessionType.CHAT
+    sessionType: SessionType = SessionType.CHAT,
+    sessionId: String? = null
 ) {
     when (type) {
+        EnrichmentType.FILE -> FileEnrichmentDialog(
+            existingConfig = existingConfig,
+            sessionId = checkNotNull(sessionId) { "a file is joined within a session" },
+            onDismiss = onDismiss,
+            onConfirm = onConfirm
+        )
         EnrichmentType.POINTER -> {
             PointerEnrichmentDialog(
                 existingConfig = existingConfig,

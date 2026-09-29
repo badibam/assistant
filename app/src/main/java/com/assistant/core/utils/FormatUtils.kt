@@ -75,6 +75,16 @@ object FormatUtils {
         }
     }
 
+    /** A size in bytes as the user reads it: "412 B", "12.3 KB", "1.2 MB", in the app's language. */
+    fun formatFileSize(bytes: Long, context: Context): String {
+        val s = Strings.`for`(context = context)
+        return when {
+            bytes < 1024 -> s.shared("size_bytes").format(bytes)
+            bytes < 1024 * 1024 -> s.shared("size_kilobytes").format(bytes / 1024.0)
+            else -> s.shared("size_megabytes").format(bytes / (1024.0 * 1024.0))
+        }
+    }
+
     /**
      * Format relative time for past timestamp
      * Examples: "il y a 2h", "il y a 15 min", "il y a 3 jours", "à l'instant"

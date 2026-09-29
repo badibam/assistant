@@ -1111,6 +1111,17 @@
     <string name="file_error_not_text">%1$s is not a text file: only text can be joined (CSV, plain text, Markdown, JSON).</string>
     <string name="file_error_not_found">No joined file has the id %1$s.</string>
     <string name="file_error_range">Lines to read: start_line from 1 and lines from 1 (got %1$d and %2$d).</string>
+    <string name="file_dialog_title">Join a file</string>
+    <string name="file_include_whole">Include it whole in the context</string>
+    <string name="file_preview_label">Start of the file</string>
+    <string name="file_line_count">%1$d lines</string>
+    <string name="file_summary_whole">File: %1$s (%2$d lines), whole</string>
+    <string name="file_summary_preview">File: %1$s (%2$d lines), preview only</string>
+    <string name="file_error_encoding">%1$s is not readable text (UTF-8 expected).</string>
+    <string name="action_attach">Join a file</string>
+    <string name="size_bytes">%1$d B</string>
+    <string name="size_kilobytes">%1$.1f KB</string>
+    <string name="size_megabytes">%1$.1f MB</string>
     <string name="action_verbalize_files_attach">Joining a file</string>
     <string name="action_verbalize_files_read">Reading a joined file</string>
     <string name="action_verbalize_files_delete">Removing a joined file</string>

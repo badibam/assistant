@@ -343,6 +343,7 @@ private fun ChatMode(
                         }
                     },
                     placeholder = s.shared("ai_composer_placeholder"),
+                    sessionId = session.id,
                     enabled = composerEnabled,
                     statusContent = {
                         // Status bar inline with Send button

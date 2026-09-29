@@ -1111,6 +1111,17 @@
     <string name="file_error_not_text">%1$s n\'est pas un fichier texte : seul du texte se joint (CSV, texte brut, Markdown, JSON).</string>
     <string name="file_error_not_found">Aucun fichier joint n\'a l\'id %1$s.</string>
     <string name="file_error_range">Lignes à lire : start_line à partir de 1 et lines à partir de 1 (reçu %1$d et %2$d).</string>
+    <string name="file_dialog_title">Joindre un fichier</string>
+    <string name="file_include_whole">Inclure en entier dans le contexte</string>
+    <string name="file_preview_label">Début du fichier</string>
+    <string name="file_line_count">%1$d lignes</string>
+    <string name="file_summary_whole">Fichier : %1$s (%2$d lignes), en entier</string>
+    <string name="file_summary_preview">Fichier : %1$s (%2$d lignes), aperçu seulement</string>
+    <string name="file_error_encoding">%1$s n\'est pas un texte lisible (UTF-8 attendu).</string>
+    <string name="action_attach">Joindre un fichier</string>
+    <string name="size_bytes">%1$d o</string>
+    <string name="size_kilobytes">%1$.1f Ko</string>
+    <string name="size_megabytes">%1$.1f Mo</string>
     <string name="action_verbalize_files_attach">Ajout d\'un fichier joint</string>
     <string name="action_verbalize_files_read">Lecture d\'un fichier joint</string>
     <string name="action_verbalize_files_delete">Retrait d\'un fichier joint</string>

@@ -15,7 +15,7 @@ import java.util.UUID
  * - attach: `session_id`, `name`, `mime_type`, `content`: the file kept; its `id` and `line_count`.
  *   A content that is not text (a NUL character in it) is refused.
  * - read: `id`, and `start_line` (from 1) and `lines` to read a part: that part's text, with the
- *   file's name, type and line count. Without them, the whole file.
+ *   file's name, type, size and line count. Without them, the whole file.
  * - delete: `id`: a file taken off the composer before its message went.
  */
 class FileService(private val context: Context) : ExecutableService {
@@ -68,6 +68,7 @@ class FileService(private val context: Context) : ExecutableService {
             "name" to file.name,
             "mime_type" to file.mimeType,
             "line_count" to file.lineCount,
+            "size_bytes" to file.sizeBytes,
             "start_line" to start,
             "lines" to part.lines,
             "text" to part.text
