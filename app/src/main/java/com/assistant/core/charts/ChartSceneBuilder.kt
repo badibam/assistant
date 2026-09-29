@@ -139,7 +139,7 @@ class ChartSceneBuilder(
         is Composition.Single -> listOf(Cell(null, bound))
         is Composition.Concat -> {
             var next = 0
-            composition.children.map { view -> Cell(null, view.layers.map { bound[next++] }) }
+            composition.children.map { view -> Cell(view.title, view.layers.map { bound[next++] }) }
         }
         is Composition.Facet -> {
             val field = composition.field

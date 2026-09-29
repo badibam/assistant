@@ -114,4 +114,39 @@ class SettingsSchemaGeneratorTest {
 
         org.junit.Assert.assertTrue(generated.getJSONObject("properties").getJSONObject("api_key").getBoolean(SettingsSchemaGenerator.SECRET))
     }
+
+    /** A chart's pieces: a period, a selection of entries, a term among its kinds, a field and a condition of the rows. */
+    private val bricks = listOf(
+        SettingNode.Period("period", "period", "display", required = true),
+        SettingNode.Selection("selection", "selection", "display"),
+        SettingNode.Term("term", "term", setOf(com.assistant.core.terms.Term.Kind.VARIABLE, com.assistant.core.terms.Term.Kind.READING), "step", null),
+        SettingNode.Field(FieldDefinition("field", "field", null, FieldType.TEXT, false, null), rowField = true),
+        SettingNode.Condition("test", "test", "", null, onRow = true)
+    )
+
+    @Test
+    fun bricksHeldWholeAreCheckedInTheirStoredForm() {
+        val generated = SettingsSchemaGenerator.generate(bricks, text)
+        val validator = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7).getSchema(generated.toString())
+        fun valid(config: String) = validator.validate(mapper.readTree(config)).isEmpty()
+        assertTrue(valid("""{"period": {"start": {"relative": {"unit": "DAY", "offset": -29, "edge": "START"}}, "end": 1790000000000},
+            "selection": {"target": {"kind": "TOOL_INSTANCE", "id": "t1"}, "filters": [{"left": {"field": "data.kcal"}, "op": ">", "right": {"constant": 500}}]},
+            "term": {"variable": "v1"}, "field": "kcal",
+            "test": {"left": {"field": "kcal"}, "op": ">", "right": {"field": "goal"}}}"""))
+        assertFalse(valid("""{"period": {}, "term": {"constant": 3}}"""))
+        assertFalse(valid("""{"period": {"start": "yesterday"}}"""))
+        // The model reads every one of them
+        com.assistant.core.ai.prompts.SchemaNotation.render(SchemaModelView.forModel(generated, ZoneId.of("Europe/Paris")))
+    }
+
+    @Test
+    fun aPeriodsFixedBoundIsAnInstantToTheModelAndARelativeOneStaysAsItIs() {
+        val generated = SettingsSchemaGenerator.generate(bricks, text)
+        val zone = ZoneId.of("Europe/Paris")
+        val stored = JSONObject("""{"period": {"start": {"relative": "NOW"}, "end": 1790000000000}}""")
+        val shown = ModelValues.toModel(stored, generated, zone) as JSONObject
+        assertEquals("NOW", shown.getJSONObject("period").getJSONObject("start").getString("relative"))
+        assertTrue(shown.getJSONObject("period").get("end") is String)
+        assertEquals(stored.toString(), (ModelValues.fromModel(shown, generated, zone) as JSONObject).toString())
+    }
 }

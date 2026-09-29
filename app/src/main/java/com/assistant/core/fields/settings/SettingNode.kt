@@ -61,7 +61,7 @@ sealed class SettingNode {
      * @property summary For a list of groups, the settings of an element that stand for it when
      *   it is closed, in the order shown: a form shows every element closed, one line of these
      *   values, and opens it on demand. Required for such a list, and each name is a setting
-     *   stored in the element itself.
+     *   stored in the element itself: a value, or a list of values, shown joined.
      */
     data class ListOf(
         val name: String,
@@ -77,7 +77,9 @@ sealed class SettingNode {
             if (item is Item.Of) {
                 require(summary.isNotEmpty()) { "The list '$name' has groups for elements, and no summary" }
                 summary.forEach { key ->
-                    requireNotNull(item.nodes.storedField(key)) { "The summary of the list '$name' names '$key', which its elements do not store" }
+                    require(item.nodes.storedField(key) != null || item.nodes.storedValues(key) != null) {
+                        "The summary of the list '$name' names '$key', which its elements do not store"
+                    }
                 }
             } else {
                 require(summary.isEmpty()) { "The list '$name' has single values for elements: they are their own summary" }
@@ -193,6 +195,23 @@ fun List<SettingNode>.storedField(name: String): FieldDefinition? {
             is SettingNode.Section -> node.nodes.storedField(name)
             is SettingNode.Group, is SettingNode.ListOf, is SettingNode.Condition,
             is SettingNode.Term, is SettingNode.Selection, is SettingNode.Period -> null
+        }
+        if (found != null) return found
+    }
+    return null
+}
+
+/**
+ * The list of single values stored under [name] in the object these nodes describe, as
+ * storedField finds a value: its elements' field, null when no such list is there.
+ */
+fun List<SettingNode>.storedValues(name: String): FieldDefinition? {
+    for (node in this) {
+        val found = when (node) {
+            is SettingNode.ListOf -> (node.item as? SettingNode.Item.Value)?.definition?.takeIf { node.name == name }
+            is SettingNode.Variant -> node.cases.values.firstNotNullOfOrNull { it.storedValues(name) }
+            is SettingNode.Section -> node.nodes.storedValues(name)
+            else -> null
         }
         if (found != null) return found
     }

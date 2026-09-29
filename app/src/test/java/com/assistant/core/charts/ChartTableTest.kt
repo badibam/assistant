@@ -62,8 +62,8 @@ class ChartTableTest {
         val steps = GridSteps.of(PeriodType.WEEK, at(9), at(22), now = at(30), dayStartHour = 0, weekStartDay = "monday", zone = zone)
         // The 9th of September 2026 is a Wednesday: its week began on Monday the 7th
         assertEquals(listOf(at(7), at(14), at(21)), steps.map { it.first })
-        assertEquals(1, GridSteps.weekday(at(7), "monday", zone))
-        assertEquals(7, GridSteps.weekday(at(13), "monday", zone))
-        assertEquals(2, GridSteps.weekday(at(7), "sunday", zone))
+        assertEquals(1, GridSteps.weekday(at(7), zone))
+        assertEquals(7, GridSteps.weekday(at(13), zone))
+        assertEquals(listOf(7, 1, 2, 3, 4, 5, 6), GridSteps.weekOrder("sunday"))
     }
 }

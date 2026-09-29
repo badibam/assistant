@@ -3,7 +3,7 @@
 
 The rule: a key is snake_case -- service parameter, result key, schema field, setting name,
 column. camelCase belongs to Kotlin identifiers only. The one exception is vocabulary the
-project did not write: JSON Schema's own keywords.
+project did not write: JSON Schema's own keywords, and Vega-Lite's in a chart's config.
 
 A key is usually written inside a string, but not always: a property of a @Serializable class
 names a JSON field too, so it is checked as well.
@@ -30,12 +30,14 @@ BASELINE = Path(__file__).resolve().parent / "key_case_baseline.txt"
 # camelCase strings are history, not keys anything reads.
 EXCLUDED = {"core/versioning/KeyCaseRenames.kt"}
 
-# JSON Schema keywords. Not ours to rename, so not violations.
+# JSON Schema and Vega-Lite keywords. Not ours to rename, so not violations.
 FOREIGN = {
     "additionalProperties", "allOf", "anyOf", "contentEncoding", "contentMediaType",
     "exclusiveMaximum", "exclusiveMinimum", "maxItems", "maxLength", "maxProperties",
     "minItems", "minLength", "minProperties", "multipleOf", "oneOf", "patternProperties",
     "propertyNames", "uniqueItems",
+    # Vega-Lite's, which a chart's config speaks so that the AI writes it as it knows it
+    "strokeDash", "strokeWidth",
 }
 
 # A string literal holding a single identifier with an inner capital: "toolInstanceId".

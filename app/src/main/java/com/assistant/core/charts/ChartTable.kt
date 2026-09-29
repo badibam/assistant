@@ -115,11 +115,13 @@ object GridSteps {
         return steps
     }
 
-    /** The day of the week of [instant], 1 for the week's first day as the user set it. */
-    fun weekday(instant: Long, weekStartDay: String, zone: ZoneId): Int {
-        val day = Instant.ofEpochMilli(instant).atZone(zone).dayOfWeek
-        val first = java.time.DayOfWeek.valueOf(weekStartDay.uppercase())
-        return (day.value - first.value + 7) % 7 + 1
+    /** The day of the week of [instant], 1 for Monday to 7 for Sunday (ISO). */
+    fun weekday(instant: Long, zone: ZoneId): Int = Instant.ofEpochMilli(instant).atZone(zone).dayOfWeek.value
+
+    /** The days of the week in the order the user's week runs, from the day it starts on. */
+    fun weekOrder(weekStartDay: String): List<Int> {
+        val first = java.time.DayOfWeek.valueOf(weekStartDay.uppercase()).value
+        return (0 until 7).map { (first - 1 + it) % 7 + 1 }
     }
 
     /** The most steps a grid reads. */

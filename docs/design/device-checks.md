@@ -158,3 +158,13 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - « Avec l'IA » sur une entrée à remplir : le chat s'ouvre, sa saisie porte le message et les pointeurs vers l'outil et l'entrée ; envoyé, l'IA pose les questions, écrit les réponses et marque l'entrée remplie.
 - Toucher une entrée de l'historique : ses réponses en entier, modifiables.
 
+## Graphique
+
+- Créer un Graphique à la main : « Une vue », une couche « Une grille de pas », pas « Jour », période « Il y a 29 jours, début » → « Le moment même » ; une colonne `kcal` lisant une variable ; marque « Barres », x : « Pas », y : `kcal`. Enregistrer : trente barres, les jours sans valeur en trou hachuré ; toucher un trou : sa cause et les entrées à corriger, dont chacune ouvre son outil.
+- Demander à l'IA le premier graphique de `tracking_alimentaire` : `kcal_aliments` et `kcal_vides` repliés (`fold`) en barres empilées de deux couleurs, `objectif_calorique` en ligne en paliers, le poids à droite en ligne avec points. Les deux axes verticaux, chacun son unité ; la légende en bas nomme les deux sortes.
+- Mettre le poids du même côté que les kcal : l'enregistrement est refusé et propose l'autre côté.
+- Des bornes fixes `[60, 80]` sur le poids avec une pesée à 95 : un triangle au bord haut, pas de point écrasé contre lui ; le toucher montre la pesée.
+- Un camembert des macros d'un jour, un calendrier de l'humeur (`rect`, x `week` en catégories ordonnées, y `weekday`, couleur de la moyenne) : lisibles en portrait.
+- Dans le formulaire, le choix d'une colonne d'un canal ne propose que celles de sa couche (après ses transformations) ; les colonnes d'un `fold` proposent celles d'avant lui.
+- Ajouter une entrée au suivi que lit le graphique, revenir : le graphique l'a prise. Tourner l'écran : le graphique se redessine à la nouvelle largeur.
+

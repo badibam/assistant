@@ -414,8 +414,9 @@ private fun ListForm(
 private fun Summary(summary: List<String>, nodes: List<SettingNode>, element: JSONObject, context: Context) {
     val shown = summary.mapNotNull { key ->
         val value = JsonUtils.toValue(element.opt(key)?.takeIf { it != JSONObject.NULL })
-            ?.takeIf { it.toString().isNotEmpty() } ?: return@mapNotNull null
-        requireNotNull(nodes.storedField(key)) to value
+            ?.takeIf { it.toString().isNotEmpty() && it != emptyList<Any>() } ?: return@mapNotNull null
+        // A list of values shows them one after the other, each as its field shows it
+        Triple(nodes.storedField(key) ?: requireNotNull(nodes.storedValues(key)), value, nodes.storedField(key) == null)
     }
     if (shown.isEmpty()) {
         UI.Text(Strings.`for`(context = context).shared("list_item_untitled"), TextType.CAPTION)
@@ -425,10 +426,11 @@ private fun Summary(summary: List<String>, nodes: List<SettingNode>, element: JS
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        shown.forEachIndexed { i, (definition, value) ->
+        shown.forEachIndexed { i, (definition, value, isList) ->
             // Values side by side would read as one phrase ("Weighed on Date and time")
             if (i > 0) UI.Text(Strings.`for`(context = context).shared("list_item_summary_separator"), TextType.BODY)
-            FieldValue(definition, value, context)
+            if (isList && value is List<*>) value.forEach { FieldValue(definition, it, context) }
+            else FieldValue(definition, value, context)
         }
     }
 }

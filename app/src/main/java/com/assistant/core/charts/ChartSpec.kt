@@ -65,8 +65,8 @@ sealed interface Composition {
 
 enum class ConcatDirection(val key: String) { VERTICAL("vconcat"), HORIZONTAL("hconcat"), WRAP("concat") }
 
-/** Layers drawn over one another, sharing the horizontal axis. */
-data class View(val layers: List<Layer>)
+/** Layers drawn over one another, sharing the horizontal axis; [title] over it among others. */
+data class View(val layers: List<Layer>, val title: String? = null)
 
 /** One source read into a table, transformed, drawn with one mark. */
 data class Layer(val source: Source, val transforms: List<Transform>, val mark: Mark, val encoding: Map<Channel, ChannelDef>) {
@@ -173,6 +173,8 @@ data class ChannelCondition(val test: JSONObject, val value: Any)
 /** The keys of a chart's config: Vega-Lite's where it has one, the app's for its sources. */
 object ChartKeys {
     const val PERIOD = "period"
+    const val TITLE = "title"
+    const val DESCRIPTION = "description"
     const val COMPOSITION = "composition"
     const val LAYER = "layer"
     const val FACET = "facet"
@@ -220,6 +222,10 @@ object ChartKeys {
     const val SINGLE = "layer"
     val COMPOSITIONS = listOf(SINGLE) + ConcatDirection.entries.map { it.key } + listOf(FACET, REPEAT)
 
+    /** The names Vega-Lite gives a fold's two columns when none are given. */
+    const val FOLD_KEY = "key"
+    const val FOLD_VALUE = "value"
+
     /** The steps a grid takes, the options of [STEP]. */
     val STEPS = mapOf("hour" to PeriodType.HOUR, "day" to PeriodType.DAY, "week" to PeriodType.WEEK, "month" to PeriodType.MONTH, "year" to PeriodType.YEAR)
 }
@@ -259,7 +265,7 @@ private class ChartReader(private val text: (String) -> String) {
 
     private fun view(json: JSONObject): View {
         val layers = json.optJSONArray(ChartKeys.LAYER)?.let { array -> (0 until array.length()).map { layer(array.getJSONObject(it), it) } }
-        return View(layers?.takeIf { it.isNotEmpty() } ?: refuse("chart_error_missing", ChartKeys.LAYER))
+        return View(layers?.takeIf { it.isNotEmpty() } ?: refuse("chart_error_missing", ChartKeys.LAYER), json.optString(ChartKeys.TITLE).takeIf { it.isNotBlank() })
     }
 
     private fun layer(json: JSONObject, index: Int): Layer {
@@ -292,7 +298,7 @@ private class ChartReader(private val text: (String) -> String) {
             fold.isNotEmpty() && flatten.isEmpty() -> {
                 val names = strings(json.optJSONArray(ChartKeys.AS))
                 if (names.isNotEmpty() && names.size != 2) refuse("chart_error_fold_as")
-                Transform.Fold(fold, names.getOrElse(0) { FOLD_KEY }, names.getOrElse(1) { FOLD_VALUE })
+                Transform.Fold(fold, names.getOrElse(0) { ChartKeys.FOLD_KEY }, names.getOrElse(1) { ChartKeys.FOLD_VALUE })
             }
             flatten.isNotEmpty() && fold.isEmpty() -> Transform.Flatten(flatten)
             else -> refuse("chart_error_transform")
@@ -366,9 +372,4 @@ private class ChartReader(private val text: (String) -> String) {
 
     private fun strings(array: JSONArray?): List<String> = array?.let { (0 until it.length()).map { i -> it.getString(i) } } ?: emptyList()
 
-    companion object {
-        /** The names Vega-Lite gives a fold's two columns when none are given. */
-        const val FOLD_KEY = "key"
-        const val FOLD_VALUE = "value"
-    }
 }

@@ -8,6 +8,7 @@ import com.assistant.tools.list.ListToolType
 import com.assistant.tools.structured.StructuredToolType
 import com.assistant.tools.goal.GoalToolType
 import com.assistant.tools.questionnaire.QuestionnaireToolType
+import com.assistant.tools.chart.ChartToolType
 
 /**
  * Simple registry that lists known tool types
@@ -24,7 +25,8 @@ object ToolTypeScanner {
             "list" to ListToolType,
             "structured" to StructuredToolType,
             "goal" to GoalToolType,
-            "questionnaire" to QuestionnaireToolType
+            "questionnaire" to QuestionnaireToolType,
+            "chart" to ChartToolType
         )
     }
 }
