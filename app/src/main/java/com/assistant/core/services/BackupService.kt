@@ -22,6 +22,7 @@ import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
 import com.assistant.core.versioning.PointerAtV46
+import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
 import org.json.JSONObject
@@ -90,6 +91,7 @@ class BackupService(private val context: Context) : ExecutableService {
 
             val aiProviderConfigs = database.aiDao().getAllProviderConfigs()
             val automations = database.aiDao().getAllAutomations()
+            val variables = database.variableDao().getAll()
 
             // Check cancellation before building JSON
             if (token.isCancelled) {
@@ -270,6 +272,22 @@ class BackupService(private val context: Context) : ExecutableService {
                                 if (automation.group != null) {
                                     put("group", automation.group)
                                 }
+                            })
+                        }
+                    })
+
+                    // Variables
+                    put("variables", JSONArray().apply {
+                        variables.forEach { variable ->
+                            put(JSONObject().apply {
+                                put("id", variable.id)
+                                put("zone_id", variable.zoneId)
+                                put("name", variable.name)
+                                variable.group?.let { put("group", it) }
+                                put("order_index", variable.orderIndex)
+                                put("definition_json", variable.definitionJson)
+                                put("created_at", variable.createdAt)
+                                put("updated_at", variable.updatedAt)
                             })
                         }
                     })
@@ -601,6 +619,25 @@ class BackupService(private val context: Context) : ExecutableService {
                         lastExecutionId = item.optString("last_execution_id", null),
                         executionHistoryJson = item.optString("execution_history_json", "[]"),
                         group = item.optString("group", null)
+                    )
+                )
+            }
+        }
+
+        // Variables, after the zones they live in
+        data.optJSONArray("variables")?.let { array ->
+            for (i in 0 until array.length()) {
+                val item = array.getJSONObject(i)
+                database.variableDao().insert(
+                    VariableEntity(
+                        id = item.getString("id"),
+                        zoneId = item.getString("zone_id"),
+                        name = item.getString("name"),
+                        group = item.optString("group").takeIf { it.isNotEmpty() },
+                        orderIndex = item.getInt("order_index"),
+                        definitionJson = item.getString("definition_json"),
+                        createdAt = item.getLong("created_at"),
+                        updatedAt = item.getLong("updated_at")
                     )
                 )
             }

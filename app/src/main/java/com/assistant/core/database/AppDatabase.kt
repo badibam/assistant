@@ -9,11 +9,13 @@ import com.assistant.core.database.dao.ToolInstanceDao
 import com.assistant.core.database.dao.BaseToolDataDao
 import com.assistant.core.database.dao.AppSettingsCategoryDao
 import com.assistant.core.database.dao.LogDao
+import com.assistant.core.database.dao.VariableDao
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.LogEntry
+import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.ai.database.AIDao
 import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.database.SessionMessageEntity
@@ -52,7 +54,8 @@ import com.assistant.core.ai.data.LegacyCatchUp
         SessionMessageEntity::class,
         AIProviderConfigEntity::class,
         AutomationEntity::class,
-        LogEntry::class
+        LogEntry::class,
+        VariableEntity::class
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
@@ -70,13 +73,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun appSettingsCategoryDao(): AppSettingsCategoryDao
     abstract fun aiDao(): AIDao
     abstract fun logDao(): LogDao
+    abstract fun variableDao(): VariableDao
 
     companion object {
         /**
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 46
+        const val VERSION = 47
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1363,6 +1367,29 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** The variables of the core, each in a zone and deleted with it, named once in the app. */
+        private val MIGRATION_46_47 = object : Migration(46, 47) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS variables (
+                        id TEXT NOT NULL,
+                        zone_id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        `group` TEXT,
+                        order_index INTEGER NOT NULL,
+                        definition_json TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        PRIMARY KEY(id),
+                        FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_variables_zone_id ON variables(zone_id)")
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_variables_name ON variables(name)")
+                LogManager.database("MIGRATION 46->47: variables table created", "INFO")
+            }
+        }
+
         /**
          * A pointer holds a selection of the core, its period apart and its relative dates as
          * objects with their edge: see PointerAtV46. Which field is a date is read from the
@@ -1890,7 +1917,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_42_43,
                     MIGRATION_43_44,
                     MIGRATION_44_45,
-                    migration45to46(context)
+                    migration45to46(context),
+                    MIGRATION_46_47
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
