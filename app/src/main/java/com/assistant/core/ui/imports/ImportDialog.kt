@@ -61,7 +61,7 @@ fun ImportDialog(toolInstanceId: String, csv: String, onDismiss: () -> Unit) {
         fields = try {
             ToolFields.filterable(toolInstanceId, context, s).filterKeys { !it.startsWith("state.") && it != "created_at" && it != "updated_at" }
                 .mapValues { "${it.value.displayName} (${it.key})" }
-        } catch (e: IllegalStateException) { emptyMap() }
+        } catch (e: IllegalStateException) { error = e.message; emptyMap() }
         if (columns != null) return@LaunchedEffect
         val result = coordinator.processUserAction("imports.detect", mapOf("tool_instance_id" to toolInstanceId, "csv" to csv))
         if (result.isSuccess) {

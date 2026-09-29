@@ -318,7 +318,7 @@ Reads a variable\'s value at one or several instants, each of its terms read rel
 **Parameters**:
 
 - `variable` (string, **required**): its name
-- `at` (array, optional): the instants, each an ISO 8601 date-time or a relative date; now when left out
+- `at` (array, **required**): the instants, each an ISO 8601 date-time or a relative date (`{ "relative": "NOW" }` for now)
 
 Returns `values`, one per instant in the same order: `{ "at", "value" }`, or `{ "at", "failure": { "causes", "message" } }` when it cannot be computed (no entry, an entry without its value, a tool or a variable deleted): tell the user why rather than guess a number. A field of the entries you read yourself with TOOL_DATA.
 

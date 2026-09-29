@@ -145,13 +145,13 @@ object CommandTransformer {
     }
 
     /**
-     * A variable read at instants: `variable` (its name) and `at`, each an ISO 8601 date-time or
-     * a relative date resolved against [reference], in milliseconds for the service.
+     * A variable read at instants: `variable` (its name) and `at`, required, each an ISO 8601
+     * date-time or a relative date resolved against [reference], in milliseconds for the service.
      */
     private fun transformReadingCommand(command: DataCommand, s: StringsContext, reference: Long): ExecutableCommand? {
         val name = command.params["variable"] as? String ?: return null
         val resolver = TimeResolver.at(reference)
-        val at = (command.params["at"] as? List<*> ?: listOf(mapOf("relative" to "NOW"))).map { instant ->
+        val at = (command.params["at"] as? List<*> ?: throw IllegalArgumentException(s.shared("service_error_reading_param").format("at"))).map { instant ->
             when {
                 TimePoint.isRelative(instant) -> resolver.instant(TimePoint.read(instant!!) { s.shared(it) })
                 instant is String -> DateTimeConverter.isoToTimestamp(instant, resolver.zone)

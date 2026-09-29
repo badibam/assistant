@@ -274,8 +274,10 @@ private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSO
     val target = selection.optJSONObject("target")
     val toolId = target?.optString("id")?.takeIf { it.isNotEmpty() }
     var fields by remember { mutableStateOf<Map<String, FieldDefinition>>(emptyMap()) }
+    var fieldsError by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(toolId) {
-        fields = if (toolId == null) emptyMap() else try { ToolFields.filterable(toolId, context, Strings.`for`(context = context)) } catch (e: IllegalStateException) { emptyMap() }
+        fieldsError = null
+        fields = if (toolId == null) emptyMap() else try { ToolFields.filterable(toolId, context, Strings.`for`(context = context)) } catch (e: IllegalStateException) { fieldsError = e.message; emptyMap() }
     }
 
     FieldInput(
@@ -285,6 +287,8 @@ private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSO
         { value -> edit { put("selection", JSONObject(selection.toString()).put("target", JsonUtils.toJSONObject((value as Map<*, *>).entries.associate { it.key.toString() to it.value }))); remove("field") } },
         context, required = true
     )
+
+    fieldsError?.let { UI.Text(it, TextType.ERROR) }
 
     // What is reduced: a field, a formula per entry, or the entries themselves counted
     val perEntry = reading.has("per_entry")

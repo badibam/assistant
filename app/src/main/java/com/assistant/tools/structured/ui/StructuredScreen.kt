@@ -129,7 +129,8 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
         if (!result.isSuccess) { errorMessage = result.error; return@LaunchedEffect }
         @Suppress("UNCHECKED_CAST")
         config = JsonUtils.toJSONObject((result.data?.get("tool_instance") as Map<*, *>)["config"] as Map<String, Any?>)
-        filterable = try { ToolFields.filterable(toolInstanceId, context, s) } catch (e: IllegalStateException) { emptyMap() }
+        // The fields not read are said: filters and sorting would otherwise offer nothing in silence
+        filterable = try { ToolFields.filterable(toolInstanceId, context, s) } catch (e: IllegalStateException) { errorMessage = e.message; emptyMap() }
     }
     LaunchedEffect(toolInstanceId, sheetsVersion, search, filters) {
         val all = JSONArray(filters)
