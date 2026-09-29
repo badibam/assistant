@@ -32,8 +32,9 @@ fun StructuredTile(tool: ToolInstance, displayMode: DisplayMode) {
     var version by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(tool.id, version) {
-        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id, "fields" to listOf("id")))
-        if (result.isSuccess) count = (result.data?.get("entries") as? List<*>)?.size
+        // One sheet asked for: the count is the database's, in the pagination
+        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id, "fields" to listOf("id"), "limit" to 1))
+        if (result.isSuccess) count = ((result.data?.get("pagination") as? Map<*, *>)?.get("total_entries") as? Number)?.toInt()
     }
     LaunchedEffect(tool.id) {
         DataChangeNotifier.changes.collect { event ->
