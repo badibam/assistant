@@ -263,7 +263,7 @@
 
     <!-- AI Errors - Temporal parameters -->
     <string name="ai_error_period_invalid_iso">Unreadable ISO 8601 date: %1$s. Expected format: 2025-11-23T09:00:00+01:00</string>
-    <string name="ai_error_period_unknown_format">Unreadable period: %1$s. Accepted formats: relative period (offset_TYPE, e.g. -7_DAY), NOW marker, or ISO 8601 date.</string>
+    <string name="ai_error_date_unreadable">Unreadable date: %1$s. Accepted: a day (2026-09-15), or a relative date ({"relative": {"unit": "DAY", "offset": -1, "edge": "START"}}, or {"relative": "NOW"}).</string>
     <string name="ai_error_period_unknown_type">Unknown period type: %1$s. Accepted types: %2$s</string>
     <string name="error_relative_date_invalid">Unreadable relative date: %1$s. Expected: {"relative": {"unit": "DAY", "offset": -1, "edge": "START"}} (edge START or END), or {"relative": "NOW"}</string>
 

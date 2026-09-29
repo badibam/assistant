@@ -5,7 +5,9 @@ import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.ExecutableCommand
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
-import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.selection.EntryPeriod
+import com.assistant.core.selection.TimeResolver
+import com.assistant.core.utils.JsonUtils
 import com.assistant.core.utils.LogManager
 
 /**
@@ -21,7 +23,7 @@ data class TransformationResult(
  *
  * Core responsibilities:
  * - Transform abstract command types to concrete resource.operation format
- * - Put the filters' dates, relative periods and durations in their stored form (FilterValues)
+ * - Put a query's period and its filters' dates and durations in their stored form (FilterValues)
  * - Map parameters from enrichment/AI format to service-compatible format
  * - Handle pagination, filtering, and temporal parameters
  *
@@ -176,18 +178,17 @@ object CommandTransformer {
 
         val params = mutableMapOf<String, Any>("tool_instance_id" to toolInstanceId)
 
-        // The value filters, a period being one on timestamp, with their dates, periods and
-        // durations in the stored form, as the tool's fields type them
-        (command.params["filters"] as? List<*>)?.let { filters ->
-            val fields = FilterValues.filterableFields(toolInstanceId, context, s)
-            val calendar = FilterValues.Calendar(
-                reference = reference,
-                zone = AppConfigManager.getDateTimeConfig().getZoneId(),
-                dayStartHour = AppConfigManager.getDayStartHour(),
-                weekStartDay = AppConfigManager.getWeekStartDay()
-            )
-            params["filters"] = FilterValues.toStored(filters, fields, calendar) { s.shared(it) }
-        }
+        // The period, then the value filters, with their dates and durations in the stored form
+        // as the tool's fields type them; relative dates resolve against the reference
+        val resolver = TimeResolver.at(reference)
+        @Suppress("UNCHECKED_CAST")
+        val periodFilters = (command.params["period"] as? Map<String, Any?>)
+            ?.let { EntryPeriod.fromJson(JsonUtils.toJSONObject(it)) { key -> s.shared(key) }.timestampFilters(resolver) }
+            ?: emptyList()
+        val valueFilters = (command.params["filters"] as? List<*>)?.let { filters ->
+            FilterValues.toStored(filters, FilterValues.filterableFields(toolInstanceId, context, s), resolver) { s.shared(it) }
+        } ?: emptyList()
+        if (periodFilters.isNotEmpty() || valueFilters.isNotEmpty()) params["filters"] = periodFilters + valueFilters
 
         // Add pagination if specified
         command.params["limit"]?.let { params["limit"] = it }

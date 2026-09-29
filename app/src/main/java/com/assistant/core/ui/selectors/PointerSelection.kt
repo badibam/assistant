@@ -1,8 +1,12 @@
 package com.assistant.core.ui.selectors
 
 import com.assistant.core.ai.enrichments.PointerConfig
-import com.assistant.core.ai.enrichments.PointerKind
-import com.assistant.core.ai.enrichments.PointerTarget
+import com.assistant.core.selection.Edge
+import com.assistant.core.selection.EntryPeriod
+import com.assistant.core.selection.EntrySelection
+import com.assistant.core.selection.Reference
+import com.assistant.core.selection.ReferenceKind
+import com.assistant.core.selection.TimePoint
 import com.assistant.core.ui.components.Period
 import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.RelativePeriod
@@ -85,17 +89,17 @@ data class PointerSelection(
     val fields: List<String>? = null
 ) {
     /** The kind of the deepest place reached: the app until a zone is chosen. */
-    val level: PointerKind get() = when {
-        tool != null -> PointerKind.TOOL
-        zone != null -> PointerKind.ZONE
-        else -> PointerKind.APP
+    val level: ReferenceKind get() = when {
+        tool != null -> ReferenceKind.TOOL_INSTANCE
+        zone != null -> ReferenceKind.ZONE
+        else -> ReferenceKind.APP
     }
 
     /** A pointer can be made once a zone or a tool is reached. */
-    val complete: Boolean get() = level == PointerKind.ZONE || level == PointerKind.TOOL
+    val complete: Boolean get() = level == ReferenceKind.ZONE || level == ReferenceKind.TOOL_INSTANCE
 
     /** Whether the entries are narrowed, by a period or a value filter. */
-    val narrowed: Boolean get() = periodFilters("timestamp", period, { it.timestamp }, day = null).length() > 0 || filters.length() > 0
+    val narrowed: Boolean get() = !period.isEmpty || filters.length() > 0
 
     /** Into [zone]: the boxes and the period stay, which a zone offers as well. */
     fun intoZone(zone: Named): PointerSelection = PointerSelection(zone = zone, config = config, entries = entries, period = period)
@@ -104,34 +108,32 @@ data class PointerSelection(
     fun intoTool(tool: Named): PointerSelection = copy(tool = tool, filters = JSONArray(), fields = null)
 
     /** Back up to the app, or to the zone: what the level left offered goes with it. */
-    fun upTo(level: PointerKind): PointerSelection = when (level) {
-        PointerKind.APP -> PointerSelection()
-        PointerKind.ZONE -> PointerSelection(zone = zone, config = config, entries = entries, period = period)
+    fun upTo(level: ReferenceKind): PointerSelection = when (level) {
+        ReferenceKind.APP -> PointerSelection()
+        ReferenceKind.ZONE -> PointerSelection(zone = zone, config = config, entries = entries, period = period)
         else -> this
     }
 
     /**
-     * The pointer to store: the period's bounds as filters on timestamp, before the value
-     * filters. [periodEnd] gives the last instant of a period picked.
+     * The pointer to store: a selection of the core, its period apart from the value filters.
+     * [periodEnd] gives the last instant of a period picked.
      */
     fun pointer(periodEnd: (Period) -> Long): PointerConfig {
         val target = when (level) {
-            PointerKind.TOOL -> PointerTarget(PointerKind.TOOL, tool!!.id)
-            PointerKind.ZONE -> PointerTarget(PointerKind.ZONE, zone!!.id)
+            ReferenceKind.TOOL_INSTANCE -> Reference(ReferenceKind.TOOL_INSTANCE, tool!!.id)
+            ReferenceKind.ZONE -> Reference(ReferenceKind.ZONE, zone!!.id)
             else -> throw IllegalStateException("a pointer needs a zone or a tool")
         }
-        val all = JSONArray()
-        val bounds = periodFilters("timestamp", period, periodEnd, day = null)
-        for (i in 0 until bounds.length()) all.put(bounds.get(i))
-        if (level == PointerKind.TOOL) {
-            for (i in 0 until filters.length()) all.put(filters.get(i))
-        }
+        val isTool = level == ReferenceKind.TOOL_INSTANCE
         return PointerConfig(
-            target = target,
+            selection = EntrySelection(
+                target = target,
+                period = EntryPeriod(bound(period, end = false, periodEnd, day = null), bound(period, end = true, periodEnd, day = null)),
+                filters = if (isTool) filters else JSONArray(),
+                fields = fields.takeIf { isTool }
+            ),
             config = config,
-            entries = entries,
-            filters = all,
-            fields = fields.takeIf { level == PointerKind.TOOL }
+            entries = entries
         )
     }
 
@@ -166,30 +168,39 @@ data class PointerSelection(
 
 private const val DAY_MILLIS = 86_400_000L
 
+/** Whether no bound of the period is set. */
+val TimestampSelection.isEmpty: Boolean
+    get() = !minIsNow && minRelativePeriod == null && minCustomDateTime == null && minPeriod == null &&
+        !maxIsNow && maxRelativePeriod == null && maxCustomDateTime == null && maxPeriod == null
+
 /**
- * A period on the date field [path] as filters: ">=" its start and "<=" its end, each only when
- * set. "NOW" and a relative period stay as they are, resolved at each send; a date or a period
- * picked is in milliseconds, or for a DATE field ([day] given) the day it falls on: the last day
- * of a period picked is the one before the next period starts.
+ * One bound of [period] as stored, null when it is not set: now and a relative period as relative
+ * dates, resolved at each send, a relative period taking the edge of its side; a date or a period
+ * picked, fixed, in milliseconds, or for a DATE field ([day] given) the day it falls on. The last
+ * day of a period picked is the one before the next period starts.
  */
-fun periodFilters(path: String, period: TimestampSelection, periodEnd: (Period) -> Long, day: ((Long) -> String)?): JSONArray {
-    fun fixed(millis: Long): Any = day?.invoke(millis) ?: millis
-    val start: Any? = when {
-        period.minIsNow -> "NOW"
-        period.minRelativePeriod != null -> period.minRelativePeriod.let { "${it.offset}_${it.type.name}" }
+fun bound(period: TimestampSelection, end: Boolean, periodEnd: (Period) -> Long, day: ((Long) -> String)?): TimePoint? {
+    fun fixed(millis: Long) = TimePoint.Fixed(day?.invoke(millis) ?: millis)
+    return if (!end) when {
+        period.minIsNow -> TimePoint.Now
+        period.minRelativePeriod != null -> period.minRelativePeriod.let { TimePoint.Relative(it.type, it.offset, Edge.START) }
         period.minCustomDateTime != null -> fixed(period.minCustomDateTime)
         period.minPeriod != null -> fixed(period.minPeriod.timestamp)
         else -> null
-    }
-    val end: Any? = when {
-        period.maxIsNow -> "NOW"
-        period.maxRelativePeriod != null -> period.maxRelativePeriod.let { "${it.offset}_${it.type.name}" }
+    } else when {
+        period.maxIsNow -> TimePoint.Now
+        period.maxRelativePeriod != null -> period.maxRelativePeriod.let { TimePoint.Relative(it.type, it.offset, Edge.END) }
         period.maxCustomDateTime != null -> fixed(period.maxCustomDateTime)
-        period.maxPeriod != null -> periodEnd(period.maxPeriod).let { last -> if (day != null) day(last + 1 - DAY_MILLIS) else last }
+        period.maxPeriod != null -> periodEnd(period.maxPeriod).let { last ->
+            if (day != null) TimePoint.Fixed(day(last + 1 - DAY_MILLIS)) else TimePoint.Fixed(last)
+        }
         else -> null
     }
-    return JSONArray().apply {
-        start?.let { put(JSONObject().put("field", path).put("op", ">=").put("value", it)) }
-        end?.let { put(JSONObject().put("field", path).put("op", "<=").put("value", it)) }
-    }
 }
+
+/** A period on the date field [path] as filters: ">=" its start and "<=" its end, each only when set. */
+fun periodFilters(path: String, period: TimestampSelection, periodEnd: (Period) -> Long, day: ((Long) -> String)?): JSONArray =
+    JSONArray().apply {
+        bound(period, end = false, periodEnd, day)?.let { put(JSONObject().put("field", path).put("op", ">=").put("value", it.toJson())) }
+        bound(period, end = true, periodEnd, day)?.let { put(JSONObject().put("field", path).put("op", "<=").put("value", it.toJson())) }
+    }

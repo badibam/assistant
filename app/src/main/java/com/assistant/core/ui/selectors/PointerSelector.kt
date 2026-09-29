@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.assistant.core.ai.enrichments.PointerKind
+import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.ai.processing.FilterValues
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.navigation.DataNavigator
@@ -69,8 +69,8 @@ fun PointerSelector(
         places = null
         try {
             places = when (selection.level) {
-                PointerKind.APP -> navigator.getRootNodes().filter { it.type == NodeType.ZONE }
-                PointerKind.ZONE -> navigator.getChildren("zones.${selection.zone!!.id}").filter { it.type == NodeType.TOOL }
+                ReferenceKind.APP -> navigator.getRootNodes().filter { it.type == NodeType.ZONE }
+                ReferenceKind.ZONE -> navigator.getChildren("zones.${selection.zone!!.id}").filter { it.type == NodeType.TOOL }
                 else -> emptyList()
             }
         } catch (e: Exception) {
@@ -146,13 +146,13 @@ fun PointerSelector(
 
 /** App › zone › tool, each step taking the user back up to it. */
 @Composable
-private fun Breadcrumb(selection: PointerSelection, onUp: (PointerKind) -> Unit) {
+private fun Breadcrumb(selection: PointerSelection, onUp: (ReferenceKind) -> Unit) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val steps = listOfNotNull(
-        PointerKind.APP to s.shared("pointer_level_app"),
-        selection.zone?.let { PointerKind.ZONE to it.name },
-        selection.tool?.let { PointerKind.TOOL to it.name }
+        ReferenceKind.APP to s.shared("pointer_level_app"),
+        selection.zone?.let { ReferenceKind.ZONE to it.name },
+        selection.tool?.let { ReferenceKind.TOOL_INSTANCE to it.name }
     )
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         steps.forEachIndexed { i, (level, name) ->
@@ -167,16 +167,16 @@ private fun Breadcrumb(selection: PointerSelection, onUp: (PointerKind) -> Unit)
 
 /** The zones of the app, or the tools of a zone, to go down into. */
 @Composable
-private fun Places(places: List<SchemaNode>?, level: PointerKind, onSelect: (SchemaNode) -> Unit) {
+private fun Places(places: List<SchemaNode>?, level: ReferenceKind, onSelect: (SchemaNode) -> Unit) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    if (level == PointerKind.TOOL) return
+    if (level == ReferenceKind.TOOL_INSTANCE) return
     when {
         places == null -> UI.LoadingIndicator()
         places.isEmpty() -> UI.Text(text = s.shared("scope_no_options"), type = TextType.BODY)
         else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             UI.Text(
-                text = s.shared(if (level == PointerKind.APP) "scope_select_zone" else "scope_select_tool"),
+                text = s.shared(if (level == ReferenceKind.APP) "scope_select_zone" else "scope_select_tool"),
                 type = TextType.SUBTITLE
             )
             places.forEach { node ->
@@ -207,7 +207,7 @@ private fun AttachPanel(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    val isTool = selection.level == PointerKind.TOOL
+    val isTool = selection.level == ReferenceKind.TOOL_INSTANCE
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
