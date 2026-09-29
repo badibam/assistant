@@ -13,19 +13,43 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 ## Les modes d'affichage
 
 - **Sept modes, sans ajout ni retrait.**
-- **Le cœur dessine le cadre et l'en-tête ; le type d'outil remplit le reste** (`TileContent`) :
+- **Une case fait deux lignes** : une ligne est un huitième de la largeur de la grille, et toute hauteur dans une tuile se compte en lignes. Le thème dimensionne texte et boutons pour qu'une ligne en tienne une rangée.
+- **Les zones d'une tuile suivent les cases** : aucune case n'est partagée entre deux zones. Le cœur dessine le cadre et l'en-tête (icône et nom, une case de haut) ; le type d'outil remplit le reste (`TileContent`) :
 
-  | Mode | Cœur | Outil |
-  |---|---|---|
-  | ICON | l'icône de l'outil, centrée, sans le nom | rien |
-  | MINIMAL | l'icône et le nom | rien |
-  | LINE | l'en-tête (icône et nom) sur la moitié gauche, fixe | la moitié droite |
-  | CONDENSED, EXTENDED, SQUARE, FULL | la ligne du haut : l'en-tête à gauche | la zone en haut à droite, et tout le dessous |
-- **La zone en haut à droite** a la hauteur de l'en-tête et porte un seul élément court (une valeur, un état, une action), au choix de l'outil ; étroite en CONDENSED. Un outil qui n'y met rien laisse la ligne au nom.
-- **L'indicateur d'attente** (`bricks-plan.md`, étape 9) est une pastille sur l'icône, dessinée par le thème, dans tous les modes.
+  | Mode | En-tête (cœur) | Zone en haut à droite (outil) | Dessous (outil) |
+  |---|---|---|---|
+  | ICON | l'icône seule, centrée, 1×1 | — | — |
+  | MINIMAL | 2×1 | — | — |
+  | LINE | 2×1 à gauche | — | 2×1 à droite |
+  | CONDENSED | 2×1 en haut | — | 2×1 |
+  | EXTENDED | 2×1 en haut à gauche | 2×1 | 4×1 |
+  | SQUARE | 2×1 en haut à gauche | 2×1 | 4×3 |
+  | FULL | 2×1 en haut à gauche | 2×1 | 4 × ce qu'il faut, arrondi à la case |
+- **La zone en haut à droite** porte un seul élément (une valeur, un état, une action), au choix de l'outil.
+- **Deux pastilles sur l'icône**, dessinées par le thème dans tous les modes, chacune dans son coin : l'attente (`bricks-plan.md`, étape 9), et un chronomètre en cours sur une entrée de l'outil (un champ durée qui tourne, lu par `tool_data.get` avec `running`, pour tout type d'outil).
 - **Jamais de défilement à l'intérieur d'une tuile.** Ce qui ne tient pas, et comment le signaler, est l'affaire du type d'outil ; FULL grandit avec ce que le type d'outil y montre.
 - **Une tuile porte ses raccourcis d'utilisation** : un élément tactile de la tuile fait son action, un toucher ailleurs ouvre l'outil (ou l'entrée qui attend), l'appui long sa config. La taille minimale d'un élément tactile est celle du thème. En édition, rien ne réagit.
 - **Tous les modes sont proposés pour tout outil**, et chaque type d'outil remplit chacun : `TileContent` n'a plus de rendu par défaut. S'il a trop peu à montrer dans un mode, l'utilisateur en change.
+
+## Les tuiles, par type d'outil
+
+### Suivi
+
+- **La dernière entrée** : celle dont le chronomètre tourne s'il y en a une, sinon la plus récente.
+- **LINE et CONDENSED** : la dernière entrée en cours → son nom, son temps qui défile, un bouton d'arrêt. Sinon → sa valeur et le temps écoulé depuis, et deux boutons : **rapide** (la même entrée maintenant : même nom, valeur, unité ; pour un compteur le même pas, une occurrence le fait seul, une durée un chronomètre relancé ; les champs personnalisés à leur valeur par défaut), pour toute sorte de Suivi, et **personnalisé** (la fenêtre de saisie, préremplie du nom et de la valeur de la dernière).
+- **EXTENDED** : la zone en haut à droite montre l'état, en lecture (la dernière valeur et le temps écoulé, ou le chronomètre en cours avec son arrêt) ; la rangée du dessous, quatre places, deux par ligne : les raccourcis de la config dans leur ordre, puis la saisie libre. Sans raccourcis, les deux boutons de la LINE.
+- **SQUARE** : pareil, trois rangées de raccourcis (onze et la saisie libre).
+- **FULL** : pareil, tous les raccourcis, puis la saisie libre ; rien de plus.
+
+  ```
+  ┌─────────┬─────────┬─────────┬─────────┐
+  │ ◉ Boissons        │ Eau 250 ml        │
+  │                   │ il y a 2 h        │
+  ├─────────┼─────────┼─────────┼─────────┤
+  │ Eau 250 ml    [+] │ Café 1 tasse  [+] │
+  │ Thé 300 ml    [+] │ Saisie libre  [✎] │
+  └─────────┴─────────┴─────────┴─────────┘
+  ```
 
 ## Positions
 
