@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.material3.ColorScheme
@@ -67,16 +68,6 @@ interface ThemeContract {
         requireConfirmation: Boolean,
         confirmMessage: String?,
         onClick: () -> Unit
-    )
-    
-    @Composable
-    fun TextField(
-        fieldType: FieldType,
-        state: ComponentState,
-        value: String,
-        onChange: (String) -> Unit,
-        placeholder: String,
-        fieldModifier: FieldModifier
     )
     
     // =====================================
@@ -255,11 +246,16 @@ interface ThemeContract {
     @Composable
     fun FieldLabel(label: String, required: Boolean)
 
+    /**
+     * The one text input of the theme. Its value is the text with its selection and its
+     * composition (TextFieldValue), which a Compose text field takes as it is: the cursor survives
+     * the round trip, so a button can insert where it stands (the formula editor).
+     */
     @Composable
     fun FormField(
         label: String,
-        value: String,
-        onChange: (String) -> Unit,
+        value: TextFieldValue,
+        onChange: (TextFieldValue) -> Unit,
         fieldType: FieldType,
         state: ComponentState,
         readonly: Boolean,

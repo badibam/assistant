@@ -4,6 +4,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -56,15 +62,6 @@ object UI {
         confirmMessage: String? = null,        // Custom message (null = default message)
         onClick: () -> Unit
     ) = CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, onClick)
-    
-    @Composable
-    fun TextField(
-        fieldType: FieldType,
-        state: ComponentState = ComponentState.NORMAL,
-        value: String,
-        onChange: (String) -> Unit,
-        placeholder: String
-    ) = CurrentTheme.current.TextField(fieldType, state, value, onChange, placeholder, FieldModifier())
     
     // =====================================
     // DISPLAY
@@ -259,11 +256,55 @@ object UI {
     @Composable
     fun FieldLabel(label: String, required: Boolean) = CurrentTheme.current.FieldLabel(label, required)
 
+    /**
+     * A text input on a plain string: the cursor and the keyboard's composition are kept here,
+     * the caller holding only the text. A text changed from outside keeps the cursor where it
+     * can stand in it.
+     */
     @Composable
     fun FormField(
         label: String,
         value: String,
         onChange: (String) -> Unit,
+        fieldType: FieldType = FieldType.TEXT,
+        required: Boolean,
+        state: ComponentState = ComponentState.NORMAL,
+        readonly: Boolean = false,
+        onClick: (() -> Unit)? = null,
+        contentDescription: String? = null,
+        fieldModifier: FieldModifier = FieldModifier()
+    ) {
+        var selection by remember { mutableStateOf(TextRange(value.length)) }
+        var composition by remember { mutableStateOf<TextRange?>(null) }
+        val shown = TextFieldValue(
+            text = value,
+            selection = TextRange(selection.start.coerceAtMost(value.length), selection.end.coerceAtMost(value.length)),
+            composition = composition?.takeIf { it.max <= value.length }
+        )
+        FormField(
+            label = label,
+            value = shown,
+            onChange = { next ->
+                selection = next.selection
+                composition = next.composition
+                if (next.text != value) onChange(next.text)
+            },
+            fieldType = fieldType,
+            required = required,
+            state = state,
+            readonly = readonly,
+            onClick = onClick,
+            contentDescription = contentDescription,
+            fieldModifier = fieldModifier
+        )
+    }
+
+    /** A text input whose caller holds the cursor too: to insert where it stands. */
+    @Composable
+    fun FormField(
+        label: String,
+        value: TextFieldValue,
+        onChange: (TextFieldValue) -> Unit,
         fieldType: FieldType = FieldType.TEXT,
         required: Boolean,
         state: ComponentState = ComponentState.NORMAL,

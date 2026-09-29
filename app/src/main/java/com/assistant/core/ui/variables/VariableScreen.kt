@@ -19,6 +19,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -203,14 +205,20 @@ fun VariableScreen(zoneId: String, variableId: String?, group: String?, onDone: 
 }
 
 /**
- * The formula in text, the names to insert, and what stops it from computing, said at each
- * keystroke: where it does not read, or the names that are neither a term nor a variable.
+ * The formula in text, the names to insert where the cursor stands, and what stops it from
+ * computing, said at each keystroke: where it does not read, or the names that are neither a term
+ * nor a variable.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FormulaEditor(formula: String, terms: List<String>, variables: List<String>, s: StringsContext, onChange: (String) -> Unit) {
-    UI.FormField(label = s.shared("variable_formula"), value = formula, onChange = onChange, required = true,
-        fieldType = com.assistant.core.ui.FieldType.TEXT_MEDIUM)
+    // The cursor is kept here; a formula changed elsewhere puts it at the end
+    var field by remember { mutableStateOf(TextFieldValue(formula, TextRange(formula.length))) }
+    val shown = if (field.text == formula) field else TextFieldValue(formula, TextRange(formula.length))
+    UI.FormField(label = s.shared("variable_formula"), value = shown, onChange = { next ->
+        field = next
+        if (next.text != formula) onChange(next.text)
+    }, required = true, fieldType = com.assistant.core.ui.FieldType.TEXT_MEDIUM)
     val problem = when (val parsed = Formula.parse(formula, Formula.Function.localized { s.shared(it) })) {
         is Formula.Parsed.Unreadable -> if (formula.isBlank()) null
             else s.shared("variable_error_formula").format(parsed.position + 1, s.shared("formula_problem_${parsed.problem.name.lowercase()}"), parsed.detail)
@@ -220,11 +228,30 @@ private fun FormulaEditor(formula: String, terms: List<String>, variables: List<
     problem?.let { UI.Text(text = it, type = TextType.ERROR) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         (terms + variables + listOf("+", "-", "×", "÷", "(", ")") + Formula.Function.entries.map { s.shared("formula_function_${it.canonical}") + "(" }).forEach { token ->
-            UI.Button(type = ButtonType.SECONDARY, onClick = { onChange(formula.trimEnd() + (if (formula.isBlank()) "" else " ") + token) }) {
+            UI.Button(type = ButtonType.SECONDARY, onClick = {
+                val (text, cursor) = insertToken(shown.text, shown.selection.min, shown.selection.max, token)
+                field = TextFieldValue(text, TextRange(cursor))
+                onChange(text)
+            }) {
                 UI.Text(text = token, type = TextType.LABEL)
             }
         }
     }
+}
+
+/**
+ * [text] with [token] in place of what lies between [start] and [end] (the cursor, or the
+ * selection it replaces), and the cursor just after it. A space sets it apart from its
+ * neighbours, except at an edge, inside parentheses, or after a function's opening one:
+ * "a + |b" with "×" gives "a + × b".
+ */
+internal fun insertToken(text: String, start: Int, end: Int, token: String): Pair<String, Int> {
+    val before = text.substring(0, start)
+    val after = text.substring(end)
+    val left = if (before.isEmpty() || before.endsWith(" ") || before.endsWith("(")) "" else " "
+    val right = if (after.isEmpty() || after.startsWith(" ") || after.startsWith(")") || token.endsWith("(")) "" else " "
+    val inserted = before + left + token
+    return (inserted + right + after) to inserted.length
 }
 
 /** One term: its name, and what it is — a reading, a constant, another variable. */

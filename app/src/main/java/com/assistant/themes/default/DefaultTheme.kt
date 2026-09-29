@@ -28,6 +28,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.*
@@ -441,11 +442,11 @@ object DefaultTheme : ThemeContract {
     }
     
     @Composable
-    override fun TextField(
+    private fun TextField(
         fieldType: FieldType,
         state: ComponentState,
-        value: String,
-        onChange: (String) -> Unit,
+        value: TextFieldValue,
+        onChange: (TextFieldValue) -> Unit,
         placeholder: String,
         fieldModifier: FieldModifier
     ) {
@@ -513,9 +514,9 @@ object DefaultTheme : ThemeContract {
         }
         
         // Filter input if there's a character limit
-        val filteredOnChange: (String) -> Unit = if (maxLength < Int.MAX_VALUE) {
-            { newValue -> 
-                if (newValue.length <= maxLength) {
+        val filteredOnChange: (TextFieldValue) -> Unit = if (maxLength < Int.MAX_VALUE) {
+            { newValue ->
+                if (newValue.text.length <= maxLength) {
                     onChange(newValue)
                 }
             }
@@ -1031,8 +1032,8 @@ object DefaultTheme : ThemeContract {
     @Composable
     override fun FormField(
         label: String,
-        value: String,
-        onChange: (String) -> Unit,
+        value: TextFieldValue,
+        onChange: (TextFieldValue) -> Unit,
         fieldType: FieldType,
         state: ComponentState,
         readonly: Boolean,
@@ -1055,7 +1056,7 @@ object DefaultTheme : ThemeContract {
                 
                 Box(modifier = textModifier) {
                     Text(
-                        text = value.ifBlank { com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current).shared("label_no_value") },
+                        text = value.text.ifBlank { com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current).shared("label_no_value") },
                         type = TextType.BODY,
                         fillMaxWidth = false,
                         textAlign = null

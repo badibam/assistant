@@ -153,7 +153,7 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 
 ### Composants Formulaire
 
-**UI.FormField** - Champ standard avec label, value, onChange, fieldType, required, state, readonly et onClick optionnel.
+**UI.FormField** - Champ standard avec label, value, onChange, fieldType, required, state, readonly et onClick optionnel. Le thème n'a qu'un champ de texte, qui reçoit un `TextFieldValue` (le texte, sa sélection, sa composition) : la forme sur une chaîne garde le curseur elle-même, la forme sur un `TextFieldValue` le laisse à l'appelant, pour insérer là où il se trouve (l'éditeur de formule).
 
 **UI.FormSelection** - Sélections avec label, options, selected, onSelect et required.
 
