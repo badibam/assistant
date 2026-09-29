@@ -307,7 +307,7 @@ private fun LogEntryCard(log: LogEntry, s: com.assistant.core.strings.StringsCon
                 Spacer(modifier = Modifier.weight(1f))
 
                 // Relative time
-                val relativeTime = formatRelativeTime(log.timestamp, s)
+                val relativeTime = com.assistant.core.utils.FormatUtils.formatRelativeTimePast(log.timestamp, LocalContext.current)
                 UI.Text(
                     text = relativeTime,
                     type = TextType.CAPTION
@@ -327,31 +327,6 @@ private fun LogEntryCard(log: LogEntry, s: com.assistant.core.strings.StringsCon
                     type = TextType.CAPTION
                 )
             }
-        }
-    }
-}
-
-/**
- * Format timestamp as relative time
- * Examples: "À l'instant", "Il y a 2 min", "Il y a 1h", "Il y a 2 jours"
- */
-private fun formatRelativeTime(timestamp: Long, s: com.assistant.core.strings.StringsContext): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-
-    return when {
-        diff < 60_000L -> s.shared("time_just_now")  // < 1 min
-        diff < 60 * 60_000L -> {  // < 1 hour
-            val minutes = (diff / 60_000L).toInt()
-            "$minutes ${s.shared("time_minutes_ago")}"
-        }
-        diff < 24 * 60 * 60_000L -> {  // < 1 day
-            val hours = (diff / (60 * 60_000L)).toInt()
-            "$hours ${s.shared("time_hours_ago")}"
-        }
-        else -> {  // >= 1 day
-            val days = (diff / (24 * 60 * 60_000L)).toInt()
-            "$days ${s.shared("time_days_ago")}"
         }
     }
 }

@@ -1532,10 +1532,6 @@
     <string name="time_hour">heure</string>
     <string name="time_day">jour</string>
     <string name="time_always">Toujours</string>
-    <string name="time_just_now">À l'instant</string>
-    <string name="time_minutes_ago">min</string>
-    <string name="time_hours_ago">h</string>
-    <string name="time_days_ago">j</string>
     <string name="settings_logs_description">Consulter les logs d'erreurs pour debug</string>
 
     <!-- AI Data Headers (CommandExecutor prompt formatting) -->

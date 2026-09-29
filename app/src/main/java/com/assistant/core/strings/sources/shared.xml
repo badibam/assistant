@@ -1532,10 +1532,6 @@
     <string name="time_hour">hour</string>
     <string name="time_day">day</string>
     <string name="time_always">Always</string>
-    <string name="time_just_now">Just now</string>
-    <string name="time_minutes_ago">min</string>
-    <string name="time_hours_ago">h</string>
-    <string name="time_days_ago">d</string>
     <string name="settings_logs_description">Read the error logs for debugging</string>
 
     <!-- AI Data Headers (CommandExecutor prompt formatting) -->
