@@ -61,6 +61,11 @@
     <string name="no_attempt">No attempt in progress</string>
     <string name="history">History</string>
     <string name="tab_to_validate">To validate (%1$d)</string>
+    <string name="tile_count">%1$s / %2$s met</string>
+    <string name="tile_ends">Ends %1$s</string>
+    <string name="tile_stopped">Stopped</string>
+    <string name="tile_between">Between two attempts</string>
+    <string name="tile_next">Next %1$s</string>
     <string name="count">%1$s / %2$s</string>
     <string name="time_left">%1$s left</string>
     <string name="verdict_yes">Reached</string>

@@ -24,9 +24,7 @@ import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.tools.ToolOperation
 import com.assistant.core.tools.ToolScheduler
 import com.assistant.core.tools.ToolTypeContract
-import com.assistant.core.ui.DisplayMode
 import com.assistant.tools.goal.ui.GoalScreen
-import com.assistant.tools.goal.ui.GoalTile
 import org.json.JSONObject
 
 /**
@@ -236,7 +234,6 @@ object GoalToolType : ToolTypeContract {
     }
 
     @Composable
-    override fun TileContent(tool: ToolInstance, displayMode: DisplayMode) {
-        GoalTile(tool = tool, displayMode = displayMode)
-    }
+    override fun rememberTile(tool: ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
+        com.assistant.tools.goal.ui.rememberGoalTile(tool)
 }

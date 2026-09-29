@@ -61,6 +61,11 @@
     <string name="no_attempt">Aucune tentative en cours</string>
     <string name="history">Historique</string>
     <string name="tab_to_validate">À valider (%1$d)</string>
+    <string name="tile_count">%1$s / %2$s atteints</string>
+    <string name="tile_ends">Fin %1$s</string>
+    <string name="tile_stopped">Arrêté</string>
+    <string name="tile_between">Entre deux tentatives</string>
+    <string name="tile_next">Prochaine %1$s</string>
     <string name="count">%1$s / %2$s</string>
     <string name="time_left">reste %1$s</string>
     <string name="verdict_yes">Atteint</string>
