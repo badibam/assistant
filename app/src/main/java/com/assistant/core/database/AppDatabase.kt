@@ -35,6 +35,7 @@ import com.assistant.core.versioning.FormatNullsAtV42
 import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
+import com.assistant.core.versioning.PointerAtV46
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -75,7 +76,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 45
+        const val VERSION = 46
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1362,6 +1363,38 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * A pointer holds a selection of the core, its period apart and its relative dates as
+         * objects with their edge: see PointerAtV46. Which field is a date is read from the
+         * tool's config, hence the context.
+         */
+        private fun migration45to46(context: Context) = object : Migration(45, 46) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val fieldTypes = { toolInstanceId: String ->
+                    database.query("SELECT tooltype, config_json FROM tool_instances WHERE id = ?", arrayOf<Any?>(toolInstanceId)).use { cursor ->
+                        if (cursor.moveToFirst()) PointerAtV46.fieldTypes(cursor.getString(0), cursor.getString(1), context) else null
+                    }
+                }
+                var rewritten = 0
+                database.query("SELECT id, rich_content_json FROM session_messages WHERE rich_content_json LIKE '%POINTER%'").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        // A message or a pointer that cannot be read stays as it was and is logged
+                        try {
+                            val next = PointerAtV46.richContent(cursor.getString(1), fieldTypes) { e ->
+                                LogManager.database("MIGRATION 45->46: a pointer of message $id left as it was: ${e.message}", "ERROR", e)
+                            } ?: continue
+                            database.execSQL("UPDATE session_messages SET rich_content_json = ? WHERE id = ?", arrayOf<Any?>(next, id))
+                            rewritten++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 45->46: message $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 45->46: $rewritten message(s) with their pointers as selections", "INFO")
+            }
+        }
+
         private val MIGRATION_44_45 = object : Migration(44, 45) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // A message stores its segments alone, their texts written when read: see EnrichmentTextAtV45
@@ -1856,7 +1889,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_41_42,
                     MIGRATION_42_43,
                     MIGRATION_43_44,
-                    MIGRATION_44_45
+                    MIGRATION_44_45,
+                    migration45to46(context)
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

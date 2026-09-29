@@ -1,6 +1,8 @@
 package com.assistant.core.ui.selectors
 
-import com.assistant.core.ai.enrichments.PointerKind
+import com.assistant.core.selection.Edge
+import com.assistant.core.selection.ReferenceKind
+import com.assistant.core.selection.TimePoint
 import com.assistant.core.ui.components.Period
 import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.RelativePeriod
@@ -32,7 +34,7 @@ class PointerSelectionTest {
     }
 
     @Test
-    fun `a tool is pointed at by its id, its period first among the filters`() {
+    fun `a tool is pointed at by its id, its period apart from its filters`() {
         val selection = PointerSelection().intoZone(health).intoTool(sleep).copy(
             entries = true,
             period = TimestampSelection(minRelativePeriod = RelativePeriod(-7, PeriodType.DAY), maxIsNow = true),
@@ -40,14 +42,14 @@ class PointerSelectionTest {
             fields = listOf("data.duration")
         )
         val pointer = selection.pointer(end)
-        assertEquals(PointerKind.TOOL, pointer.target.kind)
+        assertEquals(ReferenceKind.TOOL_INSTANCE, pointer.target.kind)
         assertEquals("t1", pointer.target.id)
         assertTrue(pointer.entries)
-        assertEquals(3, pointer.filters.length())
-        assertEquals("-7_DAY", pointer.filters.getJSONObject(0).get("value"))
-        assertEquals("NOW", pointer.filters.getJSONObject(1).get("value"))
-        assertEquals("data.duration", pointer.filters.getJSONObject(2).getString("field"))
-        assertEquals(listOf("data.duration"), pointer.fields)
+        assertEquals(TimePoint.Relative(PeriodType.DAY, -7, Edge.START), pointer.selection.period.start)
+        assertEquals(TimePoint.Now, pointer.selection.period.end)
+        assertEquals(1, pointer.selection.filters.length())
+        assertEquals("data.duration", pointer.selection.filters.getJSONObject(0).getString("field"))
+        assertEquals(listOf("data.duration"), pointer.selection.fields)
     }
 
     @Test
@@ -55,20 +57,21 @@ class PointerSelectionTest {
         val day = Period(1000L, PeriodType.DAY)
         val pointer = PointerSelection().intoZone(health).intoTool(sleep)
             .copy(period = TimestampSelection(minPeriod = day, maxPeriod = day)).pointer(end)
-        assertEquals(1000L, pointer.filters.getJSONObject(0).getLong("value"))
-        assertEquals(1000L + 86_400_000 - 1, pointer.filters.getJSONObject(1).getLong("value"))
+        assertEquals(TimePoint.Fixed(1000L), pointer.selection.period.start)
+        assertEquals(TimePoint.Fixed(1000L + 86_400_000 - 1), pointer.selection.period.end)
     }
 
     @Test
     fun `a zone attaches its config and its tools' entries over a period`() {
         val pointer = PointerSelection().intoZone(health)
             .copy(config = true, entries = true, period = TimestampSelection(maxIsNow = true)).pointer(end)
-        assertEquals(PointerKind.ZONE, pointer.target.kind)
+        assertEquals(ReferenceKind.ZONE, pointer.target.kind)
         assertEquals("z1", pointer.target.id)
         assertTrue(pointer.config)
         assertTrue(pointer.entries)
-        assertEquals(1, pointer.filters.length())
-        assertEquals("timestamp", pointer.filters.getJSONObject(0).getString("field"))
+        assertEquals(TimePoint.Now, pointer.selection.period.end)
+        assertEquals(0, pointer.selection.filters.length())
+        assertNull(pointer.selection.problem())
     }
 
     @Test
@@ -82,8 +85,8 @@ class PointerSelectionTest {
     fun `going back up to the zone drops what only the tool offered`() {
         val up = PointerSelection().intoZone(health).intoTool(sleep)
             .copy(config = true, entries = true, filters = shortNights, fields = listOf("data.duration"), period = TimestampSelection(maxIsNow = true))
-            .upTo(PointerKind.ZONE)
-        assertEquals(PointerKind.ZONE, up.level)
+            .upTo(ReferenceKind.ZONE)
+        assertEquals(ReferenceKind.ZONE, up.level)
         assertTrue(up.config)
         assertTrue(up.entries)
         assertTrue(up.period.maxIsNow)
@@ -129,7 +132,7 @@ class PointerSelectionTest {
         assertEquals(1, filters.length())
         assertEquals("extra.due", filters.getJSONObject(0).getString("field"))
         assertEquals(">=", filters.getJSONObject(0).getString("op"))
-        assertEquals("0_WEEK", filters.getJSONObject(0).getString("value"))
+        assertEquals("START", filters.getJSONObject(0).getJSONObject("value").getJSONObject("relative").getString("edge"))
     }
 
     @Test
@@ -151,7 +154,7 @@ class PointerSelectionTest {
     @Test
     fun `now stays now, resolved at each send`() {
         val filters = periodFilters("extra.due", TimestampSelection(maxIsNow = true), end, day)
-        assertEquals("NOW", filters.getJSONObject(0).getString("value"))
+        assertEquals("NOW", filters.getJSONObject(0).getJSONObject("value").getString("relative"))
         assertEquals("<=", filters.getJSONObject(0).getString("op"))
     }
 }

@@ -190,10 +190,21 @@ Décidé le 2026-09-29 : Calcul n'est pas un type d'outil (il n'a pas d'entrées
 
   La période affichée leur est commune : elle choisit les entrées, et borne la grille. Elle est relative au moment de l'affichage (« Par rapport à : l'affichage »), et s'enregistre donc comme description.
 - **Une source par couche**, Entrées ou Grille, mêlées dans un graphique (les pesées en points, et la ligne de `poids_moyen_7j` sur une grille). Les couches partagent la période affichée et l'axe horizontal, où elles mettent la même sorte de valeur (deux dates, deux nombres), sinon la config refuse en le disant. L'axe vertical peut être double, gauche et droite, chacun son échelle et son unité (`resolve.scale.y: independent`) ; chaque couche choisit son côté, gauche par défaut ; les couches d'un même côté sont compatibles (kcal avec kcal), sinon refus qui propose l'autre côté.
-- **Quatre marques** : `line`, `point`, `bar`, `area` ; les autres (`text`, `arc`…) à leur premier vrai graphique. Un seuil est une variable dessinée en `line`, qui suit sa valeur à chaque pas (l'objectif qui passe de 2 100 à 1 900 le 15 fait une marche) ; pas de nombre tapé dans le graphique, donc pas de `rule`.
+- **Quatre marques** : `line`, `point`, `bar`, `area` ; les autres (`text`, `arc`…) à leur premier vrai graphique. Un seuil est une variable dessinée en `line`, qui suit sa valeur à chaque pas (l'objectif qui passe de 2 100 à 1 900 le 15 change de niveau) ; pas de nombre tapé dans le graphique, donc pas de `rule`.
 - **Empiler des colonnes : `fold` et `stack`, en Vega-Lite standard.** Une grille donne une colonne par variable ; `fold` retourne le tableau (une ligne par pas et par série), `color` sépare les séries. `fold` ne calcule rien, il entre dans le sous-ensemble ; pas de raccourci à nous, que l'IA ne connaîtrait pas. `stack` est obligatoire sur `bar` et `area` (Vega-Lite empile d'office dès qu'une couleur est là) : `null` superpose, `"zero"` additionne (kcal aliments + kcal vides), `"normalize"` ramène à 100 % (la part des macros, sans calculer de pourcentage). Le formulaire montre « séries » et « empilement : aucun, empilé, en % », et écrit `fold` et `stack`.
 - **Échelles** : `domain` (bornes tapées : l'affichage seul les lit, rien d'un seuil), `zero`, `reverse` ; pas de `log`, dont l'axe demande des graduations à part. L'unité et le titre d'un axe viennent de ses colonnes (« kg » du champ, « kcal » de la variable ; une durée en heures et minutes), jamais tapés.
-- **Ouvert** : les interactions.
+- **Interactions** : toucher un point montre toutes les colonnes de sa ligne avec leur unité (le `tooltip`, jamais écrit dans la config) ; toucher un trou montre sa cause, qui mène aux entrées à corriger.
+- **Vega-Lite écarté, à reprendre au besoin.** Une config qui en use est refusée en nommant la fonctionnalité (« `bin` n'est pas pris en charge ») ; la liste suit le code quand cette spec est élaguée.
+  - Calculs, que fait la source : `aggregate`, `timeUnit`, `bin`, et les `transform` autres que `fold` (`calculate`, `filter`, `window`, `joinaggregate`, `lookup`, `regression`, `loess`, `density`, `pivot`, `impute`).
+  - Données : `data` (`values`, `url`), que remplace la source.
+  - Marques : `rule` (un nombre tapé ; un seuil est une variable), `text`, `arc`, `tick`, `rect`, `trail`, `boxplot`, `errorbar`, `errorband`, `geoshape`, `image`.
+  - Style de marque : `interpolate` (dont `step-after`, pour qu'un seuil change de niveau en marche plutôt qu'en pente), `strokeDash` (le pointillé d'une limite), épaisseur, opacité.
+  - Canaux : `size`, `shape`, `opacity`, `strokeDash`, `detail`, `order`, `text`, `href`.
+  - Composition : `facet`, `repeat`, `concat`, `hconcat`, `vconcat`.
+  - Échelles : `log`, `pow`, `sqrt`, `symlog` (des graduations à part) ; `scheme` et `range` de couleurs (une couleur est un nom de la palette).
+  - Axes et légende : `format`, `tickCount`, `labelAngle`, `orient` et les autres réglages fins.
+  - Interactions : `params` (glisser et pincer dans le temps : la relecture d'une longue grille à concevoir), sélections, encodages conditionnels.
+  - `projection` (cartes).
 
 ## Objectif
 

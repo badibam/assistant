@@ -1,7 +1,5 @@
 package com.assistant.core.versioning
 
-import com.assistant.core.ai.enrichments.PointerConfig
-import com.assistant.core.ai.enrichments.PointerKind
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -32,31 +30,35 @@ class PointerAtV44Test {
             .put("selected_resources", JSONArray(resources.toList()))
             .apply { period?.let { put("timestamp_selection", it) } }
 
-    private fun converted(old: JSONObject): PointerConfig = PointerConfig.fromJson(PointerAtV44.config(old, calendar)!!)
+    private fun converted(old: JSONObject): JSONObject = PointerAtV44.config(old, calendar)!!
 
-    private fun filter(pointer: PointerConfig, i: Int) = pointer.filters.getJSONObject(i)
+    private fun filter(pointer: JSONObject, i: Int) = pointer.getJSONArray("filters").getJSONObject(i)
+    private fun kind(pointer: JSONObject) = pointer.getJSONObject("target").getString("kind")
+    private fun id(pointer: JSONObject) = pointer.getJSONObject("target").getString("id")
+    private fun attached(pointer: JSONObject, what: String) = pointer.getJSONObject("attach").getBoolean(what)
+    private fun isMention(pointer: JSONObject) = !attached(pointer, "config") && !attached(pointer, "entries")
 
     @Test
     fun `a tool with its data ticked attaches its entries`() {
         val pointer = converted(old("INSTANCE", "tools.t1", "DATA", "data", "data_schema"))
-        assertEquals(PointerKind.TOOL, pointer.target.kind)
-        assertEquals("t1", pointer.target.id)
-        assertTrue(pointer.entries)
-        assertFalse(pointer.config)
+        assertEquals("TOOL", kind(pointer))
+        assertEquals("t1", id(pointer))
+        assertTrue(attached(pointer, "entries"))
+        assertFalse(attached(pointer, "config"))
     }
 
     @Test
     fun `a zone with its config ticked attaches its config`() {
         val pointer = converted(old("ZONE", "zones.z1", "CONFIG", "config"))
-        assertEquals(PointerKind.ZONE, pointer.target.kind)
-        assertEquals("z1", pointer.target.id)
-        assertTrue(pointer.config)
+        assertEquals("ZONE", kind(pointer))
+        assertEquals("z1", id(pointer))
+        assertTrue(attached(pointer, "config"))
     }
 
     @Test
     fun `a generic pointer, or a schema ticked alone, becomes a mention`() {
-        assertTrue(converted(old("INSTANCE", "tools.t1", "GENERIC")).isMention)
-        assertTrue(converted(old("INSTANCE", "tools.t1", "DATA", "data_schema")).isMention)
+        assertTrue(isMention(converted(old("INSTANCE", "tools.t1", "GENERIC"))))
+        assertTrue(isMention(converted(old("INSTANCE", "tools.t1", "DATA", "data_schema"))))
     }
 
     @Test
@@ -86,13 +88,13 @@ class PointerAtV44Test {
     fun `a date picked is kept in milliseconds`() {
         val period = JSONObject().put("min_custom_date_time", 1234L)
         val pointer = converted(old("INSTANCE", "tools.t1", "DATA", "data", period = period))
-        assertEquals(1, pointer.filters.length())
+        assertEquals(1, pointer.getJSONArray("filters").length())
         assertEquals(1234L, filter(pointer, 0).getLong("value"))
     }
 
     @Test
     fun `a pointer already at v44 is left alone`() {
-        assertNull(PointerAtV44.config(converted(old("INSTANCE", "tools.t1", "GENERIC")).toJson(), calendar))
+        assertNull(PointerAtV44.config(converted(old("INSTANCE", "tools.t1", "GENERIC")), calendar))
     }
 
     @Test
@@ -106,7 +108,7 @@ class PointerAtV44Test {
         val next = JSONObject(PointerAtV44.richContent(message.toString(), calendar) { throw it }!!)
         val segments = next.getJSONArray("segments")
         assertEquals("look", segments.getJSONObject(0).getString("content"))
-        assertTrue(PointerConfig.fromJson(segments.getJSONObject(1).getString("config")).entries)
+        assertTrue(attached(JSONObject(segments.getJSONObject(1).getString("config")), "entries"))
         assertEquals("{\"tool_instance_id\": \"t1\"}", segments.getJSONObject(2).getString("config"))
     }
 

@@ -2,6 +2,7 @@ package com.assistant.core.ai.processing
 
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
+import com.assistant.core.selection.TimeResolver
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -10,8 +11,8 @@ import java.time.ZoneId
 
 /**
  * The values the AI side writes in a TOOL_DATA filter, put in the stored form the service
- * compares: which edge of a relative period each condition takes, what a day is when the day
- * starts at 4:00, and that only the field's type decides what gets converted.
+ * compares: a relative date at the edge it says whatever the condition, what a day is when the
+ * day starts at 4:00, and that only the field's type decides what gets converted.
  */
 class FilterValuesTest {
 
@@ -19,7 +20,7 @@ class FilterValuesTest {
 
     // Wednesday 2026-09-16, 15:00 in Paris; days start at 4:00, weeks on Monday
     private val reference = at(2026, 9, 16, 15, 0)
-    private val calendar = FilterValues.Calendar(reference, zone, dayStartHour = 4, weekStartDay = "MONDAY")
+    private val resolver = TimeResolver(reference, zone, dayStartHour = 4, weekStartDay = "MONDAY")
 
     private fun at(year: Int, month: Int, day: Int, hour: Int, minute: Int): Long =
         LocalDateTime.of(year, month, day, hour, minute).atZone(zone).toInstant().toEpochMilli()
@@ -34,30 +35,33 @@ class FilterValuesTest {
     )
 
     private fun stored(field: String, op: String, value: Any?): Map<*, *> =
-        FilterValues.toStored(listOf(mapOf("field" to field, "op" to op, "value" to value)), fields, calendar) { it }
+        FilterValues.toStored(listOf(mapOf("field" to field, "op" to op, "value" to value)), fields, resolver) { it }
             .single() as Map<*, *>
+
+    private fun relative(unit: String, offset: Int, edge: String) =
+        mapOf("relative" to mapOf("unit" to unit, "offset" to offset, "edge" to edge))
+
+    private val now = mapOf("relative" to "NOW")
 
     private val yesterdayStart = at(2026, 9, 15, 4, 0)
     private val yesterdayEnd = at(2026, 9, 16, 4, 0) - 1
 
     @Test
-    fun `a lower bound takes the start of a relative period, an upper bound its end`() {
-        assertEquals(yesterdayStart, stored("timestamp", ">=", "-1_DAY")["value"])
-        assertEquals(yesterdayStart, stored("timestamp", "<", "-1_DAY")["value"])
-        assertEquals(yesterdayEnd, stored("timestamp", "<=", "-1_DAY")["value"])
-        assertEquals(yesterdayEnd, stored("timestamp", ">", "-1_DAY")["value"])
+    fun `a relative date takes the edge it says, whatever the condition`() {
+        assertEquals(yesterdayStart, stored("timestamp", "<=", relative("DAY", -1, "START"))["value"])
+        assertEquals(yesterdayEnd, stored("timestamp", ">=", relative("DAY", -1, "END"))["value"])
     }
 
     @Test
-    fun `equal to a relative period is the whole of it`() {
-        val filter = stored("timestamp", "=", "-1_DAY")
-        assertEquals("between", filter["op"])
-        assertEquals(listOf(yesterdayStart, yesterdayEnd), filter["value"])
+    fun `the condition is kept as it is written`() {
+        val filter = stored("timestamp", "=", relative("DAY", -1, "START"))
+        assertEquals("=", filter["op"])
+        assertEquals(yesterdayStart, filter["value"])
     }
 
     @Test
-    fun `between runs from the start of the first value to the end of the second, NOW included`() {
-        val filter = stored("timestamp", "between", listOf("-7_DAY", "NOW"))
+    fun `between takes each bound at its own edge, now included`() {
+        val filter = stored("timestamp", "between", listOf(relative("DAY", -7, "START"), now))
         assertEquals(listOf(at(2026, 9, 9, 4, 0), reference), filter["value"])
     }
 
@@ -74,12 +78,14 @@ class FilterValuesTest {
     }
 
     @Test
-    fun `on a day field a relative period is days, the day starting at 4 00 or not`() {
-        // Yesterday is one day, so the condition stays "="
-        assertEquals(mapOf("field" to "extra.due", "op" to "=", "value" to "2026-09-15"), stored("extra.due", "=", "-1_DAY"))
+    fun `on a day field a relative date is a day, the day starting at 4 00 or not`() {
+        assertEquals("2026-09-15", stored("extra.due", "=", relative("DAY", -1, "START"))["value"])
         // This week, Monday to Sunday
-        assertEquals(listOf("2026-09-14", "2026-09-20"), stored("extra.due", "=", "0_WEEK")["value"])
-        assertEquals("2026-09-16", stored("extra.due", "<=", "NOW")["value"])
+        assertEquals(
+            listOf("2026-09-14", "2026-09-20"),
+            stored("extra.due", "between", listOf(relative("WEEK", 0, "START"), relative("WEEK", 0, "END")))["value"]
+        )
+        assertEquals("2026-09-16", stored("extra.due", "<=", now)["value"])
         assertEquals("2026-09-01", stored("extra.due", ">=", "2026-09-01")["value"])
     }
 
@@ -90,20 +96,21 @@ class FilterValuesTest {
     }
 
     @Test
-    fun `a text is left as it is, even one that reads like a period`() {
+    fun `a text is left as it is, even one that reads like a date`() {
         assertEquals("NOW", stored("extra.note", "=", "NOW")["value"])
-        assertEquals("-1_DAY", stored("extra.note", "contains", "-1_DAY")["value"])
+        assertEquals(now, stored("extra.note", "=", now)["value"])
     }
 
     @Test
     fun `a filter on a field the tool does not have is left for the service to refuse`() {
-        assertEquals("-1_DAY", stored("data.unknown", ">=", "-1_DAY")["value"])
+        assertEquals(now, stored("data.unknown", ">=", now)["value"])
     }
 
     @Test
-    fun `an unreadable period or date is refused, naming it`() {
-        val error = assertThrows(IllegalArgumentException::class.java) { stored("timestamp", ">=", "yesterday") }
-        assertEquals("ai_error_period_unknown_format", error.message)
-        assertThrows(IllegalArgumentException::class.java) { stored("timestamp", ">=", "-1_FORTNIGHT") }
+    fun `an unreadable date is refused, naming why`() {
+        assertEquals("ai_error_period_invalid_iso", assertThrows(IllegalArgumentException::class.java) { stored("timestamp", ">=", "yesterday") }.message)
+        assertEquals("ai_error_date_unreadable", assertThrows(IllegalArgumentException::class.java) { stored("extra.due", ">=", "-1_DAY") }.message)
+        assertThrows(IllegalArgumentException::class.java) { stored("timestamp", ">=", relative("FORTNIGHT", -1, "START")) }
+        assertThrows(IllegalArgumentException::class.java) { stored("timestamp", ">=", mapOf("relative" to mapOf("unit" to "DAY", "offset" to -1))) }
     }
 }
