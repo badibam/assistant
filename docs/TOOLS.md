@@ -11,7 +11,7 @@ Guide pour comprendre et créer des outils dans l'architecture modulaire.
 ### Une Instance = Un Concept
 - **Suivi** : 1 métrique spécifique (poids, humeur, etc.)
 - **Objectif** : 1 objectif avec sous-objectifs et critères
-- **Graphique** : 1 groupe de visualisations cohérentes
+- **Graphique** : 1 graphique, qui peut superposer des couches ou se répéter par catégorie
 - **Liste** : 1 liste thématique (courses, tâches)
 - **Données structurées** : 1 table de fiches (aliments, livres, contacts)
 - **Journal** : 1 type de journal (réflexions, rêves)
@@ -132,7 +132,7 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 2. DONNÉES STRUCTURÉES nutrition (IA) → référentiel aliments + AJR
 3. SUIVI nutritionnel (IA + #1 + #2) → calculs automatiques
 4. JOURNAL (IA, basé sur #3) → rapports quotidiens
-5. CALCUL (App, basé sur #3) → moyennes périodiques
+5. VARIABLES (cœur, basées sur #3) → totaux du jour, moyennes périodiques
 6. GRAPHIQUE (App, basé sur #5) → visualisations vs AJR
 7. ALERTES (App, critères sur #3) → carences/excès détectées
 
@@ -155,7 +155,7 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
 ### Graphique (Chart)
 **Usage** : Visualisations basées sur données existantes
-**Configuration** : Sources de données, type de graphique, période
+**Configuration** : un sous-ensemble de Vega-Lite ; chaque couche lit des entrées, ou des variables et des lectures de champ à chaque pas d'une grille ; une période relative à l'affichage (conception : `docs/design/missing-tools.md`)
 
 ### Journal (Journal)
 **Usage** : Entrées textuelles/audio libres avec dates
