@@ -106,6 +106,8 @@ Décidé le 2026-09-29.
 
 - **Un Instant** : une date fixe garde sa forme stockée (millisecondes pour un DATETIME, `"2026-09-15"` pour une DATE) ; un relatif est un objet, `{"relative": {"unit": "DAY", "offset": -1, "edge": "START"}}`, ou `{"relative": "NOW"}` pour la référence ; sans limite, la borne est absente. La présence de `relative` dit seule qu'une valeur se résout, jamais le type du champ ni l'allure d'une chaîne ; l'opérateur d'une condition ne choisit plus de bord.
 - **Une période** : `{"start": Instant, "end": Instant}`, chaque borne facultative, hors des filtres (`"period"` à côté de `"filters"`).
+- **Une sélection d'entrées** : `{"target": RÉFÉRENCE, "period", "filters", "fields"}`, lue par un seul parseur du cœur partout où elle sert. `period`, `filters` et `fields` ne valent que pour une instance d'outil, sauf la période d'une zone, appliquée à chacun de ses outils ; le service refuse le reste en disant pourquoi.
+- **Un pointeur** : `{"selection": …, "attach": {"config", "entries"}}`, la sélection sous sa propre clé, que le cœur lit sans connaître le pointeur.
 - **L'IA écrit la même forme**, une date fixe en ISO comme partout ailleurs : elle recopie ce qu'elle lit (termes d'une variable, pointeurs, critères), et `CommandTransformer` ne fait que convertir l'ISO. La notation `"-7_DAY"` et la règle du bord par l'opérateur (`FilterValues`) disparaissent.
 
 ## L'import
