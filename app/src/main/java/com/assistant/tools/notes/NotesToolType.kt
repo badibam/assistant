@@ -120,6 +120,10 @@ object NotesToolType : ToolTypeContract {
     }
 
     @Composable
+    override fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
+        com.assistant.tools.notes.ui.rememberNotesTile(tool, open)
+
+    @Composable
     override fun getUsageScreen(
         toolInstanceId: String,
         configJson: String,
@@ -132,7 +136,8 @@ object NotesToolType : ToolTypeContract {
             toolInstanceId = toolInstanceId,
             zoneName = zoneName,
             onNavigateBack = onNavigateBack,
-            onConfigureClick = onLongClick
+            onConfigureClick = onLongClick,
+            openEntry = openEntry
         )
     }
 
