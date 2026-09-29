@@ -6,6 +6,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 - Les outils manquants sont posés (sélection du cœur, RÉFÉRENCE, lecture du cœur, variables, Données structurées et import, Objectif, Questionnaire) ; rien n'a tourné sur un téléphone : passer `docs/design/device-checks.md`, puis élaguer de `docs/design/missing-tools.md` ce qui est codé, ses garanties devenant des tests (le Graphique y est encore en conception).
 - Finir les briques : le plan d'action est `docs/design/bricks-plan.md` (neuf étapes, de la Planification rangée au cœur jusqu'à l'attente sur les tuiles), le modèle `docs/BRICKS.md`.
+- L'app en portrait seul (`android:screenOrientation="portrait"`) : retirer les branches paysage (`DefaultTheme.kt`, `NotesScreen.kt`), et dans `docs/design/device-checks.md` remplacer « tourner l'écran » par un autre déclencheur de recréation (« Ne pas conserver les activités », thème sombre) — la conservation d'état reste une règle. Un grand écran ignorera le verrou une fois la cible en API 36 : même affichage, rien de propre au paysage. Après la spec de la grille.
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur
