@@ -124,31 +124,15 @@ fun rememberTrackingTile(tool: ToolInstance): ToolTile {
             @Composable
             override fun Body(rows: Int?) {
                 if (!loaded) return
-                val shown = rows?.let { actions.shortcuts.take(it * 4) } ?: actions.shortcuts
-                val lines = shown.chunked(2)
-                // Given rows, each of their lines takes its share of the height; FULL takes what it shows
-                val lineCount = rows?.let { it * 2 }
-                Column(modifier = if (rows != null) Modifier.fillMaxSize() else Modifier.fillMaxWidth()) {
-                    for (index in 0 until (lineCount ?: lines.size)) {
-                        val pair = lines.getOrNull(index) ?: emptyList()
-                        Row(
-                            modifier = (if (lineCount != null) Modifier.weight(1f) else Modifier).fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            for (column in 0 until 2) {
-                                Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                                    val shortcut = pair.getOrNull(column) ?: return@Row
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        UI.Text(
-                                            shortcutLabel(shortcut, actions.kind) { com.assistant.core.utils.NumberFormatting.formatForDisplay(it.toDouble(), context = context) },
-                                            TextType.BODY, maxLines = 1
-                                        )
-                                    }
-                                    ShortcutButtons(actions, shortcut, running, null)
-                                }
-                            }
+                com.assistant.core.ui.components.TileGrid(rows, actions.shortcuts, columns = 2) { shortcut ->
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            UI.Text(
+                                shortcutLabel(shortcut, actions.kind) { com.assistant.core.utils.NumberFormatting.formatForDisplay(it.toDouble(), context = context) },
+                                TextType.BODY, maxLines = 1
+                            )
                         }
+                        ShortcutButtons(actions, shortcut, running, null)
                     }
                 }
             }
