@@ -799,8 +799,6 @@
     <!-- SCOPE SELECTOR - Available entry names -->
 
     <!-- SCOPE SELECTOR - Navigation steps -->
-    <string name="scope_select_zone">Sélectionner une zone</string>
-    <string name="scope_select_tool">Sélectionner un outil</string>
     <string name="scope_no_options">Aucune option disponible</string>
 
     <!-- SCOPE SELECTOR - Context labels -->
@@ -868,9 +866,6 @@
     <!-- AI TOKEN STATUS - Affichage statut tokens (TokenCalculator) -->
 
     <!-- DATA NAVIGATION - Explorateur de données et navigation -->
-    <string name="data_navigator_entry_name_field">Nom de l\'entrée</string>
-    <string name="data_navigator_unnamed_zone">Zone sans nom</string>
-    <string name="data_navigator_title">Explorateur de données</string>
 
     <!-- SCOPE SELECTOR DETAILS - Labels détaillés pour sélection de scope -->
 

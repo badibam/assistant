@@ -18,6 +18,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Importer une sauvegarde faite avant la mise à jour : les conversations reviennent, leur coût en « ≥ ».
 - « Quelle heure est-il ? », puis créer une entrée datée d'hier : la date est juste. Les résultats de données reçus par l'IA sont en ISO 8601.
 - Après `CREATE_ZONE` puis `CREATE_TOOL`, l'IA enchaîne sans redemander la liste des zones ni des outils.
+- Pointeur : le fil d'Ariane et les zones puis les outils s'affichent comme avant ; dans un outil, rien n'est listé en dessous ; passer d'un outil à celui d'une autre zone par le fil garde les cases et la période.
 - Pointeur en chat, période « Depuis : date relative, il y a 2 jours, début » : « Soit : » montre la date obtenue, et après confirmation la phrase du pointeur dit cette date. Pointeur du message de départ d'une automation : « Par rapport à : l'heure prévue de l'exécution » s'affiche une fois, la période se relit « la veille », « le moment même ». Un filtre sur un champ DATE propose des jours, sans heure ni unité « heure ».
 - Une IA qui enchaîne plus de 10 appels seule s'arrête et rend la main avec un message.
 - Faire écrire par l'IA une valeur hors d'une échelle ou hors des options d'un choix : le refus lui revient.
@@ -97,6 +98,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Champs RÉFÉRENCE
 
+- Champ RÉFÉRENCE restreint aux entrées d'un seul outil (`aliment`) : le choix s'ouvre dans cet outil, la recherche filtre les entrées, toucher une entrée l'ajoute au fil d'Ariane et « Confirmer » l'enregistre. Restreint à plusieurs outils : ils sont listés à l'app avec leur zone. Acceptant zones et outils : « Confirmer » n'est actif que sur une zone ou un outil atteint.
 - Ajouter à un outil un champ de l'utilisateur de type Référence, limité aux entrées d'un autre outil : le choix liste ses entrées avec une recherche ; l'entrée enregistrée affiche le nom de la fiche, renommer la fiche change l'affichage, la supprimer affiche « supprimé » et l'entrée reste modifiable.
 - Même champ sans restriction : choisir d'abord un outil puis son entrée. Avec les sortes Zone et Outil : leurs listes s'affichent.
 - Retirer l'outil autorisé de la config : la confirmation compte les valeurs retirées.

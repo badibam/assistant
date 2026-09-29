@@ -27,7 +27,11 @@ import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.core.ui.selectors.Named
+import com.assistant.core.ui.selectors.ThingBrowser
+import com.assistant.core.ui.selectors.ThingPath
 import com.assistant.core.utils.LogManager
+import androidx.compose.runtime.saveable.Saver
 
 /** The name of [reference] as it is now, loaded once shown: null while loading. */
 @Composable
@@ -108,109 +112,54 @@ fun ReferenceInput(fieldDef: FieldDefinition, value: Any?, onChange: (Any?) -> U
     }
 }
 
-/** One thing offered by the picker. */
-private data class Choice(val reference: Reference, val name: String, val detail: String? = null)
-
-/** What the picker offers, as references.choices reads it. */
-private data class Choices(
-    val zones: List<Choice> = emptyList(),
-    val tools: List<Choice> = emptyList(),
-    val entries: List<Pair<String, List<Choice>>> = emptyList()
-)
+/** Where the picker opens: a single tool whose entries alone are taken is entered at once. */
+private suspend fun startPath(target: ReferenceTarget, context: Context): ThingPath {
+    val only = target.toolInstances.singleOrNull()
+    if (target.kinds != setOf(ReferenceKind.ENTRY) || only == null) return ThingPath()
+    val result = Coordinator(context).processUserAction("references.choices", mapOf("kinds" to listOf(ReferenceKind.ENTRY.name), "tool_instances" to target.toolInstances))
+    val row = (result.data?.get("tool_instances") as? List<*>)?.filterIsInstance<Map<*, *>>()?.firstOrNull { it["id"] == only }
+    if (!result.isSuccess || row == null) {
+        LogManager.ui("ReferencePicker: tool $only not found: ${result.error}", "ERROR")
+        return ThingPath()
+    }
+    return ThingPath(
+        Named(row["zone_id"] as String, row["zone_name"] as? String ?: ""),
+        Named(only, row["name"] as? String ?: "", row["tooltype"] as? String)
+    )
+}
 
 /**
- * The things a reference of [target] may designate: the app, the zones, the tool instances, the
- * entries -- those of the tools the field is restricted to, grouped by tool with a search, or,
- * when any entry is taken, those of a tool browsed into first.
+ * The things a reference of [target] may designate, reached through the app's one way to them
+ * (ThingBrowser), and chosen once the place reached is of a kind the field takes.
  */
 @Composable
 private fun ReferencePicker(target: ReferenceTarget, onDismiss: () -> Unit, onPick: (Reference) -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    var query by rememberSaveable { mutableStateOf("") }
-    var browsed by rememberSaveable { mutableStateOf<String?>(null) }
-    var choices by remember { mutableStateOf<Choices?>(null) }
-    var failed by remember { mutableStateOf(false) }
-    val entries = ReferenceKind.ENTRY in target.kinds
+    // null until the place it opens on is known
+    var path by rememberSaveable(stateSaver = ThingPathSaver) { mutableStateOf<ThingPath?>(null) }
+    LaunchedEffect(Unit) { if (path == null) path = startPath(target, context) }
 
-    LaunchedEffect(query, browsed) {
-        val result = Coordinator(context).processUserAction("references.choices", buildMap {
-            put("kinds", target.kinds.map { it.name })
-            if (target.toolInstances.isNotEmpty()) put("tool_instances", target.toolInstances)
-            browsed?.let { put("tool_instance_id", it) }
-            if (query.isNotBlank()) put("query", query)
-        })
-        if (!result.isSuccess) {
-            LogManager.ui("ReferencePicker: choices not read: ${result.error}", "ERROR")
-            failed = true
-            return@LaunchedEffect
-        }
-        fun rows(key: String) = (result.data?.get(key) as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<*, *>>()
-        choices = Choices(
-            zones = rows("zones").map { Choice(Reference(ReferenceKind.ZONE, it["id"] as String), it["name"] as? String ?: "") },
-            tools = rows("tool_instances").map {
-                Choice(Reference(ReferenceKind.TOOL_INSTANCE, it["id"] as String), it["name"] as? String ?: "", it["zone_name"] as? String)
-            },
-            entries = rows("entries").map { group ->
-                (group["tool_name"] as? String ?: "") to (group["entries"] as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<*, *>>()
-                    .map { Choice(Reference(ReferenceKind.ENTRY, it["id"] as String), it["name"] as? String ?: "") }
-            }
-        )
-    }
-
-    UI.Dialog(type = DialogType.SELECTION, onConfirm = {}, onCancel = onDismiss) {
+    val current = path
+    UI.Dialog(
+        type = DialogType.CONFIRM,
+        confirmEnabled = current != null && current.kind in target.kinds,
+        onConfirm = { current?.let { onPick(it.reference) } },
+        onCancel = onDismiss
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             UI.Text(text = s.shared("field_reference_pick"), type = TextType.TITLE, fillMaxWidth = true)
-            val current = choices
-            when {
-                failed -> UI.Text(text = s.shared("error_loading_options"), type = TextType.ERROR)
-                current == null -> UI.LoadingIndicator()
-                else -> {
-                    if (ReferenceKind.APP in target.kinds) {
-                        ChoiceRow(Choice(Reference(ReferenceKind.APP, null), s.shared("pointer_level_app")), onPick)
-                    }
-                    Section(s.shared("reference_kind_zone"), current.zones, onPick)
-                    // A tool is picked when tools are taken; otherwise it is browsed into, for its entries
-                    if (ReferenceKind.TOOL_INSTANCE in target.kinds) {
-                        Section(s.shared("reference_kind_tool_instance"), current.tools, onPick)
-                    } else if (entries && target.toolInstances.isEmpty() && browsed == null) {
-                        Section(s.shared("scope_select_tool"), current.tools) { browsed = it.id }
-                    }
-                    if (entries && (target.toolInstances.isNotEmpty() || browsed != null)) {
-                        UI.FormField(label = s.shared("field_reference_search"), value = query, onChange = { query = it }, required = false)
-                        current.entries.forEach { (tool, rows) -> Section(tool, rows, onPick) }
-                        if (current.entries.all { it.second.isEmpty() }) {
-                            UI.Text(text = s.shared("scope_no_options"), type = TextType.BODY)
-                        }
-                    }
-                }
-            }
-            UI.ActionButton(action = ButtonAction.CANCEL, onClick = onDismiss)
+            if (current == null) UI.LoadingIndicator()
+            else ThingBrowser(current, { path = it }, target)
         }
     }
 }
 
-@Composable
-private fun Section(title: String, rows: List<Choice>, onPick: (Reference) -> Unit) {
-    if (rows.isEmpty()) return
-    UI.Text(text = title, type = TextType.SUBTITLE)
-    rows.forEach { ChoiceRow(it, onPick) }
-}
-
-@Composable
-private fun ChoiceRow(choice: Choice, onPick: (Reference) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            UI.Text(text = choice.name, type = TextType.BODY)
-            choice.detail?.let { UI.Text(text = it, type = TextType.CAPTION) }
-        }
-        UI.ActionButton(action = ButtonAction.SELECT, onClick = { onPick(choice.reference) })
-    }
-}
+/** The place reached across a rotation, null before it opens. */
+private val ThingPathSaver: Saver<ThingPath?, String> = Saver(
+    save = { it?.toJson() ?: "" },
+    restore = { saved -> saved.takeIf { it.isNotEmpty() }?.let { ThingPath.fromJson(it) } }
+)

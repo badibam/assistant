@@ -125,4 +125,26 @@ class PointerSelectionTest {
         assertEquals("<=", filters.getJSONObject(1).getString("op"))
         assertEquals("NOW", filters.getJSONObject(1).getJSONObject("value").getString("relative"))
     }
+
+    @Test
+    fun `the browser moving to another zone's tool keeps the boxes and the period, not the filters`() {
+        val work = Named("z2", "Work")
+        val tasks = Named("t9", "Tasks", "list")
+        val moved = PointerSelection().intoZone(health).intoTool(sleep)
+            .copy(config = true, period = lastWeek, filters = shortNights, fields = listOf("data.duration"))
+            .at(ThingPath(work, tasks))
+        assertEquals(work, moved.zone)
+        assertEquals(tasks, moved.tool)
+        assertTrue(moved.config)
+        assertEquals(lastWeek, moved.period)
+        assertEquals(0, moved.filters.length())
+        assertNull(moved.fields)
+    }
+
+    @Test
+    fun `the browser staying on the same tool changes nothing, going up to the app keeps nothing`() {
+        val selection = PointerSelection().intoZone(health).intoTool(sleep).copy(filters = shortNights)
+        assertEquals(selection.toJson(), selection.at(selection.path).toJson())
+        assertEquals(PointerSelection().toJson(), selection.at(ThingPath()).toJson())
+    }
 }

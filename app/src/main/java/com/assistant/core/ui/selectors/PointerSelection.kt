@@ -8,9 +8,6 @@ import com.assistant.core.selection.ReferenceKind
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** A zone or a tool the selector went through: its id, its name as shown, a tool's type. */
-data class Named(val id: String, val name: String, val tooltype: String? = null)
-
 /**
  * What the pointer selector holds while a pointer is built: where the user went (a zone, a tool
  * in it), what is attached, and what narrows the tool's entries.
@@ -44,6 +41,17 @@ data class PointerSelection(
 
     /** Whether the entries are narrowed, by a period or a value filter. */
     val narrowed: Boolean get() = !period.isEmpty || filters.length() > 0
+
+    /** Where the selector stands, for its browser. */
+    val path: ThingPath get() = ThingPath(zone, tool)
+
+    /** Moved to [path] by the browser: going up or into another place leaves what they leave. */
+    fun at(path: ThingPath): PointerSelection = when {
+        path.zone == null -> upTo(ReferenceKind.APP)
+        path.tool == null -> if (path.zone == zone) upTo(ReferenceKind.ZONE) else intoZone(path.zone)
+        path.tool == tool -> this
+        else -> (if (path.zone == zone) this else intoZone(path.zone)).intoTool(path.tool)
+    }
 
     /** Into [zone]: the boxes and the period stay, which a zone offers as well. */
     fun intoZone(zone: Named): PointerSelection = PointerSelection(zone = zone, config = config, entries = entries, period = period)
@@ -79,8 +87,8 @@ data class PointerSelection(
     }
 
     fun toJson(): String = JSONObject().apply {
-        zone?.let { put("zone", named(it)) }
-        tool?.let { put("tool", named(it)) }
+        zone?.let { put("zone", it.toJson()) }
+        tool?.let { put("tool", it.toJson()) }
         put("config", config)
         put("entries", entries)
         put("period", period.toJson())
@@ -89,14 +97,11 @@ data class PointerSelection(
     }.toString()
 
     companion object {
-        private fun named(n: Named) = JSONObject().put("id", n.id).put("name", n.name).apply { n.tooltype?.let { put("tooltype", it) } }
-        private fun named(json: JSONObject) = Named(json.getString("id"), json.getString("name"), json.optString("tooltype").takeIf { it.isNotEmpty() })
-
         fun fromJson(saved: String): PointerSelection {
             val json = JSONObject(saved)
             return PointerSelection(
-                zone = json.optJSONObject("zone")?.let { named(it) },
-                tool = json.optJSONObject("tool")?.let { named(it) },
+                zone = json.optJSONObject("zone")?.let { Named.fromJson(it) },
+                tool = json.optJSONObject("tool")?.let { Named.fromJson(it) },
                 config = json.getBoolean("config"),
                 entries = json.getBoolean("entries"),
                 // The selector's own state, written by toJson: its dates read

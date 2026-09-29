@@ -11,14 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.assistant.core.fields.ReferenceTarget
 import com.assistant.core.fields.ToolFields
 import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.ui.components.PeriodPicker
-import com.assistant.core.navigation.DataNavigator
-import com.assistant.core.navigation.data.NodeType
-import com.assistant.core.navigation.data.SchemaNode
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonType
@@ -36,10 +34,10 @@ private val PointerSelectionSaver: Saver<PointerSelection, String> = Saver(
 /**
  * The POINTER selector, on one screen (docs/design/pointer.md).
  *
- * At the top, where the user is: the app, a zone, a tool, each step a way back up. In the middle,
- * the places one level down. At the bottom, once a zone or a tool is reached: the config and
- * the entries to attach, and for a tool the period, the value filters and the fields that narrow
- * its entries, with the sentence that says what will go.
+ * At the top, where the user is and the places one level down (ThingBrowser). At the bottom,
+ * once a zone or a tool is reached: the config and the entries to attach, and for a tool the
+ * period, the value filters and the fields that narrow its entries, with the sentence that says
+ * what will go.
  *
  * @param reference The name of what its relative dates resolve against when the pointer is
  *   replayed later (an automation's starting message: its scheduled time); null in a chat, where
@@ -54,30 +52,13 @@ fun PointerSelector(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    val navigator = remember { DataNavigator(context) }
 
     var selection by rememberSaveable(stateSaver = PointerSelectionSaver) { mutableStateOf(PointerSelection()) }
     var showFilters by rememberSaveable { mutableStateOf(false) }
 
-    // Reloaded, never saved: the places one level down, and the fields of the tool reached
-    var places by remember { mutableStateOf<List<SchemaNode>?>(null) }
+    // Reloaded, never saved: the fields of the tool reached
     var fields by remember { mutableStateOf<Map<String, FieldDefinition>>(emptyMap()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(selection.level, selection.zone?.id) {
-        places = null
-        try {
-            places = when (selection.level) {
-                ReferenceKind.APP -> navigator.getRootNodes().filter { it.type == NodeType.ZONE }
-                ReferenceKind.ZONE -> navigator.getChildren("zones.${selection.zone!!.id}").filter { it.type == NodeType.TOOL }
-                else -> emptyList()
-            }
-        } catch (e: Exception) {
-            LogManager.ui("PointerSelector: places not loaded: ${e.message}", "ERROR", e)
-            errorMessage = s.shared("error_loading_options")
-            places = emptyList()
-        }
-    }
 
     LaunchedEffect(selection.tool?.id) {
         val toolId = selection.tool?.id
@@ -108,12 +89,7 @@ fun PointerSelector(
         ) {
             UI.Text(text = s.shared("pointer_enrichment_selector_title"), type = TextType.TITLE, fillMaxWidth = true)
 
-            Breadcrumb(selection) { level -> selection = selection.upTo(level) }
-
-            Places(places, selection.level) { node ->
-                val named = Named(node.path.substringAfter('.'), node.displayName, node.toolType)
-                selection = if (node.type == NodeType.ZONE) selection.intoZone(named) else selection.intoTool(named)
-            }
+            ThingBrowser(selection.path, { selection = selection.at(it) }, POINTED)
 
             if (selection.complete) {
                 AttachPanel(
@@ -143,54 +119,8 @@ fun PointerSelector(
     }
 }
 
-/** App › zone › tool, each step taking the user back up to it. */
-@Composable
-private fun Breadcrumb(selection: PointerSelection, onUp: (ReferenceKind) -> Unit) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-    val steps = listOfNotNull(
-        ReferenceKind.APP to s.shared("pointer_level_app"),
-        selection.zone?.let { ReferenceKind.ZONE to it.name },
-        selection.tool?.let { ReferenceKind.TOOL_INSTANCE to it.name }
-    )
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        steps.forEachIndexed { i, (level, name) ->
-            if (i > 0) UI.Icon(iconName = "chevron-right", size = 20.dp)
-            val last = i == steps.lastIndex
-            Box(modifier = if (last) Modifier else Modifier.clickable { onUp(level) }) {
-                UI.Text(text = name, type = if (last) TextType.SUBTITLE else TextType.BODY)
-            }
-        }
-    }
-}
-
-/** The zones of the app, or the tools of a zone, to go down into. */
-@Composable
-private fun Places(places: List<SchemaNode>?, level: ReferenceKind, onSelect: (SchemaNode) -> Unit) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-    if (level == ReferenceKind.TOOL_INSTANCE) return
-    when {
-        places == null -> UI.LoadingIndicator()
-        places.isEmpty() -> UI.Text(text = s.shared("scope_no_options"), type = TextType.BODY)
-        else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            UI.Text(
-                text = s.shared(if (level == ReferenceKind.APP) "scope_select_zone" else "scope_select_tool"),
-                type = TextType.SUBTITLE
-            )
-            places.forEach { node ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(modifier = Modifier.weight(1f)) { UI.Text(text = node.displayName, type = TextType.BODY) }
-                    UI.ActionButton(action = ButtonAction.SELECT, onClick = { onSelect(node) })
-                }
-            }
-        }
-    }
-}
+/** What a pointer designates: a zone, or a tool; an entry is only pointed at by the app. */
+private val POINTED = ReferenceTarget(setOf(ReferenceKind.ZONE, ReferenceKind.TOOL_INSTANCE), emptyList())
 
 /**
  * What goes with the pointer: the two boxes and the period, for a tool its filters and fields,

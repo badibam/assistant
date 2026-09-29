@@ -1,0 +1,121 @@
+package com.assistant.core.ui.selectors
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.fields.ReferenceTarget
+import com.assistant.core.selection.ReferenceKind
+import com.assistant.core.strings.Strings
+import com.assistant.core.ui.ButtonAction
+import com.assistant.core.ui.TextType
+import com.assistant.core.ui.UI
+import com.assistant.core.utils.LogManager
+
+/** One place one level down: where it leads, its name, and what situates it (a tool's zone). */
+private data class Place(val path: ThingPath, val detail: String? = null)
+
+/**
+ * The one way to reach a thing of the app (docs/design/missing-tools.md, « Les sélecteurs,
+ * recomposés »), for the pointer and the REFERENCE field: the trail App › zone › tool › entry,
+ * each step a way back up, and the places one level down, among those that lead to something
+ * [target] takes (references.choices). An entry is searched by its label.
+ *
+ * It only moves [path]: what the place reached means, and whether it can be chosen, is the
+ * caller's.
+ */
+@Composable
+fun ThingBrowser(path: ThingPath, onPath: (ThingPath) -> Unit, target: ReferenceTarget) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    var query by rememberSaveable(path.tool?.id) { mutableStateOf("") }
+    // Reloaded, never saved: null while they are read
+    var places by remember { mutableStateOf<List<Place>?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    val searching = path.kind == ReferenceKind.TOOL_INSTANCE && ReferenceKind.ENTRY in target.kinds
+    // Nothing is listed below a place when nothing deeper is taken (a tool, for the pointer);
+    // ReferenceKind runs from the app down
+    val deeper = target.kinds.any { it.ordinal > path.kind.ordinal }
+
+    LaunchedEffect(path.zone?.id, path.tool?.id, path.entry?.id, query) {
+        places = null
+        failed = false
+        if (!deeper) { places = emptyList(); return@LaunchedEffect }
+        val result = Coordinator(context).processUserAction("references.choices", buildMap {
+            put("kinds", target.kinds.map { it.name })
+            if (target.toolInstances.isNotEmpty()) put("tool_instances", target.toolInstances)
+            path.zone?.let { put("zone_id", it.id) }
+            path.tool?.let { put("tool_instance_id", it.id) }
+            if (query.isNotBlank()) put("query", query)
+        })
+        if (!result.isSuccess) {
+            LogManager.ui("ThingBrowser: places under ${path.reference} not read: ${result.error}", "ERROR")
+            failed = true
+            places = emptyList()
+            return@LaunchedEffect
+        }
+        fun rows(key: String) = (result.data?.get(key) as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<*, *>>()
+        fun named(row: Map<*, *>, tooltype: Boolean = false) =
+            Named(row["id"] as String, row["name"] as? String ?: "", if (tooltype) row["tooltype"] as? String else null)
+        places = rows("zones").map { Place(ThingPath(named(it))) } +
+            rows("tool_instances").map { row ->
+                // A tool listed at the app, without its zone reached first, says which it is in
+                val zone = path.zone ?: Named(row["zone_id"] as String, row["zone_name"] as? String ?: "")
+                Place(ThingPath(zone, named(row, tooltype = true)), (row["zone_name"] as? String).takeIf { path.zone == null })
+            } +
+            rows("entries").map { Place(path.copy(entry = named(it))) }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Trail(path, s.shared("pointer_level_app")) { onPath(path.upTo(it)) }
+        if (searching) {
+            UI.FormField(label = s.shared("field_reference_search"), value = query, onChange = { query = it }, required = false)
+        }
+        val current = places
+        when {
+            failed -> UI.Text(text = s.shared("error_loading_options"), type = TextType.ERROR)
+            !deeper -> Unit
+            current == null -> UI.LoadingIndicator()
+            current.isEmpty() -> UI.Text(text = s.shared("scope_no_options"), type = TextType.BODY)
+            else -> current.forEach { place ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        UI.Text(text = place.path.entry?.name ?: place.path.tool?.name ?: place.path.zone!!.name, type = TextType.BODY)
+                        place.detail?.let { UI.Text(text = it, type = TextType.CAPTION) }
+                    }
+                    UI.ActionButton(action = ButtonAction.SELECT, onClick = { onPath(place.path) })
+                }
+            }
+        }
+    }
+}
+
+/** App › zone › tool › entry, each step but the last taking the user back up to it. */
+@Composable
+private fun Trail(path: ThingPath, appName: String, onUp: (ReferenceKind) -> Unit) {
+    val steps = listOfNotNull(
+        ReferenceKind.APP to appName,
+        path.zone?.let { ReferenceKind.ZONE to it.name },
+        path.tool?.let { ReferenceKind.TOOL_INSTANCE to it.name },
+        path.entry?.let { ReferenceKind.ENTRY to it.name }
+    )
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        steps.forEachIndexed { i, (kind, name) ->
+            if (i > 0) UI.Icon(iconName = "chevron-right", size = 20.dp)
+            val last = i == steps.lastIndex
+            Box(modifier = if (last) Modifier else Modifier.clickable { onUp(kind) }) {
+                UI.Text(text = name, type = if (last) TextType.SUBTITLE else TextType.BODY)
+            }
+        }
+    }
+}

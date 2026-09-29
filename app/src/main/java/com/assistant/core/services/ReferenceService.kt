@@ -19,9 +19,11 @@ import org.json.JSONObject
  *
  * - names: the current name of each reference in `references` ([{kind, id}]), or that it was
  *   deleted: the screen and the AI show a reference by it, never by a stored name.
- * - choices: what a reference of `kinds` may designate, for its input: the zones, the tool
- *   instances (with their zone), and the entries of the tool instances `tool_instances`, or of the
- *   one `tool_instance_id` browsed, their label holding `query` when one is given.
+ * - choices: what is one level down from where the input of a thing stands (ThingBrowser), among
+ *   what leads to something of `kinds`, the entries restricted to those of `tool_instances` when
+ *   given: at the app, the zones, or when only such restricted entries are taken, those tools
+ *   directly; in the zone `zone_id`, its tools; in the tool `tool_instance_id`, its entries, their
+ *   label holding `query` when one is given. A tool comes with its type and its zone.
  */
 class ReferenceService(private val context: Context) : ExecutableService {
 
@@ -59,42 +61,40 @@ class ReferenceService(private val context: Context) : ExecutableService {
     }
 
     private suspend fun choices(params: JSONObject): OperationResult {
-        val kinds = params.optJSONArray("kinds")?.let { a -> (0 until a.length()).mapNotNull { i -> ReferenceKind.entries.firstOrNull { it.name == a.optString(i) } } }
+        val kinds = params.optJSONArray("kinds")?.let { a -> (0 until a.length()).mapNotNull { i -> ReferenceKind.entries.firstOrNull { it.name == a.optString(i) } } }?.toSet()
             ?: return OperationResult.error(s.shared("field_validation_reference_kinds"))
         val restricted = params.optJSONArray("tool_instances")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList()
-        val browsed = params.optString("tool_instance_id").takeIf { it.isNotEmpty() }
+        val zoneId = params.optString("zone_id").takeIf { it.isNotEmpty() }
+        val toolId = params.optString("tool_instance_id").takeIf { it.isNotEmpty() }
         val query = params.optString("query").trim().lowercase()
 
         val zones = database.zoneDao().getAllZones()
         val zoneNames = zones.associate { it.id to it.name }
         val tools = database.toolInstanceDao().getAllToolInstances()
-        val result = mutableMapOf<String, Any>()
+        // A tool leads somewhere when it is taken itself, or when its entries are
+        fun leads(tool: ToolInstance) = ReferenceKind.TOOL_INSTANCE in kinds ||
+            (ReferenceKind.ENTRY in kinds && (restricted.isEmpty() || tool.id in restricted))
+        fun toolRows(shown: List<ToolInstance>) = shown.map { tool ->
+            mapOf("id" to tool.id, "name" to toolName(tool), "tooltype" to tool.tooltype, "zone_id" to tool.zone_id, "zone_name" to zoneNames[tool.zone_id])
+        }
 
-        if (ReferenceKind.ZONE in kinds) {
-            result["zones"] = zones.map { mapOf("id" to it.id, "name" to it.name) }
-        }
-        // The tools, to designate one, or to browse to the entries of one when any entry is taken
-        if (ReferenceKind.TOOL_INSTANCE in kinds || (ReferenceKind.ENTRY in kinds && restricted.isEmpty())) {
-            result["tool_instances"] = tools.map { tool ->
-                mapOf("id" to tool.id, "name" to toolName(tool), "zone_name" to zoneNames[tool.zone_id], "tooltype" to tool.tooltype)
-            }
-        }
-        if (ReferenceKind.ENTRY in kinds) {
-            val shown = if (restricted.isNotEmpty()) restricted else listOfNotNull(browsed)
-            val byId = tools.associateBy { it.id }
-            result["entries"] = shown.mapNotNull { id -> byId[id] }.map { tool ->
-                val entries = database.toolDataDao().getByToolInstance(tool.id)
+        return OperationResult.success(when {
+            toolId != null -> {
+                val tool = tools.firstOrNull { it.id == toolId }
+                val entries = if (tool == null || ReferenceKind.ENTRY !in kinds || (restricted.isNotEmpty() && toolId !in restricted)) emptyList()
+                else database.toolDataDao().getByToolInstance(toolId)
                     .map { it.id to entryLabel(it) }
                     .filter { (_, label) -> query.isEmpty() || label.lowercase().contains(query) }
                     .sortedBy { (_, label) -> label.lowercase() }
-                mapOf(
-                    "tool_instance_id" to tool.id,
-                    "tool_name" to toolName(tool),
-                    "entries" to entries.map { (id, label) -> mapOf("id" to id, "name" to label) }
-                )
+                mapOf("entries" to entries.map { (id, label) -> mapOf("id" to id, "name" to label) })
             }
-        }
-        return OperationResult.success(result)
+            zoneId != null -> mapOf("tool_instances" to toolRows(tools.filter { it.zone_id == zoneId && leads(it) }))
+            // Only the entries of some tools taken: those tools, wherever they are
+            kinds == setOf(ReferenceKind.ENTRY) && restricted.isNotEmpty() -> mapOf("tool_instances" to toolRows(tools.filter { it.id in restricted }))
+            else -> mapOf("zones" to zones
+                .filter { zone -> ReferenceKind.ZONE in kinds || tools.any { it.zone_id == zone.id && leads(it) } }
+                .map { mapOf("id" to it.id, "name" to it.name) })
+        })
     }
 
     private fun toolName(tool: ToolInstance): String = JSONObject(tool.config_json).optString("name")
