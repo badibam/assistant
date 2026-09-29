@@ -147,7 +147,7 @@ fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureCl
 }
 
 /** A verdict's dot in the history's strip. */
-fun dot(status: String): String = when (status) {
+private fun dot(status: String): String = when (status) {
     GoalToolType.Status.SUCCEEDED -> "●"
     GoalToolType.Status.FAILED -> "○"
     else -> "·"
@@ -247,7 +247,7 @@ private val GAUGED = setOf(FieldType.NUMERIC, FieldType.SCALE, FieldType.DURATIO
  * A criterion's condition in words, what it is compared with shown as [field] shows its values:
  * "≥ 7 h", "= Yes", "between 70 kg and 80 kg"; null before it is judged.
  */
-private fun condition(op: String, compared: List<*>, field: FieldDefinition?, context: android.content.Context, s: StringsContext): String? {
+internal fun condition(op: String, compared: List<*>, field: FieldDefinition?, context: android.content.Context, s: StringsContext): String? {
     val operator = com.assistant.core.fields.FilterOperator.of(op) ?: return null
     fun shown(value: Any?) = value?.let { field?.formatValue(it, context) ?: it.toString() } ?: "?"
     val words = com.assistant.core.ui.selectors.PointerDescription.operator(operator, s)

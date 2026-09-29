@@ -46,7 +46,8 @@ fun NotesScreen(
     toolInstanceId: String,
     zoneName: String,
     onNavigateBack: () -> Unit,
-    onConfigureClick: () -> Unit = {}
+    onConfigureClick: () -> Unit = {},
+    openEntry: com.assistant.core.tools.EntryToOpen? = null
 ) {
     LogManager.ui("NotesScreen called with toolInstanceId: $toolInstanceId")
 
@@ -60,6 +61,7 @@ fun NotesScreen(
     var toolInstance by remember { mutableStateOf<Map<String, Any>?>(null) }
     var notes by remember { mutableStateOf<List<NoteEntry>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var notesLoaded by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var contextMenuNoteId by remember { mutableStateOf<String?>(null) }
@@ -126,6 +128,7 @@ fun NotesScreen(
 
                 notes = entries.sortedWith(compareBy<NoteEntry> { it.position }.thenBy { it.timestamp })
                 LogManager.ui("Loaded ${notes.size} notes")
+                notesLoaded = true
             } else {
                 notes = emptyList()
                 LogManager.ui("No notes found or error loading notes")
@@ -166,6 +169,19 @@ fun NotesScreen(
         dialogNoteId = null // null = creation mode
         dialogPosition = position
         showNoteDialog = true
+    }
+
+    // What the tile asked to open, once: a new note last, or a note once the notes are loaded.
+    // Kept across recreation, so the dialog is not opened again over one the user closed.
+    var openHandled by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(openEntry, notes, notesLoaded) {
+        if (openHandled || !notesLoaded) return@LaunchedEffect
+        when (openEntry) {
+            com.assistant.core.tools.EntryToOpen.New -> openCreateDialog((notes.maxOfOrNull { it.position } ?: -1) + 1)
+            is com.assistant.core.tools.EntryToOpen.Existing -> openEditDialog(notes.find { it.id == openEntry.id } ?: return@LaunchedEffect)
+            null -> Unit
+        }
+        openHandled = true
     }
 
     // Error message display

@@ -72,7 +72,7 @@ Row avec fillMaxWidth, padding vertical 4dp, espacement 8dp entre colonnes.
 
 **UI.Button** - Générique et flexible avec type (PRIMARY/SECONDARY/DEFAULT), size (XS à XXL), state et content personnalisé.
 
-**UI.ActionButton** - Actions standardisées avec action prédéfinie, display (ICON/LABEL), size et confirmation optionnelle. En ICON, le bouton montre l'icône Lucide que porte l'action (`ButtonAction.iconName`), dessinée par le thème.
+**UI.ActionButton** - Actions standardisées avec action prédéfinie, display (ICON/LABEL), size et confirmation optionnelle. En ICON, le bouton montre l'icône Lucide que porte l'action (`ButtonAction.iconName`), dessinée par le thème. `active` le montre allumé tant que dure ce qu'il ouvre (le mode d'édition d'un groupe), dessiné par le thème (le thème par défaut : un fond plein de la couleur principale).
 
 ### Actions Disponibles
 - **Principales** : SAVE, CREATE, UPDATE, DELETE, CANCEL, CONFIRM
@@ -163,7 +163,7 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 
 **UI.Divider** - Un trait horizontal qui sépare deux parties d'un écran ou d'une carte, dessiné par le thème.
 
-**UI.WaitingMark** - Le point qu'une tuile d'outil ou de zone porte à côté de son nom quand une de ses entrées attend l'utilisateur (`ToolTypeContract.getWaiting`, compté par `tools.waiting`, lu par les tuiles dans `LocalWaiting`). Sa forme est au thème (`ThemeContract.WaitingMark`).
+**UI.MarkedIcon** - L'icône d'une tuile d'outil ou de zone et ses deux pastilles, chacune dans son coin : en haut `UI.WaitingMark`, quand une de ses entrées attend l'utilisateur (`ToolTypeContract.getWaiting`, compté par `tools.waiting`, lu dans `LocalWaiting`) ; en bas `UI.RunningMark`, quand un chronomètre tourne sur une de ses entrées, pour tout type d'outil (`tools.running`, lu dans `LocalRunning`). Leur forme est au thème (`ThemeContract.WaitingMark`, `RunningMark`).
 
 **UI.Drawing** - Un dessin fait de formes placées en pixels (`core/drawing` : rectangle, tracé, symbole, arc, segment, texte, pointe), mis en page par qui le fait — un graphique (`tools/chart`), plus tard un aperçu sur une tuile — et dessiné par le thème (`ThemeContract.Drawing`). Les couleurs y sont des sens, jamais des valeurs : un nom de la palette (`TagColor`), le mélange de deux pour une quantité, ou l'une des encres du thème (forte, moyenne, légère) ; un rectangle « manquant » marque ce qui n'a pas pu être lu. Les textes se mesurent dans le style que le thème donne aux dessins (`drawingTextStyle`) avant d'être placés. Aucune primitive ne sait ce qu'elle représente : ce qu'un toucher trouve est l'affaire de qui a fait le dessin.
 
@@ -232,6 +232,8 @@ Row avec fillMaxWidth, colonnes en Box avec weight pour répartition (ex: 1f pou
 **UI.ZoneCard** - Zone avec logique métier intégrée, onClick et contentDescription.
 
 **UI.ToolCard** - Tool instance avec displayMode (ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE, FULL), onClick et onLongClick.
+
+**ToolGrid** - Les outils d'une section sur leur grille de quatre colonnes. En mode d'édition (`GridEditor`, un groupe à la fois, ouvert par le bouton `ARRANGE` de son titre), le thème dessine les cases (`ThemeContract.GridCell`), un toucher sélectionne une tuile, et `GridEditBar` la déplace aux flèches (`Grid.move`) ; la validation l'écrit en une fois (`tools.place`), « Annuler » remet la section comme elle était ; le reste de l'écran s'atténue et ne réagit pas (`Faded`). L'accueil range ses zones de la même façon (`GridLayout`, `ZonePositions`, `zones.place`), une zone en ICON, MINIMAL, LINE ou CONDENSED (`UI.ZoneCard`), son mode réglé avec elle (`display_mode`).
 
 ## Navigation et États
 

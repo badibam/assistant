@@ -6,8 +6,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ZoneDao {
-    @Query("SELECT * FROM zones ORDER BY order_index ASC")
+    @Query("SELECT * FROM zones ORDER BY grid_y ASC, grid_x ASC")
     suspend fun getAllZones(): List<Zone>
+
+    @Query("UPDATE zones SET grid_x = :gridX, grid_y = :gridY WHERE id = :id")
+    suspend fun updatePosition(id: String, gridX: Int, gridY: Int)
 
     @Query("SELECT * FROM zones WHERE id = :id")
     suspend fun getZoneById(id: String): Zone?

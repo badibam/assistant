@@ -122,19 +122,24 @@ object JournalToolType : ToolTypeContract {
     }
 
     @Composable
+    override fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
+        com.assistant.tools.journal.ui.rememberJournalTile(tool, open)
+
+    @Composable
     override fun getUsageScreen(
         toolInstanceId: String,
         configJson: String,
         zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit,
-        openEntryId: String?
+        openEntry: com.assistant.core.tools.EntryToOpen?
     ) {
         JournalScreen(
             toolInstanceId = toolInstanceId,
             zoneName = zoneName,
             onNavigateBack = onNavigateBack,
-            onConfigureClick = onLongClick
+            onConfigureClick = onLongClick,
+            openEntry = openEntry
         )
     }
 

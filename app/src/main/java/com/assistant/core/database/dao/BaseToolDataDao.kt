@@ -98,4 +98,8 @@ abstract class BaseToolDataDao {
      */
     @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId AND json_extract(state, '$.running') IS NOT NULL ORDER BY timestamp DESC")
     abstract suspend fun getRunning(toolInstanceId: String): List<ToolDataEntity>
+
+    /** The tools with an entry whose DURATION field is running, of every tooltype. */
+    @Query("SELECT DISTINCT tool_instance_id FROM tool_data WHERE json_extract(state, '$.running') IS NOT NULL")
+    abstract suspend fun getToolsRunning(): List<String>
 }

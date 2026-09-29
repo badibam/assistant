@@ -77,6 +77,8 @@ import java.util.Calendar
 object DefaultTheme : ThemeContract {
 
     override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
+
+    override val gridMaxWidth = 480.dp
     
 
     // =====================================
@@ -304,13 +306,14 @@ object DefaultTheme : ThemeContract {
         enabled: Boolean,
         requireConfirmation: Boolean,
         confirmMessage: String?,
+        active: Boolean,
         onClick: () -> Unit
     ) {
         // État du dialogue de confirmation
         var showConfirmDialog by rememberSaveable { mutableStateOf(false) }
         
-        // Determine default type based on action
-        val buttonType = type ?: getDefaultButtonType(action)
+        // Determine default type based on action; switched on, it is filled with the main color
+        val buttonType = if (active) ButtonType.PRIMARY else type ?: getDefaultButtonType(action)
         
         // Determine state based on enabled
         val state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED
@@ -379,13 +382,13 @@ object DefaultTheme : ThemeContract {
     private fun getDefaultButtonType(action: ButtonAction): ButtonType {
         return when (action) {
             // PRIMARY: Actions critiques/importantes
-            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START, ButtonAction.ATTACH -> ButtonType.PRIMARY
+            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START, ButtonAction.ATTACH, ButtonAction.REPEAT -> ButtonType.PRIMARY
 
             // DANGER: destructive actions, behind a confirmation
             ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
 
             // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW -> ButtonType.DEFAULT
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.ARRANGE, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW -> ButtonType.DEFAULT
         }
     }
     
@@ -418,6 +421,10 @@ object DefaultTheme : ThemeContract {
             ButtonAction.START -> s.shared("action_start")
             ButtonAction.VIEW -> s.shared("action_view")
             ButtonAction.ATTACH -> s.shared("action_attach")
+            ButtonAction.REPEAT -> s.shared("action_repeat")
+            ButtonAction.ARRANGE -> s.shared("action_arrange")
+            ButtonAction.UP -> s.shared("action_up")
+            ButtonAction.DOWN -> s.shared("action_down")
         }
     }
 
@@ -570,7 +577,8 @@ object DefaultTheme : ThemeContract {
         text: String,
         type: TextType,
         fillMaxWidth: Boolean,
-        textAlign: TextAlign?
+        textAlign: TextAlign?,
+        maxLines: Int
     ) {
         val style = when (type) {
             TextType.TITLE -> MaterialTheme.typography.headlineMedium
@@ -596,7 +604,9 @@ object DefaultTheme : ThemeContract {
             style = style,
             color = color,
             modifier = textModifier,
-            textAlign = textAlign
+            textAlign = textAlign,
+            maxLines = maxLines,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     }
     
@@ -971,15 +981,17 @@ object DefaultTheme : ThemeContract {
                 contentColor = CurrentTheme.getCurrentColorScheme().onSurface
             ),
             shape = CardShape,
+            // The grid gives the tile its cells; the space between tiles is taken inside them
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .padding(4.dp)
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick
                 )
         ) {
             // Le contenu vient de UI.ZoneCard()
-            Box(modifier = Modifier.padding(16.dp)) {
+            Box(modifier = Modifier.padding(12.dp)) {
                 content()
             }
         }
@@ -991,23 +1003,27 @@ object DefaultTheme : ThemeContract {
     }
 
     @Composable
+    override fun GridCell() {
+        Box(modifier = Modifier.fillMaxSize().padding(2.dp).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)))
+    }
+
+    @Composable
+    override fun RunningMark() {
+        Box(modifier = Modifier.size(10.dp).background(MaterialTheme.colorScheme.surface, CircleShape), contentAlignment = Alignment.Center) {
+            com.assistant.core.ui.UI.Icon(iconName = "timer", size = 10.dp, tint = MaterialTheme.colorScheme.tertiary)
+        }
+    }
+
+    @Composable
     override fun ToolCardContainer(
         displayMode: DisplayMode,
         onClick: () -> Unit,
         onLongClick: () -> Unit,
         content: @Composable () -> Unit
     ) {
-        // Theme defines appearance based on display mode
-        val cardModifier = when (displayMode) {
-            DisplayMode.ICON -> Modifier.size(64.dp)
-            DisplayMode.MINIMAL -> Modifier.height(48.dp).fillMaxWidth()
-            DisplayMode.LINE -> Modifier.height(64.dp).fillMaxWidth()
-            DisplayMode.CONDENSED -> Modifier.size(128.dp)
-            DisplayMode.EXTENDED -> Modifier.width(256.dp).height(128.dp)
-            DisplayMode.SQUARE -> Modifier.size(256.dp)
-            DisplayMode.FULL -> Modifier.fillMaxWidth().wrapContentHeight()
-        }
-        
+        // The grid gives the tile its cells; the space between tiles is taken inside them
+        val cardModifier = Modifier.fillMaxSize().padding(4.dp)
+
         val cardPadding = when (displayMode) {
             DisplayMode.ICON -> 4.dp
             DisplayMode.MINIMAL -> 8.dp

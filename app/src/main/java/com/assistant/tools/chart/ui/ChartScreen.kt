@@ -16,11 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.assistant.tools.chart.ChartSpec
-import com.assistant.tools.chart.ChartTable
 import com.assistant.tools.chart.Hit
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.selection.TimeResolver
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolConfigSettings
 import com.assistant.core.ui.ButtonAction
@@ -29,13 +26,8 @@ import com.assistant.core.ui.UI
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.JsonUtils
-import com.assistant.core.utils.LogManager
-import com.assistant.tools.chart.ChartSources
 import com.assistant.tools.chart.ChartToolType
 import org.json.JSONObject
-
-/** What the screen draws once read: the chart, its tables, its period at the moment read. */
-private data class Drawn(val spec: ChartSpec, val tables: List<ChartTable>, val period: Pair<Long?, Long?>, val now: Long)
 
 /**
  * A chart's screen (docs/design/missing-tools.md, « Graphique »): the chart, its legend under it,
@@ -52,8 +44,7 @@ fun ChartScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureC
     val s = remember { Strings.`for`(tool = "chart", context = context) }
 
     var config by remember { mutableStateOf<JSONObject?>(null) }
-    var drawn by remember { mutableStateOf<Drawn?>(null) }
-    var problem by remember { mutableStateOf<String?>(null) }
+    var reading by remember { mutableStateOf<ChartReading?>(null) }
     var version by remember { mutableIntStateOf(0) }
     // What a touch found: a passing look, gone with a rotation like any tooltip, never produced by the user
     var touched by remember { mutableStateOf<Hit?>(null) }
@@ -62,18 +53,8 @@ fun ChartScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureC
         val tool = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
         @Suppress("UNCHECKED_CAST")
         val loaded = ((tool.data?.get("tool_instance") as? Map<*, *>)?.get("config") as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
-        if (loaded == null) { problem = tool.error ?: s.shared("tools_loading_config"); return@LaunchedEffect }
-        config = loaded
-        val now = System.currentTimeMillis()
-        drawn = try {
-            val spec = ChartSpec.of(loaded, { s.shared(it) }, { s.tool(it) })
-            Drawn(spec, ChartSources(context).tables(spec, now), spec.period.instants(TimeResolver.at(now)), now).also { problem = null }
-        } catch (e: IllegalArgumentException) {
-            problem = e.message; null
-        } catch (e: IllegalStateException) {
-            LogManager.ui("ChartScreen: chart $toolInstanceId not read: ${e.message}", "WARN")
-            problem = e.message; null
-        }
+        reading = if (loaded == null) ChartReading.Problem(tool.error ?: s.shared("tools_loading_config"))
+            else ChartReading.of(loaded, context).also { config = loaded }
         touched = null
     }
     LaunchedEffect(toolInstanceId) {
@@ -100,12 +81,10 @@ fun ChartScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureC
             onLeftClick = onNavigateBack,
             onRightClick = onConfigureClick
         )
-        val chart = drawn
-        when {
-            problem != null -> UI.Text(s.tool("screen_problem").format(problem), TextType.ERROR)
-            chart == null -> UI.LoadingIndicator()
-            chart.tables.all { it.rows.isEmpty() } -> UI.Text(s.tool("screen_empty"), TextType.CAPTION)
-            else -> {
+        when (val chart = reading) {
+            null -> UI.LoadingIndicator()
+            is ChartReading.Problem -> UI.Text(s.tool("screen_problem").format(chart.message), TextType.ERROR)
+            is ChartReading.Drawn -> if (chart.empty) UI.Text(s.tool("screen_empty"), TextType.CAPTION) else {
                 ChartView(chart.spec, chart.tables, chart.period, chart.now, onTap = { touched = it })
                 touched?.let { ChartDetails(it) } ?: UI.Text(s.tool("screen_touch"), TextType.CAPTION)
             }

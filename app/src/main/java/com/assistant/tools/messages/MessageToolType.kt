@@ -232,20 +232,24 @@ object MessageToolType : ToolTypeContract {
     // ========================================
 
     @Composable
+    override fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
+        com.assistant.tools.messages.ui.rememberMessagesTile(tool, open)
+
+    @Composable
     override fun getUsageScreen(
         toolInstanceId: String,
         configJson: String,
         zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit,
-        openEntryId: String?
+        openEntry: com.assistant.core.tools.EntryToOpen?
     ) {
         com.assistant.tools.messages.ui.MessagesScreen(
             toolInstanceId = toolInstanceId,
             zoneName = zoneName,
             onNavigateBack = onNavigateBack,
             onConfigureClick = onLongClick,
-            openEntryId = openEntryId
+            openEntryId = (openEntry as? com.assistant.core.tools.EntryToOpen.Existing)?.id
         )
     }
 

@@ -60,8 +60,9 @@ object UI {
         enabled: Boolean = true,
         requireConfirmation: Boolean = false,  // Automatic confirmation dialog
         confirmMessage: String? = null,        // Custom message (null = default message)
+        active: Boolean = false,               // Switched on while what it opens lasts
         onClick: () -> Unit
-    ) = CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, onClick)
+    ) = CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, active, onClick)
     
     // =====================================
     // DISPLAY
@@ -72,9 +73,10 @@ object UI {
         text: String,
         type: TextType,
         fillMaxWidth: Boolean = false,
-        textAlign: TextAlign? = null
+        textAlign: TextAlign? = null,
+        maxLines: Int = Int.MAX_VALUE
     ) {
-        CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign)
+        CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign, maxLines)
     }
     
     /**
@@ -427,7 +429,28 @@ object UI {
     @Composable
     fun WaitingMark() = CurrentTheme.current.WaitingMark()
 
-    /** Something waiting in one of its tools (LocalWaiting) is marked beside its name. */
+    /** The theme's mark that a stopwatch runs on an entry (tools.running). */
+    @Composable
+    fun RunningMark() = CurrentTheme.current.RunningMark()
+
+    /**
+     * A tool's or a zone's icon with its two marks, each in its corner: something waiting at the
+     * top, a stopwatch running at the bottom. The marks show without an icon too.
+     */
+    @Composable
+    fun MarkedIcon(iconName: String?, waiting: Boolean, running: Boolean, size: Dp = 24.dp) {
+        Box(modifier = Modifier.size(size)) {
+            if (!iconName.isNullOrBlank()) Icon(iconName = iconName, size = size, contentDescription = null)
+            if (waiting) Box(modifier = Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp)) { WaitingMark() }
+            if (running) Box(modifier = Modifier.align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp)) { RunningMark() }
+        }
+    }
+
+    /**
+     * A zone's tile on the home screen, laid out by its display mode: its icon (ICON), its icon and
+     * name (MINIMAL), its description beside them (LINE) or below (CONDENSED). Something waiting or
+     * a stopwatch running in one of its tools (LocalWaiting, LocalRunning) is marked on its icon.
+     */
     @Composable
     fun ZoneCard(
         zone: Zone,
@@ -435,24 +458,34 @@ object UI {
         onLongClick: () -> Unit = { }
     ) {
         val waiting = LocalWaiting.current.zone(zone.id)
-        // Themed container + standard content with UI.*
+        val running = LocalRunning.current.zone(zone.id)
+        val mode = DisplayMode.valueOf(zone.display_mode)
+        @Composable
+        fun Header() = Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            MarkedIcon(zone.icon_name, waiting, running)
+            Text(zone.name, TextType.SUBTITLE, maxLines = 2)
+        }
+        @Composable
+        fun Description() = zone.description?.let { Text(it, TextType.BODY, maxLines = 2) }
         CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
-            Column {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    zone.icon_name?.let { Icon(iconName = it, size = 24.dp) }
-                    Text(zone.name, TextType.TITLE)
-                    if (waiting) WaitingMark()
+            when (mode) {
+                DisplayMode.ICON -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    MarkedIcon(zone.icon_name, waiting, running)
                 }
-                zone.description?.let { desc ->
-                    Text(desc, TextType.BODY)
+                DisplayMode.MINIMAL -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Header() }
+                DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) { Header() }
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) { Description() }
                 }
+                DisplayMode.CONDENSED -> Column(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) { Header() }
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) { Description() }
+                }
+                else -> throw IllegalStateException("A zone has no ${zone.display_mode} tile")
             }
         }
     }
-    
+
     @Composable
     fun PageHeader(
         title: String,
@@ -472,98 +505,104 @@ object UI {
         CurrentTheme.current.PageHeader(title, subtitle, icon, leftButton, rightButton, onLeftClick, onRightClick)
     }
     
-    /** @param waiting Whether something waits among its entries, marked beside its name */
+    /** The header of a tool's tile: its icon with its marks, and its name. */
     @Composable
     fun ToolCardHeader(
         tool: ToolInstance,
         context: android.content.Context,
-        waiting: Boolean = false
+        waiting: Boolean,
+        running: Boolean
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
-            val iconName = settings.string("icon_name").orEmpty()
-            if (iconName.isNotBlank()) Icon(
-                iconName = iconName,
-                size = 24.dp,
-                contentDescription = null
-            )
-            
-            // Instance name
-            val toolInstanceName = settings.string("name")!!
-            Text(toolInstanceName, TextType.BODY)
-            if (waiting) WaitingMark()
+            MarkedIcon(settings.string("icon_name"), waiting, running)
+            Text(settings.string("name")!!, TextType.BODY, maxLines = 2)
         }
     }
-    
+
+    /**
+     * A tool's tile, laid out by its display mode: the header (icon and name) the core draws, the
+     * summary and the body its tool type draws (ToolTile), each on whole cells of the grid.
+     *
+     * @param onOpenEntry Opens the tool on one of its entries, touched on the tile
+     */
     @Composable
     fun ToolCard(
         tool: ToolInstance,
         displayMode: DisplayMode,
         context: android.content.Context,
         onClick: () -> Unit,
-        onLongClick: () -> Unit = { }
+        onLongClick: () -> Unit = { },
+        onOpenEntry: (com.assistant.core.tools.EntryToOpen) -> Unit = { }
     ) {
-        // Something waiting among its entries (LocalWaiting) is marked beside its name
+        // Something waiting among its entries, or a stopwatch running on one, is marked on its icon
         val waiting = LocalWaiting.current.tool(tool.id)
-        // Content defined at core level + tool types with UI.*
+        val running = LocalRunning.current.tool(tool.id)
         val toolType = requireNotNull(ToolTypeManager.getToolType(tool.tooltype)) { "No tool type '${tool.tooltype}' for tool ${tool.id}" }
+        val tile = toolType.rememberTile(tool, onOpenEntry)
         CurrentTheme.current.ToolCardContainer(
             displayMode = displayMode,
-            onClick = onClick, 
+            onClick = onClick,
             onLongClick = onLongClick
         ) {
+            // The header and the summary side by side, each on half the width
+            @Composable
+            fun HeaderAndSummary(modifier: Modifier) = Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
+                    ToolCardHeader(tool, context, waiting, running)
+                }
+                Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    tile.Summary()
+                }
+            }
+
             when (displayMode) {
                 DisplayMode.ICON -> {
-                    // TODO: Icon only via tool type
-                    Text("T", TextType.BODY) // Placeholder
+                    // The icon alone, centered in its cell
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        MarkedIcon(com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context).string("icon_name"), waiting, running)
+                    }
                 }
                 DisplayMode.MINIMAL -> {
-                    ToolCardHeader(tool, context, waiting)
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
+                        ToolCardHeader(tool, context, waiting, running)
+                    }
                 }
-                DisplayMode.LINE -> {
-                    Row(
-                        modifier = Modifier.fillMaxHeight(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Left half: ToolCardHeader centered vertically and horizontally
-                        Box(
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ToolCardHeader(tool, context, waiting)
+                DisplayMode.LINE -> HeaderAndSummary(Modifier.fillMaxSize())
+                DisplayMode.CONDENSED -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                            ToolCardHeader(tool, context, waiting, running)
                         }
-                        
-                        // Right half: what the tool type shows there
-                        Box(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            toolType.TileContent(tool, displayMode)
+                        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            tile.Summary()
                         }
                     }
                 }
-                DisplayMode.CONDENSED, DisplayMode.EXTENDED, DisplayMode.SQUARE, DisplayMode.FULL -> {
-                    Column {
-                        Row {
-                            // Icon + title on left (fixed part)
-                            ToolCardHeader(tool, context, waiting)
-                            // Free zone at top right defined by tool type
-                            Box {
-                                // TODO: Top free content defined by tool type according to mode
-                            }
+                DisplayMode.EXTENDED, DisplayMode.SQUARE -> {
+                    // One row of cells for the header and the summary, the others for the body
+                    val rows = if (displayMode == DisplayMode.EXTENDED) 1 else 3
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        HeaderAndSummary(Modifier.weight(1f).fillMaxWidth())
+                        Box(modifier = Modifier.weight(rows.toFloat()).fillMaxWidth()) {
+                            tile.Body(rows)
                         }
-                        // Below the header: what the tool type shows there
-                        Box {
-                            toolType.TileContent(tool, displayMode)
-                        }
+                    }
+                }
+                DisplayMode.FULL -> {
+                    // As tall as the body needs; the grid rounds the tile up to whole cells
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        HeaderAndSummary(Modifier.fillMaxWidth().height(IntrinsicSize.Min))
+                        tile.Body(null)
                     }
                 }
             }
         }
     }
-    
+
     // =====================================
     // REUSABLE COMPONENTS
     // =====================================

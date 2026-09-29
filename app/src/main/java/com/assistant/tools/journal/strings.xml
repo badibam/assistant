@@ -30,6 +30,7 @@
     <string name="sort_order_descending">Newest first</string>
 
     <!-- JOURNAL SCREEN - Entry list -->
+    <string name="tile_write">Write an entry</string>
     <string name="no_entries">No journal entry</string>
     <string name="no_entries_hint">Tap + to create your first entry</string>
     <string name="loading_entries">Loading entries...</string>

@@ -16,6 +16,7 @@ import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.grid.ToolPositions
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.mapData
@@ -73,12 +74,12 @@ fun ZoneScreen(
     // State for tool usage screen - persiste orientation changes
     var selectedToolInstanceId by rememberSaveable { mutableStateOf<String?>(null) }
     // The entry the tool opens on: the oldest waiting one when its tile was touched with one
-    var openEntryId by rememberSaveable { mutableStateOf<String?>(null) }
+    var openEntry by rememberSaveable(stateSaver = com.assistant.core.tools.EntryToOpen.Saver) { mutableStateOf<com.assistant.core.tools.EntryToOpen?>(null) }
     val waiting = com.assistant.core.ui.LocalWaiting.current
     // A tool asked for from outside (a notification), opened as its tile would be
     LaunchedEffect(opening) {
         val (toolId, entryId) = opening ?: return@LaunchedEffect
-        openEntryId = entryId
+        openEntry = entryId?.let { com.assistant.core.tools.EntryToOpen.Existing(it) }
         selectedToolInstanceId = toolId
         onOpened()
     }
@@ -100,22 +101,13 @@ fun ZoneScreen(
             operation = "tools.list",
             params = mapOf(
                 "zone_id" to zone.id,
-                "include_config" to true
+                "include_config" to true,
+                "include_position" to true
             ),
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
         )?.let { result ->
-            toolInstances = result.mapData("tool_instances") { map ->
-                ToolInstance(
-                    id = map["id"] as String,
-                    zone_id = map["zone_id"] as String,
-                    tooltype = map["tooltype"] as String,
-                    config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
-                    order_index = (map["order_index"] as Number).toInt(),
-                    created_at = (map["created_at"] as Number).toLong(),
-                    updated_at = (map["updated_at"] as Number).toLong()
-                )
-            }
+            toolInstances = result.mapData("tool_instances") { toolInstanceOf(it) }
         }
     }
 
@@ -162,22 +154,13 @@ fun ZoneScreen(
                             operation = "tools.list",
                             params = mapOf(
                                 "zone_id" to zone.id,
-                                "include_config" to true
+                                "include_config" to true,
+                                "include_position" to true
                             ),
                             onLoading = { isLoading = it },
                             onError = { error -> errorMessage = error }
                         )?.let { result ->
-                            toolInstances = result.mapData("tool_instances") { map ->
-                                ToolInstance(
-                                    id = map["id"] as String,
-                                    zone_id = map["zone_id"] as String,
-                                    tooltype = map["tooltype"] as String,
-                                    config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
-                                    order_index = (map["order_index"] as Number).toInt(),
-                                    created_at = (map["created_at"] as Number).toLong(),
-                                    updated_at = (map["updated_at"] as Number).toLong()
-                                )
-                            }
+                            toolInstances = result.mapData("tool_instances") { toolInstanceOf(it) }
                         }
                     }
                 }
@@ -208,22 +191,13 @@ fun ZoneScreen(
                 operation = "tools.list",
                 params = mapOf(
                     "zone_id" to zone.id,
-                    "include_config" to true
+                    "include_config" to true,
+                    "include_position" to true
                 ),
                 onLoading = { isLoading = it },
                 onError = { error -> errorMessage = error }
             )?.let { result ->
-                toolInstances = result.mapData("tool_instances") { map ->
-                    ToolInstance(
-                        id = map["id"] as String,
-                        zone_id = map["zone_id"] as String,
-                        tooltype = map["tooltype"] as String,
-                        config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
-                        order_index = (map["order_index"] as Number).toInt(),
-                        created_at = (map["created_at"] as Number).toLong(),
-                        updated_at = (map["updated_at"] as Number).toLong()
-                    )
-                }
+                toolInstances = result.mapData("tool_instances") { toolInstanceOf(it) }
             }
         }
     }
@@ -252,6 +226,14 @@ fun ZoneScreen(
             emptyList()
         }
     }
+
+    // The edit mode of the sections' grids, a section named by its group, "" for the ungrouped one
+    val gridEditor = com.assistant.core.ui.components.rememberGridEditor(
+        placeOperation = "tools.place",
+        placeParams = mapOf("zone_id" to zone.id),
+        sectionTiles = { key -> ToolPositions.tiles(toolInstances, zoneToolGroups, key.ifEmpty { null }) },
+        onError = { errorMessage = it }
+    )
 
     // Show configuration screen if requested
     showingConfigFor?.let { toolTypeId ->
@@ -303,13 +285,16 @@ fun ZoneScreen(
                 editingToolId = toolInstance.id
                 showingConfigFor = toolInstance.tooltype
             },
-            openEntryId = openEntryId
+            openEntry = openEntry
         )
         return // Exit ZoneScreen composition when showing usage screen
     }
     
+    // Edit mode: the grids of one section at a time, the bar under the screen while a tool moves
+    Column(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
+            .weight(1f)
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(vertical = 16.dp),
@@ -339,6 +324,7 @@ fun ZoneScreen(
             zoneToolGroups.forEach { groupName ->
                 GroupSection(
                     groupName = groupName,
+                    zoneToolGroups = zoneToolGroups,
                     variables = variables.filter { it.group == groupName },
                     onOpenVariable = { openVariable = it },
                     onCreateVariable = {
@@ -370,7 +356,9 @@ fun ZoneScreen(
                         showDuplicateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
-                    onToolClick = { toolId -> openEntryId = waiting.oldest[toolId]; selectedToolInstanceId = toolId },
+                    onToolClick = { toolId -> openEntry = waiting.oldest[toolId]?.let { com.assistant.core.tools.EntryToOpen.Existing(it) }; selectedToolInstanceId = toolId },
+                    onOpenEntry = { tool, entry -> openEntry = entry; selectedToolInstanceId = tool.id },
+                    editor = gridEditor,
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype
@@ -415,46 +403,9 @@ fun ZoneScreen(
                 )
             }
 
-            // Collect all tool and automation groups that exist in the data
-            val existingToolGroups = toolInstances.mapNotNull { tool ->
-                val config = try {
-                    org.json.JSONObject(tool.config_json)
-                } catch (e: Exception) {
-                    null
-                }
-                config?.optString("group")?.takeIf { it.isNotEmpty() }
-            }.distinct()
-
-            val existingAutomationGroups = automations.mapNotNull { it.group?.takeIf { group -> group.isNotEmpty() } }.distinct()
-            val allExistingGroups = (existingToolGroups + existingAutomationGroups).distinct()
-
-            // Find groups that exist in data but are not configured in the zone (orphaned items)
-            val orphanedGroups = allExistingGroups.filter { group -> group !in zoneToolGroups }
-
-            // Log for debugging
-            LogManager.ui("Zone ${zone.id} group analysis:", "DEBUG")
-            LogManager.ui("  Configured groups: $zoneToolGroups", "DEBUG")
-            LogManager.ui("  Existing tool groups: $existingToolGroups", "DEBUG")
-            LogManager.ui("  Existing automation groups: $existingAutomationGroups", "DEBUG")
-            LogManager.ui("  Orphaned groups (exist in data but not configured): $orphanedGroups", "DEBUG")
-            LogManager.ui("  Total tools: ${toolInstances.size}, Total automations: ${automations.size}", "DEBUG")
-
-            // Ungrouped section: items with no group OR items with orphaned groups
-            val ungroupedTools = toolInstances.filter { tool ->
-                val config = try {
-                    org.json.JSONObject(tool.config_json)
-                } catch (e: Exception) {
-                    null
-                }
-                val group = config?.optString("group")?.takeIf { it.isNotEmpty() }
-                group == null || group in orphanedGroups
-            }
-            val ungroupedAutomations = automations.filter {
-                val group = it.group
-                group == null || group.isEmpty() || group in orphanedGroups
-            }
-
-            LogManager.ui("  Ungrouped tools: ${ungroupedTools.size}, Ungrouped automations: ${ungroupedAutomations.size}", "DEBUG")
+            // Ungrouped section: items with no group, or a group the zone does not have
+            val ungroupedTools = toolInstances.filter { ToolPositions.section(it, zoneToolGroups) == null }
+            val ungroupedAutomations = automations.filter { ToolPositions.section(it.group, zoneToolGroups) == null }
 
             // Always show ungrouped section (even if empty) to allow adding tools/automations
             UngroupedSection(
@@ -490,7 +441,9 @@ fun ZoneScreen(
                         showDuplicateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
-                    onToolClick = { toolId -> openEntryId = waiting.oldest[toolId]; selectedToolInstanceId = toolId },
+                    onToolClick = { toolId -> openEntry = waiting.oldest[toolId]?.let { com.assistant.core.tools.EntryToOpen.Existing(it) }; selectedToolInstanceId = toolId },
+                    onOpenEntry = { tool, entry -> openEntry = entry; selectedToolInstanceId = tool.id },
+                    editor = gridEditor,
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype
@@ -533,6 +486,24 @@ fun ZoneScreen(
                     onAutomationStartChat = onAutomationStartChat,
                     context = context
                 )
+        }
+    }
+    if (gridEditor.selectedId != null) com.assistant.core.ui.components.GridEditBar(gridEditor)
+    }
+
+    // The phone's back key leaves the zone; a move in progress is cancelled, once asked
+    var confirmLeave by remember { mutableStateOf(false) }
+    if (gridEditor.moving) androidx.activity.compose.BackHandler { confirmLeave = true }
+    if (confirmLeave) {
+        UI.Dialog(
+            type = DialogType.CONFIRM,
+            onConfirm = { confirmLeave = false; gridEditor.cancel(); onBack() },
+            onCancel = { confirmLeave = false }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                UI.Text(s.shared("grid_leave_title"), TextType.SUBTITLE)
+                UI.Text(s.shared("grid_leave_message"), TextType.BODY)
+            }
         }
     }
 
@@ -597,22 +568,13 @@ fun ZoneScreen(
                                 operation = "tools.list",
                                 params = mapOf(
                                     "zone_id" to zone.id,
-                                    "include_config" to true
+                                    "include_config" to true,
+                                    "include_position" to true
                                 ),
                                 onLoading = { isLoading = it },
                                 onError = { error -> errorMessage = error }
                             )?.let { toolsResult ->
-                                toolInstances = toolsResult.mapData("tool_instances") { map ->
-                                    ToolInstance(
-                                        id = map["id"] as String,
-                                        zone_id = map["zone_id"] as String,
-                                        tooltype = map["tooltype"] as String,
-                                        config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
-                                        order_index = (map["order_index"] as? Number)?.toInt() ?: 0,
-                                        created_at = (map["created_at"] as? Number)?.toLong() ?: 0L,
-                                        updated_at = (map["updated_at"] as? Number)?.toLong() ?: 0L
-                                    )
-                                }
+                                toolInstances = toolsResult.mapData("tool_instances") { toolInstanceOf(it) }
                             }
                         } else {
                             errorMessage = result.error ?: s.shared("duplicate_error").format("")
@@ -687,6 +649,7 @@ fun ZoneScreen(
 @Composable
 private fun GroupSection(
     groupName: String,
+    zoneToolGroups: List<String>,
     variables: List<com.assistant.core.ui.variables.VariableRow>,
     onOpenVariable: (String) -> Unit,
     onCreateVariable: () -> Unit,
@@ -699,6 +662,8 @@ private fun GroupSection(
     onDuplicateTool: () -> Unit,
     onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
+    onOpenEntry: (ToolInstance, com.assistant.core.tools.EntryToOpen) -> Unit,
+    editor: com.assistant.core.ui.components.GridEditor,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
@@ -709,14 +674,7 @@ private fun GroupSection(
 ) {
     val s = remember { Strings.`for`(context = context) }
     // Filter tools and automations for this group
-    val groupTools = toolInstances.filter { tool ->
-        val config = try {
-            org.json.JSONObject(tool.config_json)
-        } catch (e: Exception) {
-            null
-        }
-        config?.optString("group") == groupName
-    }
+    val groupTools = toolInstances.filter { ToolPositions.section(it, zoneToolGroups) == groupName }
     val groupAutomations = automations.filter { it.group == groupName }
 
     // Section header - use SECTION_HEADER for subtle contrast with surfaceVariant
@@ -733,18 +691,12 @@ private fun GroupSection(
                 type = TextType.SUBTITLE
             )
 
-            // Add button
-            UI.ActionButton(
-                action = ButtonAction.ADD,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onToggleToolsList
-            )
+            com.assistant.core.ui.components.GridSectionButtons(groupName, groupTools.isNotEmpty(), editor, onToggleToolsList)
         }
     }
 
     // Available tools/automations list (shown conditionally)
-    if (showAvailableToolsForGroup == groupName) {
+    if (showAvailableToolsForGroup == groupName && !editor.anyEditing) {
         UI.Card(type = CardType.DEFAULT) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -842,30 +794,22 @@ private fun GroupSection(
         }
     }
 
-    // Display tools in this group
-    groupTools.forEach { tool ->
-        UI.ToolCard(
-            tool = tool,
-            displayMode = DisplayMode.LINE,
-            context = context,
-            onClick = { onToolClick(tool.id) },
-            onLongClick = { onToolLongClick(tool) }
-        )
-    }
+    // The group's tools on their grid
+    SectionGrid(groupName, groupTools, editor, onToolClick, onToolLongClick, onOpenEntry)
 
     // The group's variables, in one compact card
-    com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)
+    com.assistant.core.ui.components.Faded(editor.anyEditing) { com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable) }
 
     // Display automations in this group
     groupAutomations.forEach { automation ->
-        com.assistant.core.ai.ui.automation.AutomationCard(
+        com.assistant.core.ui.components.Faded(editor.anyEditing) { com.assistant.core.ai.ui.automation.AutomationCard(
             automation = automation,
             onEdit = { onAutomationEdit(automation) },
             onTest = { onAutomationTest(automation) },
             onView = { onAutomationView(automation) },
             onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) },
             onStartChat = { onAutomationStartChat?.invoke(automation.seedSessionId) }
-        )
+        ) }
     }
 
     // Empty state if no tools/automations in this group (only when list is not showing)
@@ -900,6 +844,8 @@ private fun UngroupedSection(
     onDuplicateTool: () -> Unit,
     onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
+    onOpenEntry: (ToolInstance, com.assistant.core.tools.EntryToOpen) -> Unit,
+    editor: com.assistant.core.ui.components.GridEditor,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
@@ -931,18 +877,12 @@ private fun UngroupedSection(
                 type = TextType.SUBTITLE
             )
 
-            // Add button
-            UI.ActionButton(
-                action = ButtonAction.ADD,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onToggleToolsList
-            )
+            com.assistant.core.ui.components.GridSectionButtons("", toolInstances.isNotEmpty(), editor, onToggleToolsList)
         }
     }
 
     // Available tools/automations list (shown conditionally)
-    if (showAvailableToolsForGroup == "") {
+    if (showAvailableToolsForGroup == "" && !editor.anyEditing) {
         UI.Card(type = CardType.DEFAULT) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -1040,30 +980,22 @@ private fun UngroupedSection(
         }
     }
 
-    // Display ungrouped tools
-    toolInstances.forEach { tool ->
-        UI.ToolCard(
-            tool = tool,
-            displayMode = DisplayMode.LINE,
-            context = context,
-            onClick = { onToolClick(tool.id) },
-            onLongClick = { onToolLongClick(tool) }
-        )
-    }
+    // The ungrouped tools on their grid
+    SectionGrid("", toolInstances, editor, onToolClick, onToolLongClick, onOpenEntry)
 
     // The ungrouped variables, in one compact card
-    com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)
+    com.assistant.core.ui.components.Faded(editor.anyEditing) { com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable) }
 
     // Display ungrouped automations
     automations.forEach { automation ->
-        com.assistant.core.ai.ui.automation.AutomationCard(
+        com.assistant.core.ui.components.Faded(editor.anyEditing) { com.assistant.core.ai.ui.automation.AutomationCard(
             automation = automation,
             onEdit = { onAutomationEdit(automation) },
             onTest = { onAutomationTest(automation) },
             onView = { onAutomationView(automation) },
             onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) },
             onStartChat = { onAutomationStartChat?.invoke(automation.seedSessionId) }
-        )
+        ) }
     }
 
     // Empty state (only when list is not showing)
@@ -1074,5 +1006,33 @@ private fun UngroupedSection(
             fillMaxWidth = true,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+/** A tool of a tools.list result asked with its config and its place. */
+@Suppress("UNCHECKED_CAST")
+private fun toolInstanceOf(map: Map<String, Any?>) = ToolInstance(
+    id = map["id"] as String,
+    zone_id = map["zone_id"] as String,
+    tooltype = map["tooltype"] as String,
+    config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
+    grid_x = (map["grid_x"] as Number).toInt(),
+    grid_y = (map["grid_y"] as Number).toInt(),
+    created_at = (map["created_at"] as Number).toLong(),
+    updated_at = (map["updated_at"] as Number).toLong()
+)
+
+/** A section's grid: in edit mode when it is the section edited, faded while another is. */
+@Composable
+private fun SectionGrid(
+    key: String,
+    tools: List<ToolInstance>,
+    editor: com.assistant.core.ui.components.GridEditor,
+    onToolClick: (String) -> Unit,
+    onToolLongClick: (ToolInstance) -> Unit,
+    onOpenEntry: (ToolInstance, com.assistant.core.tools.EntryToOpen) -> Unit
+) {
+    com.assistant.core.ui.components.Faded(editor.anyEditing && !editor.isEditing(key)) {
+        com.assistant.core.ui.components.ToolGrid(tools, { onToolClick(it.id) }, onToolLongClick, onOpenEntry, editor.gridEdit(key))
     }
 }

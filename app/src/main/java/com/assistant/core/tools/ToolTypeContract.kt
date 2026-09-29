@@ -86,8 +86,8 @@ interface ToolTypeContract {
      * @param configJson Configuration JSON of the tool instance
      * @param onNavigateBack Called when user wants to navigate back
      * @param onLongClick Called when user long-clicks for configuration access
-     * @param openEntryId An entry to open at once, as this tool type understands opening one: one
-     *   of those waiting for the user (getWaiting), the oldest; null for the screen alone
+     * @param openEntry What to open at once (EntryToOpen): an entry touched on the tile, the
+     *   oldest of those waiting for the user (getWaiting), or a new one; null for the screen alone
      */
     @Composable
     fun getUsageScreen(
@@ -96,29 +96,21 @@ interface ToolTypeContract {
         zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit,
-        openEntryId: String?
+        openEntry: EntryToOpen?
     )
 
     /**
-     * What a tool of this type shows in its tile on a zone, beside the header UI.ToolCard draws:
-     * the right half of a LINE tile, the space under the header of a CONDENSED, EXTENDED, SQUARE
-     * or FULL one. The ICON and MINIMAL tiles have no room for it and never ask.
+     * The tile of [tool] (ToolTile): its summary and its body, placed by UI.ToolCard as its
+     * display mode lays them out. Every tool type fills every mode: there is no tile by default.
+     * [open] opens the tool on one of its entries, as this tool type understands opening one
+     * (getUsageScreen's openEntry): a tile opens an entry it shows when touched, or a new one from
+     * a button that writes one.
      *
-     * A tile that shows something the tool's entries hold loads them itself and reloads on
-     * their change (DataChangeNotifier). By default, a LINE tile names the tool type and the
-     * larger ones show nothing more than their header.
+     * A tile that shows something the tool's entries hold loads it once for both parts and
+     * reloads on their change (DataChangeNotifier).
      */
     @Composable
-    fun TileContent(tool: com.assistant.core.database.entities.ToolInstance, displayMode: com.assistant.core.ui.DisplayMode) {
-        if (displayMode == com.assistant.core.ui.DisplayMode.LINE) {
-            com.assistant.core.ui.UI.Text(
-                text = getDisplayName(androidx.compose.ui.platform.LocalContext.current),
-                type = com.assistant.core.ui.TextType.BODY,
-                fillMaxWidth = true,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-        }
-    }
+    fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (EntryToOpen) -> Unit): ToolTile
 
     /**
      * The fields of this tool type's entries, for a tool instance whose config is [config]:

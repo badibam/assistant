@@ -26,6 +26,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.tools.chart.Cell
+import com.assistant.tools.chart.ChartDetail
 import com.assistant.tools.chart.ChartMetrics
 import com.assistant.tools.chart.ChartSceneBuilder
 import com.assistant.tools.chart.ChartSpec
@@ -50,15 +51,18 @@ import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.launch
 
 /**
- * A chart on a screen: laid out at the width it is given (ChartSceneBuilder), its texts measured
- * in the theme's style for drawings, drawn by the theme (UI.Drawing). A touch hands back what it
- * found, or null beside every mark.
+ * A chart on a screen or a tile: laid out at the width it is given (ChartSceneBuilder), its texts
+ * measured in the theme's style for drawings, drawn by the theme (UI.Drawing). On a screen, a
+ * touch hands back what it found, or null beside every mark; on a tile ([onTap] null) the touch
+ * is the tile's, which opens the tool.
  *
  * @param tables The table of each layer, in the order of ChartSpec.layers
  * @param period The displayed period's instants, resolved at [now]
+ * @param detail How much of the chart is drawn; reduced or as a strip, it fills the height given
  */
 @Composable
-fun ChartView(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Long?>, now: Long, onTap: (Hit?) -> Unit, modifier: Modifier = Modifier) {
+fun ChartView(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Long?>, now: Long, onTap: ((Hit?) -> Unit)?,
+              modifier: Modifier = Modifier, detail: ChartDetail = ChartDetail.WHOLE) {
     val context = LocalContext.current
     val density = LocalDensity.current.density
     val style = UI.drawingTextStyle()
@@ -66,12 +70,14 @@ fun ChartView(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Lon
     val text = remember(style, measurer) { AppChartText(context, measurer, style) }
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val width = constraints.maxWidth.toFloat()
+        val height = if (detail == ChartDetail.WHOLE) null else constraints.maxHeight.toFloat()
         val metrics = remember(density) { ChartMetrics(density) }
-        val layout = remember(spec, tables, period, width, text) {
+        val layout = remember(spec, tables, period, width, height, detail, text) {
             val calendar = com.assistant.core.utils.AppConfigManager
-            ChartSceneBuilder(metrics, text, calendar.getDateTimeConfig().getZoneId(), calendar.getWeekStartDay(), now).build(spec, tables, period, width)
+            ChartSceneBuilder(metrics, text, calendar.getDateTimeConfig().getZoneId(), calendar.getWeekStartDay(), now)
+                .build(spec, tables, period, width, detail, height)
         }
-        UI.Drawing(layout.drawing, Modifier.pointerInput(layout) {
+        UI.Drawing(layout.drawing, if (onTap == null) Modifier else Modifier.pointerInput(layout) {
             detectTapGestures { offset -> onTap(layout.hitAt(offset.x, offset.y, metrics.slop)) }
         })
     }

@@ -23,7 +23,9 @@ data class ToolInstance(
     val tooltype: String, // "tracking", "objective", etc.
     val config_json: String, // Configuration spécifique à l'outil
     val enabled: Boolean = true,
-    val order_index: Int = 0,
+    /** Its column and row in the grid of its group section, placed by ToolPositions. */
+    val grid_x: Int,
+    val grid_y: Int,
     val created_at: Long = System.currentTimeMillis(),
     val updated_at: Long = System.currentTimeMillis()
 )

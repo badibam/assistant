@@ -8,6 +8,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Réglages après la mise à jour : format (fuseau, début de semaine, 24 h) inchangé et enregistrable, validation avec ses quatre choix, limites IA à 10, 20, 15 000 et 100 000.
 - Écran des journaux : il s'ouvre, et filtré sur « Error » il montre aussi les erreurs anciennes. Y chercher des lignes `MIGRATION` et `No JSON form`.
 - Volume du journal : compter les lignes par niveau sur deux minutes d'usage normal, pour voir ce que produit encore le DEBUG.
+- Après les migrations 53 et 54 : chaque zone montre ses outils dans le même ordre qu'avant, un par ligne, et l'accueil ses zones de même ; un outil dont le groupe n'existe plus dans sa zone est hors groupe ; aucune ligne `MIGRATION 52->53` ni `53->54` en erreur. Importer une sauvegarde d'avant la mise à jour : même ordre.
 - Après la migration 52 : un pointeur filtré d'une conversation passée et d'un départ d'automation, et une variable qui lit des entrées filtrées, donnent les mêmes entrées qu'avant ; aucune ligne `MIGRATION 51->52` en erreur. Un pointeur qui filtrait un instant par « = » est maintenant refusé : il le dit, rien ne part en silence.
 - Après la migration 51 : chaque automation planifiée, chaque Messages, Objectif et Questionnaire récurrent garde sa récurrence (résumé lisible, pas d'erreur « illisible »), et le journal ne montre aucune ligne `MIGRATION 50->51` en erreur.
 - Après la migration 43 : un suivi numérique qui avait une unité dans les réglages de sa valeur la retrouve en tête de ses unités, et ses anciennes entrées l'affichent toujours ; un compteur garde son unité (« 3 verres »).
@@ -157,6 +158,20 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Planifié chaque jour à une heure passée : au tick, une entrée « à remplir » datée de cette heure et une notification ; répondre à la première question puis quitter : la réponse reste, et « Remplir » reprend à la deuxième. Une absence de plusieurs jours : autant d'entrées, « Tout ignorer » les passe en ignorées.
 - « Avec l'IA » sur une entrée à remplir : le chat s'ouvre, sa saisie porte le message et les pointeurs vers l'outil et l'entrée ; envoyé, l'IA pose les questions, écrit les réponses et marque l'entrée remplie.
 - Toucher une entrée de l'historique : ses réponses en entier, modifiables.
+
+## Grille
+
+- Une zone en portrait, puis sur un écran plus large que 480 dp : quatre colonnes, cases carrées, la grille centrée au-delà.
+- Chaque mode de chaque type d'outil (Suivi, Journal, Notes, Liste, Messages, Objectif, Questionnaire, Données structurées, Graphique) : rien ne déborde de sa tuile ni ne défile dedans, le résumé tient sur deux lignes, le corps sur ses rangées ; un texte trop long s'arrête sur « … ».
+- Un outil en FULL : la zone s'ouvre (pas de plantage), la tuile est aussi haute que son contenu, arrondie à la case.
+- Les boutons d'une tuile agissent sans ouvrir l'outil (cocher une Liste, « Encore » du Suivi, arrêter un chronomètre) ; un toucher ailleurs ouvre l'outil, l'appui long sa config ; « Écrire une entrée », « Nouvelle note », « Nouvelle fiche » ouvrent l'outil sur une entrée neuve, une entrée montrée s'ouvre en la touchant.
+- Un chronomètre lancé : la pastille du coin bas de l'icône apparaît sur la tuile de l'outil et sur celle de sa zone à l'accueil, et part à l'arrêt ; la pastille d'attente est au coin haut.
+- Passer un outil de MINIMAL à CONDENSED dans sa config : ceux qu'il recouvre descendent sous lui, gardent leur colonne, rien ne se chevauche.
+- Mode d'édition : le bouton du titre du groupe s'allume, le quadrillage montre les trous, le reste de l'écran est atténué et ne réagit pas. Toucher un outil : la barre apparaît, chaque flèche va à la prochaine place ou est grisée, ↓ puis ↓ ouvre une ligne puis passe sous la suivante. Valider, puis quitter et revenir : la place est gardée ; « Annuler » remet tout ; toucher un autre outil valide le premier.
+- Un déplacement en cours, bouton retour du téléphone : « Quitter la zone ? » ; confirmer ramène à l'accueil sans rien enregistrer.
+- Déplacer une tuile tout en bas : l'écran défile juste assez pour la garder visible au-dessus de la barre.
+- Un déplacement en cours, puis thème sombre ou « Ne pas conserver les activités » : la sélection et le déplacement sont toujours là.
+- Accueil : une zone en ICON, MINIMAL, LINE et CONDENSED (sa config) ; le mode d'édition d'un groupe de zones fait comme celui des outils. Retirer un groupe de zones dans la config de l'accueil : ses zones passent en bas du hors groupe.
 
 ## Graphique
 

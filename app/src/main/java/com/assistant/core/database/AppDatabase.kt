@@ -38,6 +38,8 @@ import com.assistant.core.versioning.CatchUpAtV41
 import com.assistant.core.versioning.FormatNullsAtV42
 import com.assistant.core.versioning.ScheduleDatesAtV51
 import com.assistant.core.versioning.ConditionsAtV52
+import com.assistant.core.versioning.GridAtV53
+import com.assistant.core.versioning.ZoneGridAtV54
 import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
@@ -87,7 +89,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 52
+        const val VERSION = 54
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1375,6 +1377,98 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /** Stored filters become conditions, {"left", "op", "right"}: see ConditionsAtV52. */
+        /**
+         * A zone stands at grid_x and grid_y in the grid of its zone group on the home screen,
+         * shown in its display_mode: see ZoneGridAtV54. order_index goes; the table is recreated
+         * under another name and renamed last, as at 39->40, so the foreign keys onto it stay.
+         */
+        private val MIGRATION_53_54 = object : Migration(53, 54) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val mainScreen = database.query("SELECT settings FROM app_settings_categories WHERE category = ?", arrayOf<Any?>(com.assistant.core.database.entities.AppSettingCategories.MAIN_SCREEN)).use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getString(0) else null
+                }
+                val zones = database.query("SELECT id, `group` FROM zones ORDER BY order_index, rowid").use { cursor ->
+                    buildList { while (cursor.moveToNext()) add(ZoneGridAtV54.Zone(cursor.getString(0), if (cursor.isNull(1)) null else cursor.getString(1))) }
+                }
+                val placed = ZoneGridAtV54.place(zones, ZoneGridAtV54.zoneGroups(mainScreen))
+
+                database.execSQL("""
+                    CREATE TABLE zones_new (
+                        id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        icon_name TEXT,
+                        active INTEGER NOT NULL,
+                        display_mode TEXT NOT NULL,
+                        grid_x INTEGER NOT NULL,
+                        grid_y INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        tool_groups TEXT,
+                        `group` TEXT,
+                        PRIMARY KEY(id)
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO zones_new (id, name, description, icon_name, active, display_mode, grid_x, grid_y, created_at, updated_at, tool_groups, `group`)
+                    SELECT id, name, description, icon_name, active, '${ZoneGridAtV54.MODE}', 0, 0, created_at, updated_at, tool_groups, `group` FROM zones
+                """)
+                for ((id, row) in placed) {
+                    database.execSQL("UPDATE zones_new SET grid_y = ? WHERE id = ?", arrayOf<Any?>(row, id))
+                }
+                database.execSQL("DROP TABLE zones")
+                database.execSQL("ALTER TABLE zones_new RENAME TO zones")
+                LogManager.database("MIGRATION 53->54: ${placed.size} zone(s) placed in their grids", "INFO")
+            }
+        }
+
+        /**
+         * A tool stands at grid_x and grid_y in the grid of its group section, its config holding
+         * its display mode: see GridAtV53. order_index goes; no DROP COLUMN before SQLite 3.35,
+         * so the table is recreated under another name and renamed last, as zones was at 39->40.
+         */
+        private val MIGRATION_52_53 = object : Migration(52, 53) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val zoneGroups = database.query("SELECT id, tool_groups FROM zones").use { cursor ->
+                    buildMap { while (cursor.moveToNext()) put(cursor.getString(0), if (cursor.isNull(1)) null else cursor.getString(1)) }
+                }
+                val tools = database.query("SELECT id, zone_id, tooltype, config_json FROM tool_instances ORDER BY zone_id, order_index, rowid").use { cursor ->
+                    buildList { while (cursor.moveToNext()) add(GridAtV53.Tool(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3))) }
+                }
+                // Every tool needs a place: one whose mode cannot be known fails the migration
+                val placed = GridAtV53.place(tools, zoneGroups)
+
+                database.execSQL("""
+                    CREATE TABLE tool_instances_new (
+                        id TEXT NOT NULL,
+                        zone_id TEXT NOT NULL,
+                        tooltype TEXT NOT NULL,
+                        config_json TEXT NOT NULL,
+                        enabled INTEGER NOT NULL,
+                        grid_x INTEGER NOT NULL,
+                        grid_y INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        PRIMARY KEY(id),
+                        FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO tool_instances_new (id, zone_id, tooltype, config_json, enabled, grid_x, grid_y, created_at, updated_at)
+                    SELECT id, zone_id, tooltype, config_json, enabled, 0, 0, created_at, updated_at FROM tool_instances
+                """)
+                for ((id, place) in placed) {
+                    database.execSQL(
+                        "UPDATE tool_instances_new SET config_json = ?, grid_x = ?, grid_y = ? WHERE id = ?",
+                        arrayOf<Any?>(place.configJson, place.gridX, place.gridY, id)
+                    )
+                }
+                database.execSQL("DROP TABLE tool_instances")
+                database.execSQL("ALTER TABLE tool_instances_new RENAME TO tool_instances")
+                LogManager.database("MIGRATION 52->53: ${placed.size} tool(s) placed in their grids", "INFO")
+            }
+        }
+
         private val MIGRATION_51_52 = object : Migration(51, 52) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // A row that cannot be read stays as it was and is logged
@@ -2091,7 +2185,9 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_48_49,
                     MIGRATION_49_50,
                     MIGRATION_50_51,
-                    MIGRATION_51_52
+                    MIGRATION_51_52,
+                    MIGRATION_52_53,
+                    MIGRATION_53_54
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

@@ -38,5 +38,8 @@
     <string name="action_next">Suivante</string>
     <string name="action_finish">Terminer</string>
     <string name="action_edit">Modifier</string>
-    <string name="tile_last">Rempli %1$s</string>
+    <string name="tile_to_fill">%1$s à remplir</string>
+    <string name="tile_up_to_date">À jour</string>
+    <string name="tile_next">Prochain : %1$s</string>
+    <string name="tile_last">Dernier : %1$s</string>
 </resources>

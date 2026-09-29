@@ -195,4 +195,17 @@
     <string name="format_year">yyyy</string>
     <string name="open_entry">Ouvrir l\'entrée</string>
     <string name="percent">%1$s %%</string>
+    <string name="tile_problem">Ne peut pas être dessiné : ouvrez-le pour voir pourquoi</string>
+    <string name="tile_period_all">Tout</string>
+    <string name="tile_value_at">%1$s · %2$s</string>
+    <string name="tile_period_current_hour">Cette heure-ci</string>
+    <string name="tile_period_current_day">Aujourd\'hui</string>
+    <string name="tile_period_current_week">Cette semaine</string>
+    <string name="tile_period_current_month">Ce mois-ci</string>
+    <string name="tile_period_current_year">Cette année</string>
+    <string name="tile_period_last_hour">%1$d dernières heures</string>
+    <string name="tile_period_last_day">%1$d derniers jours</string>
+    <string name="tile_period_last_week">%1$d dernières semaines</string>
+    <string name="tile_period_last_month">%1$d derniers mois</string>
+    <string name="tile_period_last_year">%1$d dernières années</string>
 </resources>

@@ -6,7 +6,7 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 
 - **Une grille par groupe.** Les sections de groupe restent ; chacune range ses outils dans sa grille. La carte des variables et les cartes d'automation restent sous la grille, en pleine largeur.
 - **Quatre colonnes, des cases carrées** d'un quart de la largeur. Le thème fixe une largeur maximale de la grille (par exemple 480 dp), centrée au-delà : un grand écran qui ignore le verrou en portrait (`TODO.md`) garde le même affichage, jamais un de plus de quatre colonnes.
-- **La taille d'une tuile vient de son mode**, en cases (largeur × hauteur) : ICON 1×1, MINIMAL 2×1, LINE 4×1, CONDENSED 2×2, EXTENDED 4×2, SQUARE 4×4, FULL 4 × la hauteur de son contenu. Le mode reste un réglage de l'outil, dans sa config ; le mode d'édition ne le change pas.
+- **La taille d'une tuile vient de son mode**, en cases (largeur × hauteur) : ICON 1×1, MINIMAL 2×1, LINE 4×1, CONDENSED 2×2, EXTENDED 4×2, SQUARE 4×4, FULL 4 × la hauteur de son contenu. Le mode reste un réglage de l'outil, dans sa config, qui le porte toujours (celui du type d'outil à la création, le précédent si une modification l'omet) ; le mode d'édition ne le change pas.
 - **Une tuile de pleine largeur est seule sur ses lignes** : seules ICON, MINIMAL et CONDENSED partagent une ligne. Une FULL compte donc comme une ligne à elle seule, quelle que soit sa hauteur.
 - **Les tailles fixes du thème disparaissent** (`ToolCardContainer`, 64 dp pour ICON, 256 dp pour SQUARE…) : la grille donne sa taille à chaque tuile.
 
@@ -93,11 +93,18 @@ Une tuile se décrit par son résumé (sa LINE) et son corps : ce que montre cha
 - **Corps** : deux fiches par rangée, une par ligne, leur nom seul, les plus récemment modifiées d'abord.
 - **FULL** : les dix dernières modifiées.
 
+### Graphique
+
+- **Résumé** : la période affichée (« 30 derniers jours », « Cette semaine »), puis la dernière valeur de la première série avec son unité et son moment (« 72,4 kg · hier ») ; ou qu'il n'y a rien dans la période, ou qu'il ne peut pas être dessiné.
+- **Corps** : un bandeau de ses marques seules en EXTENDED, le graphique réduit en SQUARE (quelques graduations, ni titres ni légende), la première vue seulement dans l'un et l'autre.
+- **FULL** : le graphique entier, comme à l'écran. Un toucher ouvre l'outil, jamais le détail d'une ligne.
+
 ## Positions
 
 - **Chaque outil garde sa place** : `grid_x` (0 à 3) et `grid_y` (sa ligne dans son groupe), deux colonnes de `tool_instances`. `order_index` disparaît des outils : rien ne le change aujourd'hui.
 - **Migration** : les outils existants sont posés un par un, dans leur ordre actuel, par la règle d'arrivée ci-dessous. Les sauvegardes suivent (`JsonTransformers`).
 - **Un outil qui arrive dans un groupe** (créé par l'utilisateur ou l'IA, passé dans ce groupe par sa config, venu d'une autre zone plus tard) se pose en bas, sur une ligne neuve, en colonne 0.
+- **Le groupe d'un outil est la section où l'écran le montre** : un outil qui nomme un groupe que la zone n'a pas est rangé dans la grille hors groupe. Quand la zone perd ou gagne un groupe, ses outils qui changent de section partent de leur grille et arrivent dans l'autre, dans leur ordre à l'écran.
 - **Un outil qui part** (supprimé, changé de groupe) laisse un trou ; une ligne restée vide se referme.
 - **Un interstice** est la limite entre deux lignes qu'aucune tuile ne traverse : on n'ouvre jamais une ligne au milieu d'une tuile haute de plusieurs lignes.
 - **Une tuile qui grandit** (son mode changé) reste à sa place, sa colonne ramenée à gauche si elle dépasse le bord droit. Les tuiles qu'elle recouvre descendent dans des lignes neuves, ouvertes au premier interstice sous elle : elles gardent leur colonne et leur disposition entre elles, et les lignes du dessous descendent d'autant, en bloc. On ne cherche pas de trou ailleurs.

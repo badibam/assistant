@@ -18,6 +18,10 @@ import com.assistant.core.themes.TagColor
 import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.tools.ToolTypeContract
 import com.assistant.tools.chart.ui.ChartScreen
+import com.assistant.tools.chart.ui.rememberChartTile
+import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.tools.EntryToOpen
+import com.assistant.core.tools.ToolTile
 import org.json.JSONObject
 
 /**
@@ -255,8 +259,13 @@ object ChartToolType : ToolTypeContract {
 
     override fun getDatabaseEntities(): List<Class<*>> = emptyList()
 
+    /** A chart has no entry of its own to open: its screen alone. */
     @Composable
-    override fun getUsageScreen(toolInstanceId: String, configJson: String, zoneName: String, onNavigateBack: () -> Unit, onLongClick: () -> Unit, openEntryId: String?) {
+    override fun getUsageScreen(toolInstanceId: String, configJson: String, zoneName: String, onNavigateBack: () -> Unit, onLongClick: () -> Unit, openEntry: EntryToOpen?) {
         ChartScreen(toolInstanceId = toolInstanceId, onNavigateBack = onNavigateBack, onConfigureClick = onLongClick)
     }
+
+    /** Its tile never opens an entry: a touch opens the tool. */
+    @Composable
+    override fun rememberTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolTile = rememberChartTile(tool)
 }

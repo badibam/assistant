@@ -51,6 +51,14 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // The edit mode of the zone groups' grids, a section named by its group, "" for the ungrouped one
+    val gridEditor = com.assistant.core.ui.components.rememberGridEditor(
+        placeOperation = "zones.place",
+        placeParams = emptyMap(),
+        sectionTiles = { key -> com.assistant.core.grid.ZonePositions.tiles(zones, zoneGroups, key.ifEmpty { null }) },
+        onError = { errorMessage = it }
+    )
+
     // Navigation states - persistent across orientation changes
     var showCreateZone by rememberSaveable { mutableStateOf(false) }
     var preSelectedZoneGroup by rememberSaveable { mutableStateOf<String?>(null) }
@@ -121,6 +129,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         // Load zones
         coordinator.executeWithLoading(
             operation = "zones.list",
+            params = mapOf("include_position" to true),
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
         )?.let { result ->
@@ -149,6 +158,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                 is DataChangeEvent.ZonesChanged -> {
                     coordinator.executeWithLoading(
                         operation = "zones.list",
+                        params = mapOf("include_position" to true),
                         onLoading = { isLoading = it },
                         onError = { error -> errorMessage = error }
                     )?.let { result ->
@@ -178,6 +188,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         coroutineScope.launch {
             coordinator.executeWithLoading(
                 operation = "zones.list",
+                params = mapOf("include_position" to true),
                 onLoading = { isLoading = it },
                 onError = { error -> errorMessage = error }
             )?.let { result ->
@@ -383,8 +394,11 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
 
         // Main content using hybrid system: Compose layouts + UI.* components
         Box(modifier = Modifier.fillMaxSize()) {
+          // The bar of a zone being moved goes under the scrolling content
+          Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(vertical = 16.dp),
@@ -415,6 +429,8 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                     ZoneGroupSection(
                         groupName = groupName,
                         zones = zones,
+                        configuredGroups = zoneGroups,
+                        editor = gridEditor,
                         onZoneClick = { zone -> selectedZoneId = zone.id },
                         onZoneLongClick = { zone -> configZoneId = zone.id },
                         onAddZone = {
@@ -432,6 +448,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                     zones = zones,
                     hasConfiguredGroups = zoneGroups.isNotEmpty(),
                     configuredGroups = zoneGroups, // Pass list to filter orphaned zones
+                    editor = gridEditor,
                     onZoneClick = { zone -> selectedZoneId = zone.id },
                     onZoneLongClick = { zone -> configZoneId = zone.id },
                     onAddZone = {
@@ -442,9 +459,11 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                 )
             }
         } // Close Column
+            if (gridEditor.selectedId != null) com.assistant.core.ui.components.GridEditBar(gridEditor)
+          }
 
-        // AI Chat floating button (in Box, not Column)
-        Box(
+        // AI Chat floating button (in Box, not Column), away while a zone moves
+        if (gridEditor.selectedId == null) Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
@@ -515,7 +534,8 @@ private fun ZoneGroupSection(
     groupName: String?,
     zones: List<Zone>,
     hasConfiguredGroups: Boolean = true,
-    configuredGroups: List<String> = emptyList(),
+    configuredGroups: List<String>,
+    editor: com.assistant.core.ui.components.GridEditor,
     onZoneClick: (Zone) -> Unit,
     onZoneLongClick: (Zone) -> Unit,
     onAddZone: () -> Unit,
@@ -523,18 +543,9 @@ private fun ZoneGroupSection(
 ) {
     val s = remember { Strings.`for`(context = context) }
 
-    // Filter zones for this group
-    val groupZones = zones.filter { zone ->
-        val matches = if (groupName != null) {
-            // Match specific group
-            zone.group == groupName
-        } else {
-            // Ungrouped section: null group OR orphaned groups (not in configured list)
-            zone.group == null || (zone.group?.isNotBlank() == true && zone.group !in configuredGroups)
-        }
-        LogManager.ui("ZoneGroupSection - Zone '${zone.name}' (group='${zone.group}') matches groupName='$groupName': $matches", "DEBUG")
-        matches
-    }
+    // The zones shown here: of this group, or for the ungrouped section of none the home screen has
+    val groupZones = zones.filter { com.assistant.core.grid.ZonePositions.section(it.group, configuredGroups) == groupName }
+    val key = groupName ?: ""
 
     // Determine section label
     val sectionLabel = when {
@@ -557,13 +568,7 @@ private fun ZoneGroupSection(
                 type = TextType.SUBTITLE
             )
 
-            // Add button
-            UI.ActionButton(
-                action = ButtonAction.ADD,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onAddZone
-            )
+            com.assistant.core.ui.components.GridSectionButtons(key, groupZones.isNotEmpty(), editor, onAddZone)
         }
     }
 
@@ -589,13 +594,16 @@ private fun ZoneGroupSection(
             }
         }
     } else {
-        // Display zone cards
-        groupZones.forEach { zone ->
-            UI.ZoneCard(
-                zone = zone,
-                onClick = { onZoneClick(zone) },
-                onLongClick = { onZoneLongClick(zone) }
-            )
+        // The zones on their grid, in edit mode when it is this section's, faded while another's is
+        com.assistant.core.ui.components.Faded(editor.anyEditing && !editor.isEditing(key)) {
+            com.assistant.core.ui.components.GridLayout(groupZones.map { com.assistant.core.grid.ZonePositions.tile(it) }, groupZones.map { false }, editor.gridEdit(key)) { i ->
+                val zone = groupZones[i]
+                UI.ZoneCard(
+                    zone = zone,
+                    onClick = { onZoneClick(zone) },
+                    onLongClick = { onZoneLongClick(zone) }
+                )
+            }
         }
     }
 }
@@ -609,7 +617,9 @@ private fun zoneFrom(map: Map<String, Any?>): Zone = Zone(
     name = map["name"] as String,
     description = map["description"] as? String,
     icon_name = map["icon_name"] as? String,
-    order_index = (map["order_index"] as Number).toInt(),
+    display_mode = map["display_mode"] as String,
+    grid_x = (map["grid_x"] as Number).toInt(),
+    grid_y = (map["grid_y"] as Number).toInt(),
     created_at = (map["created_at"] as Number).toLong(),
     updated_at = (map["updated_at"] as Number).toLong(),
     tool_groups = (map["tool_groups"] as? List<*>)?.let { JsonUtils.toJSONArray(it).toString() },
