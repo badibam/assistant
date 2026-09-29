@@ -40,9 +40,9 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 - **Une valeur ou un échec.** Sans entrée dans la période, `somme` et `compte` valent 0 ; les autres réductions échouent (« poids : aucune entrée dans la période ») : ne pas s'être pesé n'est pas peser plus de 80 kg. Une entrée sans réponse au champ réduit, ou à un champ que lit une formule par entrée, fait échouer de même ; l'écarter se dit dans la lecture, par le filtre « avec réponse » (« moyenne de l'humeur, où humeur avec réponse »). Un échec porte ses causes en données (terme, raison, champ, entrées) et se propage : une formule qui lit un terme en échec échoue avec ses causes. Le cœur l'affiche partout de même (`FieldValue` : la cause, qui mène aux entrées à corriger) et le rend tel quel à l'IA ; chaque lecteur ne décide que de ce qu'il en fait : un critère d'Objectif en échec n'est ni rempli ni non rempli, et la tentative reste sans verdict (à valider, puis expirée) ; un Graphique dessine un trou marqué ; un relevé d'automation directe n'écrit rien, et son exécution échoue avec la cause dans son historique ; l'IA, en chat ou en automation IA, reçoit l'échec comme une réponse et en décide.
 - **Trois couches au cœur** : RÉFÉRENCE (une chose) → sélection (ses entrées : période, filtres, champs) → lecture (une valeur ou un échec). Chacune sert telle quelle : une RÉFÉRENCE au champ `aliment` d'un repas, une sélection au Graphique et au pointeur, une lecture au terme de variable et à l'IA. Tester une lecture n'est pas une couche : c'est une condition de filtre (`EntryFilters.operatorsFor`) posée sur son résultat, ce que fait le critère mesuré d'Objectif. La cible d'une condition est une constante ou une lecture, saisie avec le même composant (« kcal ≤ `objectif_calorique` », « score ≥ `score_mois_precedent` ») ; si la cible est en échec, la condition l'est aussi. Pour l'instant dans un critère seulement : un filtre garde des constantes jusqu'à un cas réel.
 - **Une porte, `readings.read`** (service du cœur `readings`) : une variable, elle l'évalue ; un champ, elle le réduit sur les entrées. Un lecteur ne connaît qu'elle, et une variable la prend elle-même pour ses termes ; l'IA lit une variable par une commande `READING`, dates en ISO comme pour `TOOL_DATA` ; une lecture de champ, elle la fait elle-même sur les entrées que `TOOL_DATA` lui donne.
-- **Deux formes d'appel** : une lecture de champ reçoit une `selection` (source, période, filtres : la période y est, remplie par le lecteur), le `field` et la `reduction` ; une variable, son nom et `at`, une liste d'instants choisis par qui lit, son découpage portant les périodes ; elle rend une liste de même longueur, une valeur ou un échec par instant. Comme une requête groupée, elle épargne à qui lit une plage (le Graphique, l'IA) une commande par point.
+- **Deux formes d'appel** : une lecture de champ reçoit une `selection` (source, période, filtres : la période y est, remplie par le lecteur), le `field` et la `reduction` ; une variable, son nom et `at`, la liste des instants où la lire : un seul pour une lecture (l'Instant qu'elle porte, résolu), plusieurs pour le Graphique et l'IA ; elle rend une liste de même longueur, une valeur ou un échec par instant. Comme une requête groupée, elle épargne à qui lit une plage (le Graphique, l'IA) une commande par point.
 - **Sans historique** : ce qu'une variable consulte sans historique (une fiche, une constante) se lit tel qu'il est aujourd'hui : relu plus tard, le bilan du 12 prend les kcal corrigées depuis ; garder le chiffre d'alors est un relevé (variables).
-- **La frontière avec les variables** : une source et la période de qui lit, c'est la lecture du cœur ; plusieurs sources combinées, ou une période propre (glissante, par tranche), c'est une variable. Un terme de variable est une lecture du cœur sans test, avec sa plage, et du type que lui donne sa réduction.
+- **La frontière avec les variables** : une source, c'est la lecture du cœur ; plusieurs sources combinées, ou une valeur nommée que d'autres relisent, c'est une variable. Un terme de variable est une lecture du cœur sans test, avec sa période, et du type que lui donne sa réduction.
 
 ## Le temps relatif
 
@@ -51,8 +51,8 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 - **Les étiquettes ne composent jamais la référence** : le sélecteur l'affiche une fois, « Par rapport à : fin de la tentative », une chaîne que le contexte fournit et qui se lit seule ; les étiquettes relatives restent les mêmes partout (« Le jour-même », « La veille », « Il y a 2 jours »), traduites une fois. Un résumé hors du sélecteur met la référence à part (« poids, dernière · la veille · réf. : fin de la tentative »). Aucune grammaire à assembler.
 - **Un sélecteur d'instant, un seul**, pour toute date de l'app : la saisie DATE ou DATETIME d'une entrée, la cible d'une condition sur une date, chaque borne d'une période, l'instant qu'écrira un relevé. Il propose :
   - une **date relative** : une unité (heure, jour, semaine, mois, année) et un décalage (« La veille », « Il y a 6 jours »), et son **moment**, début ou fin de cette période, que le contexte préremplit et qu'on change à volonté ;
-  - une **date personnalisée**, toujours absolue, avec l'heure si le champ est un DATETIME ;
-  - **maintenant**, qui est la référence dans un contexte qui en a une ;
+  - une **date personnalisée**, toujours absolue, avec l'heure si le champ est un DATETIME : un instant précis, sans moment, qui ignore la référence ;
+  - **maintenant** ; dans un contexte avec référence, c'est elle, étiquetée « Le moment même » ;
   - **sans limite**, pour une borne.
 
   Sans référence, un choix relatif se résout tout de suite par rapport à l'horloge et c'est la date obtenue qui s'enregistre (une entrée notée « La veille, début ») ; avec référence, il s'enregistre comme description. Le moment est dit explicitement : il remplace la convention où l'opérateur d'une condition choisissait le début ou la fin (`FilterValues`).
@@ -78,7 +78,8 @@ Période              = Instant (début) + Instant (fin)
 Filtre               = Champ + Condition
 Sélection d'entrées  = Chose (un outil) + Période + Filtres + choix des champs
 Lecture              = Sélection d'entrées + Champ + Réduction
-                     | Chose (une variable)
+                     | Chose (une variable) + Instant (par défaut : Le moment même ;
+                         masqué pour une constante)
 Condition            = opérateur + cible, la cible étant :
                          une constante, saisie par la saisie du type du champ
                            (un Instant pour une DATE ou un DATETIME)
@@ -114,15 +115,19 @@ Conçu le 2026-09-28, pour les Données structurées d'abord ; au cœur, parce q
 
 ## Les variables
 
-Décidé le 2026-09-29 : Calcul n'est pas un type d'outil (il n'a pas d'entrées, et son seul rôle est de donner des valeurs aux autres) mais une fonctionnalité du cœur. Une **variable** est une valeur nommée que tout lecteur lit, conditions, Objectif, Graphique, IA, plus tard Alerte et events, sans type d'outil entre eux : une **constante** (`objectif_calorique = 2100`) ou une **formule** sur des lectures du cœur. Rien n'est enregistré : elle se calcule à chaque lecture. Une variable vit dans une zone, comme un outil, et le sélecteur la trouve sous sa zone ; elle lit n'importe quelle zone, et se range là où elle sert le plus (`bilan`, qui lit Repas et Sport, dans Alimentation). Une variable porte une seule formule, avec ses termes et son découpage : ce qui se partage se définit une fois comme variable et se lit par les autres (`mange`, puis `bilan = mange - depense`) ; ce qui se répète seulement (le découpage de `kcal`, `prot`, `gluc`, `lip`) se recopie en dupliquant une variable. Pas de groupe de variables.
+Décidé le 2026-09-29 : Calcul n'est pas un type d'outil (il n'a pas d'entrées, et son seul rôle est de donner des valeurs aux autres) mais une fonctionnalité du cœur. Une **variable** est une valeur nommée que tout lecteur lit, conditions, Objectif, Graphique, IA, plus tard Alerte et events, sans type d'outil entre eux : une **constante** (`objectif_calorique = 2100`) ou une **formule** sur des lectures du cœur. Rien n'est enregistré : elle se calcule à chaque lecture. Une variable vit dans une zone, comme un outil, et le sélecteur la trouve sous sa zone ; elle lit n'importe quelle zone, et se range là où elle sert le plus (`bilan`, qui lit Repas et Sport, dans Alimentation). Une variable porte une seule formule, avec ses termes : ce qui se partage se définit une fois comme variable et se lit par les autres (`mange`, puis `bilan = mange - depense`) ; ce qui se répète seulement (la période des termes de `kcal`, `prot`, `gluc`, `lip`) se recopie en dupliquant une variable. Pas de groupe de variables.
 
-- **Le lecteur donne un instant t, la variable porte les périodes**, et chaque terme de sa formule a sa plage, relative à un ancrage :
-  - **sans tranche** (le glissant), l'ancrage est t : les N jours finissant à t, valable à t, sans limite ;
-  - **avec tranche** (le calendaire : jour, semaine, mois, dont le début est fixé dans l'absolu), t tombe toujours au milieu d'une tranche, et un réglage choisit celle qui répond : la tranche qui contient t, partielle, ou la dernière finie avant t (un bilan). L'ancrage est cette tranche : dans la tranche, valable à sa fin, les N jours finissant à sa fin, sans limite.
+- **Chaque terme porte sa période**, la brique Période, relative à l'instant où on lit la variable ; il n'y a pas de réglage de découpage :
 
-  Le glissant est donc un calcul ancré à t ; « les 7 jours complets » est une tranche jour, finie ou en cours. Un état se lit ainsi dans une formule : la taille sans limite, la pesée valable à l'ancrage. L'âge demande en plus une fonction de date.
+  | Besoin | Période du terme |
+  |---|---|
+  | le jour en cours | Le jour-même · début → Le moment même |
+  | le bilan de la veille | La veille · début → La veille · fin |
+  | les 7 derniers jours | Il y a 6 jours · début → Le moment même |
+  | un état (la taille) | Sans limite → Le moment même |
+
+  Exemple, `kcal` : un terme `mange` = Repas, Le jour-même · début → Le moment même, somme de `quantité × aliment.kcal_100g / 100` ; formule `mange`, unité « kcal ». L'âge demande en plus une fonction de date.
 - **La même formule à deux échelles, deux variables** (« bilan du jour », « bilan du mois »).
-- **Une tentative à cheval sur deux tranches** n'est pas un trou : l'utilisateur fait lire à son Objectif une variable dont le découpage lui correspond.
 - **Ce qu'une formule calcule** : des termes nommés, chacun une lecture du cœur sans test avec sa plage, une constante ou une autre variable, et la formule sur ces noms (`mange - depense`). Un terme peut réduire, au lieu d'un champ, une formule évaluée dans chaque entrée, qui lit les champs de l'entrée et ceux de la fiche que désigne une RÉFÉRENCE, un seul saut (`mange` = somme, sur Repas, de `quantité × aliment.kcal_100g / 100`).
 - **La formule s'écrit en texte** (`(mange - depense) / 7`), avec des boutons qui insèrent les noms et une vérification à chaque frappe qui ne nomme que ce qui empêche de calculer (un nom inconnu, une parenthèse qui manque). `+ - × ÷`, parenthèses, nombres ; une fonction ne s'ajoute que pour un cas réel. Premier cas : `heures()`, `minutes()`, `secondes()` changent une durée en nombre (vitesse = `km / heures(temps)`, quand l'allure `temps / km` reste une durée) ; écrit sans elles, `km / temps` divise par des millisecondes. Qui écrit la formule répond de son sens. L'app lit la formule, ne l'exécute jamais comme du code.
 - **Une formule est un champ calculé** : un nom, un type, les réglages de ce type ; elle s'affiche, se teste et se décrit à l'IA comme tout champ. Le type et les réglages se déduisent de ce qu'elle lit, jamais pour refuser : une réduction garde ceux de sa source, une opération ceux que ses deux côtés partagent (km + km, durée × 2), sinon un nombre nu (`km / heures(temps)`), `compte` un nombre. L'utilisateur complète ce que la déduction ne donne pas (l'unité « km/h ») et corrige un réglage déduit ; la déduction se refait quand la formule change. Il change aussi le type, vers un type de même forme : SCALE → nombre (sans les bornes), nombre → SCALE (en donnant bornes et libellés), nombre → DURÉE (en disant l'unité du nombre).
@@ -160,7 +165,7 @@ Décidé le 2026-09-29 : Calcul n'est pas un type d'outil (il n'a pas d'entrées
 
 ## Graphique
 
-- **Il dessine, ne calcule pas** : aucun regroupement ni agrégation. Un total par jour est une variable découpée par jour, que le Graphique dessine ; un nombre n'a ainsi qu'une origine, lisible aussi par les alertes et l'IA.
+- **Il dessine, ne calcule pas** : aucun regroupement ni agrégation. Un total par jour est une variable dont le terme porte le jour-même, lue à chaque jour, que le Graphique dessine ; un nombre n'a ainsi qu'une origine, lisible aussi par les alertes et l'IA.
 - **Grammaire** : un sous-ensemble de Vega-Lite, que l'IA connaît déjà, dessiné nativement en Compose (pas de vue web : le thème garde l'apparence). Deux écarts : les données viennent d'une sélection d'entrées de l'app, jamais recopiées dans la config ; une couleur est un nom de la palette (`TagColor`). La config reste déclarée en champs, pour que son formulaire soit généré comme les autres.
 - **Ouvert** : le sous-ensemble retenu (marques, couches, échelles, période affichée).
 
