@@ -63,6 +63,10 @@
     <string name="pointer_period">Period</string>
     <string name="pointer_filters_and_fields">Filters and fields…</string>
     <string name="pointer_filters_title">Filters and fields</string>
+    <string name="selection_change">Change</string>
+    <string name="selection_filters">Filters…</string>
+    <string name="selection_filters_title">Filters</string>
+    <string name="selection_place_in_zone">%1$s (%2$s)</string>
     <string name="pointer_filter_new">New filter</string>
     <string name="pointer_filter_field">Field</string>
     <string name="pointer_filter_present_values">Values already entered</string>
@@ -1256,7 +1260,6 @@
     <string name="variable_reading_count">The entries, counted</string>
     <string name="variable_reading_per_entry">A formula in each entry</string>
     <string name="variable_reading_reduction">Reduction</string>
-    <string name="variable_reading_filters">%1$d filter(s) on the values</string>
     <string name="variable_type">Type of the value</string>
     <string name="variable_type_deduced">Deduced from the formula</string>
     <string name="variable_delete_confirm">Delete the variable %1$s? A formula naming it will no longer compute.</string>

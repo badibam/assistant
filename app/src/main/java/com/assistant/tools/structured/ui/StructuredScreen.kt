@@ -303,6 +303,7 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
             fields = filterable.filterKeys { it != "name" },
             filters = JSONArray(filters),
             chosenFields = null,
+            offerFields = false,
             reference = null,
             onDismiss = { editingFilters = false },
             onConfirm = { chosen, _ -> filters = chosen.toString(); editingFilters = false }

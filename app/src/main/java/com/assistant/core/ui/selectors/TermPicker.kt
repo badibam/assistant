@@ -46,7 +46,7 @@ fun TermPicker(term: JSONObject, constantField: FieldDefinition, onChange: (JSON
             { value -> onChange(JSONObject().put(VARIABLE, ReferenceTarget.referenceOf(value)?.id ?: "")) },
             context, required = true
         )
-        else -> ReadingEditor(term.getJSONObject(READING), s) { reading -> onChange(JSONObject().put(READING, reading)) }
+        else -> ReadingPicker(term.getJSONObject(READING), s) { reading -> onChange(JSONObject().put(READING, reading)) }
     }
 }
 

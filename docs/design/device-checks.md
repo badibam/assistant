@@ -113,6 +113,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Variables
 
+- Sélection (pointeur, lecture d'une variable) : le navigateur est ouvert tant qu'aucun outil n'est choisi ; un outil choisi, il se replie en « Outil (Zone) — Changer », qui le rouvre sur la zone ; au pointeur, une zone choisie montre déjà sa période tout en listant ses outils. Rouvrir une variable enregistrée montre son outil replié, sa période et ses filtres. Les filtres d'une lecture et des Données structurées n'offrent plus « Choisir les champs ».
 - Filtres d'un pointeur : ajouter un filtre par valeur (nombre, choix, texte avec ses valeurs proposées, entre deux bornes), une période sur un champ date, « sans réponse » ; chacun se relit dans la liste, part à l'IA, et la requête de l'IA avec ses filtres s'affiche lisible sur sa carte. Un instant n'offre pas « = ».
 - Terme d'une formule : passer de constante à variable puis à lecture et revenir ; une constante se tape comme un nombre ; une variable se choisit en descendant dans sa zone, son nom s'affiche ; enregistrer puis rouvrir garde chaque terme.
 - Champ RÉFÉRENCE qui accepte les variables, et critère « variable » d'un Objectif : descendre dans une zone montre ses outils puis ses variables (« Variable » en petit), groupe par groupe sous le titre de chaque groupe, « Hors groupe » en dernier ; une zone sans groupe, une seule liste. Choisir une variable l'enregistre, son nom s'affiche, et le critère la lit à la fin de la tentative.

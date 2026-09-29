@@ -117,23 +117,23 @@ object PointerDescription {
         return s.shared(key).format(value(field, raw, s))
     }
 
-    /** What narrows the entries, in words: the period, then each filter, then the fields kept. */
-    private fun narrowing(selection: PointerSelection, fields: Map<String, FieldDefinition>, s: StringsContext): List<String> = buildList {
-        period(selection.period, s)?.let { add(it) }
-        for (i in 0 until selection.filters.length()) add(filter(selection.filters.getJSONObject(i), fields, s))
-        selection.fields?.let { kept -> add(s.shared("pointer_part_fields").format(kept.joinToString(", ") { fields[it]?.displayName ?: it })) }
+    /** What narrows the entries, in words: the period, then each condition, then the fields kept. */
+    fun narrowing(draft: SelectionDraft, fields: Map<String, FieldDefinition>, s: StringsContext): List<String> = buildList {
+        period(draft.period, s)?.let { add(it) }
+        for (i in 0 until draft.filters.length()) add(filter(draft.filters.getJSONObject(i), fields, s))
+        draft.fields?.let { kept -> add(s.shared("pointer_part_fields").format(fieldLabels(fields).let { labels -> kept.joinToString(", ") { labels[it] ?: it } })) }
     }
 
     /** The name of the place the selection reached. */
-    private fun targetName(selection: PointerSelection): String = selection.tool?.name ?: selection.zone?.name ?: ""
+    private fun targetName(draft: SelectionDraft): String = draft.tool?.name ?: draft.zone?.name ?: ""
 
     /**
      * The sentence that says what the pointer will send: a mention alone, a mention of the
      * entries narrowed (which the AI may then read), or what is attached.
      */
     fun summary(selection: PointerSelection, fields: Map<String, FieldDefinition>, s: StringsContext): String {
-        val name = targetName(selection)
-        val narrowing = narrowing(selection, fields, s)
+        val name = targetName(selection.draft)
+        val narrowing = narrowing(selection.draft, fields, s)
         val entries = (listOf(s.shared("pointer_part_entries").format(name)) + narrowing).joinToString(", ")
         return when {
             !selection.config && !selection.entries && narrowing.isEmpty() -> s.shared("pointer_summary_mention")

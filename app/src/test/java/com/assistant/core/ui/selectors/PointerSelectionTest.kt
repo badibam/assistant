@@ -28,17 +28,16 @@ class PointerSelectionTest {
     @Test
     fun `nothing can be pointed at before a zone is reached`() {
         assertFalse(PointerSelection().complete)
-        assertTrue(PointerSelection().intoZone(health).complete)
+        assertTrue(PointerSelection(SelectionDraft().intoZone(health)).complete)
     }
 
     @Test
     fun `a tool is pointed at by its id, its period apart from its filters`() {
-        val selection = PointerSelection().intoZone(health).intoTool(sleep).copy(
-            entries = true,
+        val selection = PointerSelection(SelectionDraft().intoZone(health).intoTool(sleep).copy(
             period = lastWeek,
             filters = shortNights,
             fields = listOf("data.duration")
-        )
+        ), entries = true)
         val pointer = selection.pointer()
         assertEquals(ReferenceKind.TOOL_INSTANCE, pointer.target.kind)
         assertEquals("t1", pointer.target.id)
@@ -52,8 +51,7 @@ class PointerSelectionTest {
 
     @Test
     fun `a zone attaches its config and its tools' entries over a period`() {
-        val pointer = PointerSelection().intoZone(health)
-            .copy(config = true, entries = true, period = EntryPeriod(end = TimePoint.Now)).pointer()
+        val pointer = PointerSelection(SelectionDraft().intoZone(health).copy(period = EntryPeriod(end = TimePoint.Now)), config = true, entries = true).pointer()
         assertEquals(ReferenceKind.ZONE, pointer.target.kind)
         assertEquals("z1", pointer.target.id)
         assertTrue(pointer.config)
@@ -65,19 +63,17 @@ class PointerSelectionTest {
 
     @Test
     fun `nothing ticked is a mention, narrowed or not`() {
-        val selection = PointerSelection().intoZone(health).intoTool(sleep).copy(filters = shortNights)
+        val selection = PointerSelection(SelectionDraft().intoZone(health).intoTool(sleep).copy(filters = shortNights))
         assertTrue(selection.pointer().isMention)
-        assertTrue(selection.narrowed)
+        assertTrue(selection.draft.narrowed)
     }
 
     @Test
     fun `going back up to the zone drops what only the tool offered`() {
-        val up = PointerSelection().intoZone(health).intoTool(sleep)
-            .copy(config = true, entries = true, filters = shortNights, fields = listOf("data.duration"), period = EntryPeriod(end = TimePoint.Now))
+        val up = SelectionDraft().intoZone(health).intoTool(sleep)
+            .copy(filters = shortNights, fields = listOf("data.duration"), period = EntryPeriod(end = TimePoint.Now))
             .upTo(ReferenceKind.ZONE)
         assertEquals(ReferenceKind.ZONE, up.level)
-        assertTrue(up.config)
-        assertTrue(up.entries)
         assertEquals(TimePoint.Now, up.period.end)
         assertEquals(0, up.filters.length())
         assertNull(up.fields)
@@ -85,7 +81,7 @@ class PointerSelectionTest {
 
     @Test
     fun `another tool keeps the period but not the filters`() {
-        val other = PointerSelection().intoZone(health).intoTool(sleep)
+        val other = SelectionDraft().intoZone(health).intoTool(sleep)
             .copy(filters = shortNights, period = EntryPeriod(end = TimePoint.Now))
             .intoTool(Named("t2", "Mood", "tracking"))
         assertEquals(0, other.filters.length())
@@ -94,19 +90,17 @@ class PointerSelectionTest {
 
     @Test
     fun `the selection survives a rotation whole`() {
-        val selection = PointerSelection().intoZone(health).intoTool(sleep).copy(
-            config = true,
-            entries = true,
+        val selection = PointerSelection(SelectionDraft().intoZone(health).intoTool(sleep).copy(
             period = EntryPeriod(TimePoint.Fixed(1000L), TimePoint.Now),
             filters = shortNights,
             fields = listOf("data.duration")
-        )
+        ), config = true, entries = true)
         val restored = PointerSelection.fromJson(selection.toJson())
-        assertEquals(selection.zone, restored.zone)
-        assertEquals(selection.tool, restored.tool)
-        assertEquals(selection.period.toJson().toString(), restored.period.toJson().toString())
-        assertEquals(selection.fields, restored.fields)
-        assertEquals(selection.filters.toString(), restored.filters.toString())
+        assertEquals(selection.draft.zone, restored.draft.zone)
+        assertEquals(selection.draft.tool, restored.draft.tool)
+        assertEquals(selection.draft.period.toJson().toString(), restored.draft.period.toJson().toString())
+        assertEquals(selection.draft.fields, restored.draft.fields)
+        assertEquals(selection.draft.filters.toString(), restored.draft.filters.toString())
         assertEquals(selection.pointer().toJson().toString(), restored.pointer().toJson().toString())
     }
 
@@ -128,15 +122,14 @@ class PointerSelectionTest {
     }
 
     @Test
-    fun `the browser moving to another zone's tool keeps the boxes and the period, not the filters`() {
+    fun `the browser moving to another zone's tool keeps the period, not the conditions`() {
         val work = Named("z2", "Work")
         val tasks = Named("t9", "Tasks", "list")
-        val moved = PointerSelection().intoZone(health).intoTool(sleep)
-            .copy(config = true, period = lastWeek, filters = shortNights, fields = listOf("data.duration"))
+        val moved = SelectionDraft().intoZone(health).intoTool(sleep)
+            .copy(period = lastWeek, filters = shortNights, fields = listOf("data.duration"))
             .at(ThingPath(work, tasks))
         assertEquals(work, moved.zone)
         assertEquals(tasks, moved.tool)
-        assertTrue(moved.config)
         assertEquals(lastWeek, moved.period)
         assertEquals(0, moved.filters.length())
         assertNull(moved.fields)
@@ -144,8 +137,8 @@ class PointerSelectionTest {
 
     @Test
     fun `the browser staying on the same tool changes nothing, going up to the app keeps nothing`() {
-        val selection = PointerSelection().intoZone(health).intoTool(sleep).copy(filters = shortNights)
-        assertEquals(selection.toJson(), selection.at(selection.path).toJson())
-        assertEquals(PointerSelection().toJson(), selection.at(ThingPath()).toJson())
+        val draft = SelectionDraft().intoZone(health).intoTool(sleep).copy(filters = shortNights)
+        assertEquals(draft.toJson().toString(), draft.at(draft.path).toJson().toString())
+        assertEquals(SelectionDraft().toJson().toString(), draft.at(ThingPath()).toJson().toString())
     }
 }

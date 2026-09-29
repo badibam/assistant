@@ -1,113 +1,38 @@
 package com.assistant.core.ui.selectors
 
 import com.assistant.core.ai.enrichments.PointerConfig
-import com.assistant.core.selection.EntryPeriod
-import com.assistant.core.selection.EntrySelection
-import com.assistant.core.selection.Reference
 import com.assistant.core.selection.ReferenceKind
-import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * What the pointer selector holds while a pointer is built: where the user went (a zone, a tool
- * in it), what is attached, and what narrows the tool's entries.
- *
- * The target is the deepest place reached. A zone offers its config and the entries of its tools
- * over a period; a tool its config and its entries, with a period, value filters and a choice of
- * fields, which narrow the entries whether they are attached or only mentioned. Value filters and
- * fields are a tool's own: they have no sense across the tools of a zone.
- *
- * @property filters The value filters, as tool_data.get takes them; the period apart
- * @property fields The fields of the entries to attach, all of them when null
+ * What the pointer selector holds while a pointer is built: the selection of entries (SelectionDraft)
+ * and what is attached, a zone's or a tool's config and its entries. Narrowing the entries counts
+ * whether they are attached or only mentioned.
  */
 data class PointerSelection(
-    val zone: Named? = null,
-    val tool: Named? = null,
+    val draft: SelectionDraft = SelectionDraft(),
     val config: Boolean = false,
-    val entries: Boolean = false,
-    val period: EntryPeriod = EntryPeriod(),
-    val filters: JSONArray = JSONArray(),
-    val fields: List<String>? = null
+    val entries: Boolean = false
 ) {
-    /** The kind of the deepest place reached: the app until a zone is chosen. */
-    val level: ReferenceKind get() = when {
-        tool != null -> ReferenceKind.TOOL_INSTANCE
-        zone != null -> ReferenceKind.ZONE
-        else -> ReferenceKind.APP
-    }
-
     /** A pointer can be made once a zone or a tool is reached. */
-    val complete: Boolean get() = level == ReferenceKind.ZONE || level == ReferenceKind.TOOL_INSTANCE
+    val complete: Boolean get() = draft.level == ReferenceKind.ZONE || draft.level == ReferenceKind.TOOL_INSTANCE
 
-    /** Whether the entries are narrowed, by a period or a value filter. */
-    val narrowed: Boolean get() = !period.isEmpty || filters.length() > 0
+    /** The pointer to store: a selection of the core, its period apart from its conditions. */
+    fun pointer(): PointerConfig = PointerConfig(selection = draft.selection(), config = config, entries = entries)
 
-    /** Where the selector stands, for its browser. */
-    val path: ThingPath get() = ThingPath(zone, tool)
-
-    /** Moved to [path] by the browser: going up or into another place leaves what they leave. */
-    fun at(path: ThingPath): PointerSelection = when {
-        path.zone == null -> upTo(ReferenceKind.APP)
-        path.tool == null -> if (path.zone == zone) upTo(ReferenceKind.ZONE) else intoZone(path.zone)
-        path.tool == tool -> this
-        else -> (if (path.zone == zone) this else intoZone(path.zone)).intoTool(path.tool)
-    }
-
-    /** Into [zone]: the boxes and the period stay, which a zone offers as well. */
-    fun intoZone(zone: Named): PointerSelection = PointerSelection(zone = zone, config = config, entries = entries, period = period)
-
-    /** Into [tool]: the period stays; its filters and fields, a tool's own, start empty. */
-    fun intoTool(tool: Named): PointerSelection = copy(tool = tool, filters = JSONArray(), fields = null)
-
-    /** Back up to the app, or to the zone: what the level left offered goes with it. */
-    fun upTo(level: ReferenceKind): PointerSelection = when (level) {
-        ReferenceKind.APP -> PointerSelection()
-        ReferenceKind.ZONE -> PointerSelection(zone = zone, config = config, entries = entries, period = period)
-        else -> this
-    }
-
-    /** The pointer to store: a selection of the core, its period apart from the value filters. */
-    fun pointer(): PointerConfig {
-        val target = when (level) {
-            ReferenceKind.TOOL_INSTANCE -> Reference(ReferenceKind.TOOL_INSTANCE, tool!!.id)
-            ReferenceKind.ZONE -> Reference(ReferenceKind.ZONE, zone!!.id)
-            else -> throw IllegalStateException("a pointer needs a zone or a tool")
-        }
-        val isTool = level == ReferenceKind.TOOL_INSTANCE
-        return PointerConfig(
-            selection = EntrySelection(
-                target = target,
-                period = period,
-                filters = if (isTool) filters else JSONArray(),
-                fields = fields.takeIf { isTool }
-            ),
-            config = config,
-            entries = entries
-        )
-    }
-
-    fun toJson(): String = JSONObject().apply {
-        zone?.let { put("zone", it.toJson()) }
-        tool?.let { put("tool", it.toJson()) }
-        put("config", config)
-        put("entries", entries)
-        put("period", period.toJson())
-        put("filters", filters)
-        fields?.let { put("fields", JSONArray(it)) }
-    }.toString()
+    fun toJson(): String = JSONObject()
+        .put("draft", draft.toJson())
+        .put("config", config)
+        .put("entries", entries)
+        .toString()
 
     companion object {
         fun fromJson(saved: String): PointerSelection {
             val json = JSONObject(saved)
             return PointerSelection(
-                zone = json.optJSONObject("zone")?.let { Named.fromJson(it) },
-                tool = json.optJSONObject("tool")?.let { Named.fromJson(it) },
+                draft = SelectionDraft.fromJson(json.getJSONObject("draft")),
                 config = json.getBoolean("config"),
-                entries = json.getBoolean("entries"),
-                // The selector's own state, written by toJson: its dates read
-                period = EntryPeriod.fromJson(json.getJSONObject("period")) { it },
-                filters = json.getJSONArray("filters"),
-                fields = json.optJSONArray("fields")?.let { a -> (0 until a.length()).map { a.getString(it) } }
+                entries = json.getBoolean("entries")
             )
         }
     }

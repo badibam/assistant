@@ -33,6 +33,7 @@ import org.json.JSONObject
  *   when it is chosen
  * @param fields The tool's fields a filter may name, by path
  * @param chosenFields The fields to attach, all of them when null
+ * @param offerFields Whether the fields kept are chosen here, or the conditions alone
  */
 @Composable
 fun PointerFiltersDialog(
@@ -40,6 +41,7 @@ fun PointerFiltersDialog(
     fields: Map<String, FieldDefinition>,
     filters: JSONArray,
     chosenFields: List<String>?,
+    offerFields: Boolean,
     reference: String?,
     onDismiss: () -> Unit,
     onConfirm: (filters: JSONArray, fields: List<String>?) -> Unit
@@ -77,7 +79,7 @@ fun PointerFiltersDialog(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            UI.Text(text = s.shared("pointer_filters_title"), type = TextType.TITLE, fillMaxWidth = true)
+            UI.Text(text = s.shared(if (offerFields) "pointer_filters_title" else "selection_filters_title"), type = TextType.TITLE, fillMaxWidth = true)
 
             // The filters set, each removable
             for (i in 0 until list.length()) {
@@ -102,8 +104,8 @@ fun PointerFiltersDialog(
             }
 
             // The fields to attach
-            UI.Checkbox(checked = choosing, onCheckedChange = { choosing = it }, label = s.shared("pointer_choose_fields"))
-            if (choosing) {
+            if (offerFields) UI.Checkbox(checked = choosing, onCheckedChange = { choosing = it }, label = s.shared("pointer_choose_fields"))
+            if (offerFields && choosing) {
                 fieldLabels(fields).forEach { (path, label) ->
                     UI.Checkbox(
                         checked = path in chosen,

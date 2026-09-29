@@ -141,3 +141,41 @@ private fun Trail(path: ThingPath, appName: String, onUp: (ReferenceKind) -> Uni
         }
     }
 }
+
+/**
+ * The path to the tool [toolInstanceId], its zone and itself named as they are now; null when it
+ * cannot be read (deleted since), which is logged.
+ */
+suspend fun toolPath(toolInstanceId: String, context: android.content.Context): ThingPath? {
+    val result = Coordinator(context).processUserAction("references.choices", mapOf("kinds" to listOf(ReferenceKind.ENTRY.name), "tool_instances" to listOf(toolInstanceId)))
+    val row = (result.data?.get("tool_instances") as? List<*>)?.filterIsInstance<Map<*, *>>()?.firstOrNull { it["id"] == toolInstanceId }
+    if (!result.isSuccess || row == null) {
+        LogManager.ui("toolPath: tool $toolInstanceId not found: ${result.error}", "ERROR")
+        return null
+    }
+    return ThingPath(
+        Named(row["zone_id"] as String, row["zone_name"] as? String ?: ""),
+        Named(toolInstanceId, row["name"] as? String ?: "", row["tooltype"] as? String)
+    )
+}
+
+/**
+ * The fields of the tool [toolInstanceId] by path (ToolFields.filterable), none while it is null
+ * or read; a read that fails is logged and said by a toast.
+ */
+@Composable
+fun rememberToolFields(toolInstanceId: String?): Map<String, com.assistant.core.fields.FieldDefinition> {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    var fields by remember { mutableStateOf<Map<String, com.assistant.core.fields.FieldDefinition>>(emptyMap()) }
+    LaunchedEffect(toolInstanceId) {
+        fields = if (toolInstanceId == null) emptyMap() else try {
+            com.assistant.core.fields.ToolFields.filterable(toolInstanceId, context, s)
+        } catch (e: Exception) {
+            LogManager.ui("rememberToolFields: fields of $toolInstanceId not loaded: ${e.message}", "ERROR", e)
+            UI.Toast(context, s.shared("error_loading_options"))
+            emptyMap()
+        }
+    }
+    return fields
+}

@@ -116,16 +116,7 @@ fun ReferenceInput(fieldDef: FieldDefinition, value: Any?, onChange: (Any?) -> U
 private suspend fun startPath(target: ReferenceTarget, context: Context): ThingPath {
     val only = target.toolInstances.singleOrNull()
     if (target.kinds != setOf(ReferenceKind.ENTRY) || only == null) return ThingPath()
-    val result = Coordinator(context).processUserAction("references.choices", mapOf("kinds" to listOf(ReferenceKind.ENTRY.name), "tool_instances" to target.toolInstances))
-    val row = (result.data?.get("tool_instances") as? List<*>)?.filterIsInstance<Map<*, *>>()?.firstOrNull { it["id"] == only }
-    if (!result.isSuccess || row == null) {
-        LogManager.ui("ReferencePicker: tool $only not found: ${result.error}", "ERROR")
-        return ThingPath()
-    }
-    return ThingPath(
-        Named(row["zone_id"] as String, row["zone_name"] as? String ?: ""),
-        Named(only, row["name"] as? String ?: "", row["tooltype"] as? String)
-    )
+    return com.assistant.core.ui.selectors.toolPath(only, context) ?: ThingPath()
 }
 
 /**

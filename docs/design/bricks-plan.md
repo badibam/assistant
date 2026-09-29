@@ -10,11 +10,6 @@
 - Rappel : rien de ce qui a été codé depuis la base 46 n'a tourné sur le téléphone (`device-checks.md`).
 - Ailleurs, et à relire avant l'étape qui les cite : dans `docs/design/missing-tools.md`, « Le temps relatif » (la référence, les libellés relatifs, « = » refusé sur un DATETIME) et « Les formes enregistrées » (Instant, période, sélection, pointeur) ; sa section « Objectif » ; dans `docs/design/unified-fields.md`, le réglage de champ réservé à l'utilisateur.
 
-## 7. Lecture et Sélection d'entrées
-
-- Deux sélecteurs composés : Sélection (Chose + Période + Conditions posées à chaque entrée + champs gardés) et Lecture (Sélection + Champ + Réduction).
-- Remplacent : l'assemblage à la main du pointeur (`PointerSelector`, `AttachPanel`) et `ReadingEditor`.
-
 ## 8. Critères d'Objectif
 
 - Un critère : sa clé, son nom, indispensable ou non, et une Condition — jugée une fois pour un critère lu (« Par rapport à : la fin de la tentative (maintenant tant qu'elle court) », la période d'une Lecture préremplie à celle de la tentative), posée à la tentative pour un critère saisi (son champ déclaré d'un côté).
