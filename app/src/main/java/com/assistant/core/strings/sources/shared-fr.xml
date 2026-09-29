@@ -265,6 +265,7 @@
     <string name="ai_error_period_invalid_iso">Date ISO 8601 illisible : %1$s. Format attendu : 2025-11-23T09:00:00+01:00</string>
     <string name="ai_error_period_unknown_format">Période illisible : %1$s. Formats acceptés : période relative (offset_TYPE, ex. -7_DAY), marqueur NOW, ou date ISO 8601.</string>
     <string name="ai_error_period_unknown_type">Type de période inconnu : %1$s. Types acceptés : %2$s</string>
+    <string name="error_relative_date_invalid">Date relative illisible : %1$s. Attendu : {"relative": {"unit": "DAY", "offset": -1, "edge": "START"}} (edge START ou END), ou {"relative": "NOW"}</string>
 
     <!-- AI Data Types - Enrichment descriptions -->
     <string name="ai_data_zone">données zone</string>
