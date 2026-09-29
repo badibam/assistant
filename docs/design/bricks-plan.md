@@ -10,12 +10,6 @@
 - Rappel : rien de ce qui a été codé depuis la base 46 n'a tourné sur le téléphone (`device-checks.md`).
 - Ailleurs, et à relire avant l'étape qui les cite : dans `docs/design/missing-tools.md`, « Le temps relatif » (la référence, les libellés relatifs, « = » refusé sur un DATETIME) et « Les formes enregistrées » (Instant, période, sélection, pointeur) ; sa section « Objectif » ; dans `docs/design/unified-fields.md`, le réglage de champ réservé à l'utilisateur.
 
-## 2. Champ
-
-- Un sélecteur commun : les champs d'un outil (`ToolFields.filterable`), restreints aux types permis par le contexte, « aucun » proposé seulement pour compter.
-- Remplace : la liste du dialogue des filtres (`PointerFiltersDialog`), celle de la lecture d'une variable (`ReadingEditor`), le choix des réglages (`ToolFieldChoice` dans `SettingsForm`).
-- À valider : l'affichage d'un champ (nom seul, ou nom et chemin comme aujourd'hui dans la lecture d'une variable).
-
 ## 3. Réduction
 
 - Un sélecteur commun, les réductions permises selon le type du champ choisi (`Reduction.forType`), une seule proposée sans liste.

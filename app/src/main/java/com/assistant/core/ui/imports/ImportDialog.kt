@@ -21,6 +21,8 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.ToolFields
+import com.assistant.core.ui.selectors.FieldPick
+import com.assistant.core.ui.selectors.FieldPicker
 import com.assistant.core.imports.CellRead
 import com.assistant.core.imports.Writing
 import com.assistant.core.strings.Strings
@@ -55,12 +57,11 @@ fun ImportDialog(toolInstanceId: String, csv: String, onDismiss: () -> Unit) {
     var lines by rememberSaveable { mutableStateOf(0) }
     var report by rememberSaveable { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    var fields by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var fields by remember { mutableStateOf<Map<String, com.assistant.core.fields.FieldDefinition>>(emptyMap()) }
 
     LaunchedEffect(toolInstanceId) {
         fields = try {
             ToolFields.filterable(toolInstanceId, context, s).filterKeys { !it.startsWith("state.") && it != "created_at" && it != "updated_at" }
-                .mapValues { "${it.value.displayName} (${it.key})" }
         } catch (e: IllegalStateException) { error = e.message; emptyMap() }
         if (columns != null) return@LaunchedEffect
         val result = coordinator.processUserAction("imports.detect", mapOf("tool_instance_id" to toolInstanceId, "csv" to csv))
@@ -112,7 +113,7 @@ fun ImportDialog(toolInstanceId: String, csv: String, onDismiss: () -> Unit) {
 
 /** One column: where it goes, its type and writing, an example read, what is left to settle. */
 @Composable
-private fun ColumnEditor(column: JSONObject, fields: Map<String, String>, zone: java.time.ZoneId, s: com.assistant.core.strings.StringsContext, onChange: (JSONObject) -> Unit) {
+private fun ColumnEditor(column: JSONObject, fields: Map<String, com.assistant.core.fields.FieldDefinition>, zone: java.time.ZoneId, s: com.assistant.core.strings.StringsContext, onChange: (JSONObject) -> Unit) {
     fun edit(change: JSONObject.() -> Unit) = onChange(JSONObject(column.toString()).apply(change))
     UI.Card(type = CardType.DEFAULT) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -136,12 +137,11 @@ private fun ColumnEditor(column: JSONObject, fields: Map<String, String>, zone: 
             )
             val type: FieldType? = when (column.getString("target")) {
                 "FIELD" -> {
-                    UI.FormSelection(
+                    FieldPicker(
                         label = s.shared("import_field"),
-                        options = fields.values.toList(),
-                        selected = fields[column.optString("field")] ?: "",
-                        onSelect = { label -> edit { put("field", fields.entries.first { it.value == label }.key); remove("writing") } },
-                        required = true
+                        fields = fields,
+                        selected = column.optString("field").takeIf { it.isNotEmpty() }?.let { FieldPick.Path(it) },
+                        onSelect = { pick -> edit { put("field", (pick as FieldPick.Path).path); remove("writing") } }
                     )
                     null
                 }

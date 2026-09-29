@@ -309,8 +309,8 @@ private fun Titled(label: String, content: @Composable () -> Unit) {
 }
 
 /**
- * The choice of a field of the tool [tool] designates (SettingNode.Field.fieldOf), by its label and
- * path; nothing to choose before the tool is. The fields not read are said, never left out in silence.
+ * The choice of a field of the tool [tool] designates (SettingNode.Field.fieldOf), by FieldPicker;
+ * nothing to choose before the tool is. The fields not read are said, never left out in silence.
  */
 @Composable
 private fun ToolFieldChoice(node: SettingNode.Field, tool: Any?, stored: String?, context: Context, onChange: (String?) -> Unit) {
@@ -328,15 +328,12 @@ private fun ToolFieldChoice(node: SettingNode.Field, tool: Any?, stored: String?
     when {
         error != null -> UI.Text(error!!, TextType.ERROR)
         loaded == null -> UI.Text(node.definition.displayName + " — " + s.shared("setting_field_of_tool_first"), TextType.CAPTION)
-        else -> {
-            val choices = loaded.map { (path, field) -> path to "${field.displayName} ($path)" }
-            UI.FormSelection(
-                label = node.definition.displayName,
-                options = choices.map { it.second },
-                selected = choices.firstOrNull { it.first == stored }?.second ?: "",
-                onSelect = { label -> onChange(choices.first { it.second == label }.first) },
-                required = node.required
-            )
-        }
+        else -> com.assistant.core.ui.selectors.FieldPicker(
+            label = node.definition.displayName,
+            fields = loaded,
+            selected = stored?.let { com.assistant.core.ui.selectors.FieldPick.Path(it) },
+            onSelect = { pick -> onChange((pick as com.assistant.core.ui.selectors.FieldPick.Path).path) },
+            required = node.required
+        )
     }
 }

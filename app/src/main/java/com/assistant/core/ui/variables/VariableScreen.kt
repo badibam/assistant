@@ -41,6 +41,8 @@ import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.components.PeriodPicker
+import com.assistant.core.ui.selectors.FieldPick
+import com.assistant.core.ui.selectors.FieldPicker
 import com.assistant.core.utils.JsonUtils
 import com.assistant.core.variables.Formula
 import kotlinx.coroutines.launch
@@ -302,6 +304,10 @@ private fun TermEditor(
     }
 }
 
+/** The reading choices beside the fields: count the entries, or reduce a formula per entry. */
+private const val COUNT = "count"
+private const val PER_ENTRY = "per_entry"
+
 /** A reading term: its tool, its field (or a formula per entry, or a count), its reduction, its period. */
 @Composable
 private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSONObject) -> Unit) {
@@ -329,33 +335,30 @@ private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSO
 
     // What is reduced: a field, a formula per entry, or the entries themselves counted
     val perEntry = reading.has("per_entry")
-    val count = s.shared("variable_reading_count")
-    val formula = s.shared("variable_reading_per_entry")
-    val numeric = fields.filterValues { Reduction.forType(it.type).isNotEmpty() }
-    val options = listOf(count, formula) + numeric.map { (path, f) -> "${f.displayName} ($path)" }
-    UI.FormSelection(
+    FieldPicker(
         label = s.shared("variable_reading_what"),
-        options = options,
+        fields = fields,
         selected = when {
-            perEntry -> formula
-            reading.has("field") -> numeric[reading.getString("field")]?.let { "${it.displayName} (${reading.getString("field")})" } ?: reading.getString("field")
-            else -> count
+            perEntry -> FieldPick.Other(PER_ENTRY)
+            reading.has("field") -> FieldPick.Path(reading.getString("field"))
+            else -> FieldPick.Other(COUNT)
         },
-        onSelect = { label ->
+        onSelect = { pick ->
             edit {
                 remove("field"); remove("per_entry")
-                when (label) {
-                    count -> put("reduction", Reduction.COUNT.name)
-                    formula -> { put("per_entry", ""); put("reduction", Reduction.SUM.name) }
-                    else -> {
-                        val path = numeric.keys.first { "${numeric.getValue(it).displayName} ($it)" == label }
-                        put("field", path)
-                        put("reduction", Reduction.forType(numeric.getValue(path).type).first().name)
+                when (pick) {
+                    FieldPick.Other(COUNT) -> put("reduction", Reduction.COUNT.name)
+                    FieldPick.Other(PER_ENTRY) -> { put("per_entry", ""); put("reduction", Reduction.SUM.name) }
+                    is FieldPick.Path -> {
+                        put("field", pick.path)
+                        put("reduction", Reduction.forType(fields.getValue(pick.path).type).first().name)
                     }
+                    is FieldPick.Other -> error("No reading choice '${pick.key}'")
                 }
             }
         },
-        required = true
+        accepts = { Reduction.forType(it.type).isNotEmpty() },
+        others = mapOf(COUNT to s.shared("variable_reading_count"), PER_ENTRY to s.shared("variable_reading_per_entry"))
     )
     if (perEntry) {
         UI.FormField(label = s.shared("variable_reading_per_entry"), value = reading.optString("per_entry"), onChange = { v -> edit { put("per_entry", v) } }, required = true)

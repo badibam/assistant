@@ -214,12 +214,17 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
                     if (headerOpen) {
                         UI.FormField(label = s.tool("search"), value = search, onChange = { search = it }, fieldType = FieldType.SEARCH, required = false)
                         UI.Button(type = ButtonType.DEFAULT, onClick = { editingFilters = true }) { UI.Text(s.tool("filters"), TextType.LABEL) }
-                        val sortOptions = listOf(BY_NAME to s.shared("label_name")) + fields.map { it.name to it.displayName }
-                        UI.FormSelection(
+                        com.assistant.core.ui.selectors.FieldPicker(
                             label = s.tool("sort_by").format(""),
-                            options = sortOptions.map { it.second },
-                            selected = sortOptions.firstOrNull { it.first == sortKey }?.second ?: sortOptions.first().second,
-                            onSelect = { label -> sortKey = sortOptions.first { it.second == label }.first },
+                            fields = fields.associateBy { it.name },
+                            selected = if (sortKey == BY_NAME) com.assistant.core.ui.selectors.FieldPick.Other(BY_NAME) else com.assistant.core.ui.selectors.FieldPick.Path(sortKey),
+                            onSelect = { pick ->
+                                sortKey = when (pick) {
+                                    is com.assistant.core.ui.selectors.FieldPick.Other -> pick.key
+                                    is com.assistant.core.ui.selectors.FieldPick.Path -> pick.path
+                                }
+                            },
+                            others = mapOf(BY_NAME to s.shared("label_name")),
                             required = false
                         )
                     }

@@ -123,16 +123,11 @@ fun PointerFiltersDialog(
 
             // A new filter: the field, then the condition its type takes, then the value
             UI.Text(text = s.shared("pointer_filter_new"), type = TextType.SUBTITLE)
-            val paths = filterable.keys.toList()
-            UI.FormSelection(
+            FieldPicker(
                 label = s.shared("pointer_filter_field"),
-                options = paths.map { filterable.getValue(it).displayName },
-                selected = draftField?.displayName ?: "",
-                onSelect = { label ->
-                    val path = paths.first { filterable.getValue(it).displayName == label }
-                    draft = JSONObject().put("field", path).toString()
-                },
-                required = true
+                fields = filterable,
+                selected = draftJson.optString("field").takeIf { it.isNotEmpty() }?.let { FieldPick.Path(it) },
+                onSelect = { pick -> draft = JSONObject().put("field", (pick as FieldPick.Path).path).toString() }
             )
             if (draftField != null) {
                 // A date takes a period, or no answer, or an answer
@@ -183,11 +178,11 @@ fun PointerFiltersDialog(
             // The fields to attach
             UI.Checkbox(checked = choosing, onCheckedChange = { choosing = it }, label = s.shared("pointer_choose_fields"))
             if (choosing) {
-                fields.forEach { (path, field) ->
+                fieldLabels(fields).forEach { (path, label) ->
                     UI.Checkbox(
                         checked = path in chosen,
                         onCheckedChange = { on -> chosen = if (on) chosen + path else chosen - path },
-                        label = field.displayName
+                        label = label
                     )
                 }
             }
