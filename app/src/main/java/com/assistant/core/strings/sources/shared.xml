@@ -1107,6 +1107,7 @@
     <string name="action_verbalize_references_choices">Listing what a link can point to</string>
     <string name="service_error_reading_param">A reading needs "%1$s".</string>
     <string name="service_error_reading_source">A reading reads the entries of one tool instance, not of a %1$s.</string>
+    <string name="service_error_reading_source_unread">The tool read could not be read; nothing says it was deleted.</string>
     <string name="service_error_reading_reduction">Unknown reduction: %1$s. Accepted: %2$s.</string>
     <string name="service_error_reading_reduction_type">%1$s does not reduce a field of type %2$s. It takes: %3$s.</string>
     <string name="reading_failure_no_entry">%1$s: no entry in the period</string>

@@ -1107,6 +1107,7 @@
     <string name="action_verbalize_references_choices">Liste de ce qu\'un lien peut désigner</string>
     <string name="service_error_reading_param">Une lecture demande "%1$s".</string>
     <string name="service_error_reading_source">Une lecture lit les entrées d\'une instance d\'outil, pas d\'un %1$s.</string>
+    <string name="service_error_reading_source_unread">L\'outil lu n\'a pas pu être lu ; rien ne dit qu\'il a été supprimé.</string>
     <string name="service_error_reading_reduction">Réduction inconnue : %1$s. Acceptées : %2$s.</string>
     <string name="service_error_reading_reduction_type">%1$s ne réduit pas un champ de type %2$s. Il accepte : %3$s.</string>
     <string name="reading_failure_no_entry">%1$s : aucune entrée dans la période</string>

@@ -277,12 +277,18 @@ class VariableService(private val context: Context) : ExecutableService {
             ?: throw Refused(s.shared("variable_error_param").format("at"))
         val variable = try { stored(entity) } catch (e: IllegalArgumentException) { throw Refused(e.message ?: "") }
         val evaluator = VariableEvaluator(Sources())
+        // A read that fails is the operation's error, never a value's cause
+        val values = try {
+            at.map { instant -> instant to evaluator.evaluate(variable, instant) }
+        } catch (e: IllegalStateException) {
+            return OperationResult.error(e.message ?: "")
+        }
         return OperationResult.success(mapOf(
             "variable_id" to entity.id,
             "name" to entity.name,
             "field" to JsonUtils.toMap(VariableDefinition.fieldJson(variable.definition.field)),
-            "values" to at.map { instant ->
-                when (val value = evaluator.evaluate(variable, instant)) {
+            "values" to values.map { (instant, value) ->
+                when (value) {
                     is VariableValue.Value -> mapOf("at" to instant, "value" to value.value)
                     is VariableValue.Failed -> mapOf("at" to instant, "failure" to failure(value.causes))
                 }
@@ -312,7 +318,7 @@ class VariableService(private val context: Context) : ExecutableService {
                 "reduction" to term.reduction.name,
                 "reference" to at
             ).filterValues { it != null }.mapValues { it.value!! })
-            if (!result.isSuccess) return Outcome.Failed(listOf(Cause(Cause.UNREADABLE, field = term.field)))
+            if (!result.isSuccess) throw IllegalStateException(result.error ?: "readings.read")
             (result.data?.get("failure") as? Map<*, *>)?.let { f ->
                 return Outcome.Failed(listOf(Cause(f["reason"] as String, field = f["field"] as? String,
                     entries = (f["entries"] as? List<*>)?.map { it.toString() } ?: emptyList())))
@@ -323,20 +329,34 @@ class VariableService(private val context: Context) : ExecutableService {
 
         override suspend fun entries(selection: EntrySelection, at: Long): List<Map<String, Any?>>? {
             val toolId = selection.target.id ?: return null
-            val fields = try { ToolFields.filterable(toolId, context, s) } catch (e: IllegalStateException) { return null }
+            if (gone("TOOL_INSTANCE", toolId)) return null
+            val fields = ToolFields.filterable(toolId, context, s)
             val result = coordinator.processUserAction("tool_data.get", mapOf(
                 "tool_instance_id" to toolId,
                 "filters" to JsonUtils.toList(selection.storedFilters(fields, TimeResolver.at(at)) { s.shared(it) })
             ))
-            if (!result.isSuccess) return null
+            if (!result.isSuccess) throw IllegalStateException(result.error ?: "tool_data.get")
             @Suppress("UNCHECKED_CAST")
             return (result.data?.get("entries") as? List<*>)?.filterIsInstance<Map<String, Any?>>()
         }
 
         override suspend fun entry(id: String): Map<String, Any?>? {
+            if (gone("ENTRY", id)) return null
             val result = coordinator.processUserAction("tool_data.get_single", mapOf("entry_id" to id))
+            if (!result.isSuccess) throw IllegalStateException(result.error ?: "tool_data.get_single")
             @Suppress("UNCHECKED_CAST")
-            return if (result.isSuccess) result.data?.get("entry") as? Map<String, Any?> else null
+            return result.data?.get("entry") as? Map<String, Any?>
+        }
+
+        /**
+         * Whether a thing was deleted; its read failing is an error.
+         *
+         * @throws IllegalStateException when it cannot be read
+         */
+        private suspend fun gone(kind: String, id: String): Boolean {
+            val result = coordinator.processUserAction("references.names", mapOf("references" to listOf(mapOf("kind" to kind, "id" to id))))
+            if (!result.isSuccess) throw IllegalStateException(result.error ?: "references.names")
+            return ((result.data?.get("references") as? List<*>)?.firstOrNull() as? Map<*, *>)?.get("deleted") == true
         }
     }
 

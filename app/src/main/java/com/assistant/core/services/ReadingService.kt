@@ -67,9 +67,13 @@ class ReadingService(private val context: Context) : ExecutableService {
                 params.optString("reduction"), Reduction.entries.joinToString(", ") { it.name }))
         val toolInstanceId = selection.target.id!!
 
-        // A source deleted since is an answer, not an error: whoever reads decides what it means
-        val exists = Coordinator(context).processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId)).isSuccess
-        if (!exists) return OperationResult.success(failure(ReadingResult.Failure(FailureReason.SOURCE_NOT_FOUND, null)))
+        // A source deleted since is an answer, not an error: whoever reads decides what it means.
+        // A read that fails is an error, never taken for a deletion
+        when (sourceGone(toolInstanceId)) {
+            null -> return OperationResult.error(s.shared("service_error_reading_source_unread"))
+            true -> return OperationResult.success(failure(ReadingResult.Failure(FailureReason.SOURCE_NOT_FOUND, null)))
+            false -> {}
+        }
 
         val fields = ToolFields.filterable(toolInstanceId, context, s)
         val path = params.optString("field").takeIf { it.isNotEmpty() }
@@ -96,6 +100,13 @@ class ReadingService(private val context: Context) : ExecutableService {
             is ReadingResult.Value -> mapOf("value" to result.value, "field" to JsonUtils.toMap(result.field.toJson()))
             is ReadingResult.Failure -> failure(result)
         })
+    }
+
+    /** Whether the tool instance was deleted; null when that cannot be read. */
+    private suspend fun sourceGone(toolInstanceId: String): Boolean? {
+        val result = Coordinator(context).processUserAction("references.names", mapOf("references" to listOf(mapOf("kind" to "TOOL_INSTANCE", "id" to toolInstanceId))))
+        if (!result.isSuccess) return null
+        return ((result.data?.get("references") as? List<*>)?.firstOrNull() as? Map<*, *>)?.get("deleted") as? Boolean
     }
 
     /** A failure as data, with its words for whoever shows it. */
