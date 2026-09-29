@@ -9,6 +9,7 @@ import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.ToolFields
 import com.assistant.core.fields.toFieldDefinition
+import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.reading.FieldReading
 import com.assistant.core.reading.Reduction
 import com.assistant.core.selection.EntrySelection
@@ -261,6 +262,29 @@ class VariableService(private val context: Context) : ExecutableService {
     private fun stored(entity: VariableEntity): StoredVariable =
         StoredVariable(entity.id, entity.name, entity.zoneId, VariableDefinition.fromJson(JSONObject(entity.definitionJson), entity.name) { s.shared(it) })
 
+    /**
+     * The tool instances [entity] reads, through the variables it reads too, and for a formula per
+     * entry the tools its references lead to: what, changing, changes its value. [ANY_TOOL] when a
+     * reference may lead to any entry.
+     */
+    private suspend fun toolsRead(entity: VariableEntity, all: Map<String, VariableEntity>, seen: MutableSet<String> = mutableSetOf()): Set<String> {
+        if (!seen.add(entity.id)) return emptySet()
+        val terms = JSONObject(entity.definitionJson).optJSONObject("terms") ?: JSONObject()
+        val direct = mutableSetOf<String>()
+        for (key in terms.keys()) {
+            val reading = terms.getJSONObject(key).optJSONObject("reading") ?: continue
+            val tool = reading.optJSONObject("selection")?.optJSONObject("target")?.optString("id")?.takeIf { it.isNotEmpty() } ?: continue
+            direct.add(tool)
+            if (reading.optString("per_entry").isEmpty()) continue
+            val config = AppDatabase.getDatabase(context).toolInstanceDao().getToolInstanceById(tool)?.config_json?.let { JSONObject(it) } ?: continue
+            config.optJSONArray("extra_fields")?.toFieldDefinitions()?.filter { it.type == com.assistant.core.fields.FieldType.REFERENCE }?.forEach { field ->
+                val target = com.assistant.core.fields.ReferenceTarget.fromConfig(field.config)
+                if (target.toolInstances.isEmpty()) direct.add(ANY_TOOL) else direct.addAll(target.toolInstances)
+            }
+        }
+        return direct + readsOf(entity).mapNotNull { all[it] }.flatMap { toolsRead(it, all, seen) }
+    }
+
     /** A variable as the screen and the AI read it: its formula with the current names, never its value. */
     private suspend fun describe(entity: VariableEntity): Map<String, Any?> {
         val definition = JSONObject(entity.definitionJson)
@@ -274,7 +298,8 @@ class VariableService(private val context: Context) : ExecutableService {
             "zone_id" to entity.zoneId,
             "group" to entity.group,
             "order_index" to entity.orderIndex,
-            "definition" to JsonUtils.toMap(definition)
+            "definition" to JsonUtils.toMap(definition),
+            "tools_read" to toolsRead(entity, dao.getAll().associateBy { it.id }).toList()
         )
     }
 
@@ -382,6 +407,9 @@ class VariableService(private val context: Context) : ExecutableService {
     }
 
     companion object {
+        /** In the tools a variable reads, any tool: a reference it reads through may lead to any entry. */
+        const val ANY_TOOL = "*"
+
         /** A name a formula can write: a letter or `_`, then letters, digits, `_`. */
         val NAME = Regex("^[\\p{L}_][\\p{L}\\p{N}_]*$")
     }

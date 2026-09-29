@@ -28,21 +28,22 @@ import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
 
 /** A variable as a zone lists it (variables.list). */
-data class VariableRow(val id: String, val name: String, val group: String?, val definition: Map<*, *>) {
+data class VariableRow(val id: String, val name: String, val group: String?, val definition: Map<*, *>, val toolsRead: Set<String>) {
     companion object {
         fun of(map: Map<*, *>) = VariableRow(
             id = map["id"] as String,
             name = map["name"] as String,
             group = (map["group"] as? String)?.takeIf { it.isNotEmpty() },
-            definition = map["definition"] as? Map<*, *> ?: emptyMap<String, Any>()
+            definition = map["definition"] as? Map<*, *> ?: emptyMap<String, Any>(),
+            toolsRead = (map["tools_read"] as? List<*>)?.map { it.toString() }?.toSet() ?: emptySet()
         )
     }
 }
 
 /**
  * The variables of a zone's group in one compact card, one per line: its name and its value now,
- * or why it has none. The values are read again when entries or variables change. Touching a
- * line opens the variable.
+ * or why it has none. The values are read again when an entry of a tool they read changes, or a
+ * variable does. Touching a line opens the variable.
  */
 @Composable
 fun VariablesCard(variables: List<VariableRow>, onOpen: (String) -> Unit) {
@@ -52,9 +53,12 @@ fun VariablesCard(variables: List<VariableRow>, onOpen: (String) -> Unit) {
     var shown by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var version by remember { mutableStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    val toolsRead = variables.flatMap { it.toolsRead }.toSet()
+    LaunchedEffect(toolsRead) {
         DataChangeNotifier.changes.collect { event ->
-            if (event is DataChangeEvent.ToolDataChanged || event is DataChangeEvent.VariablesChanged) version++
+            val read = event is DataChangeEvent.ToolDataChanged &&
+                (event.toolInstanceId in toolsRead || com.assistant.core.services.VariableService.ANY_TOOL in toolsRead)
+            if (read || event is DataChangeEvent.VariablesChanged) version++
         }
     }
     LaunchedEffect(variables, version) {
