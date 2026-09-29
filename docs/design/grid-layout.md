@@ -128,7 +128,14 @@ Une tuile se décrit par son résumé (sa LINE) et son corps : ce que montre cha
 - **Le bouton retour du téléphone** quitte la zone. Avec un déplacement en cours, il demande d'abord : « Quitter la zone ? Le déplacement en cours sera annulé. »
 - **L'écran ne défile que s'il le faut** : quand la tuile passerait sous la barre ou au-dessus du haut, juste assez pour la garder visible avec une ligne de marge. Un espace est ajouté sous le contenu pour qu'une tuile tout en bas puisse se tenir au-dessus de la barre.
 
+## Les zones sur l'accueil
+
+- **L'accueil range ses zones comme une zone ses outils** : une grille par groupe de zones (`zone_groups`), `grid_x` et `grid_y` sur la zone à la place de `order_index`, une zone qui arrive se pose en bas, la même règle quand une tuile grandit, et le même mode d'édition, depuis le titre du groupe.
+- **Quatre modes, sans corps** : ICON (l'icône), MINIMAL (l'icône et le nom), LINE (l'en-tête à gauche, la description en résumé à droite), CONDENSED (l'en-tête, la description dessous). Une zone n'a rien d'autre à montrer. Le mode est un réglage de la zone, LINE par défaut.
+- **Les deux pastilles sur l'icône de la zone** : la somme des attentes de ses outils (`bricks-plan.md`, étape 9), et un chronomètre en cours dans l'un d'eux.
+
 ## Hors de cette spec
 
 - L'aperçu dessiné d'un Graphique sur sa tuile (`missing-tools.md`).
 - Changer un outil de zone (`NOTES.md`).
+- Une tuile de zone qui montre les résumés de certains de ses outils, pour agir depuis l'accueil (`TODO.md`).
