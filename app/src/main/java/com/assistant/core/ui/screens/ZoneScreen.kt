@@ -107,6 +107,22 @@ fun ZoneScreen(
         }
     }
 
+    // The zone's variables, reread whenever variables change anywhere (one may read another)
+    var variables by remember { mutableStateOf<List<com.assistant.core.ui.variables.VariableRow>>(emptyList()) }
+    var variablesVersion by remember { mutableStateOf(0) }
+    LaunchedEffect(zone.id, variablesVersion) {
+        val result = coordinator.processUserAction("variables.list", mapOf("zone_id" to zone.id))
+        if (result.status == CommandStatus.SUCCESS) {
+            variables = (result.data?.get("variables") as? List<*> ?: emptyList<Any>())
+                .filterIsInstance<Map<*, *>>().map { com.assistant.core.ui.variables.VariableRow.of(it) }
+        } else errorMessage = result.error
+    }
+    LaunchedEffect(zone.id) {
+        DataChangeNotifier.changes.collect { event -> if (event is DataChangeEvent.VariablesChanged) variablesVersion++ }
+    }
+    // The variable open: its id, "" for a new one, null for none
+    var openVariable by rememberSaveable { mutableStateOf<String?>(null) }
+
     // Load automations for this zone
     LaunchedEffect(zone.id) {
         coordinator.executeWithLoading(
@@ -247,6 +263,21 @@ fun ZoneScreen(
         return // Exit ZoneScreen composition when showing config
     }
     
+    // Show a variable's screen if one is open
+    openVariable?.let { id ->
+        com.assistant.core.ui.variables.VariableScreen(
+            zoneId = zone.id,
+            variableId = id.ifEmpty { null },
+            group = preSelectedGroup,
+            onDone = {
+                openVariable = null
+                preSelectedGroup = null
+                variablesVersion++
+            }
+        )
+        return
+    }
+
     // Show tool usage screen if selected
     selectedToolInstance?.let { toolInstance ->
         ToolTypeManager.getToolType(toolInstance.tooltype)?.getUsageScreen(
@@ -295,6 +326,13 @@ fun ZoneScreen(
             zoneToolGroups.forEach { groupName ->
                 GroupSection(
                     groupName = groupName,
+                    variables = variables.filter { it.group == groupName },
+                    onOpenVariable = { openVariable = it },
+                    onCreateVariable = {
+                        preSelectedGroup = groupName
+                        openVariable = ""
+                        showAvailableToolsForGroup = null
+                    },
                     toolInstances = toolInstances,
                     automations = automations,
                     showAvailableToolsForGroup = showAvailableToolsForGroup,
@@ -408,6 +446,13 @@ fun ZoneScreen(
             // Always show ungrouped section (even if empty) to allow adding tools/automations
             UngroupedSection(
                     toolInstances = ungroupedTools,
+                    variables = variables.filter { it.group == null || it.group !in zoneToolGroups },
+                    onOpenVariable = { openVariable = it },
+                    onCreateVariable = {
+                        preSelectedGroup = null
+                        openVariable = ""
+                        showAvailableToolsForGroup = null
+                    },
                     automations = ungroupedAutomations,
                     hasConfiguredGroups = zoneToolGroups.isNotEmpty(),
                     showAvailableToolsForGroup = showAvailableToolsForGroup,
@@ -629,6 +674,9 @@ fun ZoneScreen(
 @Composable
 private fun GroupSection(
     groupName: String,
+    variables: List<com.assistant.core.ui.variables.VariableRow>,
+    onOpenVariable: (String) -> Unit,
+    onCreateVariable: () -> Unit,
     toolInstances: List<ToolInstance>,
     automations: List<com.assistant.core.ai.data.Automation>,
     showAvailableToolsForGroup: String?,
@@ -728,6 +776,22 @@ private fun GroupSection(
                     }
                 }
 
+                // Variable button (SECONDARY)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    UI.Button(
+                        type = ButtonType.SECONDARY,
+                        onClick = onCreateVariable
+                    ) {
+                        UI.Text(
+                            text = s.shared("variable_display_name"),
+                            type = TextType.LABEL
+                        )
+                    }
+                }
+
                 // Automation button (SECONDARY)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -776,6 +840,9 @@ private fun GroupSection(
         )
     }
 
+    // The group's variables, in one compact card
+    com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)
+
     // Display automations in this group
     groupAutomations.forEach { automation ->
         com.assistant.core.ai.ui.automation.AutomationCard(
@@ -808,6 +875,9 @@ private fun GroupSection(
 @Composable
 private fun UngroupedSection(
     toolInstances: List<ToolInstance>,
+    variables: List<com.assistant.core.ui.variables.VariableRow>,
+    onOpenVariable: (String) -> Unit,
+    onCreateVariable: () -> Unit,
     automations: List<com.assistant.core.ai.data.Automation>,
     hasConfiguredGroups: Boolean,
     showAvailableToolsForGroup: String?,
@@ -904,6 +974,22 @@ private fun UngroupedSection(
                     }
                 }
 
+                // Variable button (SECONDARY)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    UI.Button(
+                        type = ButtonType.SECONDARY,
+                        onClick = onCreateVariable
+                    ) {
+                        UI.Text(
+                            text = s.shared("variable_display_name"),
+                            type = TextType.LABEL
+                        )
+                    }
+                }
+
                 // Automation button (SECONDARY)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -951,6 +1037,9 @@ private fun UngroupedSection(
             onLongClick = { onToolLongClick(tool) }
         )
     }
+
+    // The ungrouped variables, in one compact card
+    com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)
 
     // Display ungrouped automations
     automations.forEach { automation ->
