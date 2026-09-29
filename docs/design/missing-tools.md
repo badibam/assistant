@@ -61,44 +61,7 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 
 ## Les sélecteurs, recomposés
 
-Les briques de base :
-
-| Brique | Ce qu'elle choisit | Selon le contexte |
-|---|---|---|
-| **Instant** | une date relative (unité, décalage, début ou fin), une date personnalisée, maintenant (la référence s'il y en a une), sans limite | la référence et son nom, la précision (DATE, DATETIME) |
-| **Chose** | par le fil d'Ariane App › Zone › (Outil ou Variable) › Entrée | les sortes permises (zone, outil, variable, entrée) |
-| **Champ** | un champ des entrées d'un outil, ou aucun pour compter | les types permis |
-| **Réduction** | dernière, somme, moyenne, min, max, compte… | les réductions permises par le type du champ |
-| **Condition** | un opérateur et une cible | les opérateurs permis par le type du champ |
-
-Les briques composées :
-
-```
-Période              = Instant (début) + Instant (fin)
-Filtre               = Champ + Condition
-Sélection d'entrées  = Chose (un outil) + Période + Filtres + choix des champs
-Lecture              = Sélection d'entrées + Champ + Réduction
-                     | Chose (une variable) + Instant (par défaut : Le moment même ;
-                         masqué pour une constante)
-Condition            = opérateur + cible, la cible étant :
-                         une constante, saisie par la saisie du type du champ
-                           (un Instant pour une DATE ou un DATETIME)
-                       | une Lecture
-```
-
-Ceux qui les utilisent :
-
-| Qui | Assemblage |
-|---|---|
-| Champ RÉFÉRENCE d'une entrée (`aliment`) | Chose (une entrée, restreinte à des outils) |
-| Champ DATE ou DATETIME d'une entrée | Instant, sans référence |
-| Pointeur d'un message à l'IA | Chose (app, zone, outil, entrée) + Période + Filtres + champs + joindre ou mentionner |
-| Critère d'Objectif | valeur (une Lecture, ou un champ saisi dans la tentative) + Condition |
-| Terme de variable | Lecture, constante ou autre variable, sa plage étant une Période relative à la référence |
-| Graphique | par couche, une source : Entrées (Sélection d'entrées) ou Grille (des Lectures, chaque instant de la grille servant de référence) ; une Période affichée |
-| Relevé (automation directe) | Chose (une variable) + un champ cible dans un Suivi + Instant de l'entrée écrite |
-
-La référence traverse le tout : chaque Instant relatif se résout par rapport à celle que le contexte fournit.
+Devenu le catalogue des briques, `docs/BRICKS.md` (le modèle terme et condition décidé le 2026-09-29), et son plan de construction, `docs/design/bricks-plan.md`. Instant et Chose sont faits.
 
 ## Les formes enregistrées
 
