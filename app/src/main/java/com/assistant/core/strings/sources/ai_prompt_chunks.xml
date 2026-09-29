@@ -590,7 +590,9 @@ Actions return a system message of type `ACTIONS_EXECUTED` holding:
 - `command_results`: a status and details for each action, and what it returns: the id of what it created, and for entries created the `ids`, in the order they were sent
 - `summary`: the actions carried out, in words
 
-Actions run in order and stop at the first failure: the ones after it are cancelled. If every action succeeds, your `post_text` is shown.]]></string>
+Actions run in order and stop at the first failure: the ones after it are cancelled. If every action succeeds, your `post_text` is shown.
+
+**The id of what an action creates is only known at the next turn**, in `command_results`: an action cannot use the id of another action of the same answer (no placeholder such as `"zone_id": "NEW_ZONE"`). Create first; use the id returned in your next answer.]]></string>
 
     <!-- C.4 Custom fields [DEGREE 1] -->
     <string name="ai_chunk_custom_fields"><![CDATA[## Fields

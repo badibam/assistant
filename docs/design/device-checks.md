@@ -19,6 +19,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Importer une sauvegarde faite avant la mise à jour : les conversations reviennent, leur coût en « ≥ ».
 - « Quelle heure est-il ? », puis créer une entrée datée d'hier : la date est juste. Les résultats de données reçus par l'IA sont en ISO 8601.
 - Après `CREATE_ZONE` puis `CREATE_TOOL`, l'IA enchaîne sans redemander la liste des zones ni des outils.
+- Demander à l'IA une zone et un outil dedans en une fois : elle crée la zone, puis l'outil au tour suivant avec l'id reçu, sans id inventé dans la même réponse.
 - Pointeur : le fil d'Ariane et les zones puis les outils s'affichent comme avant ; dans un outil, rien n'est listé en dessous ; passer d'un outil à celui d'une autre zone par le fil garde les cases et la période.
 - Pointeur en chat, période « Depuis : date relative, il y a 2 jours, début » : « Soit : » montre la date obtenue, et après confirmation la phrase du pointeur dit cette date. Pointeur du message de départ d'une automation : « Par rapport à : l'heure prévue de l'exécution » s'affiche une fois, la période se relit « la veille », « le moment même ». Un filtre sur un champ DATE propose des jours, sans heure ni unité « heure ».
 - Une IA qui enchaîne plus de 10 appels seule s'arrête et rend la main avec un message.

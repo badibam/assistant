@@ -8,7 +8,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Insérer au curseur, et non à la fin, depuis les boutons de l'éditeur de formule : `UI.FormField` ne donne pas la sélection ; il faut un champ du thème qui la porte.
 - La notification d'une invitation de Questionnaire ouvre l'app, pas la passation ; toucher la tuile quand une entrée attend ouvre l'outil, pas sa passation — l'app n'a pas encore de lien profond vers un écran.
 - « Créer une table depuis un fichier » (création de l'outil puis import) ; l'import par l'IA, qui attend un enrichissement « fichier ».
-- L'IA utilise dans une réponse un identifiant qu'une action de cette même réponse crée (`"zone_id": "PLACEHOLDER_ZONE"` avec le `CREATE_ZONE` qui précède) : les actions échouent et se refont au tour suivant. Dire dans le L1 qu'un identifiant créé n'est connu qu'au tour suivant.
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur
