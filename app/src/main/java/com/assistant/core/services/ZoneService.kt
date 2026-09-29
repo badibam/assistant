@@ -14,6 +14,8 @@ import com.assistant.core.utils.DataChangeNotifier
 import org.json.JSONObject
 import org.json.JSONArray
 import com.assistant.core.utils.LogManager
+import com.assistant.core.grid.ToolPositions
+import androidx.room.withTransaction
 
 /**
  * Zone Service - Core service for zone operations
@@ -227,10 +229,24 @@ class ZoneService(private val context: Context) : ExecutableService {
         LogManager.service("ZoneService.handleUpdate - Updated zone with group: '${updatedZone.group}'", "DEBUG")
 
         checkZone(updatedZone)?.let { return OperationResult.error(it) }
-        zoneDao.updateZone(updatedZone)
+
+        // A tool whose group the zone gains or loses changes section, and so grid: the zone
+        // and the places it changes are one write
+        val toolDao = database.toolInstanceDao()
+        val regrouped = database.withTransaction {
+            val moved = if (updatedZone.tool_groups == existingZone.tool_groups) emptyList() else ToolPositions.regroup(
+                toolDao.getToolInstancesByZone(zoneId),
+                ToolPositions.zoneGroups(existingZone.tool_groups),
+                ToolPositions.zoneGroups(updatedZone.tool_groups)
+            )
+            moved.forEach { toolDao.updatePosition(it.id, it.grid_x, it.grid_y) }
+            zoneDao.updateZone(updatedZone)
+            moved
+        }
 
         // Notify UI of zones change
         DataChangeNotifier.notifyZonesChanged()
+        if (regrouped.isNotEmpty()) DataChangeNotifier.notifyToolsChanged(zoneId)
 
         return OperationResult.success(mapOf(
             "zone_id" to updatedZone.id,

@@ -100,22 +100,13 @@ fun ZoneScreen(
             operation = "tools.list",
             params = mapOf(
                 "zone_id" to zone.id,
-                "include_config" to true
+                "include_config" to true,
+                "include_position" to true
             ),
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
         )?.let { result ->
-            toolInstances = result.mapData("tool_instances") { map ->
-                ToolInstance(
-                    id = map["id"] as String,
-                    zone_id = map["zone_id"] as String,
-                    tooltype = map["tooltype"] as String,
-                    config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
-                    order_index = (map["order_index"] as Number).toInt(),
-                    created_at = (map["created_at"] as Number).toLong(),
-                    updated_at = (map["updated_at"] as Number).toLong()
-                )
-            }
+            toolInstances = result.mapData("tool_instances") { toolInstanceOf(it) }
         }
     }
 
@@ -162,22 +153,13 @@ fun ZoneScreen(
                             operation = "tools.list",
                             params = mapOf(
                                 "zone_id" to zone.id,
-                                "include_config" to true
+                                "include_config" to true,
+                                "include_position" to true
                             ),
                             onLoading = { isLoading = it },
                             onError = { error -> errorMessage = error }
                         )?.let { result ->
-                            toolInstances = result.mapData("tool_instances") { map ->
-                                ToolInstance(
-                                    id = map["id"] as String,
-                                    zone_id = map["zone_id"] as String,
-                                    tooltype = map["tooltype"] as String,
-                                    config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
-                                    order_index = (map["order_index"] as Number).toInt(),
-                                    created_at = (map["created_at"] as Number).toLong(),
-                                    updated_at = (map["updated_at"] as Number).toLong()
-                                )
-                            }
+                            toolInstances = result.mapData("tool_instances") { toolInstanceOf(it) }
                         }
                     }
                 }
@@ -208,22 +190,13 @@ fun ZoneScreen(
                 operation = "tools.list",
                 params = mapOf(
                     "zone_id" to zone.id,
-                    "include_config" to true
+                    "include_config" to true,
+                    "include_position" to true
                 ),
                 onLoading = { isLoading = it },
                 onError = { error -> errorMessage = error }
             )?.let { result ->
-                toolInstances = result.mapData("tool_instances") { map ->
-                    ToolInstance(
-                        id = map["id"] as String,
-                        zone_id = map["zone_id"] as String,
-                        tooltype = map["tooltype"] as String,
-                        config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
-                        order_index = (map["order_index"] as Number).toInt(),
-                        created_at = (map["created_at"] as Number).toLong(),
-                        updated_at = (map["updated_at"] as Number).toLong()
-                    )
-                }
+                toolInstances = result.mapData("tool_instances") { toolInstanceOf(it) }
             }
         }
     }
@@ -597,22 +570,13 @@ fun ZoneScreen(
                                 operation = "tools.list",
                                 params = mapOf(
                                     "zone_id" to zone.id,
-                                    "include_config" to true
+                                    "include_config" to true,
+                                    "include_position" to true
                                 ),
                                 onLoading = { isLoading = it },
                                 onError = { error -> errorMessage = error }
                             )?.let { toolsResult ->
-                                toolInstances = toolsResult.mapData("tool_instances") { map ->
-                                    ToolInstance(
-                                        id = map["id"] as String,
-                                        zone_id = map["zone_id"] as String,
-                                        tooltype = map["tooltype"] as String,
-                                        config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
-                                        order_index = (map["order_index"] as? Number)?.toInt() ?: 0,
-                                        created_at = (map["created_at"] as? Number)?.toLong() ?: 0L,
-                                        updated_at = (map["updated_at"] as? Number)?.toLong() ?: 0L
-                                    )
-                                }
+                                toolInstances = toolsResult.mapData("tool_instances") { toolInstanceOf(it) }
                             }
                         } else {
                             errorMessage = result.error ?: s.shared("duplicate_error").format("")
@@ -1076,3 +1040,16 @@ private fun UngroupedSection(
         )
     }
 }
+
+/** A tool of a tools.list result asked with its config and its place. */
+@Suppress("UNCHECKED_CAST")
+private fun toolInstanceOf(map: Map<String, Any?>) = ToolInstance(
+    id = map["id"] as String,
+    zone_id = map["zone_id"] as String,
+    tooltype = map["tooltype"] as String,
+    config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
+    grid_x = (map["grid_x"] as Number).toInt(),
+    grid_y = (map["grid_y"] as Number).toInt(),
+    created_at = (map["created_at"] as Number).toLong(),
+    updated_at = (map["updated_at"] as Number).toLong()
+)

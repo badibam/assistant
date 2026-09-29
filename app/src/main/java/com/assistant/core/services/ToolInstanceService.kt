@@ -33,6 +33,8 @@ import com.assistant.core.fields.ReferenceTarget
 import com.assistant.core.selection.ReferenceKind
 import org.json.JSONObject
 import com.assistant.core.icons.Icons
+import com.assistant.core.grid.Grid
+import com.assistant.core.grid.ToolPositions
 
 /**
  * ToolInstance Service - Core service for tool instance operations
@@ -41,6 +43,7 @@ import com.assistant.core.icons.Icons
 class ToolInstanceService(private val context: Context) : ExecutableService {
     private val database by lazy { AppDatabase.getDatabase(context) }
     private val toolInstanceDao by lazy { database.toolInstanceDao() }
+    private val zoneDao by lazy { database.zoneDao() }
     private val s = Strings.`for`(context = context)
 
     // Detached scope for the post-CRUD tick, which must not hold up the caller
@@ -121,16 +124,17 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             is IconCheck.Kept -> iconCheck.configJson
         }
         checkConfig(toolType, storedConfigJson)?.let { return OperationResult.error(it) }
+        val placedConfigJson = withDisplayMode(storedConfigJson, ToolTypeManager.getToolType(toolType)!!.getDefaultDisplayMode())
 
-        val newToolInstance = ToolInstance(
-            zone_id = zoneId,
-            tooltype = toolType,
-            config_json = storedConfigJson
-        )
+        val zone = zoneDao.getZoneById(zoneId)
+            ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
 
         if (token.isCancelled) return OperationResult.cancelled()
 
-        toolInstanceDao.insertToolInstance(newToolInstance)
+        val newToolInstance = database.withTransaction {
+            arrive(ToolInstance(zone_id = zoneId, tooltype = toolType, config_json = placedConfigJson, grid_x = 0, grid_y = 0), zone.tool_groups)
+                .also { toolInstanceDao.insertToolInstance(it) }
+        }
 
         // Notify UI of tools change in this zone
         DataChangeNotifier.notifyToolsChanged(zoneId)
@@ -197,6 +201,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 configJson = type.completeConfig(JSONObject(configJson), JSONObject(existingTool.config_json)).toString()
             }
             checkConfig(existingTool.tooltype, configJson)?.let { return OperationResult.error(it) }
+            // A config sent without its display mode keeps the one the tool had
+            configJson = withDisplayMode(configJson, JSONObject(existingTool.config_json).getString("display_mode"))
         }
 
         // What the change does to the recorded entries: refused while it loses something the
@@ -214,18 +220,25 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // Store old zone_id for notification
         val oldZoneId = existingTool.zone_id
 
-        val updatedTool = existingTool.copy(
+        val changedTool = existingTool.copy(
             config_json = configJson.takeIf { it.isNotBlank() } ?: existingTool.config_json,
             zone_id = newZoneId ?: existingTool.zone_id, // Update zone if provided
             updated_at = System.currentTimeMillis()
         )
+        val oldZone = zoneDao.getZoneById(existingTool.zone_id)
+            ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
+        val newZone = if (changedTool.zone_id == oldZone.id) oldZone else zoneDao.getZoneById(changedTool.zone_id)
+            ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
 
         if (token.isCancelled) return OperationResult.cancelled()
 
-        // The config and what it does to the entries are one write: neither lands without the other
-        database.withTransaction {
-            toolInstanceDao.updateToolInstance(updatedTool)
+        // The config, the places it changes and what it does to the entries are one write:
+        // none lands without the others
+        val updatedTool = database.withTransaction {
+            val placed = move(existingTool, changedTool, oldZone.tool_groups, newZone.tool_groups)
+            toolInstanceDao.updateToolInstance(placed)
             if (migration != null) applyMigration(existingTool, migration)
+            placed
         }
         if (migration != null && (migration.updated.isNotEmpty() || migration.deleted.isNotEmpty())) {
             DataChangeNotifier.notifyToolDataChanged(toolInstanceId, updatedTool.zone_id)
@@ -372,6 +385,57 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         return if (result.isValid) null else result.errorMessage ?: s.shared("message_validation_error_simple")
     }
 
+    /** [configJson] with [mode] as its display mode when it gives none: every config holds one. */
+    private fun withDisplayMode(configJson: String, mode: String): String {
+        val config = JSONObject(configJson)
+        return if (config.has("display_mode")) configJson else config.put("display_mode", mode).toString()
+    }
+
+    /** [tool] placed at the bottom of its section's grid in its zone, whose groups are [toolGroups]. */
+    private suspend fun arrive(tool: ToolInstance, toolGroups: String?): ToolInstance {
+        val groups = ToolPositions.zoneGroups(toolGroups)
+        val section = ToolPositions.section(tool, groups)
+        val tiles = Grid.arrive(ToolPositions.tiles(toolInstanceDao.getToolInstancesByZone(tool.zone_id), groups, section), tool.id, ToolPositions.size(tool.config_json))
+        val tile = tiles.last()
+        return tool.copy(grid_x = tile.column, grid_y = tile.row)
+    }
+
+    /** [tool] leaving its section's grid: the tools after the rows it leaves empty move up. */
+    private suspend fun leave(tool: ToolInstance, toolGroups: String?) {
+        val groups = ToolPositions.zoneGroups(toolGroups)
+        val tools = toolInstanceDao.getToolInstancesByZone(tool.zone_id)
+        val tiles = Grid.leave(ToolPositions.tiles(tools, groups, ToolPositions.section(tool, groups)), tool.id)
+        write(ToolPositions.moved(tools, tiles))
+    }
+
+    /**
+     * [before] becoming [after], placed: a tool that changes zone or section leaves its grid and
+     * arrives in the other one; one that changes size in its grid takes it where it is, the
+     * tools it grows over moving down. The other tools that move are written here, [after] is
+     * returned at its place for the caller to write.
+     */
+    private suspend fun move(before: ToolInstance, after: ToolInstance, oldGroups: String?, newGroups: String?): ToolInstance {
+        val fromSection = ToolPositions.section(before, ToolPositions.zoneGroups(oldGroups))
+        val toSection = ToolPositions.section(after, ToolPositions.zoneGroups(newGroups))
+        if (before.zone_id != after.zone_id || fromSection != toSection) {
+            leave(before, oldGroups)
+            return arrive(after, newGroups)
+        }
+        val size = ToolPositions.size(after.config_json)
+        if (size == ToolPositions.size(before.config_json)) return after
+
+        val groups = ToolPositions.zoneGroups(newGroups)
+        val tools = toolInstanceDao.getToolInstancesByZone(after.zone_id)
+        val tiles = Grid.resize(ToolPositions.tiles(tools, groups, toSection), after.id, size)
+        write(ToolPositions.moved(tools.filter { it.id != after.id }, tiles))
+        val tile = tiles.single { it.id == after.id }
+        return after.copy(grid_x = tile.column, grid_y = tile.row)
+    }
+
+    private suspend fun write(moved: List<ToolInstance>) {
+        moved.forEach { toolInstanceDao.updatePosition(it.id, it.grid_x, it.grid_y) }
+    }
+
     /**
      * Delete tool instance
      */
@@ -396,7 +460,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             ""
         }
 
-        toolInstanceDao.deleteToolInstanceById(toolInstanceId)
+        val zone = zoneDao.getZoneById(existingTool.zone_id)
+            ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
+
+        // The tool and the rows its leaving closes are one write
+        database.withTransaction {
+            leave(existingTool, zone.tool_groups)
+            toolInstanceDao.deleteToolInstanceById(toolInstanceId)
+        }
 
         // Notify UI of tools change in this zone
         DataChangeNotifier.notifyToolsChanged(existingTool.zone_id)
@@ -459,14 +530,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         if (token.isCancelled) return OperationResult.cancelled()
 
-        // Create new tool instance in target zone
-        val newToolInstance = ToolInstance(
-            zone_id = targetZoneId, // Target zone, not source zone
-            tooltype = sourceTool.tooltype,
-            config_json = sourceConfig.toString()
-        )
+        val targetZone = zoneDao.getZoneById(targetZoneId)
+            ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
 
-        toolInstanceDao.insertToolInstance(newToolInstance)
+        // Create new tool instance in target zone, at the bottom of its section's grid
+        val newToolInstance = database.withTransaction {
+            arrive(ToolInstance(zone_id = targetZoneId, tooltype = sourceTool.tooltype, config_json = sourceConfig.toString(), grid_x = 0, grid_y = 0), targetZone.tool_groups)
+                .also { toolInstanceDao.insertToolInstance(it) }
+        }
 
         // Notify UI of tools change in target zone
         DataChangeNotifier.notifyToolsChanged(targetZoneId)
@@ -532,6 +603,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         // Read include_config parameter (default false for minimal version)
         val includeConfig = params.optBoolean("include_config", false)
+        val includePosition = params.optBoolean("include_position", false)
 
         val toolInstances = toolInstanceDao.getToolInstancesByZone(zoneId)
         if (token.isCancelled) return OperationResult.cancelled()
@@ -554,9 +626,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "zone_id" to tool.zone_id,
                 "name" to name,
                 "description" to description,
-                "tooltype" to tool.tooltype,
-                "order_index" to tool.order_index
+                "tooltype" to tool.tooltype
             )
+
+            // Its place in the grid, for the screen: the AI neither sees nor changes places
+            if (includePosition) {
+                resultMap["grid_x"] = tool.grid_x
+                resultMap["grid_y"] = tool.grid_y
+            }
 
             // Conditionally add config_json and timestamps based on include_config parameter
             if (includeConfig) {
@@ -582,6 +659,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         // Read include_config parameter (default false for minimal version)
         val includeConfig = params.optBoolean("include_config", false)
+        val includePosition = params.optBoolean("include_position", false)
 
         val toolInstances = toolInstanceDao.getAllToolInstances()
         if (token.isCancelled) return OperationResult.cancelled()
@@ -604,9 +682,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "zone_id" to tool.zone_id,
                 "name" to name,
                 "description" to description,
-                "tooltype" to tool.tooltype,
-                "order_index" to tool.order_index
+                "tooltype" to tool.tooltype
             )
+
+            // Its place in the grid, for the screen: the AI neither sees nor changes places
+            if (includePosition) {
+                resultMap["grid_x"] = tool.grid_x
+                resultMap["grid_y"] = tool.grid_y
+            }
 
             // Conditionally add config_json and timestamps based on include_config parameter
             if (includeConfig) {
@@ -652,7 +735,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "name" to name,
                 "tooltype" to toolInstance.tooltype,
                 "config" to JsonUtils.toMap(toolInstance.config_json),
-                "order_index" to toolInstance.order_index,
                 "created_at" to toolInstance.created_at,
                 "updated_at" to toolInstance.updated_at
             )
