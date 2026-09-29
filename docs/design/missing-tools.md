@@ -109,6 +109,7 @@ Décidé le 2026-09-29.
 - **Une sélection d'entrées** : `{"target": RÉFÉRENCE, "period", "filters", "fields"}`, lue par un seul parseur du cœur partout où elle sert. `period`, `filters` et `fields` ne valent que pour une instance d'outil, sauf la période d'une zone, appliquée à chacun de ses outils ; le service refuse le reste en disant pourquoi.
 - **Un pointeur** : `{"selection": …, "attach": {"config", "entries"}}`, la sélection sous sa propre clé, que le cœur lit sans connaître le pointeur.
 - **L'IA écrit la même forme**, une date fixe en ISO comme partout ailleurs : elle recopie ce qu'elle lit (termes d'une variable, pointeurs, critères), et `CommandTransformer` ne fait que convertir l'ISO. La notation `"-7_DAY"` et la règle du bord par l'opérateur (`FilterValues`) disparaissent.
+- **La migration des pointeurs** (messages, départs d'automation compris, et sauvegardes), un `PointerAtV46` partagé par la migration 45→46 et l'import, sur le modèle de `PointerAtV44` : `target` passe sous `selection`, `TOOL` devient `TOOL_INSTANCE` ; les filtres sur `timestamp` deviennent `period` (`>=` le début, `<=` la fin, `between` les deux, `=` relatif son début et sa fin) ; chaque relatif, sur tout champ de date, devient un objet avec le bord que l'opérateur imposait (début pour `>=`, `<` et la première borne d'un `between`, fin pour `>`, `<=` et la seconde), un `=` relatif sur un DATETIME devenant un `between` ; une date fixe ne change pas. Un pointeur qui ne se lit pas reste tel quel et se journalise en erreur.
 
 ## L'import
 
