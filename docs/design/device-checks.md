@@ -140,6 +140,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Objectif
 
+- Toucher la tuile d'un outil marqué d'un point : un Questionnaire ouvre le formulaire de l'invitation à remplir la plus ancienne ; un Objectif sa plus ancienne tentative à valider ; Messages ses messages reçus, le plus ancien non lu en tête, qui passe en « lu » (le point disparaît). Sans point, la tuile ouvre l'écran comme avant.
 - Attente : un Questionnaire avec une invitation à remplir, un Objectif avec une tentative à valider, un Messages avec un message envoyé non lu montrent un point à côté de leur nom, et leur zone aussi à l'accueil ; remplir, valider ou lire l'entrée fait disparaître le point sans quitter l'écran.
 - Critères : un critère lu « Repas › kcal, somme ≤ 2100 » se juge sur la journée de la tentative sans toucher à la période (« Aucune choisie : celle de la tentative ») ; « ≤ » une variable à droite se juge aussi ; un critère saisi (Durée « ≥ 7 h », Choix « = bonne ») se remplit dans la tentative et se juge ; retirer la valeur saisie (bouton du groupe) ramène un critère lu. La ligne d'un critère dit sa valeur face à ce qu'elle compare, avec une jauge pour un nombre ou une durée.
 - Objectif, Questionnaire et Messages : la récurrence de la config s'affiche en une ligne de résumé sous le titre propre à l'outil, s'édite par le bouton « Configurer la récurrence » et son dialogue ; « Aucune » la retire. Le résumé est le même que sur la carte et l'éditeur d'une automation.

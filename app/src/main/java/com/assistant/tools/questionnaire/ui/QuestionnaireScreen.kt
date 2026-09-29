@@ -64,7 +64,7 @@ data class QuestionnaireEntry(val id: String, val timestamp: Long, val status: S
  * entry's title is the questionnaire's name and the moment it is about, relative, never stored.
  */
 @Composable
-fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureClick: () -> Unit) {
+fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureClick: () -> Unit, openEntryId: String? = null) {
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     val s = remember { Strings.`for`(tool = "questionnaire", context = context) }
@@ -74,8 +74,9 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
     var entries by remember { mutableStateOf<List<QuestionnaireEntry>?>(null) }
     var version by remember { mutableIntStateOf(0) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    // The passing under way: "" on demand, an entry's id when planned; null when none
-    var passing by rememberSaveable { mutableStateOf<String?>(null) }
+    // The passing under way: "" on demand, an entry's id when planned, the one to fill opened
+    // from the tile; null when none
+    var passing by rememberSaveable { mutableStateOf(openEntryId) }
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(toolInstanceId, version) {

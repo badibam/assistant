@@ -132,7 +132,8 @@ object ListToolType : ToolTypeContract {
         configJson: String,
         zoneName: String,
         onNavigateBack: () -> Unit,
-        onLongClick: () -> Unit
+        onLongClick: () -> Unit,
+        openEntryId: String?
     ) {
         ListScreen(
             toolInstanceId = toolInstanceId,

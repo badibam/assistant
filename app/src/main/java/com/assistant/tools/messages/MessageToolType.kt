@@ -237,13 +237,15 @@ object MessageToolType : ToolTypeContract {
         configJson: String,
         zoneName: String,
         onNavigateBack: () -> Unit,
-        onLongClick: () -> Unit
+        onLongClick: () -> Unit,
+        openEntryId: String?
     ) {
         com.assistant.tools.messages.ui.MessagesScreen(
             toolInstanceId = toolInstanceId,
             zoneName = zoneName,
             onNavigateBack = onNavigateBack,
-            onConfigureClick = onLongClick
+            onConfigureClick = onLongClick,
+            openEntryId = openEntryId
         )
     }
 

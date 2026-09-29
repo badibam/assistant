@@ -231,8 +231,8 @@ object GoalToolType : ToolTypeContract {
     override fun getDatabaseEntities(): List<Class<*>> = listOf(ToolDataEntity::class.java)
 
     @Composable
-    override fun getUsageScreen(toolInstanceId: String, configJson: String, zoneName: String, onNavigateBack: () -> Unit, onLongClick: () -> Unit) {
-        GoalScreen(toolInstanceId = toolInstanceId, onNavigateBack = onNavigateBack, onConfigureClick = onLongClick)
+    override fun getUsageScreen(toolInstanceId: String, configJson: String, zoneName: String, onNavigateBack: () -> Unit, onLongClick: () -> Unit, openEntryId: String?) {
+        GoalScreen(toolInstanceId = toolInstanceId, onNavigateBack = onNavigateBack, onConfigureClick = onLongClick, openEntryId = openEntryId)
     }
 
     @Composable

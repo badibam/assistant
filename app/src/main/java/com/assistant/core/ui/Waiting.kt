@@ -17,8 +17,8 @@ import com.assistant.core.utils.LogManager
 /** What waits on the screen shown, which the tiles read; nothing where no screen provides it. */
 val LocalWaiting = androidx.compose.runtime.staticCompositionLocalOf { Waiting() }
 
-/** How many entries wait for the user, by tool and by zone (tools.waiting). */
-data class Waiting(val tools: Map<String, Int> = emptyMap(), val zones: Map<String, Int> = emptyMap()) {
+/** How many entries wait for the user, by tool and by zone, and each tool's oldest (tools.waiting). */
+data class Waiting(val tools: Map<String, Int> = emptyMap(), val zones: Map<String, Int> = emptyMap(), val oldest: Map<String, String> = emptyMap()) {
     fun tool(id: String): Boolean = (tools[id] ?: 0) > 0
     fun zone(id: String): Boolean = (zones[id] ?: 0) > 0
 }
@@ -44,7 +44,8 @@ fun rememberWaiting(zoneId: String?): Waiting {
             return@LaunchedEffect
         }
         fun counts(key: String) = (result.data?.get(key) as? Map<*, *>)?.entries?.associate { it.key.toString() to (it.value as Number).toInt() } ?: emptyMap()
-        waiting = Waiting(counts("tools"), counts("zones"))
+        val oldest = (result.data?.get("oldest") as? Map<*, *>)?.entries?.associate { it.key.toString() to it.value.toString() } ?: emptyMap()
+        waiting = Waiting(counts("tools"), counts("zones"), oldest)
     }
     return waiting
 }

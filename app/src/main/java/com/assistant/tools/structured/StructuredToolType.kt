@@ -82,7 +82,8 @@ object StructuredToolType : ToolTypeContract {
         configJson: String,
         zoneName: String,
         onNavigateBack: () -> Unit,
-        onLongClick: () -> Unit
+        onLongClick: () -> Unit,
+        openEntryId: String?
     ) {
         StructuredScreen(toolInstanceId = toolInstanceId, onNavigateBack = onNavigateBack, onConfigureClick = onLongClick)
     }

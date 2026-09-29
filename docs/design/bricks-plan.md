@@ -13,7 +13,8 @@
 ## 9. Attente
 
 - Fait : un type d'outil déclare les conditions de ses entrées qui attendent (`getWaiting`) ; le cœur les compte (`tools.waiting`) et marque d'un point la tuile de l'outil et celle de sa zone (`WaitingMark`, du thème ; un nombre plus tard, peut-être).
-- Reste : toucher la tuile ouvre la plus ancienne entrée qui attend (l'écran d'un type d'outil reçoit une entrée à ouvrir, chacun dit ce que « ouvrir » veut dire) ; une notification désigne une chose, que l'app ouvre par le même chemin (l'intent, puis zone, outil, entrée).
+- Fait : toucher la tuile ouvre la plus ancienne entrée qui attend (`getUsageScreen(openEntryId)`) : le formulaire d'une invitation, une tentative à valider, un message qui passe en « lu ».
+- Reste : une notification désigne une chose, que l'app ouvre par le même chemin (l'intent, puis zone, outil, entrée).
 - Écartés le 2026-09-29, à ne pas reproposer : l'échéance d'une Liste (un champ de l'utilisateur, qu'il faudrait interpréter), l'absence d'une entrée de Suivi ou de Journal, les erreurs du journal.
 
 ## Hors de ce plan, en TODO

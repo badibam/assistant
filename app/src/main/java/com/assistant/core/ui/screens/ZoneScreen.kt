@@ -70,6 +70,9 @@ fun ZoneScreen(
 
     // State for tool usage screen - persiste orientation changes
     var selectedToolInstanceId by rememberSaveable { mutableStateOf<String?>(null) }
+    // The entry the tool opens on: the oldest waiting one when its tile was touched with one
+    var openEntryId by rememberSaveable { mutableStateOf<String?>(null) }
+    val waiting = com.assistant.core.ui.LocalWaiting.current
 
     // State for automation creation dialog - with pre-selected group
     var showCreateAutomationDialog by rememberSaveable { mutableStateOf(false) }
@@ -290,7 +293,8 @@ fun ZoneScreen(
             onLongClick = {
                 editingToolId = toolInstance.id
                 showingConfigFor = toolInstance.tooltype
-            }
+            },
+            openEntryId = openEntryId
         )
         return // Exit ZoneScreen composition when showing usage screen
     }
@@ -357,7 +361,7 @@ fun ZoneScreen(
                         showDuplicateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
-                    onToolClick = { toolId -> selectedToolInstanceId = toolId },
+                    onToolClick = { toolId -> openEntryId = waiting.oldest[toolId]; selectedToolInstanceId = toolId },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype
@@ -477,7 +481,7 @@ fun ZoneScreen(
                         showDuplicateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
-                    onToolClick = { toolId -> selectedToolInstanceId = toolId },
+                    onToolClick = { toolId -> openEntryId = waiting.oldest[toolId]; selectedToolInstanceId = toolId },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype

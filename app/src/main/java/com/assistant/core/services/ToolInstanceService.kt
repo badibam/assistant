@@ -487,7 +487,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      */
     /**
      * What waits for the user (ToolTypeContract.getWaiting): how many entries of each tool pass
-     * its tool type's conditions, the tools of `zone_id` or all of them, and the sum by zone. A
+     * its tool type's conditions and the oldest of them, the tools of `zone_id` or all of them,
+     * and the sum by zone. A
      * tool type that declares none is left out; a tool whose count cannot be read is logged and
      * left out, a tile never lying about a count it does not have.
      */
@@ -496,6 +497,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         val tools = if (zoneId != null) toolInstanceDao.getToolInstancesByZone(zoneId) else toolInstanceDao.getAllToolInstances()
         val coordinator = com.assistant.core.coordinator.Coordinator(context)
         val counts = mutableMapOf<String, Int>()
+        val oldest = mutableMapOf<String, String>()
         for (tool in tools) {
             if (token.isCancelled) return OperationResult.cancelled()
             val conditions = ToolTypeManager.getToolType(tool.tooltype)?.getWaiting(JSONObject(tool.config_json)).orEmpty()
@@ -507,9 +509,15 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 continue
             }
             counts[tool.id] = total
+            // Entries come newest first: the last page of one is the oldest
+            if (total > 0) {
+                val last = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id, "filters" to conditions, "limit" to 1, "page" to total))
+                ((last.data?.get("entries") as? List<*>)?.firstOrNull() as? Map<*, *>)?.get("id")?.let { oldest[tool.id] = it as String }
+            }
         }
         return OperationResult.success(mapOf(
             "tools" to counts,
+            "oldest" to oldest,
             "zones" to tools.groupBy { it.zone_id }.mapValues { (_, inZone) -> inZone.sumOf { counts[it.id] ?: 0 } }
         ))
     }

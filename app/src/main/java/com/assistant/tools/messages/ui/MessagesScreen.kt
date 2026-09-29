@@ -76,7 +76,8 @@ fun MessagesScreen(
     toolInstanceId: String,
     zoneName: String,
     onNavigateBack: () -> Unit,
-    onConfigureClick: () -> Unit = {}
+    onConfigureClick: () -> Unit = {},
+    openEntryId: String? = null
 ) {
     LogManager.ui("MessagesScreen called with toolInstanceId: $toolInstanceId")
 
@@ -180,6 +181,7 @@ fun MessagesScreen(
                 toolInstanceId = toolInstanceId,
                 coordinator = coordinator,
                 refreshTrigger = refreshTrigger,
+                openId = openEntryId,
                 onError = { errorMessage = it }
             )
             1 -> UpcomingTab(
@@ -203,6 +205,7 @@ private fun ReceivedTab(
     toolInstanceId: String,
     coordinator: Coordinator,
     refreshTrigger: Int,
+    openId: String?,
     onError: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -210,6 +213,19 @@ private fun ReceivedTab(
     val scope = rememberCoroutineScope()
 
     var filter by rememberSaveable { mutableStateOf(ReceivedFilter.UNREAD) }
+
+    // A message opened from the tile: shown first whatever the filter, and read by being opened, once
+    var opened by remember { mutableStateOf<Occurrence?>(null) }
+    var markedRead by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(openId, refreshTrigger) {
+        if (openId == null) return@LaunchedEffect
+        val found = loadByStatus(context, coordinator, toolInstanceId, "sent", onError)?.find { it.id == openId } ?: return@LaunchedEffect
+        opened = found
+        if (!markedRead && !found.read) {
+            markedRead = true
+            updateFlags(context, coordinator, found, read = true, onError = onError)
+        }
+    }
     // null while read; a read that fails is said, never shown as an empty inbox
     var occurrences by remember { mutableStateOf<List<Occurrence>?>(null) }
     var failed by remember { mutableStateOf(false) }
@@ -269,6 +285,15 @@ private fun ReceivedTab(
                 }
             }
         )
+
+        opened?.let { occurrence ->
+            ReceivedCard(
+                occurrence = occurrence,
+                s = s,
+                onToggleRead = { scope.launch { updateFlags(context, coordinator, occurrence, read = !occurrence.read, onError = onError) } },
+                onToggleArchived = { scope.launch { updateFlags(context, coordinator, occurrence, archived = !occurrence.archived, onError = onError) } }
+            )
+        }
 
         // No early return here: Column's content lambda is inline, so a non-local return skips
         // the rest of the lambda and leaves the composition groups unbalanced — it crashes on

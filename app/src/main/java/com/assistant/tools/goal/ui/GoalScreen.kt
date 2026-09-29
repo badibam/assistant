@@ -57,7 +57,7 @@ data class AttemptRow(val id: String, val start: Long, val status: String, val p
  * validated, then the history, each opened read-only with « Rouvrir ».
  */
 @Composable
-fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureClick: () -> Unit) {
+fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureClick: () -> Unit, openEntryId: String? = null) {
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     val s = remember { Strings.`for`(tool = "goal", context = context) }
@@ -67,7 +67,8 @@ fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureCl
     var attempts by remember { mutableStateOf<List<AttemptRow>?>(null) }
     var version by remember { mutableIntStateOf(0) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var openId by rememberSaveable { mutableStateOf<String?>(null) }
+    // An attempt opened from the tile, one to validate, or none
+    var openId by rememberSaveable { mutableStateOf(openEntryId) }
 
     LaunchedEffect(toolInstanceId, version) {
         val tool = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))

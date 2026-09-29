@@ -86,6 +86,8 @@ interface ToolTypeContract {
      * @param configJson Configuration JSON of the tool instance
      * @param onNavigateBack Called when user wants to navigate back
      * @param onLongClick Called when user long-clicks for configuration access
+     * @param openEntryId An entry to open at once, as this tool type understands opening one: one
+     *   of those waiting for the user (getWaiting), the oldest; null for the screen alone
      */
     @Composable
     fun getUsageScreen(
@@ -93,7 +95,8 @@ interface ToolTypeContract {
         configJson: String,
         zoneName: String,
         onNavigateBack: () -> Unit,
-        onLongClick: () -> Unit
+        onLongClick: () -> Unit,
+        openEntryId: String?
     )
 
     /**
