@@ -19,6 +19,8 @@ import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.ai.database.AIDao
 import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.database.SessionMessageEntity
+import com.assistant.core.ai.database.AttachedFileEntity
+import com.assistant.core.ai.database.AttachedFileDao
 import com.assistant.core.ai.database.AIProviderConfigEntity
 import com.assistant.core.ai.database.AutomationEntity
 import com.assistant.core.ai.database.AITypeConverters
@@ -56,7 +58,8 @@ import com.assistant.core.ai.data.LegacyCatchUp
         AIProviderConfigEntity::class,
         AutomationEntity::class,
         LogEntry::class,
-        VariableEntity::class
+        VariableEntity::class,
+        AttachedFileEntity::class
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
@@ -75,13 +78,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun aiDao(): AIDao
     abstract fun logDao(): LogDao
     abstract fun variableDao(): VariableDao
+    abstract fun attachedFileDao(): AttachedFileDao
 
     companion object {
         /**
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 49
+        const val VERSION = 50
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1368,6 +1372,28 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Files joined to messages, kept with their session: see AttachedFileEntity. */
+        private val MIGRATION_49_50 = object : Migration(49, 50) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS attached_files (
+                        id TEXT NOT NULL,
+                        session_id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        mime_type TEXT NOT NULL,
+                        size_bytes INTEGER NOT NULL,
+                        line_count INTEGER NOT NULL,
+                        content TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        PRIMARY KEY(id),
+                        FOREIGN KEY(session_id) REFERENCES ai_sessions(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_attached_files_session_id ON attached_files(session_id)")
+                LogManager.database("MIGRATION 49->50: attached_files table created", "INFO")
+            }
+        }
+
         /** The AI's changes to variables get their own validation switch: see VariableValidationAtV49. */
         private val MIGRATION_48_49 = object : Migration(48, 49) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -1990,7 +2016,8 @@ abstract class AppDatabase : RoomDatabase() {
                     migration45to46(context),
                     MIGRATION_46_47,
                     MIGRATION_47_48,
-                    MIGRATION_48_49
+                    MIGRATION_48_49,
+                    MIGRATION_49_50
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

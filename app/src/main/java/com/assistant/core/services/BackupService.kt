@@ -93,6 +93,8 @@ class BackupService(private val context: Context) : ExecutableService {
             val aiProviderConfigs = database.aiDao().getAllProviderConfigs()
             val automations = database.aiDao().getAllAutomations()
             val variables = database.variableDao().getAll()
+            // The files joined to messages, with their session
+            val attachedFiles = aiSessions.flatMap { database.attachedFileDao().getForSession(it.id) }
 
             // Check cancellation before building JSON
             if (token.isCancelled) {
@@ -289,6 +291,22 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("definition_json", variable.definitionJson)
                                 put("created_at", variable.createdAt)
                                 put("updated_at", variable.updatedAt)
+                            })
+                        }
+                    })
+
+                    // Files joined to messages
+                    put("attached_files", JSONArray().apply {
+                        attachedFiles.forEach { file ->
+                            put(JSONObject().apply {
+                                put("id", file.id)
+                                put("session_id", file.sessionId)
+                                put("name", file.name)
+                                put("mime_type", file.mimeType)
+                                put("size_bytes", file.sizeBytes)
+                                put("line_count", file.lineCount)
+                                put("content", file.content)
+                                put("created_at", file.createdAt)
                             })
                         }
                     })
@@ -639,6 +657,25 @@ class BackupService(private val context: Context) : ExecutableService {
                         definitionJson = item.getString("definition_json"),
                         createdAt = item.getLong("created_at"),
                         updatedAt = item.getLong("updated_at")
+                    )
+                )
+            }
+        }
+
+        // Files joined to messages, after the sessions they belong to; absent before v50
+        data.optJSONArray("attached_files")?.let { array ->
+            for (i in 0 until array.length()) {
+                val item = array.getJSONObject(i)
+                database.attachedFileDao().insert(
+                    com.assistant.core.ai.database.AttachedFileEntity(
+                        id = item.getString("id"),
+                        sessionId = item.getString("session_id"),
+                        name = item.getString("name"),
+                        mimeType = item.getString("mime_type"),
+                        sizeBytes = item.getLong("size_bytes"),
+                        lineCount = item.getInt("line_count"),
+                        content = item.getString("content"),
+                        createdAt = item.getLong("created_at")
                     )
                 )
             }
