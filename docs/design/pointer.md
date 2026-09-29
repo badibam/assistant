@@ -45,7 +45,7 @@ La config n'est jamais filtrée. Une **mention d'entrées filtrées** transmet �
 
 - **Combinaison** : tous les filtres doivent être vrais (ET). Le OU n'existe qu'à l'intérieur d'un champ (« est l'une de », « entre ») ; un OU entre champs se fait avec deux pointeurs.
 - **Saisie de la valeur** : le composant de saisie du champ (`FieldInput`) ; pour TEXT, la liste des valeurs présentes (`tool_data.values`) en plus ; un CHOICE a déjà ses options.
-- **Dates** : tout filtre sur une DATE ou un DATETIME prend le sélecteur de période — dates fixes dans le chat, valeurs relatives dans une automation, recalculées à chaque exécution (« échéance dans les 7 prochains jours »). Une TIME prend un choix d'heure.
+- **Dates** : tout filtre sur une DATE ou un DATETIME prend le sélecteur d'instant (deux pour « entre ») de `missing-tools.md`, « Le temps relatif » — dates fixes dans le chat, valeurs relatives dans une automation, recalculées à chaque exécution (« échéance dans les 7 prochains jours »). Une TIME prend un choix d'heure.
 
 ## Le côté IA
 

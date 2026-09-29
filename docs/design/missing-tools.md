@@ -22,7 +22,7 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 
 - **Instance › champ** : pas de champ pour `compte`, qui compte des entrées.
 - **Filtres**, facultatifs : ceux du pointeur, avec leur composant, qui passent au cœur avec la sélection d'entrées (prérequis des variables).
-- **Période** : celle de l'outil qui lit (la tentative d'un Objectif), jamais configurée par la lecture ; ce sont les entrées dont le `timestamp` y tombe. `dernière` est la dernière dans la période, pas la dernière connue.
+- **Période** : réglée avec le sélecteur de période, relative à la référence du contexte (Le temps relatif, plus bas) ; l'Objectif la préremplit à la période de sa tentative (« Il y a 6 jours, début » → « Référence » pour sept jours). Ce sont les entrées dont le `timestamp` y tombe. `dernière` est la dernière dans la période ; la dernière connue est une période sans début (« Sans limite » → « Référence »).
 - **Réductions** : dernière · somme · moyenne · min · max · compte.
 
   | Type | Réductions | Résultat |
@@ -38,7 +38,7 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 - **Test** : une condition (plus bas) posée sur le résultat.
 - **La condition, une notion du cœur** : un opérateur et une valeur, permis selon le type de champ (`EntryFilters.operatorsFor`), qui s'évalue en SQL sur des entrées ou sur une valeur déjà lue. Un filtre est un chemin de champ et une condition ; un critère mesuré, une lecture et une condition ; plus tard une Alerte, un event. Un seul composant la saisit, `ConditionInput`, sorti de `PointerFiltersDialog` où sa saisie est privée aujourd'hui.
 - **Une valeur ou un échec.** Sans entrée dans la période, `somme` et `compte` valent 0 ; les autres réductions échouent (« poids : aucune entrée dans la période ») : ne pas s'être pesé n'est pas peser plus de 80 kg. Une entrée sans réponse au champ réduit, ou à un champ que lit une formule par entrée, fait échouer de même ; l'écarter se dit dans la lecture, par le filtre « avec réponse » (« moyenne de l'humeur, où humeur avec réponse »). Un échec porte ses causes en données (terme, raison, champ, entrées) et se propage : une formule qui lit un terme en échec échoue avec ses causes. Le cœur l'affiche partout de même (`FieldValue` : la cause, qui mène aux entrées à corriger) et le rend tel quel à l'IA ; chaque lecteur ne décide que de ce qu'il en fait : un critère d'Objectif en échec n'est ni rempli ni non rempli, et la tentative reste sans verdict (à valider, puis expirée) ; un Graphique dessine un trou marqué ; un relevé d'automation directe n'écrit rien, et son exécution échoue avec la cause dans son historique ; l'IA, en chat ou en automation IA, reçoit l'échec comme une réponse et en décide.
-- **Trois couches au cœur** : RÉFÉRENCE (une chose) → sélection (ses entrées : période, filtres, champs) → lecture (une valeur ou un échec). Chacune sert telle quelle : une RÉFÉRENCE au champ `aliment` d'un repas, une sélection au Graphique et au pointeur, une lecture au terme de variable et à l'IA. Tester une lecture n'est pas une couche : c'est une condition de filtre (`EntryFilters.operatorsFor`) posée sur son résultat, ce que fait le critère mesuré d'Objectif. Un seuil reste une constante : comparer deux lectures passe par un Calcul (`[Bilan › écart] ≤ 0`).
+- **Trois couches au cœur** : RÉFÉRENCE (une chose) → sélection (ses entrées : période, filtres, champs) → lecture (une valeur ou un échec). Chacune sert telle quelle : une RÉFÉRENCE au champ `aliment` d'un repas, une sélection au Graphique et au pointeur, une lecture au terme de variable et à l'IA. Tester une lecture n'est pas une couche : c'est une condition de filtre (`EntryFilters.operatorsFor`) posée sur son résultat, ce que fait le critère mesuré d'Objectif. La cible d'une condition est une constante ou une lecture, saisie avec le même composant (« kcal ≤ `objectif_calorique` », « score ≥ `score_mois_precedent` ») ; si la cible est en échec, la condition l'est aussi. Pour l'instant dans un critère seulement : un filtre garde des constantes jusqu'à un cas réel.
 - **Une porte, `readings.read`** (service du cœur `readings`) : une variable, elle l'évalue ; un champ, elle le réduit sur les entrées. Un lecteur ne connaît qu'elle, et une variable la prend elle-même pour ses termes ; l'IA lit une variable par une commande `READING`, dates en ISO comme pour `TOOL_DATA` ; une lecture de champ, elle la fait elle-même sur les entrées que `TOOL_DATA` lui donne.
 - **Deux formes d'appel** : une lecture de champ reçoit une `selection` (source, période, filtres : la période y est, remplie par le lecteur), le `field` et la `reduction` ; une variable, son nom et `at`, une liste d'instants choisis par qui lit, son découpage portant les périodes ; elle rend une liste de même longueur, une valeur ou un échec par instant. Comme une requête groupée, elle épargne à qui lit une plage (le Graphique, l'IA) une commande par point.
 - **Sans historique** : ce qu'une variable consulte sans historique (une fiche, une constante) se lit tel qu'il est aujourd'hui : relu plus tard, le bilan du 12 prend les kcal corrigées depuis ; garder le chiffre d'alors est un relevé (variables).
@@ -47,8 +47,57 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 ## Le temps relatif
 
 - **Une référence, fournie par le contexte** : un choix relatif (« la veille ») se résout par rapport à elle, comme `resolveRelativePeriod` le fait déjà avec l'heure prévue d'une automation. Automation : l'heure prévue de l'exécution ; Objectif : la fin de la tentative ; terme de variable : l'instant lu.
-- **Une seule notion de « maintenant » par contexte.** Sans référence (le chat, la saisie d'une entrée), on choisit des dates fixes, et « hier » n'est que l'étiquette d'une période fixe par rapport à l'horloge. Avec référence, un choix relatif s'enregistre comme une description, résolue à chaque fois, et l'horloge n'est pas proposée.
+- **Une seule notion de « maintenant » par contexte.** Sans référence (le chat, la saisie d'une entrée), l'horloge sert de référence au moment du choix, et ce qui s'enregistre est une date fixe : « hier » n'est que l'étiquette d'une période fixe par rapport à l'horloge. Avec référence, un choix relatif s'enregistre comme une description, résolue à chaque fois, et l'horloge n'est pas proposée.
 - **Les étiquettes ne composent jamais la référence** : le sélecteur l'affiche une fois, « Par rapport à : fin de la tentative », une chaîne que le contexte fournit et qui se lit seule ; les étiquettes relatives restent les mêmes partout (« Le jour-même », « La veille », « Il y a 2 jours »), traduites une fois. Un résumé hors du sélecteur met la référence à part (« poids, dernière · la veille · réf. : fin de la tentative »). Aucune grammaire à assembler.
+- **Un sélecteur d'instant, un seul**, pour toute date de l'app : la saisie DATE ou DATETIME d'une entrée, la cible d'une condition sur une date, chaque borne d'une période, l'instant qu'écrira un relevé. Il propose :
+  - une **date relative** : une unité (heure, jour, semaine, mois, année) et un décalage (« La veille », « Il y a 6 jours »), et son **moment**, début ou fin de cette période, que le contexte préremplit et qu'on change à volonté ;
+  - une **date personnalisée**, toujours absolue, avec l'heure si le champ est un DATETIME ;
+  - **maintenant**, qui est la référence dans un contexte qui en a une ;
+  - **sans limite**, pour une borne.
+
+  Sans référence, un choix relatif se résout tout de suite par rapport à l'horloge et c'est la date obtenue qui s'enregistre (une entrée notée « La veille, début ») ; avec référence, il s'enregistre comme description. Le moment est dit explicitement : il remplace la convention où l'opérateur d'une condition choisissait le début ou la fin (`FilterValues`).
+- **Une période est deux instants**, préremplis au début et à la fin.
+- **« = » sur un DATETIME n'est pas proposé** : « échéance = la veille, début » ne garderait que minuit pile ; « entre » dit ce qu'on veut (« entre la veille, début, et la veille, fin »). Sur une DATE, « = » compare deux jours et reste.
+
+## Les sélecteurs, recomposés
+
+Les briques de base :
+
+| Brique | Ce qu'elle choisit | Selon le contexte |
+|---|---|---|
+| **Instant** | une date relative (unité, décalage, début ou fin), une date personnalisée, maintenant (la référence s'il y en a une), sans limite | la référence et son nom, la précision (DATE, DATETIME) |
+| **Chose** | par le fil d'Ariane App › Zone › (Outil ou Variable) › Entrée | les sortes permises (zone, outil, variable, entrée) |
+| **Champ** | un champ des entrées d'un outil, ou aucun pour compter | les types permis |
+| **Réduction** | dernière, somme, moyenne, min, max, compte… | les réductions permises par le type du champ |
+| **Condition** | un opérateur et une cible | les opérateurs permis par le type du champ |
+
+Les briques composées :
+
+```
+Période              = Instant (début) + Instant (fin)
+Filtre               = Champ + Condition
+Sélection d'entrées  = Chose (un outil) + Période + Filtres + choix des champs
+Lecture              = Sélection d'entrées + Champ + Réduction
+                     | Chose (une variable)
+Condition            = opérateur + cible, la cible étant :
+                         une constante, saisie par la saisie du type du champ
+                           (un Instant pour une DATE ou un DATETIME)
+                       | une Lecture
+```
+
+Ceux qui les utilisent :
+
+| Qui | Assemblage |
+|---|---|
+| Champ RÉFÉRENCE d'une entrée (`aliment`) | Chose (une entrée, restreinte à des outils) |
+| Champ DATE ou DATETIME d'une entrée | Instant, sans référence |
+| Pointeur d'un message à l'IA | Chose (app, zone, outil, entrée) + Période + Filtres + champs + joindre ou mentionner |
+| Critère d'Objectif | valeur (une Lecture, ou un champ saisi dans la tentative) + Condition |
+| Terme de variable | Lecture, constante ou autre variable, sa plage étant une Période relative à la référence |
+| Graphique | Sélection d'entrées ou variables (le détail est ouvert) |
+| Relevé (automation directe) | Chose (une variable) + un champ cible dans un Suivi + Instant de l'entrée écrite |
+
+La référence traverse le tout : chaque Instant relatif se résout par rapport à celle que le contexte fournit.
 
 ## L'import
 
