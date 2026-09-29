@@ -77,6 +77,8 @@ import java.util.Calendar
 object DefaultTheme : ThemeContract {
 
     override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
+
+    override val gridMaxWidth = 480.dp
     
 
     // =====================================
@@ -988,17 +990,9 @@ object DefaultTheme : ThemeContract {
         onLongClick: () -> Unit,
         content: @Composable () -> Unit
     ) {
-        // Theme defines appearance based on display mode
-        val cardModifier = when (displayMode) {
-            DisplayMode.ICON -> Modifier.size(64.dp)
-            DisplayMode.MINIMAL -> Modifier.height(48.dp).fillMaxWidth()
-            DisplayMode.LINE -> Modifier.height(64.dp).fillMaxWidth()
-            DisplayMode.CONDENSED -> Modifier.size(128.dp)
-            DisplayMode.EXTENDED -> Modifier.width(256.dp).height(128.dp)
-            DisplayMode.SQUARE -> Modifier.size(256.dp)
-            DisplayMode.FULL -> Modifier.fillMaxWidth().wrapContentHeight()
-        }
-        
+        // The grid gives the tile its cells; the space between tiles is taken inside them
+        val cardModifier = Modifier.fillMaxSize().padding(4.dp)
+
         val cardPadding = when (displayMode) {
             DisplayMode.ICON -> 4.dp
             DisplayMode.MINIMAL -> 8.dp

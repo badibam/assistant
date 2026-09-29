@@ -16,6 +16,7 @@ import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.grid.ToolPositions
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.mapData
@@ -312,6 +313,7 @@ fun ZoneScreen(
             zoneToolGroups.forEach { groupName ->
                 GroupSection(
                     groupName = groupName,
+                    zoneToolGroups = zoneToolGroups,
                     variables = variables.filter { it.group == groupName },
                     onOpenVariable = { openVariable = it },
                     onCreateVariable = {
@@ -388,46 +390,9 @@ fun ZoneScreen(
                 )
             }
 
-            // Collect all tool and automation groups that exist in the data
-            val existingToolGroups = toolInstances.mapNotNull { tool ->
-                val config = try {
-                    org.json.JSONObject(tool.config_json)
-                } catch (e: Exception) {
-                    null
-                }
-                config?.optString("group")?.takeIf { it.isNotEmpty() }
-            }.distinct()
-
-            val existingAutomationGroups = automations.mapNotNull { it.group?.takeIf { group -> group.isNotEmpty() } }.distinct()
-            val allExistingGroups = (existingToolGroups + existingAutomationGroups).distinct()
-
-            // Find groups that exist in data but are not configured in the zone (orphaned items)
-            val orphanedGroups = allExistingGroups.filter { group -> group !in zoneToolGroups }
-
-            // Log for debugging
-            LogManager.ui("Zone ${zone.id} group analysis:", "DEBUG")
-            LogManager.ui("  Configured groups: $zoneToolGroups", "DEBUG")
-            LogManager.ui("  Existing tool groups: $existingToolGroups", "DEBUG")
-            LogManager.ui("  Existing automation groups: $existingAutomationGroups", "DEBUG")
-            LogManager.ui("  Orphaned groups (exist in data but not configured): $orphanedGroups", "DEBUG")
-            LogManager.ui("  Total tools: ${toolInstances.size}, Total automations: ${automations.size}", "DEBUG")
-
-            // Ungrouped section: items with no group OR items with orphaned groups
-            val ungroupedTools = toolInstances.filter { tool ->
-                val config = try {
-                    org.json.JSONObject(tool.config_json)
-                } catch (e: Exception) {
-                    null
-                }
-                val group = config?.optString("group")?.takeIf { it.isNotEmpty() }
-                group == null || group in orphanedGroups
-            }
-            val ungroupedAutomations = automations.filter {
-                val group = it.group
-                group == null || group.isEmpty() || group in orphanedGroups
-            }
-
-            LogManager.ui("  Ungrouped tools: ${ungroupedTools.size}, Ungrouped automations: ${ungroupedAutomations.size}", "DEBUG")
+            // Ungrouped section: items with no group, or a group the zone does not have
+            val ungroupedTools = toolInstances.filter { ToolPositions.section(it, zoneToolGroups) == null }
+            val ungroupedAutomations = automations.filter { ToolPositions.section(it.group, zoneToolGroups) == null }
 
             // Always show ungrouped section (even if empty) to allow adding tools/automations
             UngroupedSection(
@@ -651,6 +616,7 @@ fun ZoneScreen(
 @Composable
 private fun GroupSection(
     groupName: String,
+    zoneToolGroups: List<String>,
     variables: List<com.assistant.core.ui.variables.VariableRow>,
     onOpenVariable: (String) -> Unit,
     onCreateVariable: () -> Unit,
@@ -673,14 +639,7 @@ private fun GroupSection(
 ) {
     val s = remember { Strings.`for`(context = context) }
     // Filter tools and automations for this group
-    val groupTools = toolInstances.filter { tool ->
-        val config = try {
-            org.json.JSONObject(tool.config_json)
-        } catch (e: Exception) {
-            null
-        }
-        config?.optString("group") == groupName
-    }
+    val groupTools = toolInstances.filter { ToolPositions.section(it, zoneToolGroups) == groupName }
     val groupAutomations = automations.filter { it.group == groupName }
 
     // Section header - use SECTION_HEADER for subtle contrast with surfaceVariant
@@ -806,16 +765,8 @@ private fun GroupSection(
         }
     }
 
-    // Display tools in this group
-    groupTools.forEach { tool ->
-        UI.ToolCard(
-            tool = tool,
-            displayMode = DisplayMode.LINE,
-            context = context,
-            onClick = { onToolClick(tool.id) },
-            onLongClick = { onToolLongClick(tool) }
-        )
-    }
+    // The group's tools on their grid
+    com.assistant.core.ui.components.ToolGrid(groupTools, { onToolClick(it.id) }, onToolLongClick)
 
     // The group's variables, in one compact card
     com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)
@@ -1004,16 +955,8 @@ private fun UngroupedSection(
         }
     }
 
-    // Display ungrouped tools
-    toolInstances.forEach { tool ->
-        UI.ToolCard(
-            tool = tool,
-            displayMode = DisplayMode.LINE,
-            context = context,
-            onClick = { onToolClick(tool.id) },
-            onLongClick = { onToolLongClick(tool) }
-        )
-    }
+    // The ungrouped tools on their grid
+    com.assistant.core.ui.components.ToolGrid(toolInstances, { onToolClick(it.id) }, onToolLongClick)
 
     // The ungrouped variables, in one compact card
     com.assistant.core.ui.variables.VariablesCard(variables, onOpenVariable)

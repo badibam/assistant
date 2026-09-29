@@ -509,11 +509,19 @@ object UI {
         ) {
             when (displayMode) {
                 DisplayMode.ICON -> {
-                    // TODO: Icon only via tool type
-                    Text("T", TextType.BODY) // Placeholder
+                    // The icon alone, centered in its cell
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        val iconName = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context).string("icon_name").orEmpty()
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (iconName.isNotBlank()) Icon(iconName = iconName, size = 24.dp, contentDescription = null)
+                            if (waiting) WaitingMark()
+                        }
+                    }
                 }
                 DisplayMode.MINIMAL -> {
-                    ToolCardHeader(tool, context, waiting)
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
+                        ToolCardHeader(tool, context, waiting)
+                    }
                 }
                 DisplayMode.LINE -> {
                     Row(

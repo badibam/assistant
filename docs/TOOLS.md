@@ -196,13 +196,15 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
 ## Display Modes pour Tool Cards
 
-- **ICON** (1/4×1/4) : icône seule
-- **MINIMAL** (1/2×1/4) : icône + titre côte à côte
-- **LINE** (1×1/4) : icône + titre gauche, contenu libre droite
-- **CONDENSED** (1/2×1/2) : icône + titre haut, zone libre dessous
-- **EXTENDED** (1×1/2) : icône + titre haut, zone libre dessous
-- **SQUARE** (1×1) : icône + titre haut, grande zone libre
-- **FULL** (1×∞) : icône + titre haut, zone libre infinie
+Les outils d'une section de groupe sont posés sur une grille de quatre colonnes à cases carrées (`ToolGrid`), large au plus du `gridMaxWidth` du thème. Chaque outil y tient à `grid_x`/`grid_y` (`tool_instances`), placé par `ToolPositions` et `Grid` ; sa taille en cases vient de son `display_mode`, que sa config porte toujours :
+
+- **ICON** (1×1) : icône seule
+- **MINIMAL** (2×1) : icône + titre côte à côte
+- **LINE** (4×1) : icône + titre gauche, contenu libre droite
+- **CONDENSED** (2×2) : icône + titre haut, zone libre dessous
+- **EXTENDED** (4×2) : icône + titre haut, zone libre dessous
+- **SQUARE** (4×4) : icône + titre haut, grande zone libre
+- **FULL** (4 × sa hauteur) : icône + titre haut, aussi haut que son contenu, arrondi à la case
 
 ## Validation JSON Schema V3
 

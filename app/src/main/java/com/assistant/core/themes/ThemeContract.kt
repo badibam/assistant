@@ -38,6 +38,9 @@ interface ThemeContract {
 
     /** Who draws this theme's icons: Lucide, or the theme itself, all of them. */
     val iconSource: com.assistant.core.icons.IconSource
+
+    /** How wide a zone's tool grid grows at most; a wider screen centers it (ToolGrid). */
+    val gridMaxWidth: Dp
     
     // =====================================
     // LAYOUTS: USE COMPOSE DIRECTLY
@@ -219,6 +222,10 @@ interface ThemeContract {
     @Composable
     fun WaitingMark()
 
+    /**
+     * A tool's tile, filling the cells the grid gives it (ToolGrid): the theme draws its frame
+     * and the space between tiles inside them, never a size of its own.
+     */
     @Composable
     fun ToolCardContainer(
         displayMode: DisplayMode,
