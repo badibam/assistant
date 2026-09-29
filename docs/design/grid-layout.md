@@ -10,6 +10,23 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 - **Une tuile de pleine largeur est seule sur ses lignes** : seules ICON, MINIMAL et CONDENSED partagent une ligne. Une FULL compte donc comme une ligne à elle seule, quelle que soit sa hauteur.
 - **Les tailles fixes du thème disparaissent** (`ToolCardContainer`, 64 dp pour ICON, 256 dp pour SQUARE…) : la grille donne sa taille à chaque tuile.
 
+## Les modes d'affichage
+
+- **Sept modes, sans ajout ni retrait.**
+- **Le cœur dessine le cadre et l'en-tête ; le type d'outil remplit le reste** (`TileContent`) :
+
+  | Mode | Cœur | Outil |
+  |---|---|---|
+  | ICON | l'icône de l'outil, centrée, sans le nom | rien |
+  | MINIMAL | l'icône et le nom | rien |
+  | LINE | l'en-tête (icône et nom) sur la moitié gauche, fixe | la moitié droite |
+  | CONDENSED, EXTENDED, SQUARE, FULL | la ligne du haut : l'en-tête à gauche | la zone en haut à droite, et tout le dessous |
+- **La zone en haut à droite** a la hauteur de l'en-tête et porte un seul élément court (une valeur, un état, une action), au choix de l'outil ; étroite en CONDENSED. Un outil qui n'y met rien laisse la ligne au nom.
+- **L'indicateur d'attente** (`bricks-plan.md`, étape 9) est une pastille sur l'icône, dessinée par le thème, dans tous les modes.
+- **Jamais de défilement à l'intérieur d'une tuile.** Ce qui ne tient pas, et comment le signaler, est l'affaire du type d'outil ; FULL grandit avec ce que le type d'outil y montre.
+- **Une tuile porte ses raccourcis d'utilisation** : un élément tactile de la tuile fait son action, un toucher ailleurs ouvre l'outil (ou l'entrée qui attend), l'appui long sa config. La taille minimale d'un élément tactile est celle du thème. En édition, rien ne réagit.
+- **Tous les modes sont proposés pour tout outil**, et chaque type d'outil remplit chacun : `TileContent` n'a plus de rendu par défaut. S'il a trop peu à montrer dans un mode, l'utilisateur en change.
+
 ## Positions
 
 - **Chaque outil garde sa place** : `grid_x` (0 à 3) et `grid_y` (sa ligne dans son groupe), deux colonnes de `tool_instances`. `order_index` disparaît des outils : rien ne le change aujourd'hui.
