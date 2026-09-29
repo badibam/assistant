@@ -1,5 +1,6 @@
 package com.assistant.core.selection
 
+import com.assistant.core.conditions.Conditions
 import com.assistant.core.ui.components.PeriodType
 import org.json.JSONArray
 import org.json.JSONObject
@@ -27,7 +28,7 @@ class EntrySelectionTest {
 
     @Test
     fun `a selection writes and reads back the same`() {
-        val filters = JSONArray().put(JSONObject().put("field", "data.kcal").put("op", ">=").put("value", 500))
+        val filters = JSONArray().put(Conditions.onField("data.kcal", ">=", 500))
         val selection = EntrySelection(tool, yesterday, filters, listOf("data.kcal"))
         val json = selection.toJson()
         assertEquals(json.toString(), read(JSONObject(json.toString())).toJson().toString())
@@ -72,8 +73,8 @@ class EntrySelectionTest {
         val resolver = TimeResolver(at(16, 15), zoneId, dayStartHour = 4, weekStartDay = "MONDAY")
         assertEquals(
             listOf(
-                mapOf("field" to "timestamp", "op" to ">=", "value" to at(15, 4)),
-                mapOf("field" to "timestamp", "op" to "<=", "value" to at(16, 4) - 1)
+                mapOf("left" to mapOf("field" to "timestamp"), "op" to ">=", "right" to mapOf("constant" to at(15, 4))),
+                mapOf("left" to mapOf("field" to "timestamp"), "op" to "<=", "right" to mapOf("constant" to at(16, 4) - 1))
             ),
             yesterday.timestampFilters(resolver)
         )

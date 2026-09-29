@@ -208,7 +208,8 @@
     <!-- Tool data - Pagination -->
     <string name="service_error_page_without_limit">Page %1$d requested without \'limit\': with no limit per page, everything fits on page 1. Give \'limit\' to paginate.</string>
     <string name="service_error_param_unknown">Unknown parameter \'%1$s\'. Parameters: %2$s</string>
-    <string name="service_error_filter_unreadable">Unreadable filter: %1$s. A filter is {\"field\": \"data.value\", \"op\": \"&lt;\", \"value\": 10}.</string>
+    <string name="service_error_filter_unreadable">Unreadable filter: %1$s. A filter is {\"left\": {\"field\": \"data.value\"}, \"op\": \"&lt;\", \"right\": {\"constant\": 10}}.</string>
+    <string name="service_error_filter_not_written">The filter on %1$s compares with %2$s: a filter takes written values, {\"constant\": …}; read a variable or a reading first.</string>
     <string name="service_error_filter_unknown_field">Filter on \'%1$s\': the entries of this tool have no such field to filter on. Fields: %2$s</string>
     <string name="service_error_values_not_text">'%1$s' is not a text field: only a text has values to offer</string>
     <string name="service_error_filter_operator">Filter on \'%1$s\': the condition \'%2$s\' does not apply to a %3$s field. Conditions: %4$s</string>

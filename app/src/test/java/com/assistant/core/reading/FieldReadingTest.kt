@@ -1,5 +1,6 @@
 package com.assistant.core.reading
 
+import com.assistant.core.conditions.Conditions
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.selection.Edge
@@ -109,15 +110,16 @@ class FieldReadingTest {
             target = Reference(ReferenceKind.TOOL_INSTANCE, "t1"),
             period = EntryPeriod(start = TimePoint.Relative(PeriodType.DAY, -1, Edge.START)),
             filters = JSONArray()
-                .put(JSONObject().put("field", "extra.due").put("op", "<=").put("value", TimePoint.Now.toJson()))
-                .put(JSONObject().put("field", "data.weight").put("op", ">").put("value", 80))
+                .put(Conditions.onField("extra.due", "<=", TimePoint.Now.toJson()))
+                .put(Conditions.onField("data.weight", ">", 80))
         )
         val fields = mapOf("extra.due" to field("due", FieldType.DATE), "data.weight" to weight)
         val stored = selection.storedFilters(fields, resolver) { it }
         assertEquals(3, stored.length())
-        assertEquals(at(15, 4), stored.getJSONObject(0).getLong("value"))
-        assertEquals("2026-09-16", stored.getJSONObject(1).getString("value"))
-        assertEquals(80, stored.getJSONObject(2).getInt("value"))
+        fun written(i: Int) = stored.getJSONObject(i).getJSONObject("right").get("constant")
+        assertEquals(at(15, 4), (written(0) as Number).toLong())
+        assertEquals("2026-09-16", written(1))
+        assertEquals(80, written(2))
     }
 
     @Test

@@ -476,7 +476,7 @@ object MessageScheduler : ToolScheduler {
     ): List<PendingOccurrence>? {
         val result = coordinator.processUserAction("tool_data.get", mapOf(
             "tool_instance_id" to toolInstanceId,
-            "filters" to listOf(mapOf("field" to "state.status", "op" to "in", "value" to listOf("pending")))
+            "filters" to listOf(com.assistant.core.conditions.Conditions.onField("state.status", "in", listOf("pending")))
         ))
 
         if (!result.isSuccess) {

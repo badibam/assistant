@@ -52,10 +52,10 @@ class UniqueNameTest {
     fun `a unique name is found the way uniqueness compares it, an ordinary one exactly`() {
         val unique = EntryFilters.filterableFields(EntryFields(nameUnique = true, timestamp = CoreFieldUsage.ABSENT), emptyList()) { it }
         assertTrue(unique.getValue("name").config?.get(CoreFields.UNIQUE) == true)
-        assertEquals(listOf("apple"), ids(unique, """[{"field": "name", "op": "=", "value": " apple"}]"""))
+        assertEquals(listOf("apple"), ids(unique, """[{"left": {"field": "name"}, "op": "=", "right": {"constant": " apple"}}]"""))
 
         val ordinary = EntryFilters.filterableFields(EntryFields(), emptyList()) { it }
-        assertEquals(emptyList<String>(), ids(ordinary, """[{"field": "name", "op": "=", "value": "apple"}]"""))
+        assertEquals(emptyList<String>(), ids(ordinary, """[{"left": {"field": "name"}, "op": "=", "right": {"constant": "apple"}}]"""))
     }
 
     @Test

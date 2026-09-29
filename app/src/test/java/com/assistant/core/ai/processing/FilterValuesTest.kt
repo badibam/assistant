@@ -1,5 +1,7 @@
 package com.assistant.core.ai.processing
 
+import com.assistant.core.conditions.Conditions
+import com.assistant.core.utils.JsonUtils
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.selection.TimeResolver
@@ -34,9 +36,17 @@ class FilterValuesTest {
         "extra.note" to field("note", FieldType.TEXT)
     )
 
-    private fun stored(field: String, op: String, value: Any?): Map<*, *> =
-        FilterValues.toStored(listOf(mapOf("field" to field, "op" to op, "value" to value)), fields, resolver) { it }
-            .single() as Map<*, *>
+    /** The condition on [field] once stored: its operator, and its written value (a list for a pair). */
+    private fun stored(field: String, op: String, value: Any?): Map<String, Any?> {
+        val condition = JsonUtils.toMap(Conditions.onField(field, op, value))
+        val out = FilterValues.toStored(listOf(condition), fields, resolver) { it }.single() as Map<*, *>
+        val written = when (val right = out["right"]) {
+            is Map<*, *> -> right["constant"]
+            is List<*> -> right.map { (it as Map<*, *>)["constant"] }
+            else -> null
+        }
+        return mapOf("op" to out["op"], "value" to written)
+    }
 
     private fun relative(unit: String, offset: Int, edge: String) =
         mapOf("relative" to mapOf("unit" to unit, "offset" to offset, "edge" to edge))
@@ -74,7 +84,7 @@ class FilterValuesTest {
 
     @Test
     fun `milliseconds are already stored and stay as they are`() {
-        assertEquals(1000L, stored("timestamp", ">=", 1000L)["value"])
+        assertEquals(1000L, (stored("timestamp", ">=", 1000L)["value"] as Number).toLong())
     }
 
     @Test

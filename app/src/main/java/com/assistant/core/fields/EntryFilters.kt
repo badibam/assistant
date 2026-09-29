@@ -1,5 +1,6 @@
 package com.assistant.core.fields
 
+import com.assistant.core.conditions.Conditions
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -43,9 +44,11 @@ data class SqlCondition(val clause: String, val args: List<Any>)
  * The value filters of an entry query: which entries of a tool a read returns, by the values of
  * their fields.
  *
- * A filter is `{"field": "data.duration", "op": "<", "value": 21600000}`. The field is any path
- * the entry schema describes and FieldPatternGrammar reads, among the ones a filter may name
- * (filterableFields). Filters combine with AND: an OR exists only within a field, as IN over a
+ * A filter is a condition put on each entry (Conditions): a field on the left, written values on
+ * the right, `{"left": {"field": "data.duration"}, "op": "<", "right": {"constant": 21600000}}`.
+ * The field is any path the entry schema describes and FieldPatternGrammar reads, among the ones
+ * a filter may name (filterableFields). A variable or a reading on the right is refused: the
+ * context reads it first, and hands the value it gave. Filters combine with AND: an OR exists only within a field, as IN over a
  * CHOICE's options or BETWEEN over a range. A period is a filter on timestamp like any other.
  *
  * Values are in their stored form. The model writes instants and durations in ISO 8601, which
@@ -71,7 +74,9 @@ object EntryFilters {
     /** The conditions a field of [type] can be filtered with. */
     fun operatorsFor(type: FieldType): Set<FilterOperator> = when (type) {
         FieldType.NUMERIC, FieldType.SCALE, FieldType.DURATION,
-        FieldType.DATETIME, FieldType.DATE, FieldType.TIME -> ORDERED + PRESENCE
+        FieldType.DATE, FieldType.TIME -> ORDERED + PRESENCE
+        // An instant is never met exactly: "between" says the moment meant
+        FieldType.DATETIME -> ORDERED - FilterOperator.EQUAL + PRESENCE
         FieldType.TEXT -> setOf(FilterOperator.EQUAL, FilterOperator.CONTAINS) + PRESENCE
         FieldType.CHOICE -> setOf(FilterOperator.IN) + PRESENCE
         FieldType.BOOLEAN -> setOf(FilterOperator.EQUAL) + PRESENCE
@@ -119,16 +124,21 @@ object EntryFilters {
             val raw = filters.opt(i)
             val filter = raw as? JSONObject
                 ?: return Parsed.Refused(text("service_error_filter_unreadable").format(raw.toString()))
-            val path = filter.optString("field")
+            val path = Conditions.fieldOf(filter)
+                ?: return Parsed.Refused(text("service_error_filter_unreadable").format(filter.toString()))
             val field = fields[path]
                 ?: return Parsed.Refused(text("service_error_filter_unknown_field").format(path, fields.keys.joinToString(", ")))
-            val operator = FilterOperator.of(filter.optString("op"))
+            val operator = FilterOperator.of(filter.optString(Conditions.OP))
                 ?.takeIf { it in operatorsFor(field.type) }
                 ?: return Parsed.Refused(text("service_error_filter_operator").format(
-                    path, filter.optString("op"), field.type.name,
+                    path, filter.optString(Conditions.OP), field.type.name,
                     operatorsFor(field.type).joinToString(", ") { it.key }
                 ))
-            val value = if (filter.isNull("value")) null else filter.get("value")
+            val value = when (val right = Conditions.right(filter)) {
+                Conditions.Right.None -> null
+                is Conditions.Right.Written -> right.value
+                is Conditions.Right.NotWritten -> return Parsed.Refused(text("service_error_filter_not_written").format(path, right.raw.toString()))
+            }
             // ABSENT and PRESENT take no value, and hold none once read
             val checked = if (operator in PRESENCE && value == null) null else checkValue(field, operator, value)
                 ?: return Parsed.Refused(text("service_error_filter_value").format(

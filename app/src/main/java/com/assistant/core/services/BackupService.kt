@@ -24,6 +24,7 @@ import com.assistant.core.versioning.EnrichmentTextAtV45
 import com.assistant.core.versioning.PointerAtV46
 import com.assistant.core.versioning.VariableValidationAtV49
 import com.assistant.core.versioning.ScheduleDatesAtV51
+import com.assistant.core.versioning.ConditionsAtV52
 import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
@@ -787,6 +788,9 @@ class BackupService(private val context: Context) : ExecutableService {
             }
             if (fromVersion < 51 && toVersion >= 51) {
                 ScheduleDatesAtV51.backup(data)
+            }
+            if (fromVersion < 52 && toVersion >= 52) {
+                ConditionsAtV52.backup(data)
             }
 
             // Transform app settings

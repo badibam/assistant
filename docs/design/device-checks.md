@@ -8,6 +8,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Réglages après la mise à jour : format (fuseau, début de semaine, 24 h) inchangé et enregistrable, validation avec ses quatre choix, limites IA à 10, 20, 15 000 et 100 000.
 - Écran des journaux : il s'ouvre, et filtré sur « Error » il montre aussi les erreurs anciennes. Y chercher des lignes `MIGRATION` et `No JSON form`.
 - Volume du journal : compter les lignes par niveau sur deux minutes d'usage normal, pour voir ce que produit encore le DEBUG.
+- Après la migration 52 : un pointeur filtré d'une conversation passée et d'un départ d'automation, et une variable qui lit des entrées filtrées, donnent les mêmes entrées qu'avant ; aucune ligne `MIGRATION 51->52` en erreur. Un pointeur qui filtrait un instant par « = » est maintenant refusé : il le dit, rien ne part en silence.
 - Après la migration 51 : chaque automation planifiée, chaque Messages, Objectif et Questionnaire récurrent garde sa récurrence (résumé lisible, pas d'erreur « illisible »), et le journal ne montre aucune ligne `MIGRATION 50->51` en erreur.
 - Après la migration 43 : un suivi numérique qui avait une unité dans les réglages de sa valeur la retrouve en tête de ses unités, et ses anciennes entrées l'affichent toujours ; un compteur garde son unité (« 3 verres »).
 
@@ -112,6 +113,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Variables
 
+- Filtres d'un pointeur : ajouter un filtre par valeur (nombre, choix, texte avec ses valeurs proposées, entre deux bornes), une période sur un champ date, « sans réponse » ; chacun se relit dans la liste, part à l'IA, et la requête de l'IA avec ses filtres s'affiche lisible sur sa carte. Un instant n'offre pas « = ».
 - Terme d'une formule : passer de constante à variable puis à lecture et revenir ; une constante se tape comme un nombre ; une variable se choisit en descendant dans sa zone, son nom s'affiche ; enregistrer puis rouvrir garde chaque terme.
 - Champ RÉFÉRENCE qui accepte les variables, et critère « variable » d'un Objectif : descendre dans une zone montre ses outils puis ses variables (« Variable » en petit), groupe par groupe sous le titre de chaque groupe, « Hors groupe » en dernier ; une zone sans groupe, une seule liste. Choisir une variable l'enregistre, son nom s'affiche, et le critère la lit à la fin de la tentative.
 - Lecture d'une variable : sur un champ numérique, la liste des réductions (dernière, somme, moyenne, min, max) ; sur un champ texte ou « compter les entrées », une ligne « Réduction : … » sans liste.

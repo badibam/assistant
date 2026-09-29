@@ -1,5 +1,6 @@
 package com.assistant.core.ui.selectors
 
+import com.assistant.core.conditions.Conditions
 import com.assistant.core.ai.enrichments.PointerConfig
 import com.assistant.core.ai.enrichments.PointerPlace
 import com.assistant.core.fields.ChoiceSettings
@@ -52,12 +53,13 @@ object PointerDescription {
 
     /** One filter: "Duration < 6 h", "Place is one of Home, Work", "Mood no answer". */
     fun filter(filter: JSONObject, fields: Map<String, FieldDefinition>, s: StringsContext): String {
-        val path = filter.optString("field")
+        val path = Conditions.fieldOf(filter) ?: ""
         val field = fields[path]
-        val op = FilterOperator.of(filter.optString("op"))
+        val op = FilterOperator.of(filter.optString(Conditions.OP))
         val label = field?.displayName ?: path
-        if (field == null || op == null) return "$label ${filter.optString("op")} ${filter.opt("value")}"
-        val raw = if (filter.isNull("value")) null else filter.get("value")
+        val right = Conditions.right(filter)
+        if (field == null || op == null || right is Conditions.Right.NotWritten) return "$label ${filter.optString(Conditions.OP)} ${filter.opt(Conditions.RIGHT) ?: ""}".trim()
+        val raw = (right as? Conditions.Right.Written)?.value
         return when (op) {
             FilterOperator.ABSENT, FilterOperator.PRESENT -> "$label ${operator(op, s)}"
             FilterOperator.BETWEEN -> {
@@ -191,11 +193,10 @@ object PointerDescription {
         }
         if (pointer.target.kind == ReferenceKind.ZONE) return "$base — ${s.shared("pointer_prompt_zone_period").format(period.toString())}"
         val filters = JSONArray((0 until selection.filters.length()).map { i ->
-            val filter = JSONObject(selection.filters.getJSONObject(i).toString())
-            val path = filter.optString("field")
+            val filter = selection.filters.getJSONObject(i)
+            val path = Conditions.fieldOf(filter)
             val type = fields[path]?.type ?: FieldType.DATETIME.takeIf { path == "timestamp" }
-            if (filter.has("value")) filter.put("value", model(type, filter.get("value")))
-            filter
+            Conditions.withValues(filter) { model(type, it) }
         })
         val query = JSONObject().put("type", "TOOL_DATA").put("params", JSONObject().apply {
             put("id", pointer.target.id)

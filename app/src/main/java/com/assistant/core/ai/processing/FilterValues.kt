@@ -1,16 +1,18 @@
 package com.assistant.core.ai.processing
 
 import com.assistant.core.ai.prompts.ModelValues
+import com.assistant.core.conditions.Conditions
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.FieldValueSchema
 import com.assistant.core.selection.TimePoint
 import com.assistant.core.selection.TimeResolver
 import com.assistant.core.utils.DateTimeConverter
+import com.assistant.core.utils.JsonUtils
 
 /**
- * The filters of a TOOL_DATA query with their values in the stored form, from the forms the AI
- * side writes them in.
+ * The filters of a TOOL_DATA query, conditions on a field of each entry (Conditions), with their
+ * written values in the stored form, from the forms the AI side writes them in.
  *
  * On a DATETIME field (timestamp included) or a DATE field, a value can be:
  * - a relative date, `{"relative": {"unit": "DAY", "offset": -1, "edge": "START"}}` or
@@ -38,24 +40,16 @@ object FilterValues {
         resolver: TimeResolver,
         text: (String) -> String
     ): List<Any?> = filters.map { raw ->
-        val filter = raw as? Map<*, *> ?: return@map raw
-        val field = fields[filter["field"] as? String] ?: return@map raw
-        val value = filter["value"]
-
-        when (field.type) {
-            FieldType.DATETIME, FieldType.DATE -> filter.toMutableMap().apply {
-                put("value", eachValue(value) { date(field.type, it, resolver, text) })
-            }
-            FieldType.DURATION -> filter.toMutableMap().apply {
-                put("value", eachValue(value) { ModelValues.fromModel(it, FieldValueSchema.of(field), resolver.zone) })
-            }
-            else -> filter
+        val filter = (raw as? Map<*, *>)?.let { map -> JsonUtils.toJSONObject(map.entries.associate { it.key.toString() to it.value }) } ?: return@map raw
+        val field = Conditions.fieldOf(filter)?.let { fields[it] } ?: return@map raw
+        // Each written value apart, each bound of a between included
+        val stored = when (field.type) {
+            FieldType.DATETIME, FieldType.DATE -> Conditions.withValues(filter) { date(field.type, JsonUtils.toValue(it), resolver, text) }
+            FieldType.DURATION -> Conditions.withValues(filter) { ModelValues.fromModel(JsonUtils.toValue(it), FieldValueSchema.of(field), resolver.zone) }
+            else -> return@map raw
         }
+        JsonUtils.toMap(stored)
     }
-
-    /** [value], or each of the values of a list (between, in), through [convert]. */
-    private fun eachValue(value: Any?, convert: (Any?) -> Any?): Any? =
-        if (value is List<*>) value.map(convert) else convert(value)
 
     /** A value on a field of [type]: milliseconds for a DATETIME, a day ("2026-09-15") for a DATE. */
     private fun date(type: FieldType, value: Any?, resolver: TimeResolver, text: (String) -> String): Any? = when {

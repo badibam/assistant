@@ -1,7 +1,9 @@
 package com.assistant.core.selection
 
+import com.assistant.core.conditions.Conditions
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -22,9 +24,9 @@ data class EntryPeriod(val start: TimePoint? = null, val end: TimePoint? = null)
      * The period as the filters of tool_data.get on timestamp: ">=" its start, "<=" its end,
      * resolved by [resolver].
      */
-    fun timestampFilters(resolver: TimeResolver): List<Map<String, Any>> = listOfNotNull(
-        start?.let { mapOf("field" to "timestamp", "op" to ">=", "value" to resolver.instant(it)) },
-        end?.let { mapOf("field" to "timestamp", "op" to "<=", "value" to resolver.instant(it)) }
+    fun timestampFilters(resolver: TimeResolver): List<Map<String, Any?>> = listOfNotNull(
+        start?.let { JsonUtils.toMap(Conditions.onField("timestamp", ">=", resolver.instant(it))) },
+        end?.let { JsonUtils.toMap(Conditions.onField("timestamp", "<=", resolver.instant(it))) }
     )
 
     companion object {
@@ -45,7 +47,7 @@ data class EntryPeriod(val start: TimePoint? = null, val end: TimePoint? = null)
  * Filters and fields are an instance's own; a period narrows an instance's entries, or a zone's,
  * applied to each of its tools. [problem] names what does not fit its target.
  *
- * @property filters The filters of tool_data.get, a date's value being a TimePoint's stored form
+ * @property filters Conditions put on each entry (Conditions), a date's value being a TimePoint's stored form
  * @property fields The fields kept, all of them when null
  */
 data class EntrySelection(
@@ -77,18 +79,13 @@ data class EntrySelection(
         val stored = JSONArray()
         period.timestampFilters(resolver).forEach { stored.put(JSONObject(it)) }
         for (i in 0 until filters.length()) {
-            val filter = JSONObject(filters.getJSONObject(i).toString())
-            val type = fields[filter.optString("field")]?.type
-            if (type == FieldType.DATE || type == FieldType.DATETIME) {
-                fun resolved(value: Any?): Any? =
+            val filter = filters.getJSONObject(i)
+            val type = Conditions.fieldOf(filter)?.let { fields[it]?.type }
+            stored.put(
+                if (type == FieldType.DATE || type == FieldType.DATETIME) Conditions.withValues(filter) { value ->
                     if (TimePoint.isRelative(value)) resolver.resolve(TimePoint.read(value!!, text), type) else value
-                when (val value = filter.opt("value")) {
-                    is JSONArray -> filter.put("value", JSONArray((0 until value.length()).map { resolved(value.get(it)) }))
-                    null -> {}
-                    else -> filter.put("value", resolved(value))
-                }
-            }
-            stored.put(filter)
+                } else filter
+            )
         }
         return stored
     }

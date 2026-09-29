@@ -90,95 +90,95 @@ class EntryFiltersTest {
 
     @Test
     fun `a period is two filters on timestamp`() {
-        assertEquals(listOf("b"), ids("""[{"field": "timestamp", "op": ">=", "value": 1500}, {"field": "timestamp", "op": "<=", "value": 2000}]"""))
-        assertEquals(listOf("b", "a"), ids("""[{"field": "timestamp", "op": "between", "value": [1000, 2000]}]"""))
+        assertEquals(listOf("b"), ids("""[{"left": {"field": "timestamp"}, "op": ">=", "right": {"constant": 1500}}, {"left": {"field": "timestamp"}, "op": "<=", "right": {"constant": 2000}}]"""))
+        assertEquals(listOf("b", "a"), ids("""[{"left": {"field": "timestamp"}, "op": "between", "right": [{"constant": 1000}, {"constant": 2000}]}]"""))
     }
 
     @Test
     fun `numbers and durations compare as numbers`() {
-        assertEquals(listOf("c", "b"), ids("""[{"field": "data.weight", "op": ">", "value": 75}]"""))
-        assertEquals(listOf("a"), ids("""[{"field": "data.weight", "op": "=", "value": 72.5}]"""))
-        assertEquals(listOf("b"), ids("""[{"field": "data.sleep", "op": "<", "value": 21600000}]"""))
+        assertEquals(listOf("c", "b"), ids("""[{"left": {"field": "data.weight"}, "op": ">", "right": {"constant": 75}}]"""))
+        assertEquals(listOf("a"), ids("""[{"left": {"field": "data.weight"}, "op": "=", "right": {"constant": 72.5}}]"""))
+        assertEquals(listOf("b"), ids("""[{"left": {"field": "data.sleep"}, "op": "<", "right": {"constant": 21600000}}]"""))
     }
 
     @Test
     fun `filters combine with AND`() {
-        assertEquals(listOf("b"), ids("""[{"field": "data.weight", "op": ">", "value": 75}, {"field": "extra.place", "op": "in", "value": ["work"]}]"""))
+        assertEquals(listOf("b"), ids("""[{"left": {"field": "data.weight"}, "op": ">", "right": {"constant": 75}}, {"left": {"field": "extra.place"}, "op": "in", "right": {"constant": ["work"]}}]"""))
     }
 
     @Test
     fun `an hour compares by time of day, whether written 9_05 or 09_05`() {
-        assertEquals(listOf("b"), ids("""[{"field": "data.bedtime", "op": "<", "value": "10:00"}]"""))
-        assertEquals(listOf("a"), ids("""[{"field": "data.bedtime", "op": ">=", "value": "21:00"}]"""))
+        assertEquals(listOf("b"), ids("""[{"left": {"field": "data.bedtime"}, "op": "<", "right": {"constant": "10:00"}}]"""))
+        assertEquals(listOf("a"), ids("""[{"left": {"field": "data.bedtime"}, "op": ">=", "right": {"constant": "21:00"}}]"""))
     }
 
     @Test
     fun `a day compares as a day`() {
-        assertEquals(listOf("b"), ids("""[{"field": "extra.due", "op": "between", "value": ["2026-09-15", "2026-09-30"]}]"""))
+        assertEquals(listOf("b"), ids("""[{"left": {"field": "extra.due"}, "op": "between", "right": [{"constant": "2026-09-15"}, {"constant": "2026-09-30"}]}]"""))
     }
 
     @Test
     fun `a text is matched whole or by a part, whatever the case`() {
-        assertEquals(listOf("a"), ids("""[{"field": "extra.note", "op": "contains", "value": "great"}]"""))
-        assertEquals(listOf("b"), ids("""[{"field": "name", "op": "=", "value": "Evening"}]"""))
+        assertEquals(listOf("a"), ids("""[{"left": {"field": "extra.note"}, "op": "contains", "right": {"constant": "great"}}]"""))
+        assertEquals(listOf("b"), ids("""[{"left": {"field": "name"}, "op": "=", "right": {"constant": "Evening"}}]"""))
     }
 
     @Test
     fun `a choice matches one of the options given, a multiple one by any option it holds`() {
-        assertEquals(listOf("b", "a"), ids("""[{"field": "extra.place", "op": "in", "value": ["home", "work"]}]"""))
-        assertEquals(listOf("b"), ids("""[{"field": "extra.tags", "op": "in", "value": ["sick", "nothing"]}]"""))
+        assertEquals(listOf("b", "a"), ids("""[{"left": {"field": "extra.place"}, "op": "in", "right": {"constant": ["home", "work"]}}]"""))
+        assertEquals(listOf("b"), ids("""[{"left": {"field": "extra.tags"}, "op": "in", "right": {"constant": ["sick", "nothing"]}}]"""))
     }
 
     @Test
     fun `a boolean is true or false, and an entry without it is neither`() {
-        assertEquals(listOf("a"), ids("""[{"field": "state.read", "op": "=", "value": true}]"""))
-        assertEquals(listOf("b"), ids("""[{"field": "state.read", "op": "=", "value": false}]"""))
+        assertEquals(listOf("a"), ids("""[{"left": {"field": "state.read"}, "op": "=", "right": {"constant": true}}]"""))
+        assertEquals(listOf("b"), ids("""[{"left": {"field": "state.read"}, "op": "=", "right": {"constant": false}}]"""))
     }
 
     @Test
     fun `no answer is a missing value, an empty text or an empty list`() {
-        assertEquals(listOf("c", "b"), ids("""[{"field": "extra.note", "op": "absent"}]"""))
-        assertEquals(listOf("c"), ids("""[{"field": "extra.tags", "op": "absent"}]"""))
-        assertEquals(listOf("c"), ids("""[{"field": "state.read", "op": "absent"}]"""))
-        assertEquals(listOf("c"), ids("""[{"field": "name", "op": "absent"}]"""))
-        assertEquals(listOf("b", "a"), ids("""[{"field": "extra.place", "op": "present"}]"""))
+        assertEquals(listOf("c", "b"), ids("""[{"left": {"field": "extra.note"}, "op": "absent"}]"""))
+        assertEquals(listOf("c"), ids("""[{"left": {"field": "extra.tags"}, "op": "absent"}]"""))
+        assertEquals(listOf("c"), ids("""[{"left": {"field": "state.read"}, "op": "absent"}]"""))
+        assertEquals(listOf("c"), ids("""[{"left": {"field": "name"}, "op": "absent"}]"""))
+        assertEquals(listOf("b", "a"), ids("""[{"left": {"field": "extra.place"}, "op": "present"}]"""))
     }
 
     @Test
     fun `the count is that of the filtered entries, and a page is taken among them`() {
-        val heavy = """[{"field": "data.weight", "op": ">", "value": 70}]"""
+        val heavy = """[{"left": {"field": "data.weight"}, "op": ">", "right": {"constant": 70}}]"""
         assertEquals(3, count(heavy))
         assertEquals(listOf("b"), ids(heavy, limit = 1, offset = 1))
     }
 
     @Test
     fun `a field is compared through a bound key, never written into the SQL`() {
-        val query = EntryFilters.select("t1", ready("""[{"field": "extra.note", "op": "=", "value": "x"}]"""), fields, null, 0)
+        val query = EntryFilters.select("t1", ready("""[{"left": {"field": "extra.note"}, "op": "=", "right": {"constant": "x"}}]"""), fields, null, 0)
         assertTrue("note" !in query.clause)
     }
 
     @Test
     fun `a filter on a field the entries do not have is refused, naming the ones they have`() {
-        val error = refused("""[{"field": "data.mood", "op": "=", "value": 3}]""")
+        val error = refused("""[{"left": {"field": "data.mood"}, "op": "=", "right": {"constant": 3}}]""")
         assertTrue(error.startsWith("service_error_filter_unknown_field"))
     }
 
     @Test
     fun `a condition the field's type does not take is refused`() {
-        assertTrue(refused("""[{"field": "data.weight", "op": "contains", "value": "7"}]""").startsWith("service_error_filter_operator"))
-        assertTrue(refused("""[{"field": "extra.place", "op": "=", "value": "home"}]""").startsWith("service_error_filter_operator"))
-        assertTrue(refused("""[{"field": "extra.span", "op": ">", "value": 3}]""").startsWith("service_error_filter_operator"))
+        assertTrue(refused("""[{"left": {"field": "data.weight"}, "op": "contains", "right": {"constant": "7"}}]""").startsWith("service_error_filter_operator"))
+        assertTrue(refused("""[{"left": {"field": "extra.place"}, "op": "=", "right": {"constant": "home"}}]""").startsWith("service_error_filter_operator"))
+        assertTrue(refused("""[{"left": {"field": "extra.span"}, "op": ">", "right": {"constant": 3}}]""").startsWith("service_error_filter_operator"))
     }
 
     @Test
     fun `a value that does not suit the field or the condition is refused`() {
         listOf(
-            """{"field": "data.weight", "op": "<", "value": "heavy"}""",
-            """{"field": "data.bedtime", "op": "<", "value": "25:00"}""",
-            """{"field": "extra.due", "op": "<", "value": "15/09/2026"}""",
-            """{"field": "timestamp", "op": "between", "value": [1000]}""",
-            """{"field": "extra.place", "op": "in", "value": []}""",
-            """{"field": "extra.note", "op": "absent", "value": "x"}"""
+            """{"left": {"field": "data.weight"}, "op": "<", "right": {"constant": "heavy"}}""",
+            """{"left": {"field": "data.bedtime"}, "op": "<", "right": {"constant": "25:00"}}""",
+            """{"left": {"field": "extra.due"}, "op": "<", "right": {"constant": "15/09/2026"}}""",
+            """{"left": {"field": "timestamp"}, "op": "between", "right": {"constant": [1000]}}""",
+            """{"left": {"field": "extra.place"}, "op": "in", "right": {"constant": []}}""",
+            """{"left": {"field": "extra.note"}, "op": "absent", "right": {"constant": "x"}}"""
         ).forEach { filter ->
             assertTrue(filter, refused("[$filter]").startsWith("service_error_filter_value"))
         }

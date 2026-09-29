@@ -128,8 +128,8 @@ fun TrackingHistory(
                 if (periodFilter != PeriodFilterType.ALL) {
                     val period = currentPeriod!!
                     params["filters"] = listOf(
-                        mapOf("field" to "timestamp", "op" to ">=", "value" to period.timestamp),
-                        mapOf("field" to "timestamp", "op" to "<=", "value" to getPeriodEndTimestamp(period))
+                        com.assistant.core.conditions.Conditions.onField("timestamp", ">=", period.timestamp),
+                        com.assistant.core.conditions.Conditions.onField("timestamp", "<=", getPeriodEndTimestamp(period))
                     )
                 }
                 

@@ -37,6 +37,7 @@ import com.assistant.core.versioning.ToolConfigsAtV39
 import com.assistant.core.versioning.CatchUpAtV41
 import com.assistant.core.versioning.FormatNullsAtV42
 import com.assistant.core.versioning.ScheduleDatesAtV51
+import com.assistant.core.versioning.ConditionsAtV52
 import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
@@ -86,7 +87,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 51
+        const val VERSION = 52
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1373,6 +1374,41 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Stored filters become conditions, {"left", "op", "right"}: see ConditionsAtV52. */
+        private val MIGRATION_51_52 = object : Migration(51, 52) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // A row that cannot be read stays as it was and is logged
+                var rewritten = 0
+                database.query("SELECT id, rich_content_json FROM session_messages WHERE rich_content_json LIKE '%POINTER%'").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        try {
+                            ConditionsAtV52.richContent(cursor.getString(1))?.let { next ->
+                                database.execSQL("UPDATE session_messages SET rich_content_json = ? WHERE id = ?", arrayOf<Any?>(next, id))
+                                rewritten++
+                            }
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 51->52: pointers of message $id left as they were: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                database.query("SELECT id, definition_json FROM variables").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        try {
+                            ConditionsAtV52.definition(cursor.getString(1))?.let { next ->
+                                database.execSQL("UPDATE variables SET definition_json = ? WHERE id = ?", arrayOf<Any?>(next, id))
+                                rewritten++
+                            }
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 51->52: terms of variable $id left as they were: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 51->52: $rewritten message(s) and variable(s) with their filters as conditions", "INFO")
+            }
+        }
+
         /** A schedule is its pattern alone, without start and end dates: see ScheduleDatesAtV51. */
         private val MIGRATION_50_51 = object : Migration(50, 51) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2054,7 +2090,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_47_48,
                     MIGRATION_48_49,
                     MIGRATION_49_50,
-                    MIGRATION_50_51
+                    MIGRATION_50_51,
+                    MIGRATION_51_52
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

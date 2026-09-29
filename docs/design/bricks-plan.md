@@ -10,15 +10,6 @@
 - Rappel : rien de ce qui a été codé depuis la base 46 n'a tourné sur le téléphone (`device-checks.md`).
 - Ailleurs, et à relire avant l'étape qui les cite : dans `docs/design/missing-tools.md`, « Le temps relatif » (la référence, les libellés relatifs, « = » refusé sur un DATETIME) et « Les formes enregistrées » (Instant, période, sélection, pointeur) ; sa section « Objectif » ; dans `docs/design/unified-fields.md`, le réglage de champ réservé à l'utilisateur.
 
-## 6. Condition
-
-- Le modèle : côté, opérateur, côté ; un côté est un terme, ou un champ quand la condition est posée à chaque entrée ; `{"left", "op", "right"}`. Un parseur ; deux évaluations : une fois (en Kotlin, par type, dates relatives comprises) et sur chaque entrée (en SQL, `EntryFilters` générant sa clause depuis la Condition, ses termes lus d'abord à la référence du contexte).
-- Un sélecteur commun (côté, opérateur selon le type, côté) remplace `FilterValueInput` et l'intérieur de `PointerFiltersDialog`.
-- **Migration des filtres** `{"field", "op", "value"}` → `{"left": {"field"}, "op", "right": {"constant"}}` : base 51 → 52 et sauvegardes (`JsonTransformers`), sur le modèle de `PointerAtV46` ; les endroits : pointeurs des messages et des départs d'automation (`rich_content_json`), sélections des termes de variables (`definition_json`). Les filtres de l'écran des Données structurées ne sont qu'un état d'écran.
-- Côté IA : la forme dans le prompt (TOOL_DATA, pointeurs, variables) et ses exemples (`check_prompt_examples.py`), `FilterValues` et `CommandTransformer` qui lisent la nouvelle forme.
-- À valider : le nom des clés (`left`, `op`, `right`) face à ce que l'IA écrit le plus ; ce que devient `between` (une cible, deux termes ?).
-- Les opérateurs permis sur une date suivent « Le temps relatif » (`missing-tools.md`) : pas de « = » sur un DATETIME, « entre » dit ce qu'on veut.
-
 ## 7. Lecture et Sélection d'entrées
 
 - Deux sélecteurs composés : Sélection (Chose + Période + Conditions posées à chaque entrée + champs gardés) et Lecture (Sélection + Champ + Réduction).
@@ -28,6 +19,7 @@
 
 - Un critère : sa clé, son nom, indispensable ou non, et une Condition — jugée une fois pour un critère lu (« Par rapport à : la fin de la tentative (maintenant tant qu'elle court) », la période d'une Lecture préremplie à celle de la tentative), posée à la tentative pour un critère saisi (son champ déclaré d'un côté).
 - Disparaissent : `kind`, `target`, `target_unit`, `TargetUnit`, `Criterion.meets`, le CHOICE de réduction ; le formulaire du critère devient un éditeur fait des sélecteurs, que l'Objectif branche sur son formulaire de réglages (le crochet est à recréer : sans usage, il a été retiré).
+- La Condition jugée une fois arrive ici, avec son premier usage : un modèle (côté, opérateur, côté) lu depuis `Conditions`, évalué en Kotlin par type, dates relatives comprises ; et une variable ou une Lecture d'un côté, lues d'abord à la référence du contexte. `ConditionPicker` apprend alors à proposer un terme à droite.
 - Pas de migration : aucun Objectif n'existe encore (confirmé le 2026-09-29).
 - Ce qui ne change pas vient de `missing-tools.md`, « Objectif » (comptage, indispensables, verrouillage, `goal.validate` et `goal.reopen`) ; le verdict réservé à l'utilisateur, du réglage de champ de `unified-fields.md`.
 - Côté IA : le schéma de config, la doc et les exemples de l'Objectif.

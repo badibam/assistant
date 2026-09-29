@@ -1,5 +1,6 @@
 package com.assistant.core.ui.selectors
 
+import com.assistant.core.conditions.Conditions
 import com.assistant.core.selection.Edge
 import com.assistant.core.selection.EntryPeriod
 import com.assistant.core.selection.ReferenceKind
@@ -21,7 +22,7 @@ class PointerSelectionTest {
 
     private val health = Named("z1", "Health")
     private val sleep = Named("t1", "Sleep", "tracking")
-    private val shortNights = JSONArray().put(JSONObject().put("field", "data.duration").put("op", "<").put("value", 21600000))
+    private val shortNights = JSONArray().put(Conditions.onField("data.duration", "<", 21600000))
     private val lastWeek = EntryPeriod(TimePoint.Relative(PeriodType.DAY, -7, Edge.START), TimePoint.Now)
 
     @Test
@@ -45,7 +46,7 @@ class PointerSelectionTest {
         assertEquals(TimePoint.Relative(PeriodType.DAY, -7, Edge.START), pointer.selection.period.start)
         assertEquals(TimePoint.Now, pointer.selection.period.end)
         assertEquals(1, pointer.selection.filters.length())
-        assertEquals("data.duration", pointer.selection.filters.getJSONObject(0).getString("field"))
+        assertEquals("data.duration", Conditions.fieldOf(pointer.selection.filters.getJSONObject(0)))
         assertEquals(listOf("data.duration"), pointer.selection.fields)
     }
 
@@ -111,19 +112,19 @@ class PointerSelectionTest {
 
     @Test
     fun `a period on a date field is a start and an end on that field, each only when set`() {
-        val filters = periodFilters("extra.due", EntryPeriod(start = TimePoint.Relative(PeriodType.WEEK, 0, Edge.START)))
+        val filters = periodConditions("extra.due", EntryPeriod(start = TimePoint.Relative(PeriodType.WEEK, 0, Edge.START)))
         assertEquals(1, filters.length())
-        assertEquals("extra.due", filters.getJSONObject(0).getString("field"))
+        assertEquals("extra.due", Conditions.fieldOf(filters.getJSONObject(0)))
         assertEquals(">=", filters.getJSONObject(0).getString("op"))
-        assertEquals("START", filters.getJSONObject(0).getJSONObject("value").getJSONObject("relative").getString("edge"))
+        assertEquals("START", filters.getJSONObject(0).getJSONObject("right").getJSONObject("constant").getJSONObject("relative").getString("edge"))
     }
 
     @Test
     fun `a fixed bound keeps its field's stored form, now stays now`() {
-        val filters = periodFilters("extra.due", EntryPeriod(TimePoint.Fixed("2026-09-15"), TimePoint.Now))
-        assertEquals("2026-09-15", filters.getJSONObject(0).getString("value"))
+        val filters = periodConditions("extra.due", EntryPeriod(TimePoint.Fixed("2026-09-15"), TimePoint.Now))
+        assertEquals("2026-09-15", filters.getJSONObject(0).getJSONObject("right").getString("constant"))
         assertEquals("<=", filters.getJSONObject(1).getString("op"))
-        assertEquals("NOW", filters.getJSONObject(1).getJSONObject("value").getString("relative"))
+        assertEquals("NOW", filters.getJSONObject(1).getJSONObject("right").getJSONObject("constant").getString("relative"))
     }
 
     @Test

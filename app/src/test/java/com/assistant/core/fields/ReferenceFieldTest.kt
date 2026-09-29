@@ -135,9 +135,9 @@ class ReferenceFieldTest {
 
     @Test
     fun `a reference filters by what it designates, or by having one`() {
-        assertEquals(listOf("m1"), ids("""[{"field": "extra.food", "op": "=", "value": {"kind": "ENTRY", "id": "apple"}}]"""))
-        assertEquals(listOf("m3"), ids("""[{"field": "extra.food", "op": "absent"}]"""))
-        assertTrue(EntryFilters.parse(JSONArray("""[{"field": "extra.food", "op": ">", "value": {"kind": "ENTRY", "id": "apple"}}]"""), fields) { it } is EntryFilters.Parsed.Refused)
+        assertEquals(listOf("m1"), ids("""[{"left": {"field": "extra.food"}, "op": "=", "right": {"constant": {"kind": "ENTRY", "id": "apple"}}}]"""))
+        assertEquals(listOf("m3"), ids("""[{"left": {"field": "extra.food"}, "op": "absent"}]"""))
+        assertTrue(EntryFilters.parse(JSONArray("""[{"left": {"field": "extra.food"}, "op": ">", "right": {"constant": {"kind": "ENTRY", "id": "apple"}}}]"""), fields) { it } is EntryFilters.Parsed.Refused)
     }
 
     // The model: a reference read with its current name, written back without it

@@ -908,20 +908,23 @@ class CommandExecutor(private val context: Context) {
         val schema = loadEntrySchema(command)
         val zone = AppConfigManager.getDateTimeConfig().getZoneId()
         return filters.joinToString(", ") { raw ->
-            val filter = raw as? Map<*, *> ?: return@joinToString raw.toString()
-            val path = filter["field"] as? String ?: ""
+            val filter = (raw as? Map<*, *>)?.let { map -> JSONObject(map.entries.associate { it.key.toString() to it.value }) } ?: return@joinToString raw.toString()
+            val path = com.assistant.core.conditions.Conditions.fieldOf(filter) ?: ""
             val leaf = schema.optJSONObject("properties")?.let { properties ->
                 if ('.' in path) properties.optJSONObject(path.substringBefore('.'))
                     ?.optJSONObject("properties")?.optJSONObject(path.substringAfter('.'))
                 else properties.optJSONObject(path)
             }
             fun model(value: Any?) = if (leaf != null) ModelValues.toModel(value, leaf, zone) else value
-            val shown = when (val value = filter["value"]) {
-                null -> ""
-                is List<*> -> value.map { model(it) }.toString()
-                else -> model(value).toString()
+            val shown = when (val right = com.assistant.core.conditions.Conditions.right(filter)) {
+                com.assistant.core.conditions.Conditions.Right.None -> ""
+                is com.assistant.core.conditions.Conditions.Right.Written -> when (val value = right.value) {
+                    is org.json.JSONArray -> (0 until value.length()).map { model(JsonUtils.toValue(value.get(it))) }.toString()
+                    else -> model(value).toString()
+                }
+                is com.assistant.core.conditions.Conditions.Right.NotWritten -> right.raw.toString()
             }
-            "$path ${filter["op"]} $shown".trim()
+            "$path ${filter.optString("op")} $shown".trim()
         }
     }
 

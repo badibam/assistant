@@ -134,7 +134,7 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
     }
     LaunchedEffect(toolInstanceId, sheetsVersion, search, filters) {
         val all = JSONArray(filters)
-        if (search.isNotBlank()) all.put(JSONObject().put("field", "name").put("op", "contains").put("value", search.trim()))
+        if (search.isNotBlank()) all.put(com.assistant.core.conditions.Conditions.onField("name", "contains", search.trim()))
         val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to toolInstanceId, "filters" to JsonUtils.toList(all)))
         if (!result.isSuccess) { errorMessage = result.error; return@LaunchedEffect }
         sheets = (result.data?.get("entries") as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<*, *>>().map { Sheet.of(it) }

@@ -44,7 +44,7 @@ class QuestionnaireService(private val context: Context) : ExecutableService {
         val result = coordinator.processUserAction("tool_data.get", mapOf(
             "tool_instance_id" to toolInstanceId,
             "fields" to listOf("id"),
-            "filters" to listOf(mapOf("field" to "state.${QuestionnaireToolType.STATUS}", "op" to "in", "value" to listOf(QuestionnaireToolType.Status.TO_FILL)))
+            "filters" to listOf(com.assistant.core.conditions.Conditions.onField("state.${QuestionnaireToolType.STATUS}", "in", listOf(QuestionnaireToolType.Status.TO_FILL)))
         ))
         if (!result.isSuccess) return OperationResult.error(result.error ?: "")
         val ids = (result.data?.get("entries") as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<*, *>>().map { it["id"] as String }
