@@ -972,15 +972,17 @@ object DefaultTheme : ThemeContract {
                 contentColor = CurrentTheme.getCurrentColorScheme().onSurface
             ),
             shape = CardShape,
+            // The grid gives the tile its cells; the space between tiles is taken inside them
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .padding(4.dp)
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick
                 )
         ) {
             // Le contenu vient de UI.ZoneCard()
-            Box(modifier = Modifier.padding(16.dp)) {
+            Box(modifier = Modifier.padding(12.dp)) {
                 content()
             }
         }

@@ -215,6 +215,7 @@ interface ThemeContract {
     // SPECIALIZED CONTAINERS (appearance only)
     // =====================================
     
+    /** A zone's tile, filling the cells the home screen's grid gives it, as a tool's does. */
     @Composable
     fun ZoneCardContainer(
         onClick: () -> Unit,

@@ -438,7 +438,11 @@ object UI {
         }
     }
 
-    /** Something waiting or a stopwatch running in one of its tools (LocalWaiting, LocalRunning) is marked on its icon. */
+    /**
+     * A zone's tile on the home screen, laid out by its display mode: its icon (ICON), its icon and
+     * name (MINIMAL), its description beside them (LINE) or below (CONDENSED). Something waiting or
+     * a stopwatch running in one of its tools (LocalWaiting, LocalRunning) is marked on its icon.
+     */
     @Composable
     fun ZoneCard(
         zone: Zone,
@@ -447,23 +451,33 @@ object UI {
     ) {
         val waiting = LocalWaiting.current.zone(zone.id)
         val running = LocalRunning.current.zone(zone.id)
-        // Themed container + standard content with UI.*
+        val mode = DisplayMode.valueOf(zone.display_mode)
+        @Composable
+        fun Header() = Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            MarkedIcon(zone.icon_name, waiting, running)
+            Text(zone.name, TextType.SUBTITLE, maxLines = 2)
+        }
+        @Composable
+        fun Description() = zone.description?.let { Text(it, TextType.BODY, maxLines = 2) }
         CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
-            Column {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            when (mode) {
+                DisplayMode.ICON -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     MarkedIcon(zone.icon_name, waiting, running)
-                    Text(zone.name, TextType.TITLE)
                 }
-                zone.description?.let { desc ->
-                    Text(desc, TextType.BODY)
+                DisplayMode.MINIMAL -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Header() }
+                DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) { Header() }
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) { Description() }
                 }
+                DisplayMode.CONDENSED -> Column(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) { Header() }
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) { Description() }
+                }
+                else -> throw IllegalStateException("A zone has no ${zone.display_mode} tile")
             }
         }
     }
-    
+
     @Composable
     fun PageHeader(
         title: String,

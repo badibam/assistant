@@ -691,7 +691,7 @@ private fun GroupSection(
                 type = TextType.SUBTITLE
             )
 
-            SectionButtons(groupName, groupTools.isNotEmpty(), editor, onToggleToolsList)
+            com.assistant.core.ui.components.GridSectionButtons(groupName, groupTools.isNotEmpty(), editor, onToggleToolsList)
         }
     }
 
@@ -877,7 +877,7 @@ private fun UngroupedSection(
                 type = TextType.SUBTITLE
             )
 
-            SectionButtons("", toolInstances.isNotEmpty(), editor, onToggleToolsList)
+            com.assistant.core.ui.components.GridSectionButtons("", toolInstances.isNotEmpty(), editor, onToggleToolsList)
         }
     }
 
@@ -1021,30 +1021,6 @@ private fun toolInstanceOf(map: Map<String, Any?>) = ToolInstance(
     created_at = (map["created_at"] as Number).toLong(),
     updated_at = (map["updated_at"] as Number).toLong()
 )
-
-/**
- * The buttons of a section's title line: its edit mode, on while it lasts (shown when it has
- * tools), and adding, off while any section is in edit mode.
- */
-@Composable
-private fun SectionButtons(key: String, hasTools: Boolean, editor: com.assistant.core.ui.components.GridEditor, onToggleToolsList: () -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (hasTools) UI.ActionButton(
-            action = ButtonAction.ARRANGE,
-            display = ButtonDisplay.ICON,
-            size = Size.M,
-            active = editor.isEditing(key),
-            onClick = { editor.toggle(key) }
-        )
-        UI.ActionButton(
-            action = ButtonAction.ADD,
-            display = ButtonDisplay.ICON,
-            size = Size.M,
-            enabled = !editor.anyEditing,
-            onClick = onToggleToolsList
-        )
-    }
-}
 
 /** A section's grid: in edit mode when it is the section edited, faded while another is. */
 @Composable

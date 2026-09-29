@@ -208,3 +208,27 @@ fun Faded(faded: Boolean, content: @Composable () -> Unit) {
         }
     }
 }
+
+/**
+ * The buttons of a section's title line: its edit mode, on while it lasts (shown when it has
+ * tiles), and adding, off while any section is in edit mode.
+ */
+@Composable
+fun GridSectionButtons(key: String, hasTiles: Boolean, editor: GridEditor, onAdd: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (hasTiles) UI.ActionButton(
+            action = ButtonAction.ARRANGE,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            active = editor.isEditing(key),
+            onClick = { editor.toggle(key) }
+        )
+        UI.ActionButton(
+            action = ButtonAction.ADD,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            enabled = !editor.anyEditing,
+            onClick = onAdd
+        )
+    }
+}

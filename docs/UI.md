@@ -231,7 +231,7 @@ Row avec fillMaxWidth, colonnes en Box avec weight pour répartition (ex: 1f pou
 
 **UI.ToolCard** - Tool instance avec displayMode (ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE, FULL), onClick et onLongClick.
 
-**ToolGrid** - Les outils d'une section sur leur grille de quatre colonnes. En mode d'édition (`GridEditor`, un groupe à la fois, ouvert par le bouton `ARRANGE` de son titre), le thème dessine les cases (`ThemeContract.GridCell`), un toucher sélectionne une tuile, et `GridEditBar` la déplace aux flèches (`Grid.move`) ; la validation l'écrit en une fois (`tools.place`), « Annuler » remet la section comme elle était ; le reste de l'écran s'atténue et ne réagit pas (`Faded`).
+**ToolGrid** - Les outils d'une section sur leur grille de quatre colonnes. En mode d'édition (`GridEditor`, un groupe à la fois, ouvert par le bouton `ARRANGE` de son titre), le thème dessine les cases (`ThemeContract.GridCell`), un toucher sélectionne une tuile, et `GridEditBar` la déplace aux flèches (`Grid.move`) ; la validation l'écrit en une fois (`tools.place`), « Annuler » remet la section comme elle était ; le reste de l'écran s'atténue et ne réagit pas (`Faded`). L'accueil range ses zones de la même façon (`GridLayout`, `ZonePositions`, `zones.place`), une zone en ICON, MINIMAL, LINE ou CONDENSED (`UI.ZoneCard`), son mode réglé avec elle (`display_mode`).
 
 ## Navigation et États
 
