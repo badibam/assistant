@@ -57,10 +57,10 @@ class EntrySelectionTest {
     @Test
     fun `filters and fields fit a tool instance, a period a tool instance or a zone`() {
         val zone = Reference(ReferenceKind.ZONE, "z_1")
-        assertNull(EntrySelection(tool, yesterday, fields = listOf("data.kcal")).problem())
-        assertNull(EntrySelection(zone, yesterday).problem())
-        assertNotNull(EntrySelection(zone, fields = listOf("data.kcal")).problem())
-        assertNotNull(EntrySelection(Reference(ReferenceKind.APP, null), yesterday).problem())
+        assertNull(EntrySelection(tool, yesterday, fields = listOf("data.kcal")).problem { it })
+        assertNull(EntrySelection(zone, yesterday).problem { it })
+        assertNotNull(EntrySelection(zone, fields = listOf("data.kcal")).problem { it })
+        assertNotNull(EntrySelection(Reference(ReferenceKind.APP, null), yesterday).problem { it })
     }
 
     @Test

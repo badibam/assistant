@@ -55,11 +55,11 @@ data class EntrySelection(
     val fields: List<String>? = null
 ) {
 
-    /** What the target does not take, in words for the log and the AI; null when it all fits. */
-    fun problem(): String? = when {
+    /** What the target does not take, in words ([text], the shared strings); null when it all fits. */
+    fun problem(text: (String) -> String): String? = when {
         target.kind == ReferenceKind.TOOL_INSTANCE -> null
-        filters.length() > 0 || fields != null -> "filters and fields narrow the entries of a tool instance, not of a ${target.kind}"
-        !period.isEmpty && target.kind != ReferenceKind.ZONE -> "a period narrows the entries of a tool instance or a zone, not of a ${target.kind}"
+        filters.length() > 0 || fields != null -> text("selection_problem_filters").format(target.kind.name)
+        !period.isEmpty && target.kind != ReferenceKind.ZONE -> text("selection_problem_period").format(target.kind.name)
         else -> null
     }
 

@@ -154,29 +154,30 @@ object ImportPlanner {
     }
 
     /**
-     * What is missing from [declarations] to import [table], in words: a column not declared, a
-     * field or a writing not said, a key where names do not find entries. Empty when complete.
+     * What is missing from [declarations] to import [table], in words ([text], the shared strings):
+     * a column not declared, a field or a writing not said, a key where names do not find entries.
+     * Empty when complete.
      */
-    fun missing(table: ImportTable, declarations: List<ColumnDeclaration>, fields: Map<String, FieldDefinition>, uniqueName: Boolean): List<String> = buildList {
+    fun missing(table: ImportTable, declarations: List<ColumnDeclaration>, fields: Map<String, FieldDefinition>, uniqueName: Boolean, text: (String) -> String): List<String> = buildList {
         val declared = declarations.associateBy { it.column }
-        table.columns.filter { it !in declared }.forEach { add("column \"$it\": not declared") }
-        declarations.filter { it.column !in table.columns }.forEach { add("column \"${it.column}\": not in the file") }
+        table.columns.filter { it !in declared }.forEach { add(text("import_missing_column").format(it)) }
+        declarations.filter { it.column !in table.columns }.forEach { add(text("import_missing_in_file").format(it.column)) }
         declarations.forEach { d ->
             when (d.target) {
-                ColumnTarget.KEY -> if (!uniqueName) add("column \"${d.column}\": this tool does not find its entries by name")
+                ColumnTarget.KEY -> if (!uniqueName) add(text("import_missing_key").format(d.column))
                 ColumnTarget.FIELD -> {
                     val field = d.field?.let { fields[it] }
-                    if (field == null) add("column \"${d.column}\": field \"${d.field}\" unknown, known: ${fields.keys.joinToString(", ")}")
-                    else if (d.writing == null || d.writing.type != field.type) add("column \"${d.column}\": a writing of ${field.type}, among ${Writing.of(field.type).joinToString(", ")}")
+                    if (field == null) add(text("import_missing_field").format(d.column, d.field ?: "", fields.keys.joinToString(", ")))
+                    else if (d.writing == null || d.writing.type != field.type) add(text("import_missing_writing").format(d.column, field.type.name, Writing.of(field.type).joinToString(", ")))
                 }
                 ColumnTarget.NEW -> when {
-                    d.newField == null -> add("column \"${d.column}\": the new field's definition")
-                    d.writing == null || d.writing.type != d.newField.type -> add("column \"${d.column}\": a writing of ${d.newField.type}, among ${Writing.of(d.newField.type).joinToString(", ")}")
+                    d.newField == null -> add(text("import_missing_new_field").format(d.column))
+                    d.writing == null || d.writing.type != d.newField.type -> add(text("import_missing_writing").format(d.column, d.newField.type.name, Writing.of(d.newField.type).joinToString(", ")))
                 }
                 ColumnTarget.IGNORE -> {}
             }
         }
-        if (declarations.count { it.target == ColumnTarget.KEY } > 1) add("one key column at most")
+        if (declarations.count { it.target == ColumnTarget.KEY } > 1) add(text("import_missing_one_key"))
     }
 
     /** The keys the file holds twice or more, the case and the spaces around not counted. */

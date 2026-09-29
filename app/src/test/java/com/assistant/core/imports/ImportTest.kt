@@ -21,7 +21,7 @@ class ImportTest {
 
     @Test
     fun `a CSV finds its separator, keeps quoted separators and doubled quotes`() {
-        val table = CsvReader.read("﻿nom;kcal;note\npomme;52;\"rouge; croquante\"\n\"pain \"\"complet\"\"\";250;\n")
+        val table = CsvReader.read("﻿nom;kcal;note\npomme;52;\"rouge; croquante\"\n\"pain \"\"complet\"\"\";250;\n") { it }
         assertEquals(listOf("nom", "kcal", "note"), table.columns)
         assertEquals(listOf("pomme", "52", "rouge; croquante"), table.rows[0])
         assertEquals("pain \"complet\"", table.rows[1][0])
@@ -69,9 +69,9 @@ class ImportTest {
     @Test
     fun `a declaration misses nothing, or says what it misses`() {
         val table = ImportTable(listOf("a", "b"), emptyList())
-        val missing = ImportPlanner.missing(table, listOf(ColumnDeclaration("a", ColumnTarget.KEY)), emptyMap(), uniqueName = false)
-        assertTrue(missing.any { "\"b\"" in it })
-        assertTrue(missing.any { "by name" in it })
+        val missing = ImportPlanner.missing(table, listOf(ColumnDeclaration("a", ColumnTarget.KEY)), emptyMap(), uniqueName = false) { "$it %1\$s" }
+        assertTrue(missing.contains("import_missing_column b"))
+        assertTrue(missing.contains("import_missing_key a"))
     }
 
     @Test

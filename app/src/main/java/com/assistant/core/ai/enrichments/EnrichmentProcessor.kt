@@ -227,7 +227,7 @@ class EnrichmentProcessor(
         val pointer = PointerConfig.fromJson(config) { s.shared(it) }
         val id = pointer.target.id
         LogManager.aiEnrichment("POINTER: selection=${pointer.selection.toJson()}, config=${pointer.config}, entries=${pointer.entries}", "VERBOSE")
-        pointer.selection.problem()?.let { throw IllegalArgumentException("POINTER: $it") }
+        pointer.selection.problem { s.shared(it) }?.let { throw IllegalArgumentException("POINTER: $it") }
 
         return when (pointer.target.kind) {
             ReferenceKind.ZONE -> buildList {

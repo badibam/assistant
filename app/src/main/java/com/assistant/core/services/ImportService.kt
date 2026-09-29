@@ -41,7 +41,7 @@ class ImportService(private val context: Context) : ExecutableService {
         val toolInstanceId = params.optString("tool_instance_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
         val table = try {
-            CsvReader.read(params.optString("csv"))
+            CsvReader.read(params.optString("csv")) { s.shared(it) }
         } catch (e: IllegalArgumentException) {
             return OperationResult.error(s.shared("import_error_file").format(e.message ?: ""))
         }
@@ -86,7 +86,7 @@ class ImportService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             return OperationResult.error(s.shared("import_error_declaration").format(e.message ?: ""))
         }
-        ImportPlanner.missing(table, declarations, fields, uniqueName).takeIf { it.isNotEmpty() }
+        ImportPlanner.missing(table, declarations, fields, uniqueName) { s.shared(it) }.takeIf { it.isNotEmpty() }
             ?.let { return OperationResult.error(s.shared("import_error_declaration").format(it.joinToString("; "))) }
         ImportPlanner.duplicateKeys(table, declarations).takeIf { it.isNotEmpty() }
             ?.let { return OperationResult.error(s.shared("import_error_duplicate_keys").format(it.joinToString(", "))) }
@@ -117,7 +117,7 @@ class ImportService(private val context: Context) : ExecutableService {
 
         var created = 0
         var updated = 0
-        val refused = plan.refused.map { mapOf("line" to it.line, "column" to it.column, "cell" to it.cell, "reason" to s.shared("import_refused_cell").format(it.cell, it.reason)) }.toMutableList()
+        val refused = plan.refused.map { mapOf("line" to it.line, "column" to it.column, "cell" to it.cell, "reason" to s.shared("import_refused_cell").format(it.cell, s.shared("import_writing_${it.reason.lowercase()}"))) }.toMutableList()
         for (line in plan.lines) {
             val data = mutableMapOf<String, Any>()
             val extra = mutableMapOf<String, Any>()

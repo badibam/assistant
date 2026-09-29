@@ -16,20 +16,23 @@ data class ImportTable(val columns: List<String>, val rows: List<List<String>>) 
  */
 object CsvReader {
 
-    /** @throws IllegalArgumentException on a file without a header, or a quote left open */
-    fun read(text: String): ImportTable {
+    /**
+     * @param words The shared strings, for why a file does not read
+     * @throws IllegalArgumentException on a file without a header, or a quote left open
+     */
+    fun read(text: String, words: (String) -> String): ImportTable {
         val content = text.removePrefix("﻿")
-        val firstLine = content.lineSequence().firstOrNull { it.isNotBlank() } ?: throw IllegalArgumentException("empty file")
-        val separator = listOf(',', ';', '\t').maxBy { sep -> split(firstLine, sep).size }
-        val lines = parse(content, separator).filter { line -> line.any { it.isNotBlank() } }
-        if (lines.isEmpty()) throw IllegalArgumentException("empty file")
+        val firstLine = content.lineSequence().firstOrNull { it.isNotBlank() } ?: throw IllegalArgumentException(words("import_file_empty"))
+        val separator = listOf(',', ';', '\t').maxBy { sep -> split(firstLine, sep, words).size }
+        val lines = parse(content, separator, words).filter { line -> line.any { it.isNotBlank() } }
+        if (lines.isEmpty()) throw IllegalArgumentException(words("import_file_empty"))
         val columns = lines.first().map { it.trim() }
         return ImportTable(columns, lines.drop(1).map { row -> row.map { it.trim() } })
     }
 
-    private fun split(line: String, separator: Char): List<String> = parse(line, separator).firstOrNull() ?: emptyList()
+    private fun split(line: String, separator: Char, words: (String) -> String): List<String> = parse(line, separator, words).firstOrNull() ?: emptyList()
 
-    private fun parse(text: String, separator: Char): List<List<String>> {
+    private fun parse(text: String, separator: Char, words: (String) -> String): List<List<String>> {
         val lines = mutableListOf<List<String>>()
         var row = mutableListOf<String>()
         val cell = StringBuilder()
@@ -51,7 +54,7 @@ object CsvReader {
             }
             i++
         }
-        if (quoted) throw IllegalArgumentException("a quote is left open")
+        if (quoted) throw IllegalArgumentException(words("import_file_quote_open"))
         if (cell.isNotEmpty() || row.isNotEmpty()) { row.add(cell.toString()); lines.add(row) }
         return lines
     }

@@ -71,7 +71,7 @@ class PointerSelectionTest {
         assertTrue(pointer.entries)
         assertEquals(TimePoint.Now, pointer.selection.period.end)
         assertEquals(0, pointer.selection.filters.length())
-        assertNull(pointer.selection.problem())
+        assertNull(pointer.selection.problem { it })
     }
 
     @Test

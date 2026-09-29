@@ -184,7 +184,7 @@ class VariableService(private val context: Context) : ExecutableService {
             is Term.Constant -> {}
             is Term.Variable -> if (others.none { it.id == term.id }) throw Refused(s.shared("variable_error_not_found").format(term.id))
             is Term.Reading -> {
-                term.selection.problem()?.let { throw Refused(s.shared("variable_error_term").format(name) + " " + it) }
+                term.selection.problem { s.shared(it) }?.let { throw Refused(s.shared("variable_error_term").format(name) + " " + it) }
                 if (term.selection.target.kind != ReferenceKind.TOOL_INSTANCE) throw Refused(s.shared("service_error_reading_source").format(term.selection.target.kind.name))
                 val fields = try {
                     ToolFields.filterable(term.selection.target.id!!, context, s)
