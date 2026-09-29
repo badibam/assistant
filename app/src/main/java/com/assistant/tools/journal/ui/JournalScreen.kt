@@ -44,7 +44,8 @@ fun JournalScreen(
     toolInstanceId: String,
     zoneName: String,
     onNavigateBack: () -> Unit,
-    onConfigureClick: () -> Unit = {}
+    onConfigureClick: () -> Unit = {},
+    openEntry: com.assistant.core.tools.EntryToOpen? = null
 ) {
     LogManager.ui("JournalScreen called with toolInstanceId: $toolInstanceId")
 
@@ -63,6 +64,39 @@ fun JournalScreen(
     // Navigation state for entry screen (survives rotation)
     var navigateToEntryId by rememberSaveable { mutableStateOf<String?>(null) }
     var navigateIsCreating by rememberSaveable { mutableStateOf(false) }
+
+    /** An entry created at once with its defaults, opened to be written; a cancel discards it. */
+    suspend fun createEntry() {
+        // Content is optional
+        val params = mapOf(
+            "tool_instance_id" to toolInstanceId,
+            "tooltype" to "journal",
+            "name" to s.tool("placeholder_untitled"),
+            "timestamp" to System.currentTimeMillis(),
+            "data" to JSONObject()
+        )
+        val result = coordinator.processUserAction("tool_data.create", params)
+        val createdId = result.data?.get("id") as? String
+        if (result.isSuccess && createdId != null) {
+            LogManager.ui("Created journal entry with ID: $createdId")
+            navigateToEntryId = createdId
+            navigateIsCreating = true
+        } else {
+            errorMessage = s.tool("error_entry_create")
+        }
+    }
+
+    // What the tile asked to open, once: kept across recreation, so a new entry is not created twice
+    var openHandled by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(openEntry) {
+        if (openHandled) return@LaunchedEffect
+        openHandled = true
+        when (openEntry) {
+            is com.assistant.core.tools.EntryToOpen.Existing -> navigateToEntryId = openEntry.id
+            com.assistant.core.tools.EntryToOpen.New -> createEntry()
+            null -> Unit
+        }
+    }
 
     // Load tool instance data
     LaunchedEffect(toolInstanceId) {
@@ -272,33 +306,7 @@ fun JournalScreen(
                     action = ButtonAction.ADD,
                     display = ButtonDisplay.ICON,
                     size = Size.XL,
-                    onClick = {
-                        coroutineScope.launch {
-                            // Create entry immediately in DB with default values
-                            // Note: content is optional
-                            val params = mapOf(
-                                "tool_instance_id" to toolInstanceId,
-                                "tooltype" to "journal",
-                                "name" to s.tool("placeholder_untitled"),
-                                "timestamp" to System.currentTimeMillis(),
-                                "data" to JSONObject()  // Empty data object - content is optional
-                            )
-
-                            val result = coordinator.processUserAction("tool_data.create", params)
-                            if (result?.isSuccess == true) {
-                                val createdId = result.data?.get("id") as? String
-                                if (createdId != null) {
-                                    LogManager.ui("Created journal entry with ID: $createdId")
-                                    navigateToEntryId = createdId
-                                    navigateIsCreating = true
-                                } else {
-                                    errorMessage = s.tool("error_entry_create")
-                                }
-                            } else {
-                                errorMessage = s.tool("error_entry_create")
-                            }
-                        }
-                    }
+                    onClick = { coroutineScope.launch { createEntry() } }
                 )
             }
         }

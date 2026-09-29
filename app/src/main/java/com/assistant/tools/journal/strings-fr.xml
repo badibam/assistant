@@ -30,6 +30,7 @@
     <string name="sort_order_descending">Plus récentes en premier</string>
 
     <!-- JOURNAL SCREEN - Liste des entrées -->
+    <string name="tile_write">Écrire une entrée</string>
     <string name="no_entries">Aucune entrée de journal</string>
     <string name="no_entries_hint">Appuyez sur + pour créer votre première entrée</string>
     <string name="loading_entries">Chargement des entrées...</string>
