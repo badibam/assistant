@@ -77,7 +77,7 @@ Une brique ne connaît pas l'écran qui l'utilise ; il lui donne ce dont elle a 
 | Critère lu d'Objectif | Condition jugée une fois, « Par rapport à : la fin de la tentative (maintenant tant qu'elle court) » ; une Lecture sans période lit celle de la tentative, une période choisie la remplace | fait |
 | Critère saisi d'Objectif | Condition posée à la tentative : le champ saisi d'un côté | fait |
 | Attente (l'indicateur d'une tuile, ce qu'ouvrent la tuile et la notification) | les conditions de ses entrées qui attendent, comptées par le cœur (`getWaiting`, `tools.waiting`) ; un point du thème (`WaitingMark`) ; la tuile, et la notification qui désigne l'outil, l'ouvrent sur la plus ancienne (`getUsageScreen(openEntryId)`) | fait |
-| Graphique | par couche, une Sélection d'entrées ou une grille de Termes, chaque ligne lue à son instant ; une Période affichée ; ses conditions de dessin, des Conditions sur les colonnes de la ligne | en conception (`docs/design/missing-tools.md`) |
+| Graphique | par couche, une Sélection d'entrées ou une grille de Termes, chaque ligne lue à son instant ; une Période affichée ; ses conditions de dessin, des Conditions sur les colonnes de la ligne | fait (`tools/chart`, `core/charts`) |
 | Tentatives d'Objectif, invitations de Questionnaire, envois de Messages, automations | Planification | fait |
 | Relevé (automation directe) | Terme + Chose (un Suivi) + Champ + Instant | à concevoir |
 | Alerte | Condition jugée une fois | à concevoir |
