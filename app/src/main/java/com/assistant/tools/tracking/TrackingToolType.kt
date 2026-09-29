@@ -199,7 +199,7 @@ object TrackingToolType : ToolTypeContract {
         zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit,
-        openEntryId: String?
+        openEntry: com.assistant.core.tools.EntryToOpen?
     ) {
         TrackingScreen(
             toolInstanceId = toolInstanceId,
@@ -242,7 +242,7 @@ object TrackingToolType : ToolTypeContract {
      * be in, the shortcuts, and the user's fields.
      */
     @Composable
-    override fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (entryId: String) -> Unit): com.assistant.core.tools.ToolTile =
+    override fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
         com.assistant.tools.tracking.ui.rememberTrackingTile(tool)
 
     override fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =

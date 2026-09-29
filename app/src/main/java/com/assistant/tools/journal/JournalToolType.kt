@@ -128,7 +128,7 @@ object JournalToolType : ToolTypeContract {
         zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit,
-        openEntryId: String?
+        openEntry: com.assistant.core.tools.EntryToOpen?
     ) {
         JournalScreen(
             toolInstanceId = toolInstanceId,

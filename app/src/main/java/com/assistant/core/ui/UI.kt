@@ -504,7 +504,7 @@ object UI {
         context: android.content.Context,
         onClick: () -> Unit,
         onLongClick: () -> Unit = { },
-        onOpenEntry: (String) -> Unit = { }
+        onOpenEntry: (com.assistant.core.tools.EntryToOpen) -> Unit = { }
     ) {
         // Something waiting among its entries (LocalWaiting) is marked beside its name
         val waiting = LocalWaiting.current.tool(tool.id)

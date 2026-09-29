@@ -30,7 +30,7 @@ fun ToolGrid(
     tools: List<ToolInstance>,
     onToolClick: (ToolInstance) -> Unit,
     onToolLongClick: (ToolInstance) -> Unit,
-    onOpenEntry: (ToolInstance, String) -> Unit
+    onOpenEntry: (ToolInstance, com.assistant.core.tools.EntryToOpen) -> Unit
 ) {
     if (tools.isEmpty()) return
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -49,7 +49,7 @@ fun ToolGrid(
                             context = context,
                             onClick = { onToolClick(tool) },
                             onLongClick = { onToolLongClick(tool) },
-                            onOpenEntry = { entryId -> onOpenEntry(tool, entryId) }
+                            onOpenEntry = { entry -> onOpenEntry(tool, entry) }
                         )
                     }
                 }

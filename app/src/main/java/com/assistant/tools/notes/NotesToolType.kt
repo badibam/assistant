@@ -126,7 +126,7 @@ object NotesToolType : ToolTypeContract {
         zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit,
-        openEntryId: String?
+        openEntry: com.assistant.core.tools.EntryToOpen?
     ) {
         NotesScreen(
             toolInstanceId = toolInstanceId,

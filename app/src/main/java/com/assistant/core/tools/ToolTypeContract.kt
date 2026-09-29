@@ -86,8 +86,8 @@ interface ToolTypeContract {
      * @param configJson Configuration JSON of the tool instance
      * @param onNavigateBack Called when user wants to navigate back
      * @param onLongClick Called when user long-clicks for configuration access
-     * @param openEntryId An entry to open at once, as this tool type understands opening one: one
-     *   of those waiting for the user (getWaiting), the oldest; null for the screen alone
+     * @param openEntry What to open at once (EntryToOpen): an entry touched on the tile, the
+     *   oldest of those waiting for the user (getWaiting), or a new one; null for the screen alone
      */
     @Composable
     fun getUsageScreen(
@@ -96,19 +96,20 @@ interface ToolTypeContract {
         zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit,
-        openEntryId: String?
+        openEntry: EntryToOpen?
     )
 
     /**
      * The tile of [tool] (ToolTile): its summary and its body, placed by UI.ToolCard as its
      * display mode lays them out. [open] opens the tool on one of its entries, as this tool type
-     * understands opening one (Screen's openEntryId): a tile opens an entry it shows when touched.
+     * understands opening one (getUsageScreen's openEntry): a tile opens an entry it shows when
+     * touched, or a new one from a button that writes one.
      *
      * While a tool type still shows its tile through TileContent, the summary is its LINE content
      * and the body its EXTENDED, SQUARE or FULL one.
      */
     @Composable
-    fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (entryId: String) -> Unit): ToolTile =
+    fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (EntryToOpen) -> Unit): ToolTile =
         androidx.compose.runtime.remember(tool) {
             object : ToolTile {
                 @Composable

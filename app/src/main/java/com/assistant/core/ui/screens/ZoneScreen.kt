@@ -74,12 +74,12 @@ fun ZoneScreen(
     // State for tool usage screen - persiste orientation changes
     var selectedToolInstanceId by rememberSaveable { mutableStateOf<String?>(null) }
     // The entry the tool opens on: the oldest waiting one when its tile was touched with one
-    var openEntryId by rememberSaveable { mutableStateOf<String?>(null) }
+    var openEntry by rememberSaveable(stateSaver = com.assistant.core.tools.EntryToOpen.Saver) { mutableStateOf<com.assistant.core.tools.EntryToOpen?>(null) }
     val waiting = com.assistant.core.ui.LocalWaiting.current
     // A tool asked for from outside (a notification), opened as its tile would be
     LaunchedEffect(opening) {
         val (toolId, entryId) = opening ?: return@LaunchedEffect
-        openEntryId = entryId
+        openEntry = entryId?.let { com.assistant.core.tools.EntryToOpen.Existing(it) }
         selectedToolInstanceId = toolId
         onOpened()
     }
@@ -277,7 +277,7 @@ fun ZoneScreen(
                 editingToolId = toolInstance.id
                 showingConfigFor = toolInstance.tooltype
             },
-            openEntryId = openEntryId
+            openEntry = openEntry
         )
         return // Exit ZoneScreen composition when showing usage screen
     }
@@ -345,8 +345,8 @@ fun ZoneScreen(
                         showDuplicateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
-                    onToolClick = { toolId -> openEntryId = waiting.oldest[toolId]; selectedToolInstanceId = toolId },
-                    onOpenEntry = { tool, entryId -> openEntryId = entryId; selectedToolInstanceId = tool.id },
+                    onToolClick = { toolId -> openEntry = waiting.oldest[toolId]?.let { com.assistant.core.tools.EntryToOpen.Existing(it) }; selectedToolInstanceId = toolId },
+                    onOpenEntry = { tool, entry -> openEntry = entry; selectedToolInstanceId = tool.id },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype
@@ -429,8 +429,8 @@ fun ZoneScreen(
                         showDuplicateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
-                    onToolClick = { toolId -> openEntryId = waiting.oldest[toolId]; selectedToolInstanceId = toolId },
-                    onOpenEntry = { tool, entryId -> openEntryId = entryId; selectedToolInstanceId = tool.id },
+                    onToolClick = { toolId -> openEntry = waiting.oldest[toolId]?.let { com.assistant.core.tools.EntryToOpen.Existing(it) }; selectedToolInstanceId = toolId },
+                    onOpenEntry = { tool, entry -> openEntry = entry; selectedToolInstanceId = tool.id },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
                         showingConfigFor = tool.tooltype
@@ -631,7 +631,7 @@ private fun GroupSection(
     onDuplicateTool: () -> Unit,
     onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
-    onOpenEntry: (ToolInstance, String) -> Unit,
+    onOpenEntry: (ToolInstance, com.assistant.core.tools.EntryToOpen) -> Unit,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
@@ -818,7 +818,7 @@ private fun UngroupedSection(
     onDuplicateTool: () -> Unit,
     onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
-    onOpenEntry: (ToolInstance, String) -> Unit,
+    onOpenEntry: (ToolInstance, com.assistant.core.tools.EntryToOpen) -> Unit,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,

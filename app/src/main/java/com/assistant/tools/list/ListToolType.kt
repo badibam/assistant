@@ -133,7 +133,7 @@ object ListToolType : ToolTypeContract {
         zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit,
-        openEntryId: String?
+        openEntry: com.assistant.core.tools.EntryToOpen?
     ) {
         ListScreen(
             toolInstanceId = toolInstanceId,

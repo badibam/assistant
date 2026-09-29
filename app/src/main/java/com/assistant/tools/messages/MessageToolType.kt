@@ -238,14 +238,14 @@ object MessageToolType : ToolTypeContract {
         zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit,
-        openEntryId: String?
+        openEntry: com.assistant.core.tools.EntryToOpen?
     ) {
         com.assistant.tools.messages.ui.MessagesScreen(
             toolInstanceId = toolInstanceId,
             zoneName = zoneName,
             onNavigateBack = onNavigateBack,
             onConfigureClick = onLongClick,
-            openEntryId = openEntryId
+            openEntryId = (openEntry as? com.assistant.core.tools.EntryToOpen.Existing)?.id
         )
     }
 
