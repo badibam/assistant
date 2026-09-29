@@ -13,7 +13,11 @@ data class Zone(
     /** A Lucide icon name, stored under its current name. Null until one is chosen. */
     val icon_name: String? = null,
     val active: Boolean = true,
-    val order_index: Int = 0,
+    /** How its tile shows on the home screen: ICON, MINIMAL, LINE or CONDENSED (ZonePositions.MODES). */
+    val display_mode: String = "LINE",
+    /** Its column and row in the grid of its zone group on the home screen, placed by ZonePositions. */
+    val grid_x: Int,
+    val grid_y: Int,
     val created_at: Long = System.currentTimeMillis(),
     val updated_at: Long = System.currentTimeMillis(),
 

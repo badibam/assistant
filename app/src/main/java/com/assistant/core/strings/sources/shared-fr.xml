@@ -356,6 +356,7 @@
     <string name="action_verbalize_schema_list">Récupération de la liste des schémas</string>
     <string name="action_verbalize_unknown">Action inconnue</string>
     <string name="action_verbalize_tools_running">Recherche des chronomètres en cours dans les outils</string>
+    <string name="action_verbalize_zones_place">Déplacement de zones dans leur groupe</string>
     <string name="action_verbalize_tools_place">Déplacement d\'outils dans leur groupe</string>
     <string name="action_verbalize_tools_waiting">Compte de ce qui attend dans les outils</string>
 
@@ -1626,6 +1627,7 @@
     <!-- Groups - Schemas descriptions -->
     <string name="tools_base_schema_config_group">Groupe d\'organisation de l\'outil</string>
     <string name="zone_schema_tool_groups">Liste des groupes d\'outils disponibles dans cette zone</string>
+    <string name="zone_schema_display_mode">Comment la zone s\'affiche sur l\'accueil : ICON (son icône), MINIMAL (icône et nom), LINE (sa description à côté), CONDENSED (sa description dessous) ; il donne les cases que la zone occupe</string>
     <string name="zone_schema_group">Groupe d\'organisation de la zone</string>
 
     <!-- Groups - Service errors -->

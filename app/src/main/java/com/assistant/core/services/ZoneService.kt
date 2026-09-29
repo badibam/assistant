@@ -15,6 +15,9 @@ import org.json.JSONObject
 import org.json.JSONArray
 import com.assistant.core.utils.LogManager
 import com.assistant.core.grid.ToolPositions
+import com.assistant.core.grid.Grid
+import com.assistant.core.grid.ZonePositions
+import com.assistant.core.database.entities.Zone as ZoneEntity
 import androidx.room.withTransaction
 
 /**
@@ -41,6 +44,7 @@ class ZoneService(private val context: Context) : ExecutableService {
                 "delete" -> handleDelete(params, token)
                 "get" -> handleGet(params, token)
                 "list" -> handleList(params, token)
+                "place" -> handlePlace(params)
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
@@ -75,27 +79,29 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         LogManager.service("ZoneService.handleCreate - params has group: ${params.has("group")}, group value: '$group'", "DEBUG")
 
-        // Get current max order_index for proper ordering
         if (token.isCancelled) return OperationResult.cancelled()
 
-        // For now, use simple ordering - could be enhanced later
-        val orderIndex = System.currentTimeMillis().toInt() % 1000
-
-        val newZone = Zone(
+        val placing = Zone(
             name = name,
             description = description,
             icon_name = icon.name,
-            order_index = orderIndex,
+            display_mode = params.givenText("display_mode") ?: "LINE",
+            grid_x = 0,
+            grid_y = 0,
             tool_groups = toolGroupsJson,
             group = group
         )
+        checkZone(placing)?.let { return OperationResult.error(it) }
 
-        LogManager.service("ZoneService.handleCreate - Created zone with group: '${newZone.group}'", "DEBUG")
 
-        checkZone(newZone)?.let { return OperationResult.error(it) }
         if (token.isCancelled) return OperationResult.cancelled()
 
-        zoneDao.insertZone(newZone)
+        // At the bottom of its section's grid on the home screen
+        val newZone = database.withTransaction {
+            val groups = zoneGroups()
+            val tile = Grid.arrive(ZonePositions.tiles(zoneDao.getAllZones(), groups, ZonePositions.section(group, groups)), placing.id, ZonePositions.size(placing)).last()
+            placing.copy(grid_x = tile.column, grid_y = tile.row).also { zoneDao.insertZone(it) }
+        }
 
         // Notify UI of zones change
         DataChangeNotifier.notifyZonesChanged()
@@ -145,6 +151,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             zone.description?.let { put("description", it) }
             zone.icon_name?.let { put("icon_name", it) }
             zone.group?.let { put("group", it) }
+            put("display_mode", zone.display_mode)
             zone.tool_groups?.let { put("tool_groups", JsonUtils.toList(it)) }
         }
         val result = com.assistant.core.validation.SchemaValidator.validate(com.assistant.core.schemas.ZoneSettings.schema(context), settings, context)
@@ -157,6 +164,59 @@ class ZoneService(private val context: Context) : ExecutableService {
      */
     private fun JSONObject.givenText(key: String): String? =
         if (isNull(key)) null else optString(key).trim().takeIf { it.isNotEmpty() }
+
+    /** The home screen's zone groups. */
+    private suspend fun zoneGroups(): List<String> = AppConfigService(context).getZoneGroups()
+
+    private suspend fun write(moved: List<ZoneEntity>) {
+        moved.forEach { zoneDao.updatePosition(it.id, it.grid_x, it.grid_y) }
+    }
+
+    /**
+     * [before] becoming [after], placed on the home screen: a zone that changes section leaves its
+     * grid and arrives in the other one; one that changes mode takes its new size where it is, the
+     * zones it grows over moving down. The other zones that move are written here, [after] is
+     * returned at its place for the caller to write.
+     */
+    private suspend fun move(before: ZoneEntity, after: ZoneEntity): ZoneEntity {
+        val groups = zoneGroups()
+        val zones = zoneDao.getAllZones()
+        val from = ZonePositions.section(before.group, groups)
+        val to = ZonePositions.section(after.group, groups)
+        if (from != to) {
+            write(ZonePositions.moved(zones, Grid.leave(ZonePositions.tiles(zones, groups, from), before.id)))
+            val tile = Grid.arrive(ZonePositions.tiles(zoneDao.getAllZones().filter { it.id != after.id }, groups, to), after.id, ZonePositions.size(after)).last()
+            return after.copy(grid_x = tile.column, grid_y = tile.row)
+        }
+        val size = ZonePositions.size(after)
+        if (size == ZonePositions.size(before)) return after
+        val tiles = Grid.resize(ZonePositions.tiles(zones, groups, to), after.id, size)
+        write(ZonePositions.moved(zones.filter { it.id != after.id }, tiles))
+        val tile = tiles.single { it.id == after.id }
+        return after.copy(grid_x = tile.column, grid_y = tile.row)
+    }
+
+    /**
+     * The places of the zones of one zone group section, moved in the home screen's edit mode:
+     * `group` (absent for the ungrouped one) and `places`, `{zone_id: {"grid_x", "grid_y"}}` for
+     * every zone of the section. Written in one go, or refused when they do not lay the section
+     * out (Grid.isLaidOut). The screen alone moves tiles: the AI has no command for it.
+     */
+    private suspend fun handlePlace(params: JSONObject): OperationResult {
+        val groups = zoneGroups()
+        val section = ZonePositions.section(params.optString("group").takeIf { it.isNotEmpty() }, groups)
+        val places = params.optJSONObject("places") ?: return OperationResult.error(s.shared("service_error_grid_places"))
+        val zones = zoneDao.getAllZones().filter { ZonePositions.section(it.group, groups) == section }
+        if (places.keys().asSequence().toSet() != zones.map { it.id }.toSet()) return OperationResult.error(s.shared("service_error_grid_places"))
+        val placed = zones.map { zone ->
+            val place = places.getJSONObject(zone.id)
+            ZonePositions.tile(zone).copy(column = place.getInt("grid_x"), row = place.getInt("grid_y"))
+        }
+        if (!Grid.isLaidOut(placed)) return OperationResult.error(s.shared("service_error_grid_places"))
+        database.withTransaction { write(ZonePositions.moved(zones, placed)) }
+        DataChangeNotifier.notifyZonesChanged()
+        return OperationResult.success(mapOf("count" to placed.size))
+    }
 
     /**
      * Update existing zone
@@ -217,10 +277,12 @@ class ZoneService(private val context: Context) : ExecutableService {
         if (icon is StoredIcon.Refused) return OperationResult.error(icon.message)
         icon as StoredIcon.Kept
 
+        val displayMode = if (params.has("display_mode")) params.givenText("display_mode") ?: existingZone.display_mode else existingZone.display_mode
         val updatedZone = existingZone.copy(
             name = name,
             description = description,
             icon_name = icon.name,
+            display_mode = displayMode,
             tool_groups = toolGroupsJson,
             group = group,
             updated_at = System.currentTimeMillis()
@@ -240,7 +302,7 @@ class ZoneService(private val context: Context) : ExecutableService {
                 ToolPositions.zoneGroups(updatedZone.tool_groups)
             )
             moved.forEach { toolDao.updatePosition(it.id, it.grid_x, it.grid_y) }
-            zoneDao.updateZone(updatedZone)
+            zoneDao.updateZone(move(existingZone, updatedZone))
             moved
         }
 
@@ -271,7 +333,13 @@ class ZoneService(private val context: Context) : ExecutableService {
         
         if (token.isCancelled) return OperationResult.cancelled()
         
-        zoneDao.deleteZoneById(zoneId)
+        // The zone and the rows its leaving closes on the home screen are one write
+        database.withTransaction {
+            val groups = zoneGroups()
+            val zones = zoneDao.getAllZones()
+            write(ZonePositions.moved(zones, Grid.leave(ZonePositions.tiles(zones, groups, ZonePositions.section(existingZone.group, groups)), zoneId)))
+            zoneDao.deleteZoneById(zoneId)
+        }
 
         // Notify UI of zones change
         DataChangeNotifier.notifyZonesChanged()
@@ -302,7 +370,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             "name" to zone.name,
             "description" to zone.description,
             "icon_name" to zone.icon_name,
-            "order_index" to zone.order_index,
+            "display_mode" to zone.display_mode,
             "created_at" to zone.created_at,
             "updated_at" to zone.updated_at
         )
@@ -336,7 +404,7 @@ class ZoneService(private val context: Context) : ExecutableService {
                 "name" to zone.name,
                 "description" to zone.description,
                 "icon_name" to zone.icon_name,
-                "order_index" to zone.order_index,
+                "display_mode" to zone.display_mode,
                 "created_at" to zone.created_at,
                 "updated_at" to zone.updated_at
             )
@@ -349,6 +417,12 @@ class ZoneService(private val context: Context) : ExecutableService {
             // Add group if present
             if (zone.group != null) {
                 zoneMap["group"] = zone.group
+            }
+
+            // Its place on the home screen, for the screen: the AI neither sees nor changes places
+            if (params.optBoolean("include_position", false)) {
+                zoneMap["grid_x"] = zone.grid_x
+                zoneMap["grid_y"] = zone.grid_y
             }
 
             zoneMap
@@ -386,6 +460,7 @@ class ZoneService(private val context: Context) : ExecutableService {
                     ?: s.shared("content_unnamed")
                 s.shared("action_verbalize_delete_zone").format(zoneName)
             }
+            "place" -> s.shared("action_verbalize_zones_place")
             else -> s.shared("action_verbalize_unknown")
         }
     }

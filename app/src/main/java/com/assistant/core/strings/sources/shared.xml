@@ -356,6 +356,7 @@
     <string name="action_verbalize_schema_list">Retrieval of the list of schemas</string>
     <string name="action_verbalize_unknown">Unknown action</string>
     <string name="action_verbalize_tools_running">Find the running stopwatches in the tools</string>
+    <string name="action_verbalize_zones_place">Move zones in their group</string>
     <string name="action_verbalize_tools_place">Move tools in their group</string>
     <string name="action_verbalize_tools_waiting">Count what waits in the tools</string>
 
@@ -1626,6 +1627,7 @@
     <!-- Groups - Schemas descriptions -->
     <string name="tools_base_schema_config_group">Organisation group of the tool</string>
     <string name="zone_schema_tool_groups">List of the tool groups available in this zone</string>
+    <string name="zone_schema_display_mode">How the zone shows on the main screen: ICON (its icon), MINIMAL (icon and name), LINE (with its description beside), CONDENSED (its description below); it gives the cells the zone takes</string>
     <string name="zone_schema_group">Organisation group of the zone</string>
 
     <!-- Groups - Service errors -->

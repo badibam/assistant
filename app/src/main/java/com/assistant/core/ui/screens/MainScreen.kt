@@ -107,6 +107,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         // Load zones
         coordinator.executeWithLoading(
             operation = "zones.list",
+            params = mapOf("include_position" to true),
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
         )?.let { result ->
@@ -135,6 +136,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                 is DataChangeEvent.ZonesChanged -> {
                     coordinator.executeWithLoading(
                         operation = "zones.list",
+                        params = mapOf("include_position" to true),
                         onLoading = { isLoading = it },
                         onError = { error -> errorMessage = error }
                     )?.let { result ->
@@ -164,6 +166,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         coroutineScope.launch {
             coordinator.executeWithLoading(
                 operation = "zones.list",
+                params = mapOf("include_position" to true),
                 onLoading = { isLoading = it },
                 onError = { error -> errorMessage = error }
             )?.let { result ->
@@ -595,7 +598,9 @@ private fun zoneFrom(map: Map<String, Any?>): Zone = Zone(
     name = map["name"] as String,
     description = map["description"] as? String,
     icon_name = map["icon_name"] as? String,
-    order_index = (map["order_index"] as Number).toInt(),
+    display_mode = map["display_mode"] as String,
+    grid_x = (map["grid_x"] as Number).toInt(),
+    grid_y = (map["grid_y"] as Number).toInt(),
     created_at = (map["created_at"] as Number).toLong(),
     updated_at = (map["updated_at"] as Number).toLong(),
     tool_groups = (map["tool_groups"] as? List<*>)?.let { JsonUtils.toJSONArray(it).toString() },

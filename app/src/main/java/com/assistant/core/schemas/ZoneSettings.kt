@@ -19,6 +19,8 @@ object ZoneSettings {
 
     const val SCHEMA_ID = "zone_config"
 
+    private val MODES = com.assistant.core.grid.ZonePositions.MODES.map { it.name }
+
     /** Where the icon picker starts for a zone: the themes zones are usually made of. */
     val SUGGESTED_ICONS = listOf(
         "heart", "dumbbell", "briefcase", "house", "wallet", "graduation-cap",
@@ -39,6 +41,12 @@ object ZoneSettings {
             field("icon_name", "label_icon", FieldType.TEXT, TextLength.SHORT),
             // One of the zone groups of the main screen
             field("group", "label_group", FieldType.TEXT, TextLength.SHORT),
+            // How its tile shows on the main screen, which gives the cells it takes
+            SettingNode.Field(
+                FieldDefinition("display_mode", s.shared("tools_config_label_display_mode"), s.shared("zone_schema_display_mode"), FieldType.CHOICE, false,
+                    mapOf("options" to com.assistant.core.fields.ChoiceSettings.storedOptions(MODES, MODES.associateWith { s.shared("tools_config_display_${it.lowercase()}") }))),
+                required = true, default = "LINE"
+            ),
             // The groups the zone's tools are sorted into
             SettingNode.ListOf("tool_groups", s.shared("label_tool_groups"),
                 SettingNode.Item.Value(FieldDefinition("tool_group", s.shared("label_group"), s.shared("zone_schema_tool_groups"),

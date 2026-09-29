@@ -1,5 +1,6 @@
 package com.assistant.core.services
 
+import androidx.room.withTransaction
 import android.content.Context
 import com.assistant.core.config.DateTimeConfig
 import com.assistant.core.ai.domain.AILimitsConfig
@@ -94,10 +95,24 @@ class AppConfigService(private val context: Context) : ExecutableService {
         val validation = SchemaValidator.validate(AppSettings.schema(category, context), JsonUtils.toMap(settings), context)
         if (!validation.isValid) return validation.errorMessage ?: s.shared("message_validation_error_simple")
 
-        readSettings(category) // a category never written gets its row first
-        settingsDao.updateSettings(category, settings.toString())
+        val previous = readSettings(category) // a category never written gets its row first
+        // A zone whose group the home screen gains or loses changes section, and so grid: the
+        // settings and the places they change are one write
+        val regrouped = database.withTransaction {
+            val moved = if (category != AppSettingCategories.MAIN_SCREEN) emptyList() else {
+                fun groups(json: JSONObject) = json.optJSONArray("zone_groups")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList()
+                val before = groups(previous)
+                val after = groups(settings)
+                if (before == after) emptyList()
+                else com.assistant.core.grid.ZonePositions.regroup(database.zoneDao().getAllZones(), before, after)
+            }
+            moved.forEach { database.zoneDao().updatePosition(it.id, it.grid_x, it.grid_y) }
+            settingsDao.updateSettings(category, settings.toString())
+            moved
+        }
         AppConfigManager.refresh(context)
         DataChangeNotifier.notifyAppConfigChanged()
+        if (regrouped.isNotEmpty()) DataChangeNotifier.notifyZonesChanged()
         LogManager.service("Updated settings of category $category")
         return null
     }
