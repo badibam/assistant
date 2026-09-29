@@ -75,6 +75,66 @@ object Grid {
         return closeEmptyRows(shifted + moved)
     }
 
+    enum class Direction { LEFT, RIGHT, UP, DOWN }
+
+    /**
+     * Tile [id] moved by an arrow to the next place it fits in [direction], or null when there is
+     * none (the arrow is greyed).
+     *
+     * Left and right keep its row and go a quarter at a time to the next column where it fits.
+     * Up and down keep its column and stop at the first row where it fits or the first
+     * interstice, whichever comes first: at an interstice, rows open for it and the ones after
+     * move down. A row it leaves empty closes. A place that changes nothing is passed over.
+     */
+    fun move(tiles: List<Tile>, id: String, direction: Direction): List<Tile>? {
+        val tile = tiles.single { it.id == id }
+        val others = tiles.filter { it.id != id }
+        val before = layout(closeEmptyRows(tiles))
+        fun fits(column: Int, row: Int) = column >= 0 && column + tile.width <= COLUMNS && row >= 0 &&
+            others.none { it.overlaps(tile.copy(column = column, row = row)) }
+        fun changed(next: List<Tile>): List<Tile>? = closeEmptyRows(next).takeIf { layout(it) != before }
+
+        return when (direction) {
+            Direction.LEFT, Direction.RIGHT -> {
+                val step = if (direction == Direction.LEFT) -1 else 1
+                generateSequence(tile.column + step) { it + step }
+                    .takeWhile { it >= 0 && it + tile.width <= COLUMNS }
+                    .firstOrNull { fits(it, tile.row) }
+                    ?.let { changed(others + tile.copy(column = it)) }
+            }
+            Direction.UP, Direction.DOWN -> {
+                // The places in the column from top to bottom: interstice 0, row 0, interstice 1, row 1…
+                // as 2 × boundary for an interstice and 2 × row + 1 for a row
+                val last = 2 * rowCount(others)
+                val here = 2 * tile.row + 1
+                val order = if (direction == Direction.DOWN) (here + 1..last) else (here - 1 downTo 0)
+                order.asSequence().mapNotNull { place ->
+                    if (place % 2 == 1) {
+                        val row = place / 2
+                        if (fits(tile.column, row)) changed(others + tile.copy(row = row)) else null
+                    } else {
+                        val boundary = place / 2
+                        if (isInterstice(others, boundary)) {
+                            changed(others.map { if (it.row >= boundary) it.copy(row = it.row + tile.height) else it } + tile.copy(row = boundary))
+                        } else null
+                    }
+                }.firstOrNull()
+            }
+        }
+    }
+
+    /**
+     * True when [tiles] are a grid as the rules keep it: each inside the columns, none over
+     * another, no row left empty.
+     */
+    fun isLaidOut(tiles: List<Tile>): Boolean =
+        tiles.all { it.column >= 0 && it.row >= 0 && it.column + it.width <= COLUMNS } &&
+            tiles.none { a -> tiles.any { b -> a !== b && a.overlaps(b) } } &&
+            layout(closeEmptyRows(tiles)) == layout(tiles)
+
+    /** The places of [tiles], whatever their order. */
+    private fun layout(tiles: List<Tile>): Set<Tile> = tiles.toSet()
+
     /** [tiles] with each row that no tile takes removed, the rows below it moving up. */
     fun closeEmptyRows(tiles: List<Tile>): List<Tile> {
         val taken = BooleanArray(rowCount(tiles))

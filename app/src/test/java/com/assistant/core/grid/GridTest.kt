@@ -127,4 +127,60 @@ class GridTest {
         assertFalse(Grid.isInterstice(tiles, 1))
         assertTrue(Grid.isInterstice(tiles, 2))
     }
+
+    // Arrows (« Le mode d'édition »)
+
+    private fun move(tiles: List<Tile>, id: String, direction: Grid.Direction) = Grid.move(tiles, id, direction)?.let { places(it) }
+
+    @Test
+    fun leftAndRight_goToTheNextColumnWhereTheTileFits_elseGreyed() {
+        val tiles = listOf(Tile("a", 0, 0, 1, 1), Tile("b", 2, 0, 1, 1))
+        assertEquals(mapOf("a" to (1 to 0), "b" to (2 to 0)), move(tiles, "a", Grid.Direction.RIGHT))
+        assertEquals(mapOf("a" to (3 to 0), "b" to (2 to 0)), move(listOf(Tile("a", 1, 0, 1, 1), Tile("b", 2, 0, 1, 1)), "a", Grid.Direction.RIGHT))
+        assertEquals(null, move(listOf(Tile("a", 3, 0, 1, 1)), "a", Grid.Direction.RIGHT))
+        assertEquals(null, move(listOf(Tile("a", 0, 0, 2, 1), Tile("b", 2, 0, 1, 1)), "a", Grid.Direction.RIGHT))
+        assertEquals(null, move(tiles, "a", Grid.Direction.LEFT))
+    }
+
+    @Test
+    fun down_opensARowAtTheFirstInterstice_thenGoesUnderTheNext() {
+        val tiles = listOf(Tile("a", 0, 0, 2, 1), Tile("b", 2, 0, 2, 1), Tile("c", 0, 1, 4, 1))
+        val once = Grid.move(tiles, "a", Grid.Direction.DOWN)!!
+        assertEquals(mapOf("a" to (0 to 1), "b" to (2 to 0), "c" to (0 to 2)), places(once))
+        // The next interstice would leave things as they are: passed over, a goes under c
+        assertEquals(mapOf("a" to (0 to 2), "b" to (2 to 0), "c" to (0 to 1)), move(once, "a", Grid.Direction.DOWN))
+        assertLaidOut(Grid.move(once, "a", Grid.Direction.DOWN)!!)
+    }
+
+    @Test
+    fun up_fillsAHoleInItsColumn_andItsEmptiedRowCloses() {
+        val tiles = listOf(Tile("a", 0, 0, 1, 1), Tile("b", 1, 1, 1, 1))
+        assertEquals(mapOf("a" to (0 to 0), "b" to (1 to 0)), move(tiles, "b", Grid.Direction.UP))
+    }
+
+    @Test
+    fun up_overAFullRow_opensARowAboveIt() {
+        val tiles = listOf(Tile("b", 0, 0, 4, 1), Tile("a", 0, 1, 1, 1))
+        assertEquals(mapOf("a" to (0 to 0), "b" to (0 to 1)), move(tiles, "a", Grid.Direction.UP))
+    }
+
+    @Test
+    fun vertical_neverOpensARowAcrossATallTile() {
+        val tiles = listOf(Tile("a", 0, 0, 1, 1), Tile("d", 2, 0, 2, 2))
+        assertEquals(mapOf("a" to (0 to 1), "d" to (2 to 0)), move(tiles, "a", Grid.Direction.DOWN))
+    }
+
+    @Test
+    fun anArrowWithNowhereToGo_isGreyed() {
+        assertEquals(null, move(listOf(Tile("a", 0, 0, 4, 1)), "a", Grid.Direction.DOWN))
+        assertEquals(null, move(listOf(Tile("a", 0, 0, 4, 1)), "a", Grid.Direction.UP))
+    }
+
+    @Test
+    fun aLaidOutGrid_hasItsTilesInside_noneOverAnother_noRowEmpty() {
+        assertTrue(Grid.isLaidOut(listOf(Tile("a", 0, 0, 2, 2), Tile("b", 2, 0, 2, 1))))
+        assertFalse(Grid.isLaidOut(listOf(Tile("a", 3, 0, 2, 1))))
+        assertFalse(Grid.isLaidOut(listOf(Tile("a", 0, 0, 2, 1), Tile("b", 1, 0, 2, 1))))
+        assertFalse(Grid.isLaidOut(listOf(Tile("a", 0, 0, 1, 1), Tile("b", 0, 2, 1, 1))))
+    }
 }
