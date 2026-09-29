@@ -19,7 +19,7 @@ object CatchUpPolicy {
      *
      * The base is the last completed run, or the automation's last modification, whichever is
      * later: a config change must not drag it back through occurrences that predate the change.
-     * With neither, the schedule's start date, or now.
+     * With neither, now.
      *
      * The catch-up window then pulls that start forward. An occurrence older than the window is
      * skipped, so starting before it would mean walking to each one only to drop it -- which is
@@ -27,19 +27,17 @@ object CatchUpPolicy {
      *
      * @param lastExecutionTime when the last completed run was scheduled for, or 0 if there is none
      * @param automationUpdatedAt when the automation was last modified
-     * @param scheduleStartDate the schedule's own start, or null
      * @param catchUpWindow how late an occurrence may still run, in milliseconds, or null for no limit
      * @return the instant to search from
      */
     fun searchStart(
         lastExecutionTime: Long,
         automationUpdatedAt: Long,
-        scheduleStartDate: Long?,
         catchUpWindow: Long?,
         now: Long
     ): Long {
         val referenceTime = maxOf(lastExecutionTime, automationUpdatedAt)
-        val base = if (referenceTime > 0) referenceTime else (scheduleStartDate ?: now)
+        val base = if (referenceTime > 0) referenceTime else now
 
         if (catchUpWindow == null) return base
 
@@ -56,13 +54,12 @@ object CatchUpPolicy {
     fun windowSkippedOccurrences(
         lastExecutionTime: Long,
         automationUpdatedAt: Long,
-        scheduleStartDate: Long?,
         catchUpWindow: Long?,
         now: Long
     ): Boolean {
         if (catchUpWindow == null) return false
         val referenceTime = maxOf(lastExecutionTime, automationUpdatedAt)
-        val base = if (referenceTime > 0) referenceTime else (scheduleStartDate ?: now)
+        val base = if (referenceTime > 0) referenceTime else now
         return now - catchUpWindow > base
     }
 
@@ -91,8 +88,6 @@ object CatchUpPolicy {
     ): Long {
         fun nextAfter(t: Long): Long? = ScheduleCalculator.calculateNextExecution(
             pattern = schedule.pattern,
-            startDate = schedule.startDate,
-            endDate = schedule.endDate,
             fromTimestamp = t,
             zoneId = zoneId
         )

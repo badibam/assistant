@@ -150,11 +150,7 @@ fun ScheduleConfigEditor(
             val scheduleConfig = if (pattern == null) {
                 null
             } else {
-                ScheduleConfig(
-                    pattern = pattern,
-                    startDate = existingConfig?.startDate ?: System.currentTimeMillis(), // Initialize to now on creation, preserve on update
-                    endDate = null
-                )
+                ScheduleConfig(pattern = pattern)
             }
 
             onConfirm(scheduleConfig)

@@ -245,8 +245,6 @@ object MessageScheduler : ToolScheduler {
         while (times.size < MAX_EXPECTED_PER_HORIZON) {
             val next = ScheduleCalculator.calculateNextExecution(
                 pattern = schedule.pattern,
-                startDate = schedule.startDate,
-                endDate = schedule.endDate,
                 fromTimestamp = cursor
             ) ?: break
 

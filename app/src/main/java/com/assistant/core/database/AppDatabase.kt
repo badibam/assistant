@@ -36,6 +36,7 @@ import com.assistant.core.versioning.NumericDecimalsAtV38
 import com.assistant.core.versioning.ToolConfigsAtV39
 import com.assistant.core.versioning.CatchUpAtV41
 import com.assistant.core.versioning.FormatNullsAtV42
+import com.assistant.core.versioning.ScheduleDatesAtV51
 import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
@@ -85,7 +86,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 50
+        const val VERSION = 51
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1372,6 +1373,41 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** A schedule is its pattern alone, without start and end dates: see ScheduleDatesAtV51. */
+        private val MIGRATION_50_51 = object : Migration(50, 51) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // A row that cannot be read stays as it was and is logged
+                var rewritten = 0
+                database.query("SELECT id, schedule_json FROM automations WHERE schedule_json IS NOT NULL AND schedule_json != ''").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        try {
+                            database.execSQL("UPDATE automations SET schedule_json = ? WHERE id = ?",
+                                arrayOf<Any?>(ScheduleDatesAtV51.schedule(cursor.getString(1)), id))
+                            rewritten++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 50->51: schedule of automation $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                database.query("SELECT id, tooltype, config_json FROM tool_instances").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        val tooltype = cursor.getString(1)
+                        if (tooltype !in ScheduleDatesAtV51.SCHEDULED_TOOLTYPES) continue
+                        try {
+                            database.execSQL("UPDATE tool_instances SET config_json = ? WHERE id = ?",
+                                arrayOf<Any?>(ScheduleDatesAtV51.toolConfig(tooltype, cursor.getString(2)), id))
+                            rewritten++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 50->51: config of tool $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 50->51: $rewritten schedule(s) without start and end dates", "INFO")
+            }
+        }
+
         /** Files joined to messages, kept with their session: see AttachedFileEntity. */
         private val MIGRATION_49_50 = object : Migration(49, 50) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2017,7 +2053,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_46_47,
                     MIGRATION_47_48,
                     MIGRATION_48_49,
-                    MIGRATION_49_50
+                    MIGRATION_49_50,
+                    MIGRATION_50_51
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

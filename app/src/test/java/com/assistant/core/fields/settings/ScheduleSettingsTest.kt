@@ -43,7 +43,7 @@ class ScheduleSettingsTest {
     @Test
     fun whatTheAppStores_passesTheSchema() {
         for (pattern in onePerPattern) {
-            val stored = Json.encodeToString(ScheduleConfig.serializer(), ScheduleConfig(pattern, startDate = 1_727_000_000_000L))
+            val stored = Json.encodeToString(ScheduleConfig.serializer(), ScheduleConfig(pattern))
             assertTrue(stored, passes(stored))
         }
     }
@@ -57,7 +57,7 @@ class ScheduleSettingsTest {
             """{"pattern":{"type":"MonthlyRecurrent","months":[1,6],"day_of_month":15,"time":"10:00"}}""",
             """{"pattern":{"type":"WeeklyCustom","moments":[{"day_of_week":1,"time":"09:00"},{"day_of_week":7,"time":"20:00"}]}}""",
             """{"pattern":{"type":"YearlyRecurrent","dates":[{"month":12,"day":25,"time":"08:00"}]}}""",
-            """{"pattern":{"type":"SpecificDates","timestamps":[1727000000000]},"start_date":0}"""
+            """{"pattern":{"type":"SpecificDates","timestamps":[1727000000000]}}"""
         )
         written.zip(onePerPattern).forEach { (json, pattern) ->
             assertTrue(json, passes(json))

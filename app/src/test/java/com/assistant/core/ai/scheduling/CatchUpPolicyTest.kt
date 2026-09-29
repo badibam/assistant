@@ -23,10 +23,7 @@ class CatchUpPolicyTest {
     private fun at(year: Int, month: Int, day: Int, hour: Int, minute: Int): Long =
         ZonedDateTime.of(year, month, day, hour, minute, 0, 0, paris).toInstant().toEpochMilli()
 
-    private fun dailyAt9(startDate: Long? = null) = ScheduleConfig(
-        pattern = SchedulePattern.DailyMultiple(listOf("09:00")),
-        startDate = startDate
-    )
+    private fun dailyAt9() = ScheduleConfig(pattern = SchedulePattern.DailyMultiple(listOf("09:00")))
 
     private val minute = 60_000L
 
@@ -40,7 +37,6 @@ class CatchUpPolicyTest {
         val start = CatchUpPolicy.searchStart(
             lastExecutionTime = lastRun,
             automationUpdatedAt = at(2025, 3, 1, 12, 0),
-            scheduleStartDate = null,
             catchUpWindow = null,
             now = at(2025, 3, 15, 10, 0)
         )
@@ -59,28 +55,11 @@ class CatchUpPolicyTest {
         val start = CatchUpPolicy.searchStart(
             lastExecutionTime = at(2025, 3, 10, 9, 0),
             automationUpdatedAt = edited,
-            scheduleStartDate = null,
             catchUpWindow = null,
             now = at(2025, 3, 15, 10, 0)
         )
 
         assertEquals(edited, start)
-    }
-
-    /** A brand new automation starts from its schedule's own start date. */
-    @Test
-    fun aNewAutomationStartsFromItsScheduleStart() {
-        val scheduleStart = at(2025, 3, 12, 0, 0)
-
-        val start = CatchUpPolicy.searchStart(
-            lastExecutionTime = 0L,
-            automationUpdatedAt = 0L,
-            scheduleStartDate = scheduleStart,
-            catchUpWindow = null,
-            now = at(2025, 3, 15, 10, 0)
-        )
-
-        assertEquals(scheduleStart, start)
     }
 
     /** With nothing at all to go on, there is nothing to catch up: the search starts now. */
@@ -91,7 +70,6 @@ class CatchUpPolicyTest {
         val start = CatchUpPolicy.searchStart(
             lastExecutionTime = 0L,
             automationUpdatedAt = 0L,
-            scheduleStartDate = null,
             catchUpWindow = null,
             now = now
         )
@@ -113,14 +91,13 @@ class CatchUpPolicyTest {
         val start = CatchUpPolicy.searchStart(
             lastExecutionTime = longAgo,
             automationUpdatedAt = 0L,
-            scheduleStartDate = null,
             catchUpWindow = 60 * minute,
             now = now
         )
 
         assertEquals(now - 60 * minute, start)
         assertTrue(
-            CatchUpPolicy.windowSkippedOccurrences(longAgo, 0L, null, 60 * minute, now)
+            CatchUpPolicy.windowSkippedOccurrences(longAgo, 0L, 60 * minute, now)
         )
     }
 
@@ -133,14 +110,13 @@ class CatchUpPolicyTest {
         val start = CatchUpPolicy.searchStart(
             lastExecutionTime = lastRun,
             automationUpdatedAt = 0L,
-            scheduleStartDate = null,
             catchUpWindow = 120 * minute,
             now = now
         )
 
         assertEquals(lastRun, start)
         assertFalse(
-            CatchUpPolicy.windowSkippedOccurrences(lastRun, 0L, null, 120 * minute, now)
+            CatchUpPolicy.windowSkippedOccurrences(lastRun, 0L, 120 * minute, now)
         )
     }
 
@@ -152,10 +128,10 @@ class CatchUpPolicyTest {
 
         assertEquals(
             longAgo,
-            CatchUpPolicy.searchStart(longAgo, 0L, null, null, now)
+            CatchUpPolicy.searchStart(longAgo, 0L, null, now)
         )
         assertFalse(
-            CatchUpPolicy.windowSkippedOccurrences(longAgo, 0L, null, null, now)
+            CatchUpPolicy.windowSkippedOccurrences(longAgo, 0L, null, now)
         )
     }
 

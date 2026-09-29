@@ -53,7 +53,6 @@ class AutomationScheduler(private val context: Context) {
         val start = CatchUpPolicy.searchStart(
             lastExecutionTime = lastExecutionTime,
             automationUpdatedAt = automation.updatedAt,
-            scheduleStartDate = schedule.startDate,
             catchUpWindow = automation.catchUpWindow,
             now = now
         )
@@ -61,7 +60,6 @@ class AutomationScheduler(private val context: Context) {
         if (CatchUpPolicy.windowSkippedOccurrences(
                 lastExecutionTime = lastExecutionTime,
                 automationUpdatedAt = automation.updatedAt,
-                scheduleStartDate = schedule.startDate,
                 catchUpWindow = automation.catchUpWindow,
                 now = now
             )
@@ -173,7 +171,6 @@ class AutomationScheduler(private val context: Context) {
                     "AutomationScheduler: Calculating next execution for automation ${automation.id} " +
                     "(lastCompleted=${lastCompletedSession?.scheduledExecutionTime?.let { formatTimestamp(it) }}, " +
                     "updatedAt=${formatTimestamp(automation.updatedAt)}, " +
-                    "startDate=${schedule.startDate?.let { formatTimestamp(it) }}, " +
                     "catchUpWindow=${automation.catchUpWindow ?: "unlimited"}, " +
                     "fromTimestamp=${formatTimestamp(fromTimestamp)})",
                     "DEBUG"
@@ -181,8 +178,6 @@ class AutomationScheduler(private val context: Context) {
 
                 val nextExecutionTime = ScheduleCalculator.calculateNextExecution(
                     pattern = schedule.pattern,
-                    startDate = schedule.startDate,
-                    endDate = schedule.endDate,
                     fromTimestamp = fromTimestamp
                 )
 
@@ -345,8 +340,6 @@ class AutomationScheduler(private val context: Context) {
 
             val nextExecutionTime = ScheduleCalculator.calculateNextExecution(
                 pattern = schedule.pattern,
-                startDate = schedule.startDate,
-                endDate = schedule.endDate,
                 fromTimestamp = fromTimestamp
             )
 

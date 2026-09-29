@@ -73,7 +73,7 @@ object QuestionnaireScheduler : ToolScheduler {
         val times = mutableListOf<Long>()
         var steps = 0
         while (steps++ < MAX_STEPS) {
-            val next = ScheduleCalculator.calculateNextExecution(schedule.pattern, schedule.startDate, schedule.endDate, cursor) ?: break
+            val next = ScheduleCalculator.calculateNextExecution(schedule.pattern, cursor) ?: break
             if (next > now || next <= cursor) break
             times.add(next)
             cursor = next

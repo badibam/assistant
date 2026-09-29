@@ -5,8 +5,7 @@ import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 
 /**
- * A schedule, declared with the fields: a recurrence pattern, a variant on its type, and the
- * instants it runs between. The form ScheduleConfig reads and writes; a Messages tool holds one,
+ * A schedule, declared with the fields: a recurrence pattern and a variant on its type. The form ScheduleConfig reads and writes; a Messages tool holds one,
  * and so does an automation.
  */
 object ScheduleSettings {
@@ -59,9 +58,7 @@ object ScheduleSettings {
                     )
                 )
             ))
-        ),
-        field("start_date", text("schedule_start_date"), FieldType.DATETIME),
-        field("end_date", text("schedule_end_date"), FieldType.DATETIME)
+        )
     )
 
     private fun field(name: String, label: String, type: FieldType, required: Boolean = false, config: Map<String, Any>? = null) =

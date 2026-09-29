@@ -30,10 +30,8 @@ class ScheduleCalculatorTest {
 
     private fun next(
         pattern: SchedulePattern,
-        from: Long,
-        startDate: Long? = null,
-        endDate: Long? = null
-    ): Long? = ScheduleCalculator.calculateNextExecution(pattern, startDate, endDate, from, paris)
+        from: Long
+    ): Long? = ScheduleCalculator.calculateNextExecution(pattern, from, paris)
 
     // ==================== Type 1: several times a day ====================
 
@@ -222,40 +220,6 @@ class ScheduleCalculatorTest {
         assertNull(next(pattern, from = second))
     }
 
-    // ==================== The window the schedule runs in ====================
-
-    /** Before the start date, the schedule is computed from the start date instead. */
-    @Test
-    fun startDate_pushesTheFirstExecutionForward() {
-        val pattern = SchedulePattern.DailyMultiple(listOf("09:00"))
-        val startsInFebruary = at(2025, 2, 1, 0, 0)
-
-        assertEquals(at(2025, 1, 16, 9, 0), next(pattern, from = at(2025, 1, 15, 10, 0)))
-        assertEquals(
-            at(2025, 2, 1, 9, 0),
-            next(pattern, from = at(2025, 1, 15, 10, 0), startDate = startsInFebruary)
-        )
-    }
-
-    /** Past the end date there is nothing left to run. */
-    @Test
-    fun endDate_stopsTheSchedule() {
-        val pattern = SchedulePattern.DailyMultiple(listOf("09:00"))
-
-        assertNull(
-            next(pattern, from = at(2025, 1, 15, 10, 0), endDate = at(2025, 1, 15, 23, 0))
-        )
-    }
-
-    /** An execution falling exactly on the end date still counts: the bound is inclusive. */
-    @Test
-    fun endDate_includesAnExecutionFallingExactlyOnIt() {
-        val pattern = SchedulePattern.DailyMultiple(listOf("09:00"))
-        val exactly = at(2025, 1, 16, 9, 0)
-
-        assertEquals(exactly, next(pattern, from = at(2025, 1, 15, 10, 0), endDate = exactly))
-    }
-
     // ==================== Clocks that move ====================
 
     /**
@@ -299,8 +263,8 @@ class ScheduleCalculatorTest {
         val pattern = SchedulePattern.DailyMultiple(listOf("09:00"))
         val from = at(2025, 1, 15, 10, 0)
 
-        val inParis = ScheduleCalculator.calculateNextExecution(pattern, null, null, from, paris)
-        val inUtc = ScheduleCalculator.calculateNextExecution(pattern, null, null, from, ZoneId.of("UTC"))
+        val inParis = ScheduleCalculator.calculateNextExecution(pattern, from, paris)
+        val inUtc = ScheduleCalculator.calculateNextExecution(pattern, from, ZoneId.of("UTC"))
 
         // Paris is an hour ahead of UTC in January, so its 09:00 comes an hour earlier.
         assertEquals(3_600_000L, inUtc!! - inParis!!)

@@ -14,9 +14,7 @@ import kotlinx.serialization.SerialName
  */
 @Serializable
 data class ScheduleConfig(
-    val pattern: SchedulePattern,
-    @SerialName("start_date") val startDate: Long? = null,  // Start executing from this date (null = now)
-    @SerialName("end_date") val endDate: Long? = null       // Stop executing after this date (null = indefinite)
+    val pattern: SchedulePattern
 )
 
 /**

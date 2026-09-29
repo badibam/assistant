@@ -24,8 +24,6 @@ object ScheduleCalculator {
      * Calculate next execution time for a schedule
      *
      * @param pattern The schedule pattern to evaluate
-     * @param startDate Earliest allowed execution time (null = now)
-     * @param endDate Latest allowed execution time (null = no limit)
      * @param fromTimestamp Calculate from this timestamp (default = now)
      * @param zoneId Timezone the pattern's wall-clock times are read in (default = the
      *   user-configured global timezone). A caller passes it to compute in a stated zone
@@ -34,8 +32,6 @@ object ScheduleCalculator {
      */
     fun calculateNextExecution(
         pattern: SchedulePattern,
-        startDate: Long?,
-        endDate: Long?,
         fromTimestamp: Long = System.currentTimeMillis(),
         zoneId: ZoneId = AppConfigManager.getDateTimeConfig().getZoneId()
     ): Long? {
@@ -52,20 +48,7 @@ object ScheduleCalculator {
             is SchedulePattern.SpecificDates -> calculateSpecificDates(fromTimestamp, pattern, zoneId)
         } ?: return null
 
-        val nextTimestamp = nextZoned.toInstant().toEpochMilli()
-
-        // Apply start/end date constraints
-        if (startDate != null && nextTimestamp < startDate) {
-            // Recursively calculate from startDate, in the same zone: reading the default
-            // again here would send the recursion back to the app config.
-            return calculateNextExecution(pattern, startDate, endDate, startDate, zoneId)
-        }
-
-        if (endDate != null && nextTimestamp > endDate) {
-            return null // Past end date
-        }
-
-        return nextTimestamp
+        return nextZoned.toInstant().toEpochMilli()
     }
 
     /**

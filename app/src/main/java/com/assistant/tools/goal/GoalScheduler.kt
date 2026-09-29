@@ -104,14 +104,14 @@ object GoalScheduler : ToolScheduler {
                 var due: Long? = null
                 var steps = 0
                 while (steps++ < MAX_STEPS) {
-                    val next = ScheduleCalculator.calculateNextExecution(schedule.pattern, schedule.startDate, schedule.endDate, cursor) ?: break
+                    val next = ScheduleCalculator.calculateNextExecution(schedule.pattern, cursor) ?: break
                     if (next > now || next <= cursor) break
                     due = next
                     cursor = next
                 }
                 due?.takeIf { d -> attempts.none { it.start == d } }?.let { start ->
                     val end = duration?.let { start + it }
-                        ?: ScheduleCalculator.calculateNextExecution(schedule.pattern, schedule.startDate, schedule.endDate, start)?.let { it - 1 }
+                        ?: ScheduleCalculator.calculateNextExecution(schedule.pattern, start)?.let { it - 1 }
                     start to end
                 }
             }
