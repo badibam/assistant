@@ -1146,6 +1146,7 @@
     <string name="variable_error_loop">A variable would read itself: %1$s.</string>
     <string name="variable_error_term">The term %1$s cannot be read.</string>
     <string name="variable_error_constant_value">A constant needs a numeric "value".</string>
+    <string name="variable_error_constant_not_number">The constant %1$s is not a number (%2$s): a formula computes on numbers.</string>
     <string name="variable_error_field">The variable %1$s needs its "field": its type (NUMERIC, SCALE, DURATION) and settings.</string>
     <string name="variable_error_kind">Unknown kind of variable: %1$s. Accepted: CONSTANT, FORMULA.</string>
     <string name="variable_error_type">A variable is not of type %1$s. Accepted: %2$s.</string>

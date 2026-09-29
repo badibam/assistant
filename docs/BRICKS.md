@@ -60,7 +60,7 @@ Une brique ne connaît pas l'écran qui l'utilise ; il lui donne ce dont elle a 
 | **Planification** | une récurrence : quotidienne, hebdomadaire, mensuelle, annuelle, dates précises | `ScheduleConfig` | `ScheduleSettings.group` | `ScheduleConfigEditor` ; `ScheduleSettingEditor` sur un formulaire de réglages | complète |
 | **Champ** | un champ des entrées d'un outil, ou aucun pour compter | un chemin : `timestamp`, `name`, `data.x`, `extra.x`, une clé d'état filtrable | `ToolFields.filterable` | `FieldPicker` : le nom seul, le chemin en plus quand deux champs portent le même nom ; gardé par son chemin | complète |
 | **Réduction** | dernière, somme, moyenne, min, max, compte, la plus tôt, la plus tard | `"SUM"` | `Reduction`, `Reduction.forType` | `ReductionPicker` : une seule permise est dite sans liste ; les réglages d'Objectif gardent un CHOICE jusqu'à la réécriture de ses critères | complète |
-| **Terme** | une constante, une variable, une Lecture | `{"constant"}`, `{"variable"}`, `{"reading"}` | `Term`, dans `core/variables` | aucun commun : `TermEditor`, privé à l'écran d'une variable | la constante n'est qu'un nombre ; l'Objectif le redéclare (`kind: VARIABLE`, `kind: FIELD`) |
+| **Terme** | une constante, une variable, une Lecture | `{"constant"}`, `{"variable"}`, `{"reading"}` ; la constante sans type à elle, lue dans celui de ce qu'on lui compare (un nombre dans une formule) | `Term`, dans `core/terms` | `TermPicker` | complet ; l'Objectif le redéclare encore (`kind: VARIABLE`, `kind: FIELD`) |
 | **Condition** | côté, opérateur, côté | `{"left", "op", "right"}` | `FilterOperator`, `EntryFilters.operatorsFor` ; la cible n'est vérifiée qu'à l'intérieur d'un filtre (`EntryFilters.parse`), toujours une constante | aucun : `FilterValueInput`, privé aux filtres | à extraire ; l'Objectif en a une copie (`Criterion.meets`, `TargetUnit`) |
 | **Filtre** (une Condition posée à chaque entrée) | un champ, un opérateur, une constante | aujourd'hui `{"field", "op", "value"}` | `EntryFilters`, évalué en SQL | `PointerFiltersDialog` | à réécrire sur la Condition, sa forme migrée |
 | **Sélection d'entrées** | une Chose (un outil, ou une zone pour la période seule), une Période, des Filtres, les champs gardés | `{"target", "period", "filters", "fields"}` | `EntrySelection` | aucun : le pointeur et la lecture d'une variable assemblent chacun le leur | modèle sans sélecteur |
@@ -88,7 +88,6 @@ Le détail de chaque étape, et ce qui reste à y trancher : `docs/design/bricks
 
 Chaque brique arrive avec la réécriture de ses usages existants, sans rien laisser en double :
 
-5. **Terme** : sorti de `core/variables`, sa constante de tout type ; son sélecteur remplace `TermEditor`.
 6. **Condition** : sortie de `EntryFilters`, jugée une fois ou sur chaque entrée (en SQL pour un filtre), sa forme `{"left", "op", "right"}` avec la migration des filtres enregistrés ; son sélecteur remplace `FilterValueInput` et les réglages d'opérateur et de cible de l'Objectif.
 7. **Lecture** et **Sélection d'entrées** : leurs sélecteurs remplacent `ReadingEditor` et l'assemblage du pointeur.
 8. **Critères d'Objectif** réécrits sur Terme et Condition ; `kind`, `target`, `target_unit` et `Criterion.meets` disparaissent.

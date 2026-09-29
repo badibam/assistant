@@ -1,5 +1,6 @@
 package com.assistant.core.variables
 
+import com.assistant.core.terms.Term
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.reading.Reduction

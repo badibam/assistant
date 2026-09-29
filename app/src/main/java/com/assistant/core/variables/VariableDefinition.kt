@@ -2,8 +2,7 @@ package com.assistant.core.variables
 
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
-import com.assistant.core.reading.Reduction
-import com.assistant.core.selection.EntrySelection
+import com.assistant.core.terms.Term
 import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
@@ -70,53 +69,6 @@ sealed interface VariableDefinition {
             val type = FieldType.entries.firstOrNull { it.name == json.optString("type") }?.takeIf { it in VALUE_TYPES }
                 ?: throw IllegalArgumentException(text("variable_error_type").format(json.optString("type"), VALUE_TYPES.joinToString(", ") { it.name }))
             return FieldDefinition(name, name, null, type, false, json.optJSONObject("config")?.let { JsonUtils.toMap(it) }?.mapValues { it.value!! })
-        }
-    }
-}
-
-/** A name a formula reads, defined by its variable. */
-sealed interface Term {
-
-    /**
-     * A reading of the core without a test: a field reduced across the selected entries, or,
-     * with [perEntry], a formula computed in each entry then reduced ("quantité × aliment.kcal_100g
-     * / 100", summed over the meals). The selection's period is relative to the instant the
-     * variable is read at.
-     */
-    data class Reading(val selection: EntrySelection, val field: String?, val reduction: Reduction, val perEntry: String? = null) : Term
-
-    /** A number written once and named. */
-    data class Constant(val value: Double) : Term
-
-    /** Another variable, by its id: the term renames it in this formula. */
-    data class Variable(val id: String) : Term
-
-    fun toJson(): JSONObject = when (this) {
-        is Reading -> JSONObject().put("reading", JSONObject().apply {
-            put("selection", selection.toJson())
-            field?.let { put("field", it) }
-            perEntry?.let { put("per_entry", it) }
-            put("reduction", reduction.name)
-        })
-        is Constant -> JSONObject().put("constant", value)
-        is Variable -> JSONObject().put("variable", id)
-    }
-
-    companion object {
-        fun fromJson(json: JSONObject, name: String, text: (String) -> String): Term = when {
-            json.has("reading") -> json.getJSONObject("reading").let { reading ->
-                Reading(
-                    selection = EntrySelection.fromJson(reading.optJSONObject("selection")
-                        ?: throw IllegalArgumentException(text("variable_error_term").format(name)), text),
-                    field = reading.optString("field").takeIf { it.isNotEmpty() },
-                    reduction = Reduction.entries.firstOrNull { it.name == reading.optString("reduction") }
-                        ?: throw IllegalArgumentException(text("service_error_reading_reduction").format(reading.optString("reduction"), Reduction.entries.joinToString(", ") { it.name })),
-                    perEntry = reading.optString("per_entry").takeIf { it.isNotBlank() }
-                )
-            }
-            json.opt("constant") is Number -> Constant((json.get("constant") as Number).toDouble())
-            json.optString("variable").isNotEmpty() -> Variable(json.getString("variable"))
-            else -> throw IllegalArgumentException(text("variable_error_term").format(name))
         }
     }
 }

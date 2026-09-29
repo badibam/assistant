@@ -27,11 +27,7 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldInput
 import com.assistant.core.fields.FieldType
-import com.assistant.core.fields.ToolFields
 import com.assistant.core.fields.formatValue
-import com.assistant.core.reading.Reduction
-import com.assistant.core.selection.EntryPeriod
-import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
 import com.assistant.core.ui.ButtonAction
@@ -40,10 +36,7 @@ import com.assistant.core.ui.CardType
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
-import com.assistant.core.ui.components.PeriodPicker
-import com.assistant.core.ui.selectors.FieldPick
-import com.assistant.core.ui.selectors.FieldPicker
-import com.assistant.core.ui.selectors.ReductionPicker
+import com.assistant.core.ui.selectors.TermPicker
 import com.assistant.core.utils.JsonUtils
 import com.assistant.core.variables.Formula
 import kotlinx.coroutines.launch
@@ -159,7 +152,6 @@ fun VariableScreen(zoneId: String, variableId: String?, group: String?, onDone: 
                 TermEditor(
                     name = termName,
                     term = terms.getJSONObject(termName),
-                    others = others,
                     s = s,
                     onRename = { newName -> edit { val t = getJSONObject("terms"); val v = t.remove(termName); t.put(newName, v) } },
                     onChange = { term -> edit { getJSONObject("terms").put(termName, term) } },
@@ -257,18 +249,16 @@ internal fun insertToken(text: String, start: Int, end: Int, token: String): Pai
     return (inserted + right + after) to inserted.length
 }
 
-/** One term: its name, and what it is — a reading, a constant, another variable. */
+/** One term of the formula: its local name, and what it is (TermPicker), a number when a constant. */
 @Composable
 private fun TermEditor(
     name: String,
     term: JSONObject,
-    others: List<VariableRow>,
     s: StringsContext,
     onRename: (String) -> Unit,
     onChange: (JSONObject) -> Unit,
     onRemove: () -> Unit
 ) {
-    val context = LocalContext.current
     var shownName by remember(name) { mutableStateOf(name) }
     UI.Card(type = CardType.DEFAULT) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -279,142 +269,8 @@ private fun TermEditor(
                 }
                 UI.ActionButton(action = ButtonAction.DELETE, display = com.assistant.core.ui.ButtonDisplay.ICON, onClick = onRemove)
             }
-            val kinds = listOf("reading" to s.shared("variable_term_reading"), "constant" to s.shared("variable_term_constant"), "variable" to s.shared("variable_term_variable"))
-            val kind = kinds.firstOrNull { term.has(it.first) }?.first ?: "constant"
-            UI.FormSelection(label = s.shared("variable_term_kind"), options = kinds.map { it.second }, selected = kinds.first { it.first == kind }.second, onSelect = { label ->
-                onChange(when (kinds.first { it.second == label }.first) {
-                    "reading" -> JSONObject().put("reading", JSONObject().put("selection", JSONObject()).put("reduction", Reduction.COUNT.name))
-                    "variable" -> JSONObject().put("variable", others.firstOrNull()?.id ?: "")
-                    else -> JSONObject().put("constant", 0)
-                })
-            }, required = true)
-            when (kind) {
-                "constant" -> UI.FormField(label = s.shared("variable_value"), value = term.opt("constant")?.toString() ?: "",
-                    onChange = { text -> text.replace(',', '.').toDoubleOrNull()?.let { onChange(JSONObject().put("constant", it)) } },
-                    fieldType = com.assistant.core.ui.FieldType.NUMERIC, required = true)
-                "variable" -> if (others.isEmpty()) UI.Text(text = s.shared("scope_no_options"), type = TextType.BODY) else UI.FormSelection(
-                    label = s.shared("variable_term_variable"),
-                    options = others.map { it.name },
-                    selected = others.firstOrNull { it.id == term.optString("variable") }?.name ?: "",
-                    onSelect = { label -> onChange(JSONObject().put("variable", others.first { it.name == label }.id)) },
-                    required = true
-                )
-                else -> ReadingEditor(term.getJSONObject("reading"), s) { reading -> onChange(JSONObject().put("reading", reading)) }
-            }
+            TermPicker(term, remember { FieldDefinition(name, name, null, FieldType.NUMERIC, false, null) }, onChange, s)
         }
-    }
-}
-
-/** The reading choices beside the fields: count the entries, or reduce a formula per entry. */
-private const val COUNT = "count"
-private const val PER_ENTRY = "per_entry"
-
-/** A reading term: its tool, its field (or a formula per entry, or a count), its reduction, its period. */
-@Composable
-private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSONObject) -> Unit) {
-    val context = LocalContext.current
-    fun edit(change: JSONObject.() -> Unit) = onChange(JSONObject(reading.toString()).apply(change))
-    val selection = reading.optJSONObject("selection") ?: JSONObject()
-    val target = selection.optJSONObject("target")
-    val toolId = target?.optString("id")?.takeIf { it.isNotEmpty() }
-    var fields by remember { mutableStateOf<Map<String, FieldDefinition>>(emptyMap()) }
-    var fieldsError by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(toolId) {
-        fieldsError = null
-        fields = if (toolId == null) emptyMap() else try { ToolFields.filterable(toolId, context, Strings.`for`(context = context)) } catch (e: IllegalStateException) { fieldsError = e.message; emptyMap() }
-    }
-
-    FieldInput(
-        FieldDefinition("tool", s.shared("reference_kind_tool_instance"), null, FieldType.REFERENCE, false,
-            mapOf("target" to mapOf("kinds" to listOf(ReferenceKind.TOOL_INSTANCE.name)))),
-        target?.let { JsonUtils.toMap(it) },
-        { value -> edit { put("selection", JSONObject(selection.toString()).put("target", JsonUtils.toJSONObject((value as Map<*, *>).entries.associate { it.key.toString() to it.value }))); remove("field") } },
-        context, required = true
-    )
-
-    fieldsError?.let { UI.Text(it, TextType.ERROR) }
-
-    // What is reduced: a field, a formula per entry, or the entries themselves counted
-    val perEntry = reading.has("per_entry")
-    FieldPicker(
-        label = s.shared("variable_reading_what"),
-        fields = fields,
-        selected = when {
-            perEntry -> FieldPick.Other(PER_ENTRY)
-            reading.has("field") -> FieldPick.Path(reading.getString("field"))
-            else -> FieldPick.Other(COUNT)
-        },
-        onSelect = { pick ->
-            edit {
-                remove("field"); remove("per_entry")
-                when (pick) {
-                    FieldPick.Other(COUNT) -> put("reduction", Reduction.COUNT.name)
-                    FieldPick.Other(PER_ENTRY) -> { put("per_entry", ""); put("reduction", Reduction.SUM.name) }
-                    is FieldPick.Path -> {
-                        put("field", pick.path)
-                        put("reduction", Reduction.forType(fields.getValue(pick.path).type).first().name)
-                    }
-                    is FieldPick.Other -> error("No reading choice '${pick.key}'")
-                }
-            }
-        },
-        accepts = { Reduction.forType(it.type).isNotEmpty() },
-        others = mapOf(COUNT to s.shared("variable_reading_count"), PER_ENTRY to s.shared("variable_reading_per_entry"))
-    )
-    if (perEntry) {
-        UI.FormField(label = s.shared("variable_reading_per_entry"), value = reading.optString("per_entry"), onChange = { v -> edit { put("per_entry", v) } }, required = true)
-    }
-    val fieldType = reading.optString("field").takeIf { it.isNotEmpty() }?.let { fields[it]?.type }
-    val reductions = when {
-        perEntry -> listOf(Reduction.SUM, Reduction.AVERAGE, Reduction.MIN, Reduction.MAX, Reduction.LAST, Reduction.COUNT)
-        // Nothing to offer until the field is read
-        reading.has("field") -> fieldType?.let { Reduction.forType(it).toList() } ?: emptyList()
-        else -> listOf(Reduction.COUNT)
-    }
-    ReductionPicker(
-        label = s.shared("variable_reading_reduction"),
-        reductions = reductions,
-        selected = reductions.firstOrNull { it.name == reading.optString("reduction") },
-        onSelect = { reduction -> edit { put("reduction", reduction.name) } },
-        s = s
-    )
-
-    // Its period, relative to the instant the variable is read at; one that does not read says why
-    val period = try {
-        EntryPeriod.fromJson(selection.optJSONObject("period") ?: JSONObject()) { s.shared(it) }
-    } catch (e: IllegalArgumentException) {
-        UI.Text(e.message ?: "", TextType.ERROR)
-        null
-    }
-    if (period != null) {
-        PeriodPicker(period, { next ->
-            edit { put("selection", JSONObject(selection.toString()).apply { if (next.isEmpty) remove("period") else put("period", next.toJson()) }) }
-        }, FieldType.DATETIME, s.shared("instant_reference_reading"))
-    }
-    // Its filters on the entries' values, relative dates resolved at each reading
-    var editingFilters by rememberSaveable { mutableStateOf(false) }
-    val filters = selection.optJSONArray("filters") ?: org.json.JSONArray()
-    for (i in 0 until filters.length()) {
-        UI.Text(text = com.assistant.core.ui.selectors.PointerDescription.filter(filters.getJSONObject(i), fields, s), type = TextType.CAPTION)
-    }
-    if (toolId != null) {
-        UI.Button(type = ButtonType.DEFAULT, onClick = { editingFilters = true }) {
-            UI.Text(text = s.shared("variable_reading_filters").format(filters.length()), type = TextType.LABEL)
-        }
-    }
-    if (editingFilters && toolId != null) {
-        com.assistant.core.ui.selectors.PointerFiltersDialog(
-            toolInstanceId = toolId,
-            fields = fields,
-            filters = filters,
-            chosenFields = null,
-            reference = s.shared("instant_reference_reading"),
-            onDismiss = { editingFilters = false },
-            onConfirm = { chosen, _ ->
-                editingFilters = false
-                edit { put("selection", JSONObject(selection.toString()).apply { if (chosen.length() == 0) remove("filters") else put("filters", chosen) }) }
-            }
-        )
     }
 }
 

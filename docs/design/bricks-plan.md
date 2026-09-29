@@ -10,12 +10,6 @@
 - Rappel : rien de ce qui a été codé depuis la base 46 n'a tourné sur le téléphone (`device-checks.md`).
 - Ailleurs, et à relire avant l'étape qui les cite : dans `docs/design/missing-tools.md`, « Le temps relatif » (la référence, les libellés relatifs, « = » refusé sur un DATETIME) et « Les formes enregistrées » (Instant, période, sélection, pointeur) ; sa section « Objectif » ; dans `docs/design/unified-fields.md`, le réglage de champ réservé à l'utilisateur.
 
-## 5. Terme
-
-- `Term` sort de `core/variables` pour le cœur ; sa constante devient de tout type ; un sélecteur commun (constante, variable, Lecture) remplace `TermEditor`.
-- Une formule refuse une constante qui n'est pas un nombre, en le disant.
-- À valider : la forme stockée d'une constante typée — sans doute `{"constant": <valeur stockée>, "field": {"type", "config"}}`, comme la constante d'une variable —, et si les termes constants déjà enregistrés (des nombres nus) migrent ou se lisent comme NUMERIC.
-
 ## 6. Condition
 
 - Le modèle : côté, opérateur, côté ; un côté est un terme, ou un champ quand la condition est posée à chaque entrée ; `{"left", "op", "right"}`. Un parseur ; deux évaluations : une fois (en Kotlin, par type, dates relatives comprises) et sur chaque entrée (en SQL, `EntryFilters` générant sa clause depuis la Condition, ses termes lus d'abord à la référence du contexte).

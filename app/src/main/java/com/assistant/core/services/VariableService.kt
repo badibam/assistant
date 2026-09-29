@@ -23,7 +23,7 @@ import com.assistant.core.variables.Formula
 import com.assistant.core.variables.FormulaType
 import com.assistant.core.variables.Outcome
 import com.assistant.core.variables.StoredVariable
-import com.assistant.core.variables.Term
+import com.assistant.core.terms.Term
 import com.assistant.core.variables.VariableDefinition
 import com.assistant.core.variables.VariableEvaluator
 import com.assistant.core.variables.VariableSources
@@ -191,7 +191,8 @@ class VariableService(private val context: Context) : ExecutableService {
     /** A term that can be read: its tool and field, a reduction its type takes, a variable that exists. */
     private suspend fun checkTerm(name: String, term: Term, others: List<VariableEntity>) {
         when (term) {
-            is Term.Constant -> {}
+            // A formula computes on numbers
+            is Term.Constant -> if (term.value !is Number) throw Refused(s.shared("variable_error_constant_not_number").format(name, term.value.toString()))
             is Term.Variable -> if (others.none { it.id == term.id }) throw Refused(s.shared("variable_error_not_found").format(term.id))
             is Term.Reading -> {
                 term.selection.problem { s.shared(it) }?.let { throw Refused(s.shared("variable_error_term").format(name) + " " + it) }
