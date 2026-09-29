@@ -190,7 +190,8 @@ Décidé le 2026-09-29 : Calcul n'est pas un type d'outil (il n'a pas d'entrées
 
   La période affichée leur est commune : elle choisit les entrées, et borne la grille. Elle est relative au moment de l'affichage (« Par rapport à : l'affichage »), et s'enregistre donc comme description.
 - **Une source par couche**, Entrées ou Grille, mêlées dans un graphique (les pesées en points, et la ligne de `poids_moyen_7j` sur une grille). Les couches partagent la période affichée et l'axe horizontal, où elles mettent la même sorte de valeur (deux dates, deux nombres), sinon la config refuse en le disant. L'axe vertical peut être double, gauche et droite, chacun son échelle et son unité (`resolve.scale.y: independent`) ; chaque couche choisit son côté, gauche par défaut ; les couches d'un même côté sont compatibles (kcal avec kcal), sinon refus qui propose l'autre côté.
-- **Ouvert** : le sous-ensemble du dessin retenu (marques, empilement, échelles, interactions).
+- **Quatre marques** : `line`, `point`, `bar`, `area` ; les autres (`text`, `arc`…) à leur premier vrai graphique. Un seuil est une variable dessinée en `line`, qui suit sa valeur à chaque pas (l'objectif qui passe de 2 100 à 1 900 le 15 fait une marche) ; pas de nombre tapé dans le graphique, donc pas de `rule`.
+- **Ouvert** : le reste du dessin (empilement, échelles, interactions).
 
 ## Objectif
 
