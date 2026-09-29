@@ -1,429 +1,52 @@
-# Grid Layout System - Système de grille pour les Tool Instances
+# La grille des outils d'une zone
 
-## Vue d'ensemble
+Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en tuile LINE, l'un sous l'autre, quel que soit le mode d'affichage réglé. Cette spec dit comment les tuiles se placent selon leur mode, et comment l'utilisateur les déplace.
 
-Système de placement et réorganisation des tool instances sur une grille 4×4 dans les zones, avec mode édition pour repositionnement interactif.
+## La grille
 
-## Architecture
+- **Une grille par groupe.** Les sections de groupe restent ; chacune range ses outils dans sa grille. La carte des variables et les cartes d'automation restent sous la grille, en pleine largeur.
+- **Quatre colonnes, des cases carrées** d'un quart de la largeur. Le thème fixe une largeur maximale de la grille (par exemple 480 dp), centrée au-delà : un grand écran qui ignore le verrou en portrait (`TODO.md`) garde le même affichage, jamais un de plus de quatre colonnes.
+- **La taille d'une tuile vient de son mode**, en cases (largeur × hauteur) : ICON 1×1, MINIMAL 2×1, LINE 4×1, CONDENSED 2×2, EXTENDED 4×2, SQUARE 4×4, FULL 4 × la hauteur de son contenu. Le mode reste un réglage de l'outil, dans sa config ; le mode d'édition ne le change pas.
+- **Une tuile de pleine largeur est seule sur ses lignes** : seules ICON, MINIMAL et CONDENSED partagent une ligne. Une FULL compte donc comme une ligne à elle seule, quelle que soit sa hauteur.
+- **Les tailles fixes du thème disparaissent** (`ToolCardContainer`, 64 dp pour ICON, 256 dp pour SQUARE…) : la grille donne sa taille à chaque tuile.
 
-### 1. Structure de données
+## Positions
 
-#### Table `tool_grid_positions`
-```sql
-CREATE TABLE tool_grid_positions (
-    zone_id INTEGER NOT NULL,
-    tool_instance_id INTEGER NOT NULL,
-    grid_x INTEGER NOT NULL,
-    grid_y INTEGER NOT NULL,
-    PRIMARY KEY (zone_id, tool_instance_id),
-    FOREIGN KEY (zone_id) REFERENCES zones(id),
-    FOREIGN KEY (tool_instance_id) REFERENCES tool_instances(id)
-);
-```
+- **Chaque outil garde sa place** : `grid_x` (0 à 3) et `grid_y` (sa ligne dans son groupe), deux colonnes de `tool_instances`. `order_index` disparaît des outils : rien ne le change aujourd'hui.
+- **Migration** : les outils existants sont posés un par un, dans leur ordre actuel, par la règle d'arrivée ci-dessous. Les sauvegardes suivent (`JsonTransformers`).
+- **Un outil qui arrive dans un groupe** (créé par l'utilisateur ou l'IA, passé dans ce groupe par sa config, venu d'une autre zone plus tard) se pose en bas, sur une ligne neuve, en colonne 0.
+- **Un outil qui part** (supprimé, changé de groupe) laisse un trou ; une ligne restée vide se referme.
+- **Un interstice** est la limite entre deux lignes qu'aucune tuile ne traverse : on n'ouvre jamais une ligne au milieu d'une tuile haute de plusieurs lignes.
+- **Une tuile qui grandit** (son mode changé) reste à sa place, sa colonne ramenée à gauche si elle dépasse le bord droit. Les tuiles qu'elle recouvre descendent dans des lignes neuves, ouvertes au premier interstice sous elle : elles gardent leur colonne et leur disposition entre elles, et les lignes du dessous descendent d'autant, en bloc. On ne cherche pas de trou ailleurs.
 
-#### Grille logique
-- **Largeur** : 4 colonnes (chaque colonne = 1/4 de largeur écran)
-- **Hauteur** : extensible par scroll vertical
-- **Coordonnées** : (0,0) en haut à gauche
-- **Occupation** : selon DisplayMode de chaque tool instance
+  ```
+  avant                     a passe de MINIMAL à CONDENSED
+  [ a  a ][ b  b ]          [ A  A ][ b  b ]
+  [ c ][  ][ d  d ]         [ A  A ][ d  d ]
+  [ e  e ][      ]          [ c ][         ]   ← ligne ouverte, c garde sa colonne
+                            [ e  e ][      ]
+  ```
+- **Une tuile qui rétrécit** reste à sa place et laisse un trou.
+- **L'IA ne voit ni ne change les positions** : ni dans `APP_STATE`, ni par une opération. Elle peut changer le mode d'un outil, par sa config ; la règle de la tuile qui grandit s'applique alors.
 
-### 2. DisplayModes et occupation grille
+## Le mode d'édition
 
-```kotlin
-enum class DisplayMode(val width: Int, val height: Int) {
-    ICON(1, 1),         // 1×1 case
-    MINIMAL(2, 1),      // 2×1 cases
-    LINE(4, 1),         // 4×1 cases
-    CONDENSED(2, 2),    // 2×2 cases  
-    EXTENDED(4, 2),     // 4×2 cases
-    SQUARE(4, 4),       // 4×4 cases
-    FULL(4, -1)         // 4×∞ cases (hauteur variable)
-}
-```
+- **Un bouton en icône, à droite de la ligne de titre du groupe**, allume l'édition du groupe ; il se voit activé tant qu'elle dure, et la ferme quand on le rappuie. Cet état « activé » n'existe pas encore : un paramètre `active` d'`UI.ActionButton`, que chaque thème dessine (le thème par défaut, en fond plein de la couleur principale).
+- **Un seul groupe à la fois.** Le reste de l'écran (autres groupes, variables, automations) est atténué et ne réagit pas, sauf les boutons d'édition des autres groupes : en appuyer un ferme la séance en cours et ouvre celle-là.
+- **En édition, un quadrillage léger** dessiné par le thème montre les cases, donc les trous. Les tuiles gardent leur contenu mais ne réagissent plus à leurs propres gestes (cocher une Liste, défiler dans une SQUARE) : un toucher sélectionne.
+- **Toucher un outil le sélectionne** ; les autres tuiles s'atténuent, et une barre apparaît en bas de l'écran, en pleine largeur : une croix de quatre flèches, un bouton de validation en icône au centre, « Annuler » à côté.
+- **Une flèche saute à la prochaine place où la tuile tient**, dans sa direction :
+  - ← et → avancent d'un quart sur la même ligne, jusqu'à la prochaine colonne où elle tient ;
+  - ↑ et ↓ gardent la colonne : la première ligne où elle tient, ou le premier interstice, ce qui vient en premier ; à un interstice, une ligne neuve s'ouvre et les lignes suivantes descendent ;
+  - sans place dans sa direction, la flèche se grise ;
+  - la ligne que la tuile laisse vide se referme aussitôt.
+- **La validation** enregistre la place de cet outil et les lignes ouvertes ou refermées par son déplacement, en une écriture, et le désélectionne ; on reste en édition. **« Annuler »** remet le groupe comme il était quand l'outil a été touché, et le désélectionne.
+- **Toucher un autre outil**, ou fermer l'édition par son bouton, valide le déplacement en cours.
+- **Le bouton retour du téléphone** quitte la zone. Avec un déplacement en cours, il demande d'abord : « Quitter la zone ? Le déplacement en cours sera annulé. »
+- **L'écran ne défile que s'il le faut** : quand la tuile passerait sous la barre ou au-dessus du haut, juste assez pour la garder visible avec une ligne de marge. Un espace est ajouté sous le contenu pour qu'une tuile tout en bas puisse se tenir au-dessus de la barre.
 
-## Comportements
+## Hors de cette spec
 
-### 1. Mode Normal
-
-#### Affichage
-- Tool instances positionnées selon leurs coordonnées stockées
-- Scroll vertical si contenu dépasse l'écran
-- Affichage complet du contenu des tool instances
-
-#### Changement de DisplayMode
-**Logique de repositionnement automatique** :
-
-1. **Vérifier espace disponible** à la position actuelle
-2. **Si espace suffisant** : agrandir sur place
-3. **Si espace insuffisant** :
-   - Ajouter des lignes vides en dessous si nécessaire
-   - Repositionner l'outil à la nouvelle taille
-4. **Sauvegarder** les nouvelles coordonnées
-
-```kotlin
-fun handleDisplayModeChange(tool: ToolInstance, newMode: DisplayMode) {
-    val currentPos = getGridPosition(tool.id)
-    val newSize = newMode.getDimensions()
-    
-    if (isSpaceAvailable(currentPos, newSize)) {
-        // Agrandir sur place
-        updateDisplayMode(tool.id, newMode)
-    } else {
-        // Chercher nouvelle position + ajouter lignes si besoin
-        val newPos = findAvailablePosition(newSize) ?: addRowsAndPlace(newSize)
-        updateGridPosition(tool.id, newPos)
-        updateDisplayMode(tool.id, newMode)
-    }
-}
-```
-
-### 2. Mode Édition
-
-#### Activation
-- **Bouton "Réorganiser"** dans ZoneScreen
-- Passage en mode édition : `editMode = true`
-
-#### Interface
-- **Grille infinie** : scroll vertical sans limite
-- **Tool instances en silhouette** : titre + contour selon DisplayMode
-- **Grille visible** : lignes de division 4×4 affichées
-
-#### Interaction : Tap to Select + Tap to Place
-
-**Phase 1 - Sélection** :
-```kotlin
-fun onToolTap(tool: ToolInstance) {
-    selectedTool = tool
-    showValidPositions = true
-    showCancelButton = true
-}
-```
-
-**Phase 2 - Placement** :
-```kotlin  
-fun onGridTap(x: Int, y: Int) {
-    if (selectedTool != null && isValidPosition(x, y, selectedTool.displayMode)) {
-        moveToolToPosition(selectedTool.id, x, y)
-        clearSelection()
-    }
-}
-```
-
-**Annulation** :
-```kotlin
-fun onCancelSelection() {
-    selectedTool = null
-    showValidPositions = false  
-    showCancelButton = false
-}
-```
-
-#### Feedback visuel
-
-**Tool sélectionné** :
-- Surbrillance de l'outil
-- Point d'ancrage haut-gauche visible
-- Bouton "Annuler" qui apparaît
-
-**Zones de placement** :
-- **Zones vertes continues** : toutes les positions où l'outil peut être placé
-- **Points d'ancrage** : positions top-left possibles visibles dans les zones vertes
-
-```kotlin
-fun calculateValidZones(toolSize: DisplayMode): List<GridZone> {
-    val zones = mutableListOf<GridZone>()
-    
-    for (startY in 0..maxY) {
-        for (startX in 0..maxX) {
-            if (canPlaceAt(startX, startY, toolSize)) {
-                // Calculer la zone continue à partir de cette position
-                val zone = expandZone(startX, startY, toolSize)
-                if (!zones.any { it.overlaps(zone) }) {
-                    zones.add(zone)
-                }
-            }
-        }
-    }
-    
-    return zones
-}
-```
-
-## Implémentation
-
-### 1. Modifications Base de Données
-
-#### Nouvelle table
-```kotlin
-@Entity(
-    tableName = "tool_grid_positions",
-    primaryKeys = ["zone_id", "tool_instance_id"],
-    indices = [
-        Index(value = ["zone_id"]),
-        Index(value = ["tool_instance_id"])
-    ]
-)
-data class ToolGridPosition(
-    val zone_id: Long,
-    val tool_instance_id: Long,
-    val grid_x: Int,
-    val grid_y: Int
-)
-```
-
-#### DAO operations
-```kotlin
-@Dao
-interface ToolGridPositionDao {
-    @Query("SELECT * FROM tool_grid_positions WHERE zone_id = :zoneId")
-    suspend fun getPositionsForZone(zoneId: Long): List<ToolGridPosition>
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPosition(position: ToolGridPosition)
-    
-    @Delete
-    suspend fun deletePosition(position: ToolGridPosition)
-    
-    @Query("DELETE FROM tool_grid_positions WHERE tool_instance_id = :toolId")
-    suspend fun deletePositionsForTool(toolId: Long)
-}
-```
-
-### 2. Composants UI
-
-#### ZoneScreen étendu
-```kotlin
-@Composable
-fun ZoneScreen(
-    zone: Zone,
-    editMode: Boolean = false,
-    onEditModeChange: (Boolean) -> Unit = {},
-    viewModel: ZoneViewModel = hiltViewModel()
-) {
-    // État du mode édition
-    val selectedTool by viewModel.selectedTool.collectAsState()
-    val validZones by viewModel.validZones.collectAsState()
-    
-    Column {
-        // Header avec bouton Réorganiser
-        ZoneHeader(
-            zone = zone,
-            editMode = editMode,
-            onEditModeToggle = onEditModeChange
-        )
-        
-        // Grille des tool instances
-        GridLayout(
-            tools = viewModel.toolsWithPositions,
-            editMode = editMode,
-            selectedTool = selectedTool,
-            validZones = validZones,
-            onToolClick = if (editMode) viewModel::selectTool else viewModel::openTool,
-            onGridClick = if (editMode) viewModel::placeTool else { _, _ -> }
-        )
-        
-        // Bouton annuler (si outil sélectionné)
-        if (editMode && selectedTool != null) {
-            CancelButton(onClick = viewModel::cancelSelection)
-        }
-    }
-}
-```
-
-#### UI.ToolCard modifié
-```kotlin
-@Composable
-fun UI.ToolCard(
-    tool: ToolInstance,
-    displayMode: DisplayMode,
-    editMode: Boolean = false,
-    selected: Boolean = false,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit = { },
-    contentDescription: String? = null
-) {
-    Card(
-        modifier = Modifier
-            .size(
-                width = (displayMode.width * 0.25f).dp,
-                height = if (displayMode.height > 0) (displayMode.height * 0.25f).dp else Dp.Unspecified
-            )
-            .conditional(selected) { 
-                border(2.dp, Color.Blue) 
-            }
-            .clickable { onClick() },
-        content = {
-            if (editMode) {
-                // Mode silhouette : titre + contour
-                ToolSilhouette(tool, displayMode)
-            } else {
-                // Mode normal : contenu complet
-                ToolContent(tool, displayMode)
-            }
-        }
-    )
-}
-```
-
-### 3. ViewModel Extensions
-
-```kotlin
-class ZoneViewModel : ViewModel() {
-    // États existants...
-    
-    // États mode édition
-    private val _editMode = MutableStateFlow(false)
-    val editMode = _editMode.asStateFlow()
-    
-    private val _selectedTool = MutableStateFlow<ToolInstance?>(null)
-    val selectedTool = _selectedTool.asStateFlow()
-    
-    private val _validZones = MutableStateFlow<List<GridZone>>(emptyList())
-    val validZones = _validZones.asStateFlow()
-    
-    // Actions mode édition
-    fun toggleEditMode() {
-        _editMode.value = !_editMode.value
-        if (!_editMode.value) {
-            cancelSelection()
-        }
-    }
-    
-    fun selectTool(tool: ToolInstance) {
-        _selectedTool.value = tool
-        _validZones.value = calculateValidZones(tool.displayMode)
-    }
-    
-    fun placeTool(x: Int, y: Int) {
-        val tool = _selectedTool.value ?: return
-        
-        viewModelScope.launch {
-            coordinator.processUserAction(
-                "move_tool_to_position",
-                mapOf(
-                    "tool_id" to tool.id,
-                    "x" to x,
-                    "y" to y
-                )
-            )
-            cancelSelection()
-        }
-    }
-    
-    fun cancelSelection() {
-        _selectedTool.value = null
-        _validZones.value = emptyList()
-    }
-}
-```
-
-### 4. Service Layer
-
-#### GridLayoutService
-```kotlin
-class GridLayoutService(private val context: Context) : ExecutableService {
-    
-    override suspend fun execute(
-        operation: String,
-        params: JSONObject,
-        token: CancellationToken
-    ): OperationResult {
-        return when (operation) {
-            "move_tool_to_position" -> moveToolToPosition(params)
-            "auto_reposition_on_resize" -> autoRepositionOnResize(params)
-            "get_valid_positions" -> getValidPositions(params)
-            else -> OperationResult.error("Unknown operation: $operation")
-        }
-    }
-    
-    private suspend fun moveToolToPosition(params: JSONObject): OperationResult {
-        val toolId = params.getLong("tool_id")
-        val x = params.getInt("x")
-        val y = params.getInt("y")
-        
-        // Vérifier validité de la position
-        if (!isValidPosition(toolId, x, y)) {
-            return OperationResult.error("Position invalide")
-        }
-        
-        // Sauvegarder nouvelle position
-        val position = ToolGridPosition(
-            zone_id = getZoneIdForTool(toolId),
-            tool_instance_id = toolId,
-            grid_x = x,
-            grid_y = y
-        )
-        
-        gridPositionDao.insertPosition(position)
-        
-        return OperationResult.success()
-    }
-}
-```
-
-## Cas d'usage
-
-### Scénario 1 : Changement de DisplayMode automatique
-1. Utilisateur change MINIMAL → EXTENDED sur un outil
-2. Système vérifie si espace disponible à position actuelle
-3. Si oui : agrandissement sur place
-4. Si non : ajout de lignes et repositionnement automatique
-
-### Scénario 2 : Réorganisation manuelle
-1. Utilisateur appuie sur "Réorganiser"
-2. Interface passe en mode édition (silhouettes + grille)
-3. Utilisateur sélectionne un outil (surbrillance + zones vertes)
-4. Utilisateur tape dans une zone verte
-5. Outil se repositionne, sélection se désactive
-
-### Scénario 3 : Annulation de sélection
-1. En mode édition, outil sélectionné
-2. Utilisateur appuie sur "Annuler"
-3. Sélection se désactive, zones vertes disparaissent
-
-## Contraintes et règles
-
-### Contraintes techniques
-- **Largeur max** : 4 colonnes (limitation écran)
-- **Pas de chevauchement** : deux outils ne peuvent occuper les mêmes cases
-- **Intégrité données** : suppression outil → suppression position
-- **Performance** : calcul zones valides optimisé
-
-### Règles métier
-- **Mode FULL** : toujours placé en début de ligne (x=0)
-- **Positions par défaut** : nouveaux outils placés automatiquement
-- **Sauvegarde automatique** : toute modification de position sauvegardée immédiatement
-
-## Migration et déploiement
-
-### Phase 1 : Infrastructure
-- Création table `tool_grid_positions`
-- Ajout DAO et service
-- Positions par défaut pour outils existants
-
-### Phase 2 : Interface
-- Extension ZoneScreen avec mode édition
-- Modification UI.ToolCard pour mode silhouette
-- Implémentation interactions tap-to-place
-
-### Phase 3 : Optimisations
-- Performances calcul zones valides
-- Animations de transition
-- Gestion des cas edge
-
-## Tests
-
-### Tests unitaires
-- Calcul zones valides selon DisplayMode
-- Détection de chevauchement
-- Logique de repositionnement automatique
-
-### Tests d'intégration  
-- Sauvegarde/chargement positions
-- Synchronisation avec changements DisplayMode
-- Cohérence après suppression d'outils
-
-### Tests UI
-- Interactions mode édition
-- Feedback visuel (sélection, zones vertes)
-- Transitions entre modes normal/édition
+- Ce que chaque type d'outil montre dans chaque mode (`TileContent`) : la Liste les remplit tous ; l'Objectif, le Questionnaire et les Données structurées n'ont que LINE ; ICON affiche encore un « T » provisoire (`UI.ToolCard`). Les modes de Messages : `messages-display-modes.md`.
+- L'aperçu dessiné d'un Graphique sur sa tuile (`missing-tools.md`).
+- Changer un outil de zone (`NOTES.md`).
