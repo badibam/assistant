@@ -148,4 +148,24 @@ class ChartSceneBuilderTest {
         assertNotNull(scene.hitAt(arcs[0].center.x + 30f, arcs[0].center.y - 60f, 40f))
         assertNull(scene.hitAt(0f, scene.drawing.height, 1f))
     }
+
+    @Test
+    fun `a strip draws the marks alone at the height given`() {
+        val layout = builder().build(spec(stackedBars), listOf(kcal()), day(1) to day(4) - 1, 400f, ChartDetail.STRIP, height = 60f)
+        assertEquals(60f, layout.drawing.height, 0.01f)
+        assertEquals(6, marks(layout).filterIsInstance<DrawShape.Box>().size)
+        // No graduation, no title, no legend: not a word
+        assertTrue(labels(layout).isEmpty())
+    }
+
+    @Test
+    fun `a reduced chart keeps a few graduations, no legend, and its first view only`() {
+        val views = ChartSpec.of(JSONObject("""{$period, "composition": "vconcat", "vconcat": [{"title": "A", "layer": [$stackedBars]}, {"title": "B", "layer": [$stackedBars]}]}"""), { it }, { it })
+        val layout = builder().build(views, listOf(kcal(), kcal()), day(1) to day(4) - 1, 400f, ChartDetail.REDUCED, height = 180f)
+        assertEquals(6, marks(layout).filterIsInstance<DrawShape.Box>().size)
+        assertTrue("A" !in labels(layout) && "food" !in labels(layout))
+        val left = layout.drawing.shapes.filterIsInstance<DrawShape.Label>().filter { it.anchor == com.assistant.core.drawing.TextAnchor.END }
+        assertTrue(left.size in 2..4)
+    }
 }
+

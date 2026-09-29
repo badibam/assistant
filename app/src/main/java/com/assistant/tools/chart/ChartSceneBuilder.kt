@@ -50,6 +50,13 @@ interface ChartText {
     fun own(key: String): String
 }
 
+/**
+ * How much of a chart is drawn: whole on its screen and in a FULL tile; reduced in a SQUARE tile,
+ * its marks and a few graduations without titles or legend; a strip in an EXTENDED tile, its marks
+ * alone. Reduced and strip show the first view only, at the height the tile gives.
+ */
+enum class ChartDetail { WHOLE, REDUCED, STRIP }
+
 /** The sizes of a chart's drawing, in pixels. */
 data class ChartMetrics(val density: Float) {
     fun dp(value: Float) = value * density
@@ -95,21 +102,30 @@ class ChartSceneBuilder(
     /** What one small view draws: its layers, and its title for a facet or a repeat. */
     private data class Cell(val title: String?, val layers: List<Bound>)
 
+    /** How much is drawn, for the build under way. */
+    private var detail = ChartDetail.WHOLE
+
     /**
      * @param spec The chart
      * @param tables The table of each layer, in the order of ChartSpec.layers
      * @param period The displayed period's instants, a side absent without limit
+     * @param detail How much of it is drawn
+     * @param height The height a reduced chart or a strip is drawn at; a whole chart takes the one it needs
      */
-    fun build(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Long?>, width: Float): ChartLayout {
+    fun build(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Long?>, width: Float,
+              detail: ChartDetail = ChartDetail.WHOLE, height: Float? = null): ChartLayout {
         require(tables.size == spec.layers.size) { "a table per layer" }
+        require(detail == ChartDetail.WHOLE || height != null) { "a reduced chart is drawn at the height it is given" }
         shapes.clear(); hits.clear(); legends.clear()
+        this.detail = detail
         periodStart = period.first?.toDouble()
         periodEnd = period.second?.toDouble()
         val bound = spec.layers.zip(tables).mapIndexed { i, (layer, table) -> Bound(layer, table, i) }
         colors = ColorScales(bound)
 
-        val cells = cellsOf(spec.composition, bound)
-        val columns = when (val c = spec.composition) {
+        // Reduced, only the first view, untitled: a tile has room for no more
+        val cells = cellsOf(spec.composition, bound).let { all -> if (detail == ChartDetail.WHOLE) all else all.take(1).map { it.copy(title = null) } }
+        val columns = if (detail != ChartDetail.WHOLE) 1 else when (val c = spec.composition) {
             is Composition.Single -> 1
             is Composition.Concat -> when (c.direction) {
                 ConcatDirection.VERTICAL -> 1
@@ -120,7 +136,7 @@ class ChartSceneBuilder(
             is Composition.Repeat -> c.columns ?: 1
         }.coerceIn(1, cells.size.coerceAtLeast(1))
         val cellWidth = (width - metrics.cellGap * (columns - 1)) / columns
-        val cellHeight = metrics.cellHeight(if (columns == 1) cellWidth else width)
+        val cellHeight = height?.takeIf { detail != ChartDetail.WHOLE } ?: metrics.cellHeight(if (columns == 1) cellWidth else width)
         val titleHeight = if (cells.any { it.title != null }) text.height + metrics.gap * 2 else 0f
         // A facet's views share their scales: its categories compare across them
         val shared = if (spec.composition is Composition.Facet) cells.flatMap { it.layers } else null
@@ -140,8 +156,8 @@ class ChartSceneBuilder(
             }
             bottom = max(bottom, rect.bottom)
         }
-        val height = drawLegends(bottom + metrics.cellGap, width)
-        return ChartLayout(Drawing(width, height, shapes.toList()), hits.toList())
+        val total = if (detail == ChartDetail.WHOLE) drawLegends(bottom + metrics.cellGap, width) else bottom
+        return ChartLayout(Drawing(width, total, shapes.toList()), hits.toList())
     }
 
     // ---------------------------------------------------------------------------------------
@@ -336,17 +352,19 @@ class ChartSceneBuilder(
         val xField = prepared.firstNotNullOfOrNull { it.xField }
         val yKinds = sides.associateWith { side -> kindOf(prepared.filter { it.side == side }.map { it.yMeasure }) }
 
-        // Room: titles over the plot, graduations beside and under it
-        val yTitles = sides.associateWith { side -> prepared.firstOrNull { it.side == side && it.yField != null }?.let { yTitle(it) } }
+        // Room: titles over the plot, graduations beside and under it; a strip has neither, a reduced chart no titles
+        val axes = detail != ChartDetail.STRIP
+        val titled = detail == ChartDetail.WHOLE
+        val yTitles = sides.associateWith { side -> prepared.firstOrNull { it.side == side && it.yField != null }?.takeIf { titled }?.let { yTitle(it) } }
         val top = rect.top + (if (yTitles.values.any { it != null }) text.height + metrics.gap * 2 else metrics.gap)
-        val xTitle = xField?.takeIf { xKind != AxisKind.TIME }?.let { xTitleOf(prepared) }
-        val bottom = rect.bottom - text.height - metrics.tickLength - metrics.gap - (if (xTitle != null) text.height + metrics.gap else 0f)
+        val xTitle = xField?.takeIf { xKind != AxisKind.TIME && titled }?.let { xTitleOf(prepared) }
+        val bottom = rect.bottom - (if (axes) text.height + metrics.tickLength + metrics.gap else metrics.gap) - (if (xTitle != null) text.height + metrics.gap else 0f)
 
         val yAxes = sides.associateWith { side ->
             val layers = sharedPrepared.filter { it.side == side || (it.yDef == null && side == Orient.LEFT) }
             axis(layers, vertical = true, kind = yKinds.getValue(side), start = bottom, end = top)
         }
-        val margins = sides.associateWith { side ->
+        val margins = if (!axes) emptyMap() else sides.associateWith { side ->
             val axis = yAxes.getValue(side)
             (axis.ticks.maxOfOrNull { text.width(it.label) } ?: 0f) + metrics.tickLength + metrics.gap * 2
         }
@@ -356,13 +374,13 @@ class ChartSceneBuilder(
         val plot = DrawRect(left, top, right, bottom)
 
         // Behind the marks: the grid
-        yAxes.forEach { (side, axis) ->
+        if (axes) yAxes.forEach { (side, axis) ->
             val grid = prepared.firstOrNull { it.side == side }?.yDef?.axis?.grid ?: (side == Orient.LEFT && axis.kind != AxisKind.BAND)
             if (grid) axis.ticks.forEach { tick -> axis.number(tick.value)?.let { y ->
                 shapes.add(DrawShape.Segment(DrawPoint(plot.left, y), DrawPoint(plot.right, y), DrawColor.Ink(InkLevel.FAINT), metrics.axisWidth, null))
             } }
         }
-        if (prepared.firstOrNull()?.xDef?.axis?.grid == true) xAxis.ticks.forEach { tick -> xAxis.number(tick.value)?.let { x ->
+        if (axes && prepared.firstOrNull()?.xDef?.axis?.grid == true) xAxis.ticks.forEach { tick -> xAxis.number(tick.value)?.let { x ->
             shapes.add(DrawShape.Segment(DrawPoint(x, plot.top), DrawPoint(x, plot.bottom), DrawColor.Ink(InkLevel.FAINT), metrics.axisWidth, null))
         } }
 
@@ -374,6 +392,7 @@ class ChartSceneBuilder(
         prepared.forEach { p -> drawHoles(p, xAxis, plot) }
 
         // The axes over everything
+        if (!axes) return
         shapes.add(DrawShape.Segment(DrawPoint(plot.left, plot.bottom), DrawPoint(plot.right, plot.bottom), DrawColor.Ink(InkLevel.MEDIUM), metrics.axisWidth, null))
         xAxis.ticks.forEach { tick ->
             val x = (if (xAxis.kind == AxisKind.BAND) xAxis.band?.center(categoryOf(xAxis, tick)) else xAxis.number(tick.value)) ?: return@forEach
@@ -439,6 +458,7 @@ class ChartSceneBuilder(
         val normalized = onAxis.any { it.stack == Stack.NORMALIZE && it.horizontal != vertical }
         val axis = Axis(kind, field, normalized)
         val count = ((abs(end - start)) / metrics.dp(if (vertical) 40f else 72f)).toInt().coerceAtLeast(2)
+            .let { if (detail == ChartDetail.REDUCED) it.coerceAtMost(3) else it }
         val scale = onAxis.firstOrNull()?.let { defOf(it) }?.scale ?: ScaleDef()
 
         when (kind) {
