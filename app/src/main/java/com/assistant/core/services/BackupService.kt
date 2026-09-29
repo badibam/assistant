@@ -25,6 +25,8 @@ import com.assistant.core.versioning.PointerAtV46
 import com.assistant.core.versioning.VariableValidationAtV49
 import com.assistant.core.versioning.ScheduleDatesAtV51
 import com.assistant.core.versioning.ConditionsAtV52
+import com.assistant.core.versioning.GridAtV53
+import com.assistant.core.versioning.ZoneGridAtV54
 import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
@@ -133,7 +135,9 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("description", zone.description)
                                 put("icon_name", zone.icon_name)
                                 put("active", zone.active)
-                                put("order_index", zone.order_index)
+                                put("display_mode", zone.display_mode)
+                                put("grid_x", zone.grid_x)
+                                put("grid_y", zone.grid_y)
                                 put("created_at", zone.created_at)
                                 put("updated_at", zone.updated_at)
                                 if (zone.tool_groups != null) {
@@ -155,7 +159,8 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("tooltype", instance.tooltype)
                                 put("config_json", instance.config_json)
                                 put("enabled", instance.enabled)
-                                put("order_index", instance.order_index)
+                                put("grid_x", instance.grid_x)
+                                put("grid_y", instance.grid_y)
                                 put("created_at", instance.created_at)
                                 put("updated_at", instance.updated_at)
                             })
@@ -488,7 +493,9 @@ class BackupService(private val context: Context) : ExecutableService {
                         description = item.optString("description", null),
                         icon_name = item.optString("icon_name", null),
                         active = item.optBoolean("active", true),
-                        order_index = item.getInt("order_index"),
+                        display_mode = item.getString("display_mode"),
+                        grid_x = item.getInt("grid_x"),
+                        grid_y = item.getInt("grid_y"),
                         created_at = item.getLong("created_at"),
                         updated_at = item.getLong("updated_at"),
                         tool_groups = item.optString("tool_groups", null),
@@ -509,7 +516,8 @@ class BackupService(private val context: Context) : ExecutableService {
                         tooltype = item.getString("tooltype"),
                         config_json = item.getString("config_json"),
                         enabled = item.optBoolean("enabled", true),
-                        order_index = item.getInt("order_index"),
+                        grid_x = item.getInt("grid_x"),
+                        grid_y = item.getInt("grid_y"),
                         created_at = item.getLong("created_at"),
                         updated_at = item.getLong("updated_at")
                     )
@@ -791,6 +799,12 @@ class BackupService(private val context: Context) : ExecutableService {
             }
             if (fromVersion < 52 && toVersion >= 52) {
                 ConditionsAtV52.backup(data)
+            }
+            if (fromVersion < 53 && toVersion >= 53) {
+                GridAtV53.backup(data)
+            }
+            if (fromVersion < 54 && toVersion >= 54) {
+                ZoneGridAtV54.backup(data)
             }
 
             // Transform app settings

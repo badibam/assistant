@@ -38,5 +38,8 @@
     <string name="action_next">Next</string>
     <string name="action_finish">Finish</string>
     <string name="action_edit">Change</string>
-    <string name="tile_last">Answered %1$s</string>
+    <string name="tile_to_fill">%1$s to fill</string>
+    <string name="tile_up_to_date">Up to date</string>
+    <string name="tile_next">Next: %1$s</string>
+    <string name="tile_last">Last: %1$s</string>
 </resources>

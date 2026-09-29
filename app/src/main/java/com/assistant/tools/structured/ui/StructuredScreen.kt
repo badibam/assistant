@@ -83,7 +83,7 @@ private const val BY_NAME = "name"
  * stored before « Enregistrer ». A sheet changed that leaves the filter stays shown until left.
  */
 @Composable
-fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureClick: () -> Unit) {
+fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureClick: () -> Unit, openEntry: com.assistant.core.tools.EntryToOpen? = null) {
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     val s = remember { Strings.`for`(tool = "structured", context = context) }
@@ -110,6 +110,8 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
     var draftName by rememberSaveable { mutableStateOf("") }
     var draftExtra by rememberSaveable(stateSaver = com.assistant.core.ui.FieldValuesSaver) { mutableStateOf<Map<String, Any?>>(emptyMap()) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    // What the tile asked to open, once: kept across recreation, so a sheet left is not opened again
+    var openHandled by rememberSaveable { mutableStateOf(false) }
     // Sheets changed while open that the filter may no longer keep, shown until the sheet is left
     var kept by remember { mutableStateOf<Map<String, Sheet>>(emptyMap()) }
     // A file picked to import, its text; too large to be kept across a rotation, it is picked again
@@ -183,6 +185,16 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
         draftExtra = sheet?.extra ?: fields.associate { it.name to it.defaultValue }
     }
     fun close() { openId = null; editing = false; kept = emptyMap() }
+
+    LaunchedEffect(openEntry) {
+        if (openHandled) return@LaunchedEffect
+        openHandled = true
+        when (openEntry) {
+            com.assistant.core.tools.EntryToOpen.New -> open(null)
+            is com.assistant.core.tools.EntryToOpen.Existing -> shown.find { it.id == openEntry.id }?.let { open(it) }
+            null -> Unit
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),

@@ -38,6 +38,9 @@ interface ThemeContract {
 
     /** Who draws this theme's icons: Lucide, or the theme itself, all of them. */
     val iconSource: com.assistant.core.icons.IconSource
+
+    /** How wide a zone's tool grid grows at most; a wider screen centers it (ToolGrid). */
+    val gridMaxWidth: Dp
     
     // =====================================
     // LAYOUTS: USE COMPOSE DIRECTLY
@@ -67,6 +70,8 @@ interface ThemeContract {
         enabled: Boolean,
         requireConfirmation: Boolean,
         confirmMessage: String?,
+        /** Shown as switched on while what it opens lasts (a group's edit mode), switched off by a press again */
+        active: Boolean = false,
         onClick: () -> Unit
     )
     
@@ -75,11 +80,13 @@ interface ThemeContract {
     // =====================================
     
     @Composable
+    /** @param maxLines Lines shown at most, a cut text ending with an ellipsis (a tile's lines) */
     fun Text(
         text: String,
         type: TextType,
         fillMaxWidth: Boolean,
-        textAlign: TextAlign?
+        textAlign: TextAlign?,
+        maxLines: Int = Int.MAX_VALUE
     )
     
     @Composable
@@ -208,6 +215,7 @@ interface ThemeContract {
     // SPECIALIZED CONTAINERS (appearance only)
     // =====================================
     
+    /** A zone's tile, filling the cells the home screen's grid gives it, as a tool's does. */
     @Composable
     fun ZoneCardContainer(
         onClick: () -> Unit,
@@ -215,10 +223,22 @@ interface ThemeContract {
         content: @Composable () -> Unit
     )
     
-    /** The mark beside a tool's or a zone's name when something waits for the user there. */
+    /** The mark on a tool's or a zone's icon when something waits for the user there. */
     @Composable
     fun WaitingMark()
 
+    /** One cell of a grid in edit mode, filling it: the light lines that show the cells, and so the holes. */
+    @Composable
+    fun GridCell()
+
+    /** The mark on a tool's or a zone's icon when a stopwatch runs on one of its entries. */
+    @Composable
+    fun RunningMark()
+
+    /**
+     * A tool's tile, filling the cells the grid gives it (ToolGrid): the theme draws its frame
+     * and the space between tiles inside them, never a size of its own.
+     */
     @Composable
     fun ToolCardContainer(
         displayMode: DisplayMode,

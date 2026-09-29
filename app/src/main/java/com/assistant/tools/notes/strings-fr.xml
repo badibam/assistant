@@ -24,6 +24,10 @@
     <string name="field_unknown">Champ non reconnu</string>
 
     <!-- CONTENT - États du contenu -->
+    <string name="tile_new">Nouvelle note</string>
+    <string name="tile_count_one">1 note</string>
+    <string name="tile_count_many">%1$s notes</string>
+    <string name="tile_empty">Aucune note</string>
     <string name="content_empty">Aucun texte</string>
 
     <!-- ACTIONS - Actions spécifiques aux notes -->

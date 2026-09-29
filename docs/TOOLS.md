@@ -53,7 +53,7 @@ Dossier tools/[type]/ contient :
 Interface principale avec méthodes pour :
 - **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultIconName(), getDefaultDisplayMode(), getDefaultShowFieldLabels()
 - **Déclarations** : getEntryFields() (champs des entrées), getConfigSettings() (réglages propres, à côté de la partie commune `ToolConfigSettings`) ; schémas, config par défaut et lecture en sont générés ; configWithOptionsAdded() pour un type qui déclare un choix ouvert dans `data` ; getOperations() (défaut : aucune), les opérations que son service mène sur ses entrées à côté des écritures génériques, chacune un nom, une phrase et ses paramètres déclarés en champs (`ToolOperation`)
-- **Interface utilisateur** : getUsageScreen() @Composable ; TileContent() @Composable, ce que montre la tuile de l'outil sur une zone à côté de son en-tête (la moitié droite d'une tuile LINE, le dessous des plus grandes ; par défaut, le nom du type en LINE et rien ailleurs) ; l'écran de config est généré depuis la déclaration (`ToolConfigScreen`, `SettingsForm`), une planification (`ScheduleSettings.group`) comprise
+- **Interface utilisateur** : getUsageScreen() @Composable ; rememberTile() @Composable, la tuile de l'outil sur une zone (`ToolTile`) : son résumé de 2×1 et son corps sur les rangées que son mode lui donne, placés par `UI.ToolCard` à côté de l'en-tête ; chaque type remplit tous les modes, sans tuile par défaut, et une tuile ouvre l'outil sur une entrée ou une entrée neuve (`EntryToOpen`) ; l'écran de config est généré depuis la déclaration (`ToolConfigScreen`, `SettingsForm`), une planification (`ScheduleSettings.group`) comprise
 - **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations(), getScheduler()
 - **Enrichissement** : enrichData() (défaut identity, enrichissement automatique avant persistence)
 - **Règle entre entrées** : settleEntries() (défaut : rien à changer), voir plus bas
@@ -196,13 +196,15 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
 ## Display Modes pour Tool Cards
 
-- **ICON** (1/4×1/4) : icône seule
-- **MINIMAL** (1/2×1/4) : icône + titre côte à côte
-- **LINE** (1×1/4) : icône + titre gauche, contenu libre droite
-- **CONDENSED** (1/2×1/2) : icône + titre haut, zone libre dessous
-- **EXTENDED** (1×1/2) : icône + titre haut, zone libre dessous
-- **SQUARE** (1×1) : icône + titre haut, grande zone libre
-- **FULL** (1×∞) : icône + titre haut, zone libre infinie
+Les outils d'une section de groupe sont posés sur une grille de quatre colonnes à cases carrées (`ToolGrid`), large au plus du `gridMaxWidth` du thème. Chaque outil y tient à `grid_x`/`grid_y` (`tool_instances`), placé par `ToolPositions` et `Grid` ; sa taille en cases vient de son `display_mode`, que sa config porte toujours :
+
+- **ICON** (1×1) : icône seule
+- **MINIMAL** (2×1) : icône + titre côte à côte
+- **LINE** (4×1) : icône + titre gauche, contenu libre droite
+- **CONDENSED** (2×2) : icône + titre haut, zone libre dessous
+- **EXTENDED** (4×2) : icône + titre haut, zone libre dessous
+- **SQUARE** (4×4) : icône + titre haut, grande zone libre
+- **FULL** (4 × sa hauteur) : icône + titre haut, aussi haut que son contenu, arrondi à la case
 
 ## Validation JSON Schema V3
 

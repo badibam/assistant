@@ -19,9 +19,7 @@ import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.tools.ToolOperation
 import com.assistant.core.tools.ToolScheduler
 import com.assistant.core.tools.ToolTypeContract
-import com.assistant.core.ui.DisplayMode
 import com.assistant.tools.questionnaire.ui.QuestionnaireScreen
-import com.assistant.tools.questionnaire.ui.QuestionnaireTile
 import org.json.JSONObject
 
 /**
@@ -112,12 +110,11 @@ object QuestionnaireToolType : ToolTypeContract {
     override fun getDatabaseEntities(): List<Class<*>> = listOf(ToolDataEntity::class.java)
 
     @Composable
-    override fun getUsageScreen(toolInstanceId: String, configJson: String, zoneName: String, onNavigateBack: () -> Unit, onLongClick: () -> Unit, openEntryId: String?) {
-        QuestionnaireScreen(toolInstanceId = toolInstanceId, onNavigateBack = onNavigateBack, onConfigureClick = onLongClick, openEntryId = openEntryId)
+    override fun getUsageScreen(toolInstanceId: String, configJson: String, zoneName: String, onNavigateBack: () -> Unit, onLongClick: () -> Unit, openEntry: com.assistant.core.tools.EntryToOpen?) {
+        QuestionnaireScreen(toolInstanceId = toolInstanceId, onNavigateBack = onNavigateBack, onConfigureClick = onLongClick, openEntryId = (openEntry as? com.assistant.core.tools.EntryToOpen.Existing)?.id)
     }
 
     @Composable
-    override fun TileContent(tool: ToolInstance, displayMode: DisplayMode) {
-        QuestionnaireTile(tool = tool, displayMode = displayMode)
-    }
+    override fun rememberTile(tool: ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
+        com.assistant.tools.questionnaire.ui.rememberQuestionnaireTile(tool)
 }

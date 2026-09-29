@@ -488,7 +488,7 @@ private fun UpcomingTab(
  * Goes through the status filter rather than pulling everything and sorting it out here: the
  * history of a long-running reminder is unbounded, and the screen only ever shows one state.
  */
-private suspend fun loadByStatus(
+internal suspend fun loadByStatus(
     context: android.content.Context,
     coordinator: Coordinator,
     toolInstanceId: String,

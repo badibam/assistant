@@ -355,6 +355,9 @@
     <string name="action_verbalize_schema_get">Récupération du schéma \"%1$s\"</string>
     <string name="action_verbalize_schema_list">Récupération de la liste des schémas</string>
     <string name="action_verbalize_unknown">Action inconnue</string>
+    <string name="action_verbalize_tools_running">Recherche des chronomètres en cours dans les outils</string>
+    <string name="action_verbalize_zones_place">Déplacement de zones dans leur groupe</string>
+    <string name="action_verbalize_tools_place">Déplacement d\'outils dans leur groupe</string>
     <string name="action_verbalize_tools_waiting">Compte de ce qui attend dans les outils</string>
 
     <!-- AI Errors - Network and System -->
@@ -835,6 +838,7 @@
     <string name="service_error_missing_entry_id">Paramètre obligatoire manquant: entry_id</string>
     <string name="service_error_zone_name_required">Nom de zone obligatoire</string>
     <string name="service_error_zone_id_required">ID de zone obligatoire</string>
+    <string name="service_error_grid_places">Les places données ne disposent pas les outils du groupe</string>
     <string name="service_error_zone_not_found">Zone introuvable</string>
     <string name="service_error_zone_id_tool_type_required">ID de zone et type d'outil obligatoires</string>
     <string name="service_error_tool_instance_id_required">ID d'instance d'outil obligatoire</string>
@@ -1131,6 +1135,10 @@
     <string name="file_summary_preview">Fichier : %1$s (%2$d lignes), aperçu seulement</string>
     <string name="file_error_encoding">%1$s n\'est pas un texte lisible (UTF-8 attendu).</string>
     <string name="action_attach">Joindre un fichier</string>
+    <string name="action_arrange">Disposer</string>
+    <string name="grid_leave_title">Quitter la zone ?</string>
+    <string name="grid_leave_message">Le déplacement en cours sera annulé.</string>
+    <string name="action_repeat">Encore</string>
     <string name="size_bytes">%1$d o</string>
     <string name="size_kilobytes">%1$.1f Ko</string>
     <string name="size_megabytes">%1$.1f Mo</string>
@@ -1619,6 +1627,7 @@
     <!-- Groups - Schemas descriptions -->
     <string name="tools_base_schema_config_group">Groupe d\'organisation de l\'outil</string>
     <string name="zone_schema_tool_groups">Liste des groupes d\'outils disponibles dans cette zone</string>
+    <string name="zone_schema_display_mode">Comment la zone s\'affiche sur l\'accueil : ICON (son icône), MINIMAL (icône et nom), LINE (sa description à côté), CONDENSED (sa description dessous) ; il donne les cases que la zone occupe</string>
     <string name="zone_schema_group">Groupe d\'organisation de la zone</string>
 
     <!-- Groups - Service errors -->
