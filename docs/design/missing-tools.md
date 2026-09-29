@@ -44,6 +44,12 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 - **Sans historique** : ce qu'une variable consulte sans historique (une fiche, une constante) se lit tel qu'il est aujourd'hui : relu plus tard, le bilan du 12 prend les kcal corrigées depuis ; garder le chiffre d'alors est un relevé (variables).
 - **La frontière avec les variables** : une source et la période de qui lit, c'est la lecture du cœur ; plusieurs sources combinées, ou une période propre (glissante, par tranche), c'est une variable. Un terme de variable est une lecture du cœur sans test, avec sa plage, et du type que lui donne sa réduction.
 
+## Le temps relatif
+
+- **Une référence, fournie par le contexte** : un choix relatif (« la veille ») se résout par rapport à elle, comme `resolveRelativePeriod` le fait déjà avec l'heure prévue d'une automation. Automation : l'heure prévue de l'exécution ; Objectif : la fin de la tentative ; terme de variable : l'instant lu.
+- **Une seule notion de « maintenant » par contexte.** Sans référence (le chat, la saisie d'une entrée), on choisit des dates fixes, et « hier » n'est que l'étiquette d'une période fixe par rapport à l'horloge. Avec référence, un choix relatif s'enregistre comme une description, résolue à chaque fois, et l'horloge n'est pas proposée.
+- **Les étiquettes ne composent jamais la référence** : le sélecteur l'affiche une fois, « Par rapport à : fin de la tentative », une chaîne que le contexte fournit et qui se lit seule ; les étiquettes relatives restent les mêmes partout (« Le jour-même », « La veille », « Il y a 2 jours »), traduites une fois. Un résumé hors du sélecteur met la référence à part (« poids, dernière · la veille · réf. : fin de la tentative »). Aucune grammaire à assembler.
+
 ## L'import
 
 Conçu le 2026-09-28, pour les Données structurées d'abord ; au cœur, parce que le futur outil API écrira par le même chemin, dans tout outil.
