@@ -106,9 +106,10 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // What waits for the user, marked on every tile of every screen
+                    // What waits for the user and the stopwatches running, marked on every tile of every screen
                     androidx.compose.runtime.CompositionLocalProvider(
-                        com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null)
+                        com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
+                        com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
                     ) {
                         MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
                     }

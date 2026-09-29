@@ -220,9 +220,13 @@ interface ThemeContract {
         content: @Composable () -> Unit
     )
     
-    /** The mark beside a tool's or a zone's name when something waits for the user there. */
+    /** The mark on a tool's or a zone's icon when something waits for the user there. */
     @Composable
     fun WaitingMark()
+
+    /** The mark on a tool's or a zone's icon when a stopwatch runs on one of its entries. */
+    @Composable
+    fun RunningMark()
 
     /**
      * A tool's tile, filling the cells the grid gives it (ToolGrid): the theme draws its frame

@@ -67,6 +67,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "list_all" -> handleListAll(params, token) // All tool instances across zones
                 "get" -> handleGetById(params, token)      // tools/{id} pattern
                 "waiting" -> handleWaiting(params, token)
+                "running" -> handleRunning(params)
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
@@ -593,6 +594,21 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         ))
     }
 
+    /**
+     * The tools with a stopwatch running on one of their entries (a DURATION field running, for
+     * any tool type), among those of `zone_id` or all of them, and the zones holding one.
+     */
+    private suspend fun handleRunning(params: JSONObject): OperationResult {
+        val zoneId = params.optString("zone_id").takeIf { it.isNotEmpty() }
+        val tools = if (zoneId != null) toolInstanceDao.getToolInstancesByZone(zoneId) else toolInstanceDao.getAllToolInstances()
+        val running = database.toolDataDao().getToolsRunning().toSet()
+        val shown = tools.filter { it.id in running }
+        return OperationResult.success(mapOf(
+            "tools" to shown.map { it.id },
+            "zones" to shown.map { it.zone_id }.distinct()
+        ))
+    }
+
     private suspend fun handleGetByZone(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -773,6 +789,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 s.shared("action_verbalize_delete_tool").format(toolName)
             }
             "waiting" -> s.shared("action_verbalize_tools_waiting")
+            "running" -> s.shared("action_verbalize_tools_running")
             else -> s.shared("action_verbalize_unknown")
         }
     }

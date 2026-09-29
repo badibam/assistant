@@ -988,6 +988,13 @@ object DefaultTheme : ThemeContract {
     }
 
     @Composable
+    override fun RunningMark() {
+        Box(modifier = Modifier.size(10.dp).background(MaterialTheme.colorScheme.surface, CircleShape), contentAlignment = Alignment.Center) {
+            com.assistant.core.ui.UI.Icon(iconName = "timer", size = 10.dp, tint = MaterialTheme.colorScheme.tertiary)
+        }
+    }
+
+    @Composable
     override fun ToolCardContainer(
         displayMode: DisplayMode,
         onClick: () -> Unit,

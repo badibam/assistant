@@ -355,6 +355,7 @@
     <string name="action_verbalize_schema_get">Récupération du schéma \"%1$s\"</string>
     <string name="action_verbalize_schema_list">Récupération de la liste des schémas</string>
     <string name="action_verbalize_unknown">Action inconnue</string>
+    <string name="action_verbalize_tools_running">Recherche des chronomètres en cours dans les outils</string>
     <string name="action_verbalize_tools_waiting">Compte de ce qui attend dans les outils</string>
 
     <!-- AI Errors - Network and System -->

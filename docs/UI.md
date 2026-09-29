@@ -163,7 +163,7 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 
 **UI.Divider** - Un trait horizontal qui sépare deux parties d'un écran ou d'une carte, dessiné par le thème.
 
-**UI.WaitingMark** - Le point qu'une tuile d'outil ou de zone porte à côté de son nom quand une de ses entrées attend l'utilisateur (`ToolTypeContract.getWaiting`, compté par `tools.waiting`, lu par les tuiles dans `LocalWaiting`). Sa forme est au thème (`ThemeContract.WaitingMark`).
+**UI.MarkedIcon** - L'icône d'une tuile d'outil ou de zone et ses deux pastilles, chacune dans son coin : en haut `UI.WaitingMark`, quand une de ses entrées attend l'utilisateur (`ToolTypeContract.getWaiting`, compté par `tools.waiting`, lu dans `LocalWaiting`) ; en bas `UI.RunningMark`, quand un chronomètre tourne sur une de ses entrées, pour tout type d'outil (`tools.running`, lu dans `LocalRunning`). Leur forme est au thème (`ThemeContract.WaitingMark`, `RunningMark`).
 
 **UI.ReorderableColumn** - Une liste qu'on réordonne en glissant la poignée de chaque élément (`DragHandle()`, posée où l'élément le veut). Le geste, la place d'arrivée et le défilement près d'un bord sont au cœur ; la poignée et l'élément soulevé sont au thème (`ThemeContract.DragHandle`, `ReorderItem`). Chaque liste garde son ordre, imbriquée ou non : un élément ne quitte jamais sa liste. Le nouvel ordre part une seule fois, au lâcher (`onMove(from, to)`) ; « monter » et « descendre » restent des actions d'accessibilité de la poignée.
 

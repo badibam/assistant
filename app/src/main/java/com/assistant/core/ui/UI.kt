@@ -420,7 +420,24 @@ object UI {
     @Composable
     fun WaitingMark() = CurrentTheme.current.WaitingMark()
 
-    /** Something waiting in one of its tools (LocalWaiting) is marked beside its name. */
+    /** The theme's mark that a stopwatch runs on an entry (tools.running). */
+    @Composable
+    fun RunningMark() = CurrentTheme.current.RunningMark()
+
+    /**
+     * A tool's or a zone's icon with its two marks, each in its corner: something waiting at the
+     * top, a stopwatch running at the bottom. The marks show without an icon too.
+     */
+    @Composable
+    fun MarkedIcon(iconName: String?, waiting: Boolean, running: Boolean, size: Dp = 24.dp) {
+        Box(modifier = Modifier.size(size)) {
+            if (!iconName.isNullOrBlank()) Icon(iconName = iconName, size = size, contentDescription = null)
+            if (waiting) Box(modifier = Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp)) { WaitingMark() }
+            if (running) Box(modifier = Modifier.align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp)) { RunningMark() }
+        }
+    }
+
+    /** Something waiting or a stopwatch running in one of its tools (LocalWaiting, LocalRunning) is marked on its icon. */
     @Composable
     fun ZoneCard(
         zone: Zone,
@@ -428,6 +445,7 @@ object UI {
         onLongClick: () -> Unit = { }
     ) {
         val waiting = LocalWaiting.current.zone(zone.id)
+        val running = LocalRunning.current.zone(zone.id)
         // Themed container + standard content with UI.*
         CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
             Column {
@@ -435,9 +453,8 @@ object UI {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    zone.icon_name?.let { Icon(iconName = it, size = 24.dp) }
+                    MarkedIcon(zone.icon_name, waiting, running)
                     Text(zone.name, TextType.TITLE)
-                    if (waiting) WaitingMark()
                 }
                 zone.description?.let { desc ->
                     Text(desc, TextType.BODY)
@@ -465,32 +482,24 @@ object UI {
         CurrentTheme.current.PageHeader(title, subtitle, icon, leftButton, rightButton, onLeftClick, onRightClick)
     }
     
-    /** @param waiting Whether something waits among its entries, marked beside its name */
+    /** The header of a tool's tile: its icon with its marks, and its name. */
     @Composable
     fun ToolCardHeader(
         tool: ToolInstance,
         context: android.content.Context,
-        waiting: Boolean = false
+        waiting: Boolean,
+        running: Boolean
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
-            val iconName = settings.string("icon_name").orEmpty()
-            if (iconName.isNotBlank()) Icon(
-                iconName = iconName,
-                size = 24.dp,
-                contentDescription = null
-            )
-            
-            // Instance name
-            val toolInstanceName = settings.string("name")!!
-            Text(toolInstanceName, TextType.BODY)
-            if (waiting) WaitingMark()
+            MarkedIcon(settings.string("icon_name"), waiting, running)
+            Text(settings.string("name")!!, TextType.BODY, maxLines = 2)
         }
     }
-    
+
     /**
      * A tool's tile, laid out by its display mode: the header (icon and name) the core draws, the
      * summary and the body its tool type draws (ToolTile), each on whole cells of the grid.
@@ -506,8 +515,9 @@ object UI {
         onLongClick: () -> Unit = { },
         onOpenEntry: (com.assistant.core.tools.EntryToOpen) -> Unit = { }
     ) {
-        // Something waiting among its entries (LocalWaiting) is marked beside its name
+        // Something waiting among its entries, or a stopwatch running on one, is marked on its icon
         val waiting = LocalWaiting.current.tool(tool.id)
+        val running = LocalRunning.current.tool(tool.id)
         val toolType = requireNotNull(ToolTypeManager.getToolType(tool.tooltype)) { "No tool type '${tool.tooltype}' for tool ${tool.id}" }
         val tile = toolType.rememberTile(tool, onOpenEntry)
         CurrentTheme.current.ToolCardContainer(
@@ -519,7 +529,7 @@ object UI {
             @Composable
             fun HeaderAndSummary(modifier: Modifier) = Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
-                    ToolCardHeader(tool, context, waiting)
+                    ToolCardHeader(tool, context, waiting, running)
                 }
                 Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
                     tile.Summary()
@@ -530,23 +540,19 @@ object UI {
                 DisplayMode.ICON -> {
                     // The icon alone, centered in its cell
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        val iconName = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context).string("icon_name").orEmpty()
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (iconName.isNotBlank()) Icon(iconName = iconName, size = 24.dp, contentDescription = null)
-                            if (waiting) WaitingMark()
-                        }
+                        MarkedIcon(com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context).string("icon_name"), waiting, running)
                     }
                 }
                 DisplayMode.MINIMAL -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
-                        ToolCardHeader(tool, context, waiting)
+                        ToolCardHeader(tool, context, waiting, running)
                     }
                 }
                 DisplayMode.LINE -> HeaderAndSummary(Modifier.fillMaxSize())
                 DisplayMode.CONDENSED -> {
                     Column(modifier = Modifier.fillMaxSize()) {
                         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-                            ToolCardHeader(tool, context, waiting)
+                            ToolCardHeader(tool, context, waiting, running)
                         }
                         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                             tile.Summary()
