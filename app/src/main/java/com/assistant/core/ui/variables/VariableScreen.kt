@@ -43,6 +43,7 @@ import com.assistant.core.ui.UI
 import com.assistant.core.ui.components.PeriodPicker
 import com.assistant.core.ui.selectors.FieldPick
 import com.assistant.core.ui.selectors.FieldPicker
+import com.assistant.core.ui.selectors.ReductionPicker
 import com.assistant.core.utils.JsonUtils
 import com.assistant.core.variables.Formula
 import kotlinx.coroutines.launch
@@ -366,18 +367,17 @@ private fun ReadingEditor(reading: JSONObject, s: StringsContext, onChange: (JSO
     val fieldType = reading.optString("field").takeIf { it.isNotEmpty() }?.let { fields[it]?.type }
     val reductions = when {
         perEntry -> listOf(Reduction.SUM, Reduction.AVERAGE, Reduction.MIN, Reduction.MAX, Reduction.LAST, Reduction.COUNT)
-        reading.has("field") -> Reduction.forType(fieldType).toList()
+        // Nothing to offer until the field is read
+        reading.has("field") -> fieldType?.let { Reduction.forType(it).toList() } ?: emptyList()
         else -> listOf(Reduction.COUNT)
     }
-    if (reductions.size > 1) {
-        UI.FormSelection(
-            label = s.shared("variable_reading_reduction"),
-            options = reductions.map { s.shared("reduction_${it.name.lowercase()}") },
-            selected = s.shared("reduction_${reading.optString("reduction").lowercase()}"),
-            onSelect = { label -> edit { put("reduction", reductions.first { s.shared("reduction_${it.name.lowercase()}") == label }.name) } },
-            required = true
-        )
-    }
+    ReductionPicker(
+        label = s.shared("variable_reading_reduction"),
+        reductions = reductions,
+        selected = reductions.firstOrNull { it.name == reading.optString("reduction") },
+        onSelect = { reduction -> edit { put("reduction", reduction.name) } },
+        s = s
+    )
 
     // Its period, relative to the instant the variable is read at; one that does not read says why
     val period = try {

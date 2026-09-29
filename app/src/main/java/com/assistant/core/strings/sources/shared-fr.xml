@@ -1256,6 +1256,7 @@
     <string name="variable_type">Type de la valeur</string>
     <string name="variable_type_deduced">Déduit de la formule</string>
     <string name="variable_delete_confirm">Supprimer la variable %1$s ? Une formule qui la nomme ne se calculera plus.</string>
+    <string name="label_value">%1$s : %2$s</string>
     <string name="reduction_last">Dernière</string>
     <string name="reduction_sum">Somme</string>
     <string name="reduction_average">Moyenne</string>

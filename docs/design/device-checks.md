@@ -112,6 +112,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Variables
 
+- Lecture d'une variable : sur un champ numérique, la liste des réductions (dernière, somme, moyenne, min, max) ; sur un champ texte ou « compter les entrées », une ligne « Réduction : … » sans liste.
 - Choix d'un champ (filtres du pointeur, lecture d'une variable, champ d'un critère d'Objectif, import CSV, tri des Données structurées) : chaque champ s'affiche par son nom seul ; deux champs de même nom (un champ personnalisé « Note » et un champ « Note ») montrent leur chemin, et choisir l'un garde bien celui-là.
 - Éditeur de formule : placer le curseur au milieu de la formule et toucher un nom ou un opérateur : il s'insère là, espacé, et le curseur se place juste après ; saisir au clavier dans n'importe quel champ de texte de l'app (accents, correction automatique) se comporte comme avant.
 - La période d'une lecture sur l'écran d'une variable : « Par rapport à : l'instant lu », « Depuis » et « Jusqu'à » avec « Le moment même » et « Sans limite » ; une période enregistrée se relit telle qu'elle a été réglée.

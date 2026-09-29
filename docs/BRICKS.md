@@ -59,7 +59,7 @@ Une brique ne connaît pas l'écran qui l'utilise ; il lui donne ce dont elle a 
 | **Valeur d'un champ** | une valeur d'un type de champ | celle du type (`FieldType`) | `FieldValueSchema`, `FieldValueValidator` | `FieldInput` (saisie), `FieldValue` (affichage) | complète |
 | **Planification** | une récurrence : quotidienne, hebdomadaire, mensuelle, annuelle, dates précises | `ScheduleConfig` | `ScheduleSettings.group` | `ScheduleConfigEditor` ; `ScheduleSettingEditor` sur un formulaire de réglages | complète |
 | **Champ** | un champ des entrées d'un outil, ou aucun pour compter | un chemin : `timestamp`, `name`, `data.x`, `extra.x`, une clé d'état filtrable | `ToolFields.filterable` | `FieldPicker` : le nom seul, le chemin en plus quand deux champs portent le même nom ; gardé par son chemin | complète |
-| **Réduction** | dernière, somme, moyenne, min, max, compte, la plus tôt, la plus tard | `"SUM"` | `Reduction`, `Reduction.forType` | aucun : une liste dans la lecture d'une variable, un CHOICE dans les réglages d'Objectif | modèle sans sélecteur |
+| **Réduction** | dernière, somme, moyenne, min, max, compte, la plus tôt, la plus tard | `"SUM"` | `Reduction`, `Reduction.forType` | `ReductionPicker` : une seule permise est dite sans liste ; les réglages d'Objectif gardent un CHOICE jusqu'à la réécriture de ses critères | complète |
 | **Terme** | une constante, une variable, une Lecture | `{"constant"}`, `{"variable"}`, `{"reading"}` | `Term`, dans `core/variables` | aucun commun : `TermEditor`, privé à l'écran d'une variable | la constante n'est qu'un nombre ; l'Objectif le redéclare (`kind: VARIABLE`, `kind: FIELD`) |
 | **Condition** | côté, opérateur, côté | `{"left", "op", "right"}` | `FilterOperator`, `EntryFilters.operatorsFor` ; la cible n'est vérifiée qu'à l'intérieur d'un filtre (`EntryFilters.parse`), toujours une constante | aucun : `FilterValueInput`, privé aux filtres | à extraire ; l'Objectif en a une copie (`Criterion.meets`, `TargetUnit`) |
 | **Filtre** (une Condition posée à chaque entrée) | un champ, un opérateur, une constante | aujourd'hui `{"field", "op", "value"}` | `EntryFilters`, évalué en SQL | `PointerFiltersDialog` | à réécrire sur la Condition, sa forme migrée |
@@ -88,7 +88,6 @@ Le détail de chaque étape, et ce qui reste à y trancher : `docs/design/bricks
 
 Chaque brique arrive avec la réécriture de ses usages existants, sans rien laisser en double :
 
-3. **Réduction** : un sélecteur commun, les réductions permises selon le type du champ choisi.
 4. **Chose** : les variables, choisies dans leur zone ; le critère d'Objectif ne tape plus un nom.
 5. **Terme** : sorti de `core/variables`, sa constante de tout type ; son sélecteur remplace `TermEditor`.
 6. **Condition** : sortie de `EntryFilters`, jugée une fois ou sur chaque entrée (en SQL pour un filtre), sa forme `{"left", "op", "right"}` avec la migration des filtres enregistrés ; son sélecteur remplace `FilterValueInput` et les réglages d'opérateur et de cible de l'Objectif.

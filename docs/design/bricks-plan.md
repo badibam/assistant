@@ -10,11 +10,6 @@
 - Rappel : rien de ce qui a été codé depuis la base 46 n'a tourné sur le téléphone (`device-checks.md`).
 - Ailleurs, et à relire avant l'étape qui les cite : dans `docs/design/missing-tools.md`, « Le temps relatif » (la référence, les libellés relatifs, « = » refusé sur un DATETIME) et « Les formes enregistrées » (Instant, période, sélection, pointeur) ; sa section « Objectif » ; dans `docs/design/unified-fields.md`, le réglage de champ réservé à l'utilisateur.
 
-## 3. Réduction
-
-- Un sélecteur commun, les réductions permises selon le type du champ choisi (`Reduction.forType`), une seule proposée sans liste.
-- Remplace : la liste de `ReadingEditor` ; le CHOICE des réglages d'Objectif disparaît à l'étape 8.
-
 ## 4. Chose : les variables
 
 - `ReferenceKind.VARIABLE` ; le service `references` les nomme et les liste dans leur zone ; `ThingBrowser` les montre sous la zone, à côté des outils ; la vérification des champs RÉFÉRENCE les accepte selon `kinds`.
