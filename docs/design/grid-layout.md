@@ -14,18 +14,17 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 
 - **Sept modes, sans ajout ni retrait.**
 - **Une case fait deux lignes** : une ligne est un huitième de la largeur de la grille, et toute hauteur dans une tuile se compte en lignes. Le thème dimensionne texte et boutons pour qu'une ligne en tienne une rangée.
-- **Les zones d'une tuile suivent les cases** : aucune case n'est partagée entre deux zones. Le cœur dessine le cadre et l'en-tête (icône et nom, une case de haut) ; le type d'outil remplit le reste (`TileContent`) :
+- **Les zones d'une tuile suivent les cases** : aucune case n'est partagée entre deux zones. Le cœur dessine le cadre et l'en-tête (icône et nom, 2×1) ; le type d'outil dessine deux choses (`TileContent`) : son **résumé**, un seul composant de 2×1, le même partout où il a sa place, actions comprises ; et son **corps**, sur les rangées qu'on lui donne.
 
-  | Mode | En-tête (cœur) | Zone en haut à droite (outil) | Dessous (outil) |
+  | Mode | En-tête (cœur) | Résumé (outil) | Corps (outil) |
   |---|---|---|---|
-  | ICON | l'icône seule, centrée, 1×1 | — | — |
+  | ICON | l'icône seule, 1×1 | — | — |
   | MINIMAL | 2×1 | — | — |
-  | LINE | 2×1 à gauche | — | 2×1 à droite |
-  | CONDENSED | 2×1 en haut | — | 2×1 |
-  | EXTENDED | 2×1 en haut à gauche | 2×1 | 4×1 |
-  | SQUARE | 2×1 en haut à gauche | 2×1 | 4×3 |
-  | FULL | 2×1 en haut à gauche | 2×1 | 4 × ce qu'il faut, arrondi à la case |
-- **La zone en haut à droite** porte un seul élément (une valeur, un état, une action), au choix de l'outil.
+  | LINE | 2×1 à gauche | 2×1 à droite | — |
+  | CONDENSED | 2×1 en haut | 2×1 dessous | — |
+  | EXTENDED | 2×1 en haut à gauche | 2×1 en haut à droite | 4×1 |
+  | SQUARE | 2×1 en haut à gauche | 2×1 en haut à droite | 4×3 |
+  | FULL | 2×1 en haut à gauche | 2×1 en haut à droite | 4 × ce qu'il faut, arrondi à la case |
 - **Deux pastilles sur l'icône**, dessinées par le thème dans tous les modes, chacune dans son coin : l'attente (`bricks-plan.md`, étape 9), et un chronomètre en cours sur une entrée de l'outil (un champ durée qui tourne, lu par `tool_data.get` avec `running`, pour tout type d'outil).
 - **Jamais de défilement à l'intérieur d'une tuile.** Ce qui ne tient pas, et comment le signaler, est l'affaire du type d'outil ; FULL grandit avec ce que le type d'outil y montre.
 - **Une tuile porte ses raccourcis d'utilisation** : un élément tactile de la tuile fait son action, un toucher ailleurs ouvre l'outil (ou l'entrée qui attend), l'appui long sa config. La taille minimale d'un élément tactile est celle du thème. En édition, rien ne réagit.
@@ -33,49 +32,60 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 
 ## Les tuiles, par type d'outil
 
+Une tuile se décrit par son résumé (sa LINE) et son corps : ce que montre chaque rangée gagnée, et sa FULL. La CONDENSED n'est que le résumé ; l'EXTENDED et la SQUARE se déduisent (une rangée de corps pour l'une, trois pour l'autre). Un toucher sur une entrée montrée l'ouvre.
+
 ### Suivi
 
 - **La dernière entrée** : celle dont le chronomètre tourne s'il y en a une, sinon la plus récente.
-- **LINE et CONDENSED** : la dernière entrée en cours → son nom, son temps qui défile, un bouton d'arrêt. Sinon → sa valeur et le temps écoulé depuis, et deux boutons : **rapide** (la même entrée maintenant : même nom, valeur, unité ; pour un compteur le même pas, une occurrence le fait seul, une durée un chronomètre relancé ; les champs personnalisés à leur valeur par défaut), pour toute sorte de Suivi, et **personnalisé** (la fenêtre de saisie, préremplie du nom et de la valeur de la dernière).
-- **EXTENDED** : la zone en haut à droite montre l'état, en lecture (la dernière valeur et le temps écoulé, ou le chronomètre en cours avec son arrêt) ; la rangée du dessous, quatre places, deux par ligne : les raccourcis de la config dans leur ordre, puis la saisie libre. Sans raccourcis, les deux boutons de la LINE.
-- **SQUARE** : pareil, trois rangées de raccourcis (onze et la saisie libre).
-- **FULL** : pareil, tous les raccourcis, puis la saisie libre ; rien de plus.
+- **Résumé** : la dernière entrée en cours → son nom, son temps qui défile, un bouton d'arrêt. Sinon → sa valeur et le temps écoulé depuis, et deux boutons : **rapide** (la même entrée maintenant : même nom, valeur, unité ; pour un compteur le même pas, une occurrence le fait seul, une durée un chronomètre relancé ; les champs personnalisés à leur valeur par défaut), pour toute sorte de Suivi, et **personnalisé** (la fenêtre de saisie, préremplie du nom et de la valeur de la dernière).
+- **Corps** : les raccourcis de la config dans leur ordre, quatre par rangée sur deux colonnes, chacun avec son bouton comme sur l'écran de l'outil. La dernière entrée peut s'y retrouver parmi les raccourcis : ce doublon est accepté.
+- **FULL** : tous les raccourcis.
 
   ```
   ┌─────────┬─────────┬─────────┬─────────┐
   │ ◉ Boissons        │ Eau 250 ml        │
-  │                   │ il y a 2 h        │
+  │                   │ il y a 2 h [⚡][✎] │
   ├─────────┼─────────┼─────────┼─────────┤
   │ Eau 250 ml    [+] │ Café 1 tasse  [+] │
-  │ Thé 300 ml    [+] │ Saisie libre  [✎] │
+  │ Thé 300 ml    [+] │ Jus 200 ml    [+] │
   └─────────┴─────────┴─────────┴─────────┘
   ```
 
-Pour les outils suivants, la tuile se décrit par sa LINE, sa façon de grandir et sa FULL ; la CONDENSED reprend la LINE, et l'EXTENDED et la SQUARE se déduisent (une rangée de plus sous l'en-tête pour l'une, trois pour l'autre). Un toucher sur une entrée montrée l'ouvre.
-
 ### Journal
 
-- **LINE** : le bouton « Écrire une entrée », qui crée une entrée et l'ouvre en modification ; sur la deuxième ligne, la date de la dernière.
-- **Grandir** : le bouton passe en haut à droite ; chaque rangée montre deux entrées de plus, une par ligne, titre et date relative.
+- **Résumé** : le bouton « Écrire une entrée », qui crée une entrée et l'ouvre en modification ; sur la deuxième ligne, la date de la dernière.
+- **Corps** : deux entrées par rangée, une par ligne, titre et date relative, les plus récentes d'abord.
 - **FULL** : les dix dernières entrées.
 
 ### Notes
 
-- **LINE** : le bouton « Nouvelle note », qui ouvre l'outil sur une note neuve ; sur la deuxième ligne, le nombre de notes.
-- **Grandir** : le bouton passe en haut à droite ; chaque rangée montre deux notes de plus, côte à côte, chacune en carte de 2×1 (le début de son texte sur deux lignes), dans l'ordre manuel.
+- **Résumé** : le bouton « Nouvelle note », qui ouvre l'outil sur une note neuve ; sur la deuxième ligne, le nombre de notes.
+- **Corps** : deux notes par rangée, côte à côte, chacune en carte de 2×1 (le début de son texte sur deux lignes), dans l'ordre manuel.
 - **FULL** : toutes les notes.
 
 ### Liste
 
-- **LINE** : le nombre de non cochés (« 3 non cochés ») ; sur le total si la config garde les cochés (« 3 / 8 »).
-- **Grandir** : le bouton « Ajouter », qui ouvre l'outil sur son champ d'ajout, en haut à droite ; chaque rangée montre quatre non cochés de plus, sur deux colonnes, chacun avec sa case, qui se coche sans ouvrir l'outil.
+- **Résumé** : le nombre de non cochés (« 3 non cochés ») ; sur le total si la config garde les cochés (« 3 / 8 »).
+- **Corps** : quatre non cochés par rangée, sur deux colonnes, chacun avec sa case, qui se coche sans ouvrir l'outil.
 - **FULL** : tous les non cochés ; les cochés restent dans l'outil.
 
 ### Messages
 
-- **LINE** : « 5 non lus » et, sur la deuxième ligne, le titre du plus ancien non lu (ce qu'ouvre le toucher de la tuile) ; « Tous lus » et le prochain envoi (« Prochain : demain 8:00 », ou « Aucun envoi prévu »).
-- **Grandir** : le prochain envoi en haut à droite ; chaque rangée montre deux messages de plus, un par ligne, titre (en gras s'il n'est pas lu) et date relative : les non lus du plus ancien au plus récent, puis les derniers lus. Ouvrir un message le marque lu.
+- **Résumé** : « 5 non lus » et, sur la deuxième ligne, le titre du plus ancien non lu (ce qu'ouvre le toucher de la tuile) ; « Tous lus » et le prochain envoi (« Prochain : demain 8:00 », ou « Aucun envoi prévu »).
+- **Corps** : deux messages par rangée, un par ligne, titre (en gras s'il n'est pas lu) et date relative : les non lus du plus ancien au plus récent, puis les derniers lus. Ouvrir un message le marque lu.
 - **FULL** : tous les non lus, puis les derniers lus, jusqu'à dix au total.
+
+### Objectif
+
+- **Résumé** : la tentative en cours comptée, « 4 / 5 atteints » (`goal.evaluate` : les éléments du premier niveau, critères ou sous-objectifs, atteints sur ceux exigés), et « 4 j restants », ou « À valider » quand elle attend. Sans tentative en cours : « Entre deux tentatives » et « Prochaine dans 2 j » ; arrêté par son interrupteur : « Arrêté » et le dernier verdict ; ponctuel terminé : « Réussi » ou « Échoué » et sa date.
+- **Corps** : deux critères par rangée, un par ligne, dans l'ordre de la config : son nom, sa valeur face à sa condition (« Calories  1204 / ≤ 2100 »), et s'il est rempli. En lecture seule.
+- **FULL** : tous les critères, rangés par sous-objectif. Rien ne s'y valide : on valide dans l'outil.
+
+### Questionnaire
+
+- **Résumé** : « 2 à remplir » et le moment prévu de la plus ancienne (« il y a 13 h », ce qu'ouvre le toucher de la tuile) ; rien à remplir : « À jour » et, planifié, le prochain (« Prochain : ce soir 20:00 »), sinon la dernière passation (« Dernier : il y a 2 j »).
+- **Corps** : deux réponses de la dernière entrée remplie par rangée, une par ligne, la question et sa réponse, dans l'ordre des questions.
+- **FULL** : toutes les réponses de la dernière entrée remplie.
 
 ## Positions
 
@@ -114,6 +124,5 @@ Pour les outils suivants, la tuile se décrit par sa LINE, sa façon de grandir 
 
 ## Hors de cette spec
 
-- Ce que chaque type d'outil montre dans chaque mode (`TileContent`) : la Liste les remplit tous ; l'Objectif, le Questionnaire et les Données structurées n'ont que LINE ; ICON affiche encore un « T » provisoire (`UI.ToolCard`).
 - L'aperçu dessiné d'un Graphique sur sa tuile (`missing-tools.md`).
 - Changer un outil de zone (`NOTES.md`).
