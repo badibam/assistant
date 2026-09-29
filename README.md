@@ -12,7 +12,7 @@
 L'assistant propose divers outils (Suivi, Objectif, Graphique, Journal, Liste, Note, Message, Alerte, ...) pour capturer et organiser n'importe quelle information personnelle. Chaque outil transforme les données brutes en insights exploitables.
 
 ### Les outils se combinent et s'enrichissent mutuellement
-Les outils créent des chaînes de valeur automatiques : un Suivi alimentaire nourrit des Calculs nutritionnels qui génèrent des Graphiques et déclenchent - par exemple - des Alertes personnalisées. L'IA orchestre ces connexions pour transformer les habitudes en système d'amélioration continue.
+Les outils créent des chaînes de valeur automatiques : un Suivi alimentaire nourrit des variables nutritionnelles (kcal, protéines du jour), qu'un Objectif compare à sa cible, qu'un Graphique dessine et qui déclenchent - par exemple - des Alertes personnalisées. L'IA orchestre ces connexions pour transformer les habitudes en système d'amélioration continue.
 
 
 ## 2. Collaboration IA-humain symétrique
