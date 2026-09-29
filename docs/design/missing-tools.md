@@ -46,7 +46,7 @@ Conçue le 2026-09-28. Lire une valeur dans **une seule** instance, sur la péri
 
 ## Le temps relatif
 
-- **Une référence, fournie par le contexte** : un choix relatif (« la veille ») se résout par rapport à elle, comme `resolveRelativePeriod` le fait déjà avec l'heure prévue d'une automation. Automation : l'heure prévue de l'exécution ; Objectif : la fin de la tentative ; terme de variable : l'instant lu.
+- **Une référence, fournie par le contexte** : un choix relatif (« la veille ») se résout par rapport à elle, comme `resolveRelativePeriod` le fait déjà avec l'heure prévue d'une automation. Automation : l'heure prévue de l'exécution ; Objectif : la fin de la tentative ; terme de variable : l'instant lu ; colonne d'une grille de Graphique : l'instant de sa ligne.
 - **Une seule notion de « maintenant » par contexte.** Sans référence (le chat, la saisie d'une entrée), l'horloge sert de référence au moment du choix, et ce qui s'enregistre est une date fixe : « hier » n'est que l'étiquette d'une période fixe par rapport à l'horloge. Avec référence, un choix relatif s'enregistre comme une description, résolue à chaque fois, et l'horloge n'est pas proposée.
 - **Les étiquettes ne composent jamais la référence** : le sélecteur l'affiche une fois, « Par rapport à : fin de la tentative », une chaîne que le contexte fournit et qui se lit seule ; les étiquettes relatives restent les mêmes partout (« Le jour-même », « La veille », « Il y a 2 jours »), traduites une fois. Un résumé hors du sélecteur met la référence à part (« poids, dernière · la veille · réf. : fin de la tentative »). Aucune grammaire à assembler.
 - **Un sélecteur d'instant, un seul**, pour toute date de l'app : la saisie DATE ou DATETIME d'une entrée, la cible d'une condition sur une date, chaque borne d'une période, l'instant qu'écrira un relevé. Il propose :
@@ -95,7 +95,7 @@ Ceux qui les utilisent :
 | Pointeur d'un message à l'IA | Chose (app, zone, outil, entrée) + Période + Filtres + champs + joindre ou mentionner |
 | Critère d'Objectif | valeur (une Lecture, ou un champ saisi dans la tentative) + Condition |
 | Terme de variable | Lecture, constante ou autre variable, sa plage étant une Période relative à la référence |
-| Graphique | Sélection d'entrées ou variables (le détail est ouvert) |
+| Graphique | par couche, une source : Entrées (Sélection d'entrées) ou Grille (des Lectures, chaque instant de la grille servant de référence) ; une Période affichée |
 | Relevé (automation directe) | Chose (une variable) + un champ cible dans un Suivi + Instant de l'entrée écrite |
 
 La référence traverse le tout : chaque Instant relatif se résout par rapport à celle que le contexte fournit.
@@ -179,7 +179,13 @@ Décidé le 2026-09-29 : Calcul n'est pas un type d'outil (il n'a pas d'entrées
 
 - **Il dessine, ne calcule pas** : aucun regroupement ni agrégation. Un total par jour est une variable dont le terme porte le jour-même, lue à chaque jour, que le Graphique dessine ; un nombre n'a ainsi qu'une origine, lisible aussi par les alertes et l'IA.
 - **Grammaire** : un sous-ensemble de Vega-Lite, que l'IA connaît déjà, dessiné nativement en Compose (pas de vue web : le thème garde l'apparence). Deux écarts : les données viennent d'une sélection d'entrées de l'app, jamais recopiées dans la config ; une couleur est un nom de la palette (`TagColor`). La config reste déclarée en champs, pour que son formulaire soit généré comme les autres.
-- **Ouvert** : le sous-ensemble retenu (marques, couches, échelles, période affichée).
+- **Une couche dessine un tableau** : des lignes, des colonnes nommées ; le dessin ne voit que ces noms, et une série (une couleur, une courbe) n'est que les lignes qui partagent une valeur de la colonne `color`. La config se sépare donc en deux : la source, côté app, fabrique le tableau (sélection, lectures, échecs) ; le dessin, en Vega-Lite, ne reçoit que des colonnes et ne peut rien calculer. Une valeur en échec est une cellule marquée, dessinée en trou.
+- **Deux sortes de source** :
+  - **Entrées** : une sélection d'entrées (outil, filtres, champs choisis), une ligne par entrée, son instant et ses champs. Chaque pesée à son heure, un nuage sommeil × humeur.
+  - **Grille** : des instants réguliers (chaque jour, chaque semaine…), une ligne par instant, et des colonnes qui sont chacune une Lecture, variable ou lecture de champ à la volée ; chaque instant est la référence de sa ligne. « Sport › durée, somme, Le jour-même · début → Le moment même » donne le total de chaque jour sans créer de variable ; la réduction reste celle du cœur, avec ses échecs.
+
+  La période affichée leur est commune : elle choisit les entrées, et borne la grille.
+- **Ouvert** : le sous-ensemble du dessin retenu (marques, couches, empilement, échelles et second axe, interactions).
 
 ## Objectif
 
