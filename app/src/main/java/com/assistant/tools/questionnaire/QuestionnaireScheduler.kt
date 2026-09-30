@@ -62,7 +62,7 @@ object QuestionnaireScheduler : ToolScheduler {
             }
             is StoredSchedule.Readable -> stored.schedule
         }
-        val entries = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to id, "fields" to listOf("id", "timestamp", "state")))
+        val entries = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to id))
         if (!entries.isSuccess) throw IllegalStateException(entries.error ?: "tool_data.get")
         val dated = (entries.data?.get("entries") as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<*, *>>()
             .mapNotNull { (it["timestamp"] as? Number)?.toLong() }.toSet()

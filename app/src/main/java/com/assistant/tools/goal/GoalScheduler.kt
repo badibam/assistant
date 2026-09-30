@@ -139,7 +139,7 @@ object GoalScheduler : ToolScheduler {
     private data class AttemptState(val id: String, val start: Long, val state: JSONObject)
 
     private suspend fun attemptsOf(coordinator: Coordinator, toolInstanceId: String): List<AttemptState> {
-        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to toolInstanceId, "fields" to listOf("id", "timestamp", "state")))
+        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to toolInstanceId))
         if (!result.isSuccess) throw IllegalStateException(result.error ?: "tool_data.get")
         return (result.data?.get("entries") as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<*, *>>().map { e ->
             @Suppress("UNCHECKED_CAST")

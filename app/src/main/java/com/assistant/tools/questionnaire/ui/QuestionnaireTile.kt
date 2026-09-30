@@ -58,7 +58,7 @@ fun rememberQuestionnaireTile(tool: ToolInstance): ToolTile {
     var version by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(tool.id, version) {
-        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id, "fields" to listOf("id", "timestamp", "state", "extra")))
+        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id))
         if (!result.isSuccess) {
             LogManager.ui("Questionnaire tile ${tool.id}: entries not read: ${result.error}", "ERROR")
             return@LaunchedEffect

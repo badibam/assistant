@@ -50,7 +50,7 @@ fun rememberNotesTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolTile
     var version by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(tool.id, version) {
-        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id, "fields" to listOf("id", "timestamp", "data", "state")))
+        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id, "fields" to listOf("id", "timestamp", "data.content", "state.position")))
         if (!result.isSuccess) {
             LogManager.ui("Notes tile ${tool.id}: notes not read: ${result.error}", "ERROR")
             return@LaunchedEffect

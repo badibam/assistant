@@ -73,7 +73,7 @@ fun rememberGoalTile(tool: ToolInstance): ToolTile {
     var version by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(tool.id, version) {
-        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id, "fields" to listOf("id", "timestamp", "state")))
+        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to tool.id))
         if (!result.isSuccess) {
             LogManager.ui("Goal tile ${tool.id}: attempts not read: ${result.error}", "ERROR")
             return@LaunchedEffect

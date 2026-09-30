@@ -75,7 +75,7 @@ fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureCl
         @Suppress("UNCHECKED_CAST")
         config = ((tool.data?.get("tool_instance") as? Map<*, *>)?.get("config") as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
         if (config == null) { errorMessage = tool.error; return@LaunchedEffect }
-        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to toolInstanceId, "fields" to listOf("id", "timestamp", "state")))
+        val result = coordinator.processUserAction("tool_data.get", mapOf("tool_instance_id" to toolInstanceId))
         if (!result.isSuccess) { errorMessage = result.error; return@LaunchedEffect }
         attempts = (result.data?.get("entries") as? List<*> ?: emptyList<Any>()).filterIsInstance<Map<*, *>>().map { e ->
             val state = e["state"] as? Map<*, *> ?: emptyMap<String, Any>()

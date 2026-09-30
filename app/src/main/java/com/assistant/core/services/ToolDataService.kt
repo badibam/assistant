@@ -421,7 +421,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         
         val totalPages = if (totalCount == 0) 1 else ((totalCount - 1) / limit) + 1
 
-        // Parse fields filter if provided (optional for backward compatibility)
+        // The fields asked for, or the whole entries
         val fieldsFilter = params.optJSONArray("fields")?.let { fieldsArray ->
             val list = mutableListOf<String>()
             for (i in 0 until fieldsArray.length()) {
@@ -431,8 +431,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
             list
         }
 
-        if (fieldsFilter == null) {
-            LogManager.service("ToolDataService.get: No fields filter provided (backward compatibility mode)", "DEBUG")
+        // A path that points nowhere is refused, never left out: the caller would read an entry
+        // without the field it asked for as an entry without a value
+        fieldsFilter?.let { FieldPatternGrammar.parse(it).invalid.firstOrNull() }?.let { path ->
+            return OperationResult.error(s.shared("ai_error_field_invalid_pattern").format(path))
         }
 
         return OperationResult.success(
