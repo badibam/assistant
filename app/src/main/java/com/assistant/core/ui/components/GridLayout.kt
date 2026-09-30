@@ -35,6 +35,9 @@ import org.json.JSONObject
  */
 data class GridEdit(val places: List<Grid.Tile>, val selectedId: String?, val onSelect: (String) -> Unit)
 
+/** The side of a cell of the grid a tile stands in. */
+val LocalGridCell = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.unit.Dp> { error("No grid around this tile") }
+
 /** How far the tiles not being moved fade while one is. */
 private const val FADED = 0.4f
 
@@ -86,7 +89,7 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
                                 .bringIntoViewRequester(requester)
                                 .alpha(if (edit?.selectedId != null && !selected) FADED else 1f)
                         ) {
-                            item(i)
+                            androidx.compose.runtime.CompositionLocalProvider(LocalGridCell provides with(LocalDensity.current) { cellPx.toDp() }) { item(i) }
                             // In edit mode the tile's own gestures give way to a touch that selects
                             if (edit != null) {
                                 Box(

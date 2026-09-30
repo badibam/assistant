@@ -434,6 +434,36 @@ object UI {
     fun RunningMark() = CurrentTheme.current.RunningMark()
 
     /**
+     * A tile's icon with its two marks: half the height of the space it stands in, square.
+     */
+    @Composable
+    fun TileIcon(iconName: String?, waiting: Boolean, running: Boolean) {
+        // Measured by the height it is given, never asked its intrinsic size: a tile's header and
+        // its icon always have a height of their own
+        BoxWithConstraints(modifier = Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+            MarkedIcon(iconName, waiting, running, maxHeight / 2)
+        }
+    }
+
+    /**
+     * The header of a tile, filling the space it is given: its icon ([TileIcon]) at the start,
+     * its name centered in the width left, as far from the icon as the tile's margin keeps the
+     * icon from its edge.
+     */
+    @Composable
+    fun TileHeader(iconName: String?, name: String, waiting: Boolean, running: Boolean, textType: TextType) {
+        Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            TileIcon(iconName, waiting, running)
+            Box(modifier = Modifier.weight(1f).padding(start = TILE_MARGIN), contentAlignment = Alignment.Center) {
+                Text(name, textType, maxLines = 2, fillMaxWidth = true, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
+    }
+
+    /** The margin inside a tile, between its frame and its content (DefaultTheme's containers). */
+    private val TILE_MARGIN = 12.dp
+
+    /**
      * A tool's or a zone's icon with its two marks, each in its corner: something waiting at the
      * top, a stopwatch running at the bottom. The marks show without an icon too.
      */
@@ -461,16 +491,13 @@ object UI {
         val running = LocalRunning.current.zone(zone.id)
         val mode = DisplayMode.valueOf(zone.display_mode)
         @Composable
-        fun Header() = Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            MarkedIcon(zone.icon_name, waiting, running)
-            Text(zone.name, TextType.SUBTITLE, maxLines = 2)
-        }
+        fun Header() = TileHeader(zone.icon_name, zone.name, waiting, running, TextType.SUBTITLE)
         @Composable
         fun Description() = zone.description?.let { Text(it, TextType.BODY, maxLines = 2) }
         CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
             when (mode) {
                 DisplayMode.ICON -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    MarkedIcon(zone.icon_name, waiting, running)
+                    TileIcon(zone.icon_name, waiting, running)
                 }
                 DisplayMode.MINIMAL -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Header() }
                 DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
@@ -513,14 +540,8 @@ object UI {
         waiting: Boolean,
         running: Boolean
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
-            MarkedIcon(settings.string("icon_name"), waiting, running)
-            Text(settings.string("name")!!, TextType.BODY, maxLines = 2)
-        }
+        val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
+        TileHeader(settings.string("icon_name"), settings.string("name")!!, waiting, running, TextType.BODY)
     }
 
     /**
@@ -563,7 +584,7 @@ object UI {
                 DisplayMode.ICON -> {
                     // The icon alone, centered in its cell
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        MarkedIcon(com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context).string("icon_name"), waiting, running)
+                        TileIcon(com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context).string("icon_name"), waiting, running)
                     }
                 }
                 DisplayMode.MINIMAL -> {
@@ -600,9 +621,11 @@ object UI {
                     }
                 }
                 DisplayMode.FULL -> {
-                    // As tall as the body needs; the grid rounds its row up to whole cells
+                    // As tall as the body needs; the grid rounds its row up to whole cells. The header
+                    // and the summary as tall as in EXTENDED: a cell less the default theme's
+                    // margins, 4 outside the frame and 12 inside
                     Column(modifier = Modifier.fillMaxSize()) {
-                        HeaderAndSummary(Modifier.fillMaxWidth().height(IntrinsicSize.Min))
+                        HeaderAndSummary(Modifier.fillMaxWidth().height(com.assistant.core.ui.components.LocalGridCell.current - 16.dp))
                         tile.Body(null)
                     }
                 }

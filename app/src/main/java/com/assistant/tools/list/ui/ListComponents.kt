@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.CustomFieldsInput
 import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.defaultValues
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
@@ -78,6 +79,55 @@ internal fun ListItemDialog(
                 requireConfirmation = true,
                 confirmMessage = s.tool("delete_item_confirm").format(item.name),
                 onClick = onDelete
+            )
+        }
+    }
+}
+
+/**
+ * A new item: its name, required, and the list's own fields at their default values. What is
+ * typed survives a rotation.
+ *
+ * @param onAdd The name and the values of the list's fields, emptied ones absent
+ */
+@Composable
+internal fun ListAddDialog(
+    fields: List<FieldDefinition>,
+    onAdd: (name: String, extra: Map<String, Any?>) -> Unit,
+    onCancel: () -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(tool = "list", context = context) }
+
+    var name by rememberSaveable { mutableStateOf("") }
+    var extra by rememberSaveable(stateSaver = FieldValuesSaver) { mutableStateOf(fields.defaultValues()) }
+
+    UI.Dialog(
+        type = DialogType.CONFIRM,
+        onConfirm = { onAdd(name, extra.filterValues { it != null }) },
+        onCancel = onCancel,
+        confirmEnabled = name.isNotBlank()
+    ) {
+        Column(
+            modifier = androidx.compose.ui.Modifier.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            UI.Text(s.tool("add_item_title"), TextType.SUBTITLE)
+            UI.FormField(
+                label = s.tool("field_content"),
+                value = name,
+                onChange = { name = it },
+                fieldType = FieldType.TEXT,
+                required = true
+            )
+            // A line between the content and the list's fields, as between two of those fields
+            if (fields.isNotEmpty()) UI.Divider()
+            CustomFieldsInput(
+                customFieldsMetadata = fields,
+                values = extra,
+                onValuesChange = { extra = it },
+                context = context,
+                newEntry = true
             )
         }
     }

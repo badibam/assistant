@@ -14,7 +14,7 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 
 - **Sept modes, sans ajout ni retrait.**
 - **Une case fait deux lignes** : une ligne est un huitième de la largeur de la grille, et toute hauteur dans une tuile se compte en lignes. Le thème dimensionne texte et boutons pour qu'une ligne en tienne une rangée.
-- **Les zones d'une tuile suivent les cases** : aucune case n'est partagée entre deux zones. Le cœur dessine le cadre et l'en-tête (icône et nom, 2×1) ; le type d'outil dessine deux choses (`rememberTile`, qui rend une `ToolTile`) : son **résumé**, un seul composant de 2×1, le même partout où il a sa place, actions comprises ; et son **corps**, sur les rangées qu'on lui donne. Dans les modes sans corps (LINE, CONDENSED), un type d'outil peut mettre à la place du résumé un **aperçu** de son corps, quand son corps en dit plus que son résumé dans si peu de place.
+- **Les zones d'une tuile suivent les cases** : aucune case n'est partagée entre deux zones. Le cœur dessine le cadre et l'en-tête (icône et nom, 2×1 ; l'icône haute de la moitié de son espace, au début, le nom centré dans la largeur qui reste, séparé d'elle par la marge de la tuile ; de même pour les zones, et l'icône seule en ICON) ; le type d'outil dessine deux choses (`rememberTile`, qui rend une `ToolTile`) : son **résumé**, un seul composant de 2×1, le même partout où il a sa place, actions comprises ; et son **corps**, sur les rangées qu'on lui donne. Dans les modes sans corps (LINE, CONDENSED), un type d'outil peut mettre à la place du résumé un **aperçu** de son corps, quand son corps en dit plus que son résumé dans si peu de place.
 
   | Mode | En-tête (cœur) | Résumé (outil) | Corps (outil) |
   |---|---|---|---|
@@ -65,7 +65,7 @@ Une tuile se décrit par son résumé (sa LINE) et son corps : ce que montre cha
 
 ### Liste
 
-- **Résumé** : le nombre de non cochés (« 3 non cochés ») ; sur le total si la config garde les cochés (« 3 / 8 »).
+- **Résumé** : le nombre de non cochés (« 3 restants »), sans total, et un bouton « + » qui ouvre la fenêtre d'ajout d'un élément sans ouvrir l'outil.
 - **Corps** : quatre non cochés par rangée, sur deux colonnes, chacun avec sa case, qui se coche sans ouvrir l'outil.
 - **FULL** : tous les non cochés ; les cochés restent dans l'outil.
 

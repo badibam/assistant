@@ -27,7 +27,6 @@
     <!-- Tuile sur une zone -->
     <string name="tile_empty">Liste vide</string>
     <string name="tile_all_checked">Tout est coché</string>
-    <string name="tile_unchecked_of">%1$s / %2$s</string>
-    <string name="tile_unchecked_one">1 non coché</string>
-    <string name="tile_unchecked_many">%1$s non cochés</string>
+    <string name="tile_left_one">1 restant</string>
+    <string name="tile_left_many">%1$s restants</string>
 </resources>

@@ -21,9 +21,13 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.strings.Strings
+import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.tools.ToolConfigSettings
 import com.assistant.core.tools.ToolTile
+import com.assistant.core.ui.ButtonAction
+import com.assistant.core.ui.ButtonDisplay
 import com.assistant.core.ui.Duration
+import com.assistant.core.ui.Size
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.components.TileGrid
@@ -36,8 +40,8 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
- * A list's tile, its boxes checked without opening the tool. The summary counts the items left
- * unchecked, against all of them when the list keeps its checked items ("3 / 8"); the body shows
+ * A list's tile, its boxes checked and its items added without opening the tool. The summary
+ * counts the items left unchecked ("3 restants"), beside a button adding one; the body shows
  * the unchecked items in their order, two per line on two columns, each with its box: four per
  * row of cells, all of them in FULL. The checked ones stay in the tool.
  */
@@ -52,7 +56,10 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
         ToolConfigSettings.read(ListToolType, JSONObject(tool.config_json), context).boolean(ListToolType.REMOVE_WHEN_CHECKED)
     }
 
+    val fields = remember(tool.config_json) { JSONObject(tool.config_json).optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList() }
+
     var items by remember { mutableStateOf<List<ListItem>?>(null) }
+    var adding by androidx.compose.runtime.saveable.rememberSaveable(tool.id) { mutableStateOf(false) }
     var version by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(tool.id, version) {
@@ -72,6 +79,20 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
         }
     }
 
+    if (adding) {
+        ListAddDialog(
+            fields = fields,
+            onAdd = { name, extra ->
+                scope.launch {
+                    val result = ListItems.add(coordinator, tool.id, name, extra)
+                    if (result.isSuccess) adding = false
+                    else UI.Toast(context, result.error ?: s.shared("message_error_simple"), Duration.LONG)
+                }
+            },
+            onCancel = { adding = false }
+        )
+    }
+
     return remember(tool.id, removeWhenChecked) {
         object : ToolTile {
             @Composable
@@ -79,20 +100,22 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
                 // Nothing to show until loaded: the tile keeps its header alone meanwhile
                 val loaded = items ?: return
                 val left = loaded.count { !it.isChecked }
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    UI.Text(
-                        text = when {
-                            loaded.isEmpty() -> s.tool("tile_empty")
-                            left == 0 -> s.tool("tile_all_checked")
-                            !removeWhenChecked -> s.tool("tile_unchecked_of").format(left.toString(), loaded.size.toString())
-                            left == 1 -> s.tool("tile_unchecked_one")
-                            else -> s.tool("tile_unchecked_many").format(left.toString())
-                        },
-                        type = TextType.BODY,
-                        fillMaxWidth = true,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2
-                    )
+                Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        UI.Text(
+                            text = when {
+                                loaded.isEmpty() -> s.tool("tile_empty")
+                                left == 0 -> s.tool("tile_all_checked")
+                                left == 1 -> s.tool("tile_left_one")
+                                else -> s.tool("tile_left_many").format(left.toString())
+                            },
+                            type = TextType.BODY,
+                            fillMaxWidth = true,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2
+                        )
+                    }
+                    UI.ActionButton(action = ButtonAction.ADD, display = ButtonDisplay.ICON, size = Size.S, onClick = { adding = true })
                 }
             }
 
