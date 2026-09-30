@@ -571,14 +571,21 @@ object UI {
                         ToolCardHeader(tool, context, waiting, running)
                     }
                 }
-                DisplayMode.LINE -> HeaderAndSummary(Modifier.fillMaxSize())
+                DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
+                        ToolCardHeader(tool, context, waiting, running)
+                    }
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                        tile.Glance()
+                    }
+                }
                 DisplayMode.CONDENSED -> {
                     Column(modifier = Modifier.fillMaxSize()) {
                         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
                             ToolCardHeader(tool, context, waiting, running)
                         }
                         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            tile.Summary()
+                            tile.Glance()
                         }
                     }
                 }

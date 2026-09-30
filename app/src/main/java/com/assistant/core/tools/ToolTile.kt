@@ -25,4 +25,11 @@ interface ToolTile {
      */
     @Composable
     fun Body(rows: Int?)
+
+    /**
+     * What stands at the summary's place, 2×1, in the modes without a body (LINE, CONDENSED): the
+     * summary, unless the tool type shows there what its body shows better in so little room.
+     */
+    @Composable
+    fun Glance() = Summary()
 }

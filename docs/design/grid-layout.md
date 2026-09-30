@@ -14,14 +14,14 @@ Conçue le 2026-09-29. Aujourd'hui, l'écran d'une zone dessine chaque outil en 
 
 - **Sept modes, sans ajout ni retrait.**
 - **Une case fait deux lignes** : une ligne est un huitième de la largeur de la grille, et toute hauteur dans une tuile se compte en lignes. Le thème dimensionne texte et boutons pour qu'une ligne en tienne une rangée.
-- **Les zones d'une tuile suivent les cases** : aucune case n'est partagée entre deux zones. Le cœur dessine le cadre et l'en-tête (icône et nom, 2×1) ; le type d'outil dessine deux choses (`rememberTile`, qui rend une `ToolTile`) : son **résumé**, un seul composant de 2×1, le même partout où il a sa place, actions comprises ; et son **corps**, sur les rangées qu'on lui donne.
+- **Les zones d'une tuile suivent les cases** : aucune case n'est partagée entre deux zones. Le cœur dessine le cadre et l'en-tête (icône et nom, 2×1) ; le type d'outil dessine deux choses (`rememberTile`, qui rend une `ToolTile`) : son **résumé**, un seul composant de 2×1, le même partout où il a sa place, actions comprises ; et son **corps**, sur les rangées qu'on lui donne. Dans les modes sans corps (LINE, CONDENSED), un type d'outil peut mettre à la place du résumé un **aperçu** de son corps, quand son corps en dit plus que son résumé dans si peu de place.
 
   | Mode | En-tête (cœur) | Résumé (outil) | Corps (outil) |
   |---|---|---|---|
   | ICON | l'icône seule, 1×1 | — | — |
   | MINIMAL | 2×1 | — | — |
-  | LINE | 2×1 à gauche | 2×1 à droite | — |
-  | CONDENSED | 2×1 en haut | 2×1 dessous | — |
+  | LINE | 2×1 à gauche | 2×1 à droite, ou son aperçu | — |
+  | CONDENSED | 2×1 en haut | 2×1 dessous, ou son aperçu | — |
   | EXTENDED | 2×1 en haut à gauche | 2×1 en haut à droite | 4×1 |
   | SQUARE | 2×1 en haut à gauche | 2×1 en haut à droite | 4×3 |
   | FULL | 2×1 en haut à gauche | 2×1 en haut à droite | 4 × ce qu'il faut, arrondi à la case |
@@ -96,6 +96,7 @@ Une tuile se décrit par son résumé (sa LINE) et son corps : ce que montre cha
 ### Graphique
 
 - **Résumé** : la période affichée (« 30 derniers jours », « Cette semaine »), puis la dernière valeur de la première série avec son unité et son moment (« 72,4 kg · hier ») ; ou qu'il n'y a rien dans la période, ou qu'il ne peut pas être dessiné.
+- **Aperçu** (LINE, CONDENSED) : le bandeau de l'EXTENDED sur 2×1 ; le résumé quand il n'y a rien à dessiner, qu'il dit.
 - **Corps** : un bandeau de ses marques seules en EXTENDED, le graphique réduit en SQUARE (quelques graduations, ni titres ni légende), la première vue seulement dans l'un et l'autre.
 - **FULL** : le graphique entier, comme à l'écran. Un toucher ouvre l'outil, jamais le détail d'une ligne.
 
