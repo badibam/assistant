@@ -32,6 +32,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Les incarnations (`docs/design/incarnations.md`, identités de personae) — au premier export publié par personae.
 - Supprimer un fournisseur d'IA ne regarde ni les automations ni les sessions qui le nomment (`AIProviderConfigService.deleteProviderConfig`) : refuser tant qu'une automation l'utilise, en la nommant ; une session passée reste lisible mais ne peut plus continuer, message à l'appui — avec les identités incarnées, qui demandent le même contrôle, écrit une fois pour les deux.
 - Une valeur comparée n'a pas de type à elle (constante d'un terme, valeur d'un filtre) : elle prend celui du champ en face, et se relit sans rien dire dans le nouveau type si ce champ en change (un nombre devenu durée) — quand une modification de config change le type d'un champ que des conditions ou des filtres enregistrés visent.
+- Une opération lourde en trois temps (lire, calculer longtemps sans bloquer les autres opérations, écrire), le résultat rendu à celui qui l'a lancée, un seul calcul lourd à la fois dans toute l'app et arrêté si son écran se ferme — au premier calcul qui fige l'app.
 - Streaming des réponses IA (Claude et OpenAI), avec le TCP keep-alive — quand des messages « requête envoyée, réponse perdue » s'accumulent dans les sessions : le réseau coupe les connexions restées silencieuses pendant la génération.
 
 ## Recette sur l'appareil

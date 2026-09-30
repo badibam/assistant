@@ -7,10 +7,7 @@ data class CommandResult(
     val status: CommandStatus,
     val message: String? = null,
     val data: Map<String, Any>? = null,   // Result data from operation
-    val error: String? = null,
-    // Multi-step operation support
-    val requiresBackground: Boolean = false,     // Phase 1 → 2: needs background processing
-    val requiresContinuation: Boolean = false    // Phase 2 → 3: needs final step
+    val error: String? = null
 )
 
 /**

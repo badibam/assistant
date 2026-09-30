@@ -47,9 +47,9 @@ import com.assistant.core.utils.LogManager
 class ToolDataService(private val context: Context) : ExecutableService {
 
     companion object {
-        /** The parameters of tool_data.get, and the phase the coordinator adds to every call. */
-        private val GET_PARAMS = setOf("tool_instance_id", "fields", "filters", "limit", "page", "running", "phase")
-        private val VALUES_PARAMS = setOf("tool_instance_id", "field", "limit", "phase")
+        /** The parameters of tool_data.get. */
+        private val GET_PARAMS = setOf("tool_instance_id", "fields", "filters", "limit", "page", "running")
+        private val VALUES_PARAMS = setOf("tool_instance_id", "field", "limit")
         /** How many values a text field offers at most, the most frequent. */
         private const val VALUES_LIMIT = 20
     }
@@ -371,7 +371,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // A parameter this read does not take would be ignored, and the read widened in silence:
         // a period set with a key it does not know would return the whole history
         params.keys().asSequence().firstOrNull { it !in GET_PARAMS }?.let { param ->
-            return OperationResult.error(s.shared("service_error_param_unknown").format(param, (GET_PARAMS - "phase").joinToString(", ")))
+            return OperationResult.error(s.shared("service_error_param_unknown").format(param, GET_PARAMS.joinToString(", ")))
         }
 
         // Filtering and pagination parameters
@@ -467,7 +467,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
     private suspend fun getValues(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
         params.keys().asSequence().firstOrNull { it !in VALUES_PARAMS }?.let { param ->
-            return OperationResult.error(s.shared("service_error_param_unknown").format(param, (VALUES_PARAMS - "phase").joinToString(", ")))
+            return OperationResult.error(s.shared("service_error_param_unknown").format(param, VALUES_PARAMS.joinToString(", ")))
         }
         val toolInstanceId = params.optString("tool_instance_id")
         if (toolInstanceId.isEmpty()) return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))

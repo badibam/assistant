@@ -90,23 +90,6 @@ Aucune modification Core nécessaire.
 
 **Voir DATA.md** pour navigation hiérarchique, validation et patterns de données.
 
-## Operations Multi-Étapes
-
-Système pour opérations lourdes en 3 phases.
-
-### Architecture
-**2 Canaux** : Queue normale (bloquant) + 1 slot background (calcul lourd)
-**Flow** : Phase 1 (lecture) → Phase 2 (calcul background) → Phase 3 (écriture)
-
-### Implémentation Service
-Service avec tempData ConcurrentHashMap, operationId et phase dans params, OperationResult avec requiresBackground/requiresContinuation.
-
-### Règles
-- **FIFO strict** : Ordre des opérations respecté
-- **1 seul slot background** : Évite surcharge système
-- **Re-queue automatique** : Si slot occupé → fin de queue
-- **Données temporaires** : Gérées par le service
-
 ## Règles de Développement
 
 ### Service Implementation
@@ -132,6 +115,8 @@ Vérification status avec result.status == CommandStatus.SUCCESS.
 
 ### Pattern de commandes
 coordinator.processUserAction(), processAICommand(), processScheduledTask() avec resource.operation
+
+**Ordre** : les opérations données à une même instance passent une à une, dans l'ordre d'arrivée (un `Mutex`) ; chaque appelant exécute la sienne et reçoit son propre résultat. Une opération qui en appelle une autre le fait par une autre instance, sinon elle attendrait sa propre fin.
 
 **Origine d'un appel** (`Source` : USER, AI, SCHEDULER, SYSTEM) : le coordinateur l'exécute avec son origine dans le contexte de la coroutine (`Origin`), que tout appel fait depuis l'opération garde — un import lancé par l'IA écrit ses lignes en tant qu'IA. `processAICommand` pose AI, `processScheduledTask` SCHEDULER, `process(source, …)` celle qu'on lui donne (`CommandExecutor` : AI pour les commandes de l'IA, USER pour les pointeurs, SYSTEM pour le prompt) ; `processUserAction` garde celle de l'opération en cours, USER hors de toute opération (un écran). Le tick de `CoreScheduler` tourne en SCHEDULER. Un service lit l'origine par `currentOrigin()`, pour ce que seule une personne peut faire ; hors d'une opération, il n'y en a pas, et la demander est une erreur.
 

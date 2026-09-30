@@ -6,38 +6,20 @@ import com.assistant.core.commands.CommandResult
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import java.util.ArrayDeque
 
 /**
- * Represents a queued operation with its execution context
- */
-data class QueuedOperation(
-    val command: DispatchCommand,
-    val phase: Int = 1
-)
-
-/**
- * CommandDispatcher - orchestrates all operations with unified resource.operation pattern
- * Implements multi-step operations with background processing slot
+ * CommandDispatcher - orchestrates all operations with unified resource.operation pattern.
+ *
+ * The operations given to one instance run one at a time, in the order they came: each caller
+ * runs its own and gets its own result back.
  */
 class Coordinator(context: Context) {
-    private val _state = MutableStateFlow(CoordinatorState.IDLE)
-    val state: StateFlow<CoordinatorState> = _state.asStateFlow()
-    
-    // Queue system
-    private val normalQueue = ArrayDeque<QueuedOperation>()
-    private var backgroundSlot: QueuedOperation? = null
-    private var isBackgroundSlotBusy = false
-    
+    private val lock = Mutex()
+
     private val serviceRegistry = ServiceRegistry(context)
     private val tokens = ConcurrentHashMap<String, CancellationToken>()
     
@@ -47,15 +29,13 @@ class Coordinator(context: Context) {
      */
     suspend fun processUserAction(action: String, params: Map<String, Any?> = emptyMap()): CommandResult {
         val command = convertToDispatchCommand(action, params, kotlin.coroutines.coroutineContext[Origin]?.source ?: Source.USER)
-        val queuedOp = QueuedOperation(command)
-        return enqueueAndProcess(queuedOp)
+        return execute(command)
     }
     
     /** A command of the AI, whatever runs it: a chat, or an automation the scheduler started. */
     suspend fun processAICommand(action: String, params: Map<String, Any?> = emptyMap()): CommandResult {
         val command = convertToDispatchCommand(action, params, Source.AI)
-        val queuedOp = QueuedOperation(command)
-        return enqueueAndProcess(queuedOp)
+        return execute(command)
     }
     
     /** A command of [source], for a caller that runs commands of several origins (CommandExecutor). */
@@ -63,14 +43,13 @@ class Coordinator(context: Context) {
         Source.USER -> processUserAction(action, params)
         Source.AI -> processAICommand(action, params)
         Source.SCHEDULER -> processScheduledTask(action, params)
-        Source.SYSTEM -> enqueueAndProcess(QueuedOperation(convertToDispatchCommand(action, params, Source.SYSTEM)))
+        Source.SYSTEM -> execute(convertToDispatchCommand(action, params, Source.SYSTEM))
     }
 
     /** A task of a scheduler, which no one is watching. */
     suspend fun processScheduledTask(task: String, params: Map<String, Any?> = emptyMap()): CommandResult {
         val command = convertToDispatchCommand(task, params, Source.SCHEDULER)
-        val queuedOp = QueuedOperation(command)
-        return enqueueAndProcess(queuedOp)
+        return execute(command)
     }
     
     /**
@@ -86,58 +65,21 @@ class Coordinator(context: Context) {
     }
     
     
-    /**
-     * Enqueue operation and process queue
-     */
-    private suspend fun enqueueAndProcess(queuedOp: QueuedOperation): CommandResult {
-        normalQueue.addLast(queuedOp)
-        return processQueue()
-    }
-    
-    /**
-     * Process next operation from queue - waits for coordinator to be available
-     */
-    private suspend fun processQueue(): CommandResult {
-        // Wait for coordinator to be idle instead of rejecting
-        while (_state.value != CoordinatorState.IDLE) {
-            kotlinx.coroutines.delay(50) // Wait 50ms before checking again
-        }
-        
-        val queuedOp = if (normalQueue.isNotEmpty()) {
-            normalQueue.removeFirst()
-        } else {
-            return CommandResult(
-                status = CommandStatus.ERROR,
-                error = "No operations in queue"
-            )
-        }
-        
-        return executeQueuedOperation(queuedOp)
-    }
-    
-    /**
-     * Execute a queued operation
-     */
-    private suspend fun executeQueuedOperation(queuedOp: QueuedOperation): CommandResult {
-        _state.value = CoordinatorState.OPERATION_IN_PROGRESS
-        
-        return try {
-            // Services receive only the command's own params, plus the phase set in executeServiceOperation:
-            // a read that refuses unknown params (tool_data.get) would refuse anything else added here
-            val command = queuedOp.command
-            
-            // New unified dispatch logic
-            val result = try {
+    /** Runs [command] once the operations before it on this instance are done. */
+    private suspend fun execute(command: DispatchCommand): CommandResult = lock.withLock {
+        try {
+            // Services receive only the command's own params: a read that refuses unknown params
+            // (tool_data.get) would refuse anything added here
+            try {
                 val (resource, operation) = command.parseAction()
                 val service = serviceRegistry.getService(resource)
-                
                 if (service == null) {
                     CommandResult(
                         status = CommandStatus.ERROR,
                         error = "Service not found for resource: $resource"
                     )
                 } else {
-                    executeServiceOperation(command, service, operation, queuedOp.phase)
+                    executeServiceOperation(command, service, operation)
                 }
             } catch (e: IllegalArgumentException) {
                 CommandResult(
@@ -145,90 +87,25 @@ class Coordinator(context: Context) {
                     error = "Invalid action format: ${command.action}"
                 )
             }
-            
-            // Handle multi-step operations
-            handleMultiStepResult(result, queuedOp)
-            
-            result
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             CommandResult(
                 status = CommandStatus.ERROR,
                 error = "Command execution failed: ${e.message}"
             )
-        } finally {
-            _state.value = CoordinatorState.IDLE
         }
     }
-    
-    /**
-     * Handle results that require additional steps
-     */
-    private suspend fun handleMultiStepResult(result: CommandResult, queuedOp: QueuedOperation) {
-        when {
-            result.requiresBackground -> {
-                // Phase 1 → 2: Queue background processing
-                if (isBackgroundSlotBusy) {
-                    // Slot busy, re-queue at end
-                    val requeued = queuedOp.copy(phase = 2)
-                    normalQueue.addLast(requeued)
-                } else {
-                    // Start background processing
-                    startBackgroundProcessing(queuedOp)
-                }
-            }
-            
-            result.requiresContinuation -> {
-                // Phase 2 → 3: Queue final step
-                val finalStep = queuedOp.copy(phase = 3)
-                normalQueue.addLast(finalStep)
-                
-                // Free background slot
-                isBackgroundSlotBusy = false
-                backgroundSlot = null
-            }
-        }
-    }
-    
-    /**
-     * Start background processing in dedicated slot
-     */
-    private suspend fun startBackgroundProcessing(queuedOp: QueuedOperation) {
-        isBackgroundSlotBusy = true
-        backgroundSlot = queuedOp.copy(phase = 2)
 
-        // Launch background processing
-        CoroutineScope(Dispatchers.Default).launch {
-            try {
-                val bgResult = executeQueuedOperation(backgroundSlot!!)
-                LogManager.coordination("Background result: status=${bgResult.status}, requiresContinuation=${bgResult.requiresContinuation}")
-                // Note: executeQueuedOperation already calls handleMultiStepResult which queues phase 3
-                // No need to queue it again here - just trigger queue processing
-                if (bgResult.requiresContinuation) {
-                    LogManager.coordination("Phase 3 already queued by handleMultiStepResult, triggering processQueue")
-
-                    // Process the queue to execute Phase 3
-                    CoroutineScope(Dispatchers.Main).launch {
-                        processQueue()
-                    }
-                }
-            } finally {
-                isBackgroundSlotBusy = false
-                backgroundSlot = null
-            }
-        }
-    }
-    
-    
     /**
      * Generic method to execute service operations - simplified for new architecture
      */
     private suspend fun executeServiceOperation(
         command: DispatchCommand,
         service: ExecutableService,
-        operation: String,
-        phase: Int = 1
+        operation: String
     ): CommandResult {
-        LogManager.coordination("executeServiceOperation: operation=$operation, phase=$phase", "VERBOSE")
+        LogManager.coordination("executeServiceOperation: operation=$operation", "VERBOSE")
         val opId = command.id ?: "op_${System.currentTimeMillis()}"
         val token = CancellationToken()
         tokens[opId] = token
@@ -237,13 +114,11 @@ class Coordinator(context: Context) {
             // Convert params Map to JSONObject with recursive conversion of nested structures
             // This ensures nested Maps/Lists are properly converted to JSONObject/JSONArray
             // (e.g., entries[].data becomes JSONObject instead of remaining as Map)
-            val params = com.assistant.core.utils.JsonUtils.toJSONObject(command.params).apply {
-                put("phase", phase)
-            }
+            val params = com.assistant.core.utils.JsonUtils.toJSONObject(command.params)
 
             // The origin goes with the operation, for its service and every call made from it
             val result = kotlinx.coroutines.withContext(Origin(command.source)) { service.execute(operation, params, token) }
-            LogManager.coordination("Service result: success=${result.success}, error=${result.error}, requiresContinuation=${result.requiresContinuation}", "VERBOSE")
+            LogManager.coordination("Service result: success=${result.success}, error=${result.error}", "VERBOSE")
             
             CommandResult(
                 status = when {
@@ -253,9 +128,7 @@ class Coordinator(context: Context) {
                 },
                 message = if (result.success) "Operation completed successfully" else null,
                 error = result.error,
-                data = result.data,
-                requiresBackground = result.requiresBackground,
-                requiresContinuation = result.requiresContinuation
+                data = result.data
             )
         } catch (e: Exception) {
             CommandResult(
@@ -265,13 +138,5 @@ class Coordinator(context: Context) {
         } finally {
             tokens.remove(opId)
         }
-    }
-
-    
-    /**
-     * Check if a new operation can be started
-     */
-    fun canAcceptNewOperation(): Boolean {
-        return _state.value == CoordinatorState.IDLE
     }
 }
