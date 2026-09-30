@@ -101,6 +101,9 @@ class GridEditor internal constructor(
         return Grid.move(places(key) ?: return null, id, direction)
     }
 
+    /** The edit mode closed, the move in progress written. */
+    fun close() = afterCommit { section.value = null }
+
     /** The move written, the tile unselected; the edit mode stays. */
     fun validate() = afterCommit {}
 
@@ -160,6 +163,20 @@ fun rememberGridEditor(placeOperation: String, placeParams: Map<String, Any>, se
     val draft = rememberSaveable { mutableStateOf<String?>(null) }
     val original = rememberSaveable { mutableStateOf<String?>(null) }
     return GridEditor(placeOperation, placeParams, coordinator, scope, sectionTiles, onError, section, selected, draft, original)
+}
+
+/**
+ * Closes [editor]'s edit mode, its move written, when the screen that calls this leaves: another
+ * screen opened over it, a zone over the home screen, a tool over its zone. A recreation of the
+ * activity keeps it, as it keeps what is being edited.
+ */
+@Composable
+fun CloseEditOnLeave(editor: GridEditor) {
+    val current = androidx.compose.runtime.rememberUpdatedState(editor)
+    val activity = LocalContext.current as? android.app.Activity
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { if (activity?.isChangingConfigurations != true) current.value.close() }
+    }
 }
 
 /**

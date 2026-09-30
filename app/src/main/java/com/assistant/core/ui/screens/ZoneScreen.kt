@@ -289,6 +289,8 @@ fun ZoneScreen(
         )
         return // Exit ZoneScreen composition when showing usage screen
     }
+
+    com.assistant.core.ui.components.CloseEditOnLeave(gridEditor)
     
     // Edit mode: the grids of one section at a time, the bar under the screen while a tool moves
     Column(modifier = Modifier.fillMaxSize()) {

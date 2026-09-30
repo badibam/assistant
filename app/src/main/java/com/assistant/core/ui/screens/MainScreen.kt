@@ -391,6 +391,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
     } else {
         // The home screen is the root: the back key leaves the app, and asks first
         BackHandler { showExitConfirm = true }
+        com.assistant.core.ui.components.CloseEditOnLeave(gridEditor)
 
         // Main content using hybrid system: Compose layouts + UI.* components
         Box(modifier = Modifier.fillMaxSize()) {
