@@ -593,7 +593,7 @@ object UI {
                     }
                 }
                 DisplayMode.FULL -> {
-                    // As tall as the body needs; the grid rounds the tile up to whole cells
+                    // As tall as the body needs; the grid rounds its row up to whole cells
                     Column(modifier = Modifier.fillMaxSize()) {
                         HeaderAndSummary(Modifier.fillMaxWidth().height(IntrinsicSize.Min))
                         tile.Body(null)

@@ -44,7 +44,10 @@ private const val FADED = 0.4f
  * centered beyond.
  *
  * A row is one cell high, except the row of a tile that grows with its content ([grows]: a
- * FULL tile), which is as tall as what it shows, rounded up to whole cells. An empty cell stays
+ * FULL tile), which is as tall as what it shows, rounded up to whole cells. Such a tile is measured
+ * once, its width fixed and its height free, and keeps the height it takes: the rest of its row
+ * stays empty under it. It is never asked for its intrinsic height, which a tile holding a layout
+ * measured by its constraints (BoxWithConstraints, a lazy list) cannot give. An empty cell stays
  * empty.
  *
  * In edit mode ([edit]), the tiles stand at its places, the theme's cells show under them, and
@@ -101,14 +104,16 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
         ) { measurables, _ ->
             val cell = cellPx
 
-            // A tile that grows takes its row's height from what it shows, in whole cells
+            // A tile that grows is measured first, at its width and a free height; its row takes
+            // that height in whole cells
             val rowHeights = IntArray(rowCount) { cell }
-            tiles.forEachIndexed { i, tile ->
-                if (grows[i]) {
-                    val content = measurables[cells + i].maxIntrinsicHeight(tile.width * cell)
-                    rowHeights[tile.row] = maxOf(1, (content + cell - 1) / cell) * cell
-                }
-            }
+            val grown = tiles.mapIndexedNotNull { i, tile ->
+                if (!grows[i]) return@mapIndexedNotNull null
+                val width = tile.width * cell
+                val placeable = measurables[cells + i].measure(Constraints(minWidth = width, maxWidth = width, minHeight = cell))
+                rowHeights[tile.row] = maxOf(rowHeights[tile.row], (placeable.height + cell - 1) / cell * cell)
+                i to placeable
+            }.toMap()
             val rowTops = IntArray(rowCount + 1)
             for (row in 0 until rowCount) rowTops[row + 1] = rowTops[row] + rowHeights[row]
 
@@ -116,7 +121,7 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
                 measurables[index].measure(Constraints.fixed(cell, rowHeights[index / Grid.COLUMNS]))
             }
             val tilePlaceables = tiles.mapIndexed { i, tile ->
-                measurables[cells + i].measure(Constraints.fixed(tile.width * cell, rowTops[tile.bottom] - rowTops[tile.row]))
+                grown[i] ?: measurables[cells + i].measure(Constraints.fixed(tile.width * cell, rowTops[tile.bottom] - rowTops[tile.row]))
             }
             layout(cell * Grid.COLUMNS, rowTops[rowCount]) {
                 cellPlaceables.forEachIndexed { index, placeable ->
