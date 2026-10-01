@@ -318,6 +318,7 @@ dependencies {
 // set or an edited prompt leaves the tests "up to date".
 tasks.withType<Test>().configureEach {
     inputs.dir("src/main/assets/icons")
+    inputs.dir("src/main/assets/demo")
     inputs.dir("src/main/res/drawable")
     inputs.file("src/main/java/com/assistant/core/strings/sources/ai_prompt_chunks.xml")
 }
