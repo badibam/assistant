@@ -104,8 +104,8 @@ object NotesToolType : ToolTypeContract {
         return com.assistant.core.services.ToolDataService(context)
     }
 
-    override fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =
-        com.assistant.core.tools.ManualOrder.settle(entries, writtenId)
+    override suspend fun settleEntries(entries: suspend () -> List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =
+        com.assistant.core.tools.ManualOrder.settle(entries(), writtenId)
 
     override fun getDao(context: Context): Any {
         val database = com.assistant.core.database.AppDatabase.getDatabase(context)

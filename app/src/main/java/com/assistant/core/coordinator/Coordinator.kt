@@ -130,6 +130,9 @@ class Coordinator(context: Context) {
                 error = result.error,
                 data = result.data
             )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // The caller's scope ended (its screen left): nothing failed, the cancellation goes on
+            throw e
         } catch (e: Exception) {
             CommandResult(
                 status = CommandStatus.ERROR,

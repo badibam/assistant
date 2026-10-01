@@ -180,9 +180,10 @@ object ListToolType : ToolTypeContract {
     }
 
     /** The manual order, then the due notice of the item written (DueNotice). */
-    override fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> {
-        val ordered = ManualOrder.settle(entries, writtenId).associateBy { it.id }
-        val written = writtenId?.let { id -> ordered[id] ?: entries.find { it.id == id } } ?: return ordered.values.toList()
+    override suspend fun settleEntries(entries: suspend () -> List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> {
+        val all = entries()
+        val ordered = ManualOrder.settle(all, writtenId).associateBy { it.id }
+        val written = writtenId?.let { id -> ordered[id] ?: all.find { it.id == id } } ?: return ordered.values.toList()
         val cleared = DueNotice.settle(written) ?: return ordered.values.toList()
         return (ordered + (cleared.id to cleared)).values.toList()
     }

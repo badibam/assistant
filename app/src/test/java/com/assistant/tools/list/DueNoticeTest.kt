@@ -73,7 +73,7 @@ class DueNoticeTest {
     fun `the list settles its order and the mark of the item written in one answer`() {
         val written = entity("a", dueAt = now + 60, dueNotified = now, position = 5)
         val other = entity("b", dueAt = null, dueNotified = null, position = 1)
-        val settled = ListToolType.settleEntries(listOf(written, other), "a").associateBy { it.id }
+        val settled = kotlinx.coroutines.runBlocking { ListToolType.settleEntries({ listOf(written, other) }, "a") }.associateBy { it.id }
         val state = JSONObject(settled.getValue("a").state!!)
         assertFalse(state.has(ListToolType.DUE_NOTIFIED))
         assertEquals(1, state.getInt(ManualOrder.POSITION))

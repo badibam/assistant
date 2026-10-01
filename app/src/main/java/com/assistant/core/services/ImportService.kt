@@ -129,8 +129,10 @@ class ImportService(private val context: Context) : ExecutableService {
                         .mapNotNull { e -> (e["name"] as? String)?.let { CoreFields.uniqueKey(it) to e["id"] as String } }.toMap()
                 }
 
-                var created = 0
-                var updated = 0
+                // The lines in two batches, entries to create and entries to update, each read
+                // once by the service; a line refused comes back by its place in its batch
+                val creates = mutableListOf<Pair<Int, Map<String, Any>>>()
+                val updates = mutableListOf<Pair<Int, Map<String, Any>>>()
                 val refused = plan.refused.map { mapOf("line" to it.line, "column" to it.column, "cell" to it.cell, "reason" to s.shared("import_refused_cell").format(it.cell, s.shared("import_writing_${it.reason.lowercase()}"))) }.toMutableList()
                 for (line in plan.lines) {
                     val data = mutableMapOf<String, Any>()
@@ -143,19 +145,27 @@ class ImportService(private val context: Context) : ExecutableService {
                             path.startsWith("extra.") -> extra[path.removePrefix("extra.")] = value
                         }
                     }
-                    val params = mutableMapOf<String, Any>("tool_instance_id" to toolInstanceId, "data" to data)
-                    line.name?.let { params["name"] = it }
-                    if (extra.isNotEmpty()) params["extra"] = extra
-                    timestamp?.let { params["timestamp"] = it }
+                    val entry = mutableMapOf<String, Any>("data" to data)
+                    line.name?.let { entry["name"] = it }
+                    if (extra.isNotEmpty()) entry["extra"] = extra
+                    timestamp?.let { entry["timestamp"] = it }
                     val found = line.name?.let { existing[CoreFields.uniqueKey(it)] }
-                    val result = if (found != null) coordinator.processUserAction("tool_data.update", params + ("id" to found))
-                        else coordinator.processUserAction("tool_data.create", params)
-                    when {
-                        !result.isSuccess -> refused.add(mapOf("line" to line.line, "reason" to (result.error ?: "")))
-                        found != null -> updated++
-                        else -> created++
-                    }
+                    if (found != null) updates.add(line.line to entry + ("id" to found)) else creates.add(line.line to entry)
                 }
+
+                /** Writes [batch] by [operation]; the number written, its refusals added to the report by line. */
+                suspend fun write(operation: String, countKey: String, batch: List<Pair<Int, Map<String, Any>>>): Int {
+                    if (batch.isEmpty()) return 0
+                    val result = coordinator.processUserAction(operation, mapOf("tool_instance_id" to toolInstanceId, "entries" to batch.map { it.second }))
+                    // Every entry of the batch refused: the import as a whole, with what the service said
+                    if (!result.isSuccess) throw Refused(result.error ?: "")
+                    (result.data?.get("refusals") as? List<*>).orEmpty().filterIsInstance<Map<*, *>>().forEach { refusal ->
+                        refused.add(mapOf("line" to batch[(refusal["index"] as Number).toInt()].first, "reason" to (refusal["error"] as? String ?: "")))
+                    }
+                    return (result.data?.get(countKey) as? Number)?.toInt() ?: 0
+                }
+                val created = write("tool_data.batch_create", "created_count", creates)
+                val updated = write("tool_data.batch_update", "updated_count", updates)
                 mapOf(
                     "created" to created,
                     "updated" to updated,
