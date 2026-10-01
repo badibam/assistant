@@ -12,7 +12,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Les conditions typées à l'écriture, conçues dans `docs/design/typed-conditions.md` : le type de chaque côté d'une condition connu sans lire de données, les constantes de l'IA traduites à l'entrée, la vérification au service, et le refus d'un changement dont dépend une condition ailleurs.
 - Le formulaire du Graphique : chaque niveau d'emboîtement retire de la largeur des deux côtés, au fond tout tient dans une colonne étroite, et le filtre d'une colonne de grille est enfoui six niveaux plus bas (couche › colonnes › colonne › lu › Filtres) sans signe en surface — à concevoir.
 - Le graphique Calories de Panorama met 3,3 à 3,8 s à se lire (grille par jour sur 30 jours, en arrière-plan) — comprendre où va le temps.
-- Le formulaire du Graphique montre « Empilement : Aucun » sur le canal horizontal d'une couche dont le vertical est en `normalize` : vérifier qu'il lit l'empilement du bon canal.
 
 ## En attente d'un déclencheur
 
