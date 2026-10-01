@@ -10,6 +10,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - L'outil Rappels, conçu dans `docs/design/reminders.md` : à implémenter, avant la démo qui s'en sert.
 - La démo installée à chaque mise à jour, conçue dans `docs/design/demo.md` : à implémenter (structure, textes en deux langues, générateurs, `demo.install`, déclencheur, réglages, tests de garantie).
 - L'app en portrait seul (`android:screenOrientation="portrait"`) : retirer les branches paysage (`DefaultTheme.kt`, `NotesScreen.kt`), et dans `docs/design/device-checks.md` remplacer « tourner l'écran » par un autre déclencheur de recréation (« Ne pas conserver les activités », thème sombre) — la conservation d'état reste une règle. Un grand écran ignorera le verrou une fois la cible en API 36 : même affichage, rien de propre au paysage. Après la spec de la grille.
+- Modèles libres (`docs/design/local-models.md`) : rendre réglable l'adresse du fournisseur OpenAI, puis monter le banc qui fait jouer à l'app une vingtaine de scénarios sur une zone de test, et lancer la campagne 1 (prompt actuel, avec et sans forçage par schéma, sur toute l'échelle de tailles via OpenRouter). Les niveaux de prompt se décident sur son résultat.
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur
