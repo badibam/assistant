@@ -446,6 +446,7 @@ Event NetworkErrorOccurred:
 - Les données récupérées pour l'IA, par les pointeurs de l'utilisateur ou par ses propres requêtes, sont mesurées en caractères du texte qu'elle recevrait, contre `chat_max_data_chars` ou `automation_max_data_chars` (`ai_limits`, réglables dans l'écran des limites IA).
 - CHAT au-delà : le message de données est stocké hors du prompt (`DATA_AWAITING_CONFIRMATION`), phase `WAITING_DATA_CONFIRMATION`. Le contexte d'attente est relu depuis ce message, donc l'attente survit à un redémarrage. « Envoyer » le rend `DATA_ADDED` et l'intègre au prompt ; « Refuser » le rend `DATA_REFUSED`, sans données, avec un résumé qui demande à l'IA de resserrer.
 - AUTOMATION au-delà : les données ne sont pas stockées ; un message `DATA_REFUSED` part à l'IA avec la taille, le seuil et les requêtes concernées, et reste visible dans l'historique d'exécution.
+- Résultats d'actions : ils partent sans rien demander, l'action étant faite ; au-delà du même seuil, `withinChars` les coupe là où la place finit (résumé et résultats entiers d'abord, dans l'ordre), avec le nombre de caractères non envoyés.
 - Les données des outils « toujours envoyer » (niveau 2) ne sont pas mesurées : c'est un choix de configuration de l'utilisateur.
 
 ## 8. Gestion réseau et erreurs

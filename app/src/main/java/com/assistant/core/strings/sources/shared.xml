@@ -394,6 +394,7 @@
     <string name="ai_phase_waiting_data_confirmation">Waiting for your decision on the data</string>
     <string name="ai_system_data_too_large_automation">Data not sent: %1$d characters, above the automation threshold of %2$d. Narrow the request (fewer fields, a shorter period) or split what is really needed.</string>
     <string name="ai_system_data_refused_by_user">Data not sent: the user refused %1$d characters of data. Narrow the request (fewer fields, a shorter period) or ask the user what is needed.</string>
+    <string name="ai_system_result_cut">[… %1$s characters not sent]</string>
     <string name="ai_data_confirmation_title">Large data</string>
     <string name="ai_data_confirmation_text">The data requested is %1$d characters, above your threshold of %2$d. Send it to the AI?</string>
     <string name="ai_data_confirmation_send">Send</string>

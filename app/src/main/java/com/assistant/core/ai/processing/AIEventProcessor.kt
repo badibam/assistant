@@ -1408,7 +1408,10 @@ class AIEventProcessor(
                         textContent = null,
                         aiMessage = null,
                         aiMessageJson = null,
-                        systemMessage = result.systemMessage,
+                        // Sent without asking anyone: held to the session's data threshold
+                        systemMessage = result.systemMessage.withinChars(
+                            AppConfigManager.getAILimits().getLimitsForSessionType(state.sessionType ?: SessionType.CHAT).maxDataChars
+                        ) { com.assistant.core.strings.Strings.`for`(context = context).shared("ai_system_result_cut").format(it) },
                         executionMetadata = null,
                         excludeFromPrompt = false
                     )
