@@ -680,7 +680,7 @@
     <string name="field_config_open">Ouvert (une valeur nouvelle rejoint les options)</string>
     <string name="field_choice_rank">%1$s. %2$s</string>
     <string name="field_choice_none">Aucun</string>
-    <string name="field_choice_new_value">Autre valeur</string>
+    <string name="field_choice_new_value">Nouvelle option</string>
     <string name="field_config_option_value">Option</string>
     <string name="field_config_option_label">Libellé affiché</string>
     <string name="field_config_option_color">Couleur</string>
