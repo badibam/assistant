@@ -87,6 +87,19 @@ object ToolConfigSettings {
     fun defaults(toolType: ToolTypeContract, context: Context): org.json.JSONObject =
         com.assistant.core.fields.settings.SettingDefaults.of(nodes(toolType, context))
 
+    /**
+     * [config] with every setting of the first level it leaves out at its declared default: a
+     * default is also what a setting's absence means. Settings under a variant are left as
+     * they are, since which ones apply depends on the option the config chose.
+     */
+    fun withDefaults(toolType: ToolTypeContract, config: org.json.JSONObject, context: Context): org.json.JSONObject {
+        val filled = org.json.JSONObject(config.toString())
+        com.assistant.core.fields.settings.SettingsSchemaGenerator.flatten(nodes(toolType, context))
+            .filterIsInstance<SettingNode.Field>()
+            .forEach { node -> node.default?.let { if (!filled.has(node.definition.name)) filled.put(node.definition.name, it) } }
+        return filled
+    }
+
     /** [config] of a tool of [toolType], read through its declaration (SettingValues). */
     fun read(toolType: ToolTypeContract, config: org.json.JSONObject, context: Context): com.assistant.core.fields.settings.SettingValues =
         com.assistant.core.fields.settings.SettingValues(nodes(toolType, context), config)

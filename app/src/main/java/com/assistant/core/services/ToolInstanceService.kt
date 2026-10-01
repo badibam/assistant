@@ -117,8 +117,10 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // Unlike an update, a name that comes in is kept rather than refused: the guard over
         // there protects values already stored under the old key, and a tool being created
         // has none. The interface takes that route, assigning names in its editor.
-        val namedConfigJson = ToolTypeManager.getToolType(toolType)?.completeConfig(JSONObject(assignMissingFieldNames(configJson)), null)?.toString()
-            ?: assignMissingFieldNames(configJson)
+        // A setting left out takes its declared default, as in the screen that creates a tool
+        val namedConfigJson = ToolTypeManager.getToolType(toolType)?.let { type ->
+            type.completeConfig(com.assistant.core.tools.ToolConfigSettings.withDefaults(type, JSONObject(assignMissingFieldNames(configJson)), context), null).toString()
+        } ?: assignMissingFieldNames(configJson)
 
         val iconCheck = checkIconName(namedConfigJson)
         val storedConfigJson = when (iconCheck) {
@@ -126,8 +128,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             is IconCheck.Kept -> iconCheck.configJson
         }
         checkConfig(toolType, storedConfigJson)?.let { return OperationResult.error(it) }
-        val placedConfigJson = withDisplayMode(storedConfigJson, ToolTypeManager.getToolType(toolType)!!.getDefaultDisplayMode())
-        ToolTypeManager.getToolType(toolType)?.refuseConfig(JSONObject(placedConfigJson), context)?.let { return OperationResult.error(it) }
+        ToolTypeManager.getToolType(toolType)?.refuseConfig(JSONObject(storedConfigJson), context)?.let { return OperationResult.error(it) }
 
         val zone = zoneDao.getZoneById(zoneId)
             ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
@@ -135,7 +136,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val newToolInstance = database.withTransaction {
-            arrive(ToolInstance(zone_id = zoneId, tooltype = toolType, config_json = placedConfigJson, grid_x = 0, grid_y = 0), zone.tool_groups)
+            arrive(ToolInstance(zone_id = zoneId, tooltype = toolType, config_json = storedConfigJson, grid_x = 0, grid_y = 0), zone.tool_groups)
                 .also { toolInstanceDao.insertToolInstance(it) }
         }
 
