@@ -20,12 +20,12 @@ Conçu à partir du 2026-09-29. Un second thème, à côté du thème par défau
 
 ## Ce qui est codé
 
-`themes/retro/` : la palette (`RetroPalette`, `PaletteFile`, son banc), la grille et la police (`RetroGrid`), le cadre (`RetroFrame`), chaque composant du contrat (`RetroTheme`), les sons (`res/raw/retro_*.flac`, crédits dans `sounds.json`). Le choix se fait dans les réglages « Interface » : l'apparence (une palette d'un thème, nommée par le thème lui-même) et le cran de taille, enregistrés depuis la v55 de la base.
+`themes/retro/` : la palette (`RetroPalette`, `PaletteFile`, son banc), la grille et la police (`RetroGrid`), le cadre (`RetroFrame`), chaque composant du contrat (`RetroTheme`), ses icônes (`icons/`, de `scripts/pixelize_icons.py`, affichées à un multiple entier de leur boîte), les sons (`res/raw/retro_*.flac`, crédits dans `sounds.json`). Le choix se fait dans les réglages « Interface » : l'apparence (une palette d'un thème, nommée par le thème lui-même) et le cran de taille, enregistrés depuis la v55 de la base.
 
 ## Ce qui reste ouvert
 
 - Rien n'a tourné sur un téléphone : tout ce qui suit se juge là, et le niveau des sons (repris de Saylune, 10 dB sous Kenney) à l'oreille.
-- Les icônes pixelisées : le script (rendu en grand, couverture, seuil 0,45), son fichier de retouches, le dossier `icons/` complet et `iconSource = OWN`. D'ici là le thème dessine les vecteurs Lucide, à un nombre entier de pixels de dessin. Puis des icônes au trait de 4 pixels, la graisse normale de Saylune, sur la même planche.
+- Les icônes : les retouches au fil de l'usage, d'abord celles que l'utilisateur choisit (deux à ce jour, `refresh-cw` et `rotate-ccw`, la pointe collée au bout de l'arc). Puis des icônes au trait de 4 pixels, la graisse normale de Saylune, sur la même planche.
 - Le Graphique dans ce registre : sa scène dessinée en pixels et en trames (`missing-tools.md`). D'ici là le thème passe par le dessin du thème par défaut (`DefaultDrawing`), dans sa police et ses couleurs.
 - Le mode d'édition de la grille atténue les autres tuiles par transparence (`FADED` dans `GridLayout`), ce que `pixel-ui` interdit : le dire par le thème.
 - La grille, avec l'écart d'une cellule, est centrée sur ses cases et non sur ce qu'elle montre : une demi-cellule de trop à gauche. Et au cran +2, sur un écran de 1080, une case fait quatre cellules : une tuile ICON n'a plus qu'une cellule dedans, moins que son icône.

@@ -129,7 +129,6 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalFoundationApi::class)
 object RetroTheme : ThemeContract {
 
-    /** Lucide's vectors for now: the pixelized set (icons/, iconSource OWN) is still to be made. */
     override fun name(context: android.content.Context): String =
         com.assistant.core.strings.Strings.`for`(context = context, theme = "retro").theme("name")
 
@@ -137,7 +136,11 @@ object RetroTheme : ThemeContract {
     override fun paletteName(paletteId: String, context: android.content.Context): String =
         com.assistant.core.strings.Strings.`for`(context = context, theme = "retro").theme("palette_${paletteId.removePrefix("retro_")}")
 
-    override val iconSource = IconSource.LUCIDE
+    /**
+     * Its own icons, every one: Lucide's pixelized in the register's box (icons/, written by
+     * scripts/pixelize_icons.py, hand retouches in icon-retouches.txt).
+     */
+    override val iconSource = IconSource.OWN
 
     // =====================================
     // GRID, SPACES, SOUNDS
@@ -405,11 +408,15 @@ object RetroTheme : ThemeContract {
     @Composable
     override fun LoadingIndicator(size: Size) = Dots()
 
-    /** Whole drawing pixels: the size asked for, rounded to the grid. */
+    /**
+     * The icon's box at a whole multiple, the nearest to the size asked for and at least one:
+     * every pixel of the icon then covers whole pixels of the screen.
+     */
     @Composable
     override fun Icon(resourceId: Int, size: Dp, contentDescription: String?, tint: Color?, background: Color?) {
         val grid = retroGrid()
-        val pixels = with(LocalDensity.current) { (size.toPx() / grid.scale).roundToInt().coerceAtLeast(1) }
+        val times = with(LocalDensity.current) { (size.toPx() / grid.px(RetroGrid.ICON)).roundToInt().coerceAtLeast(1) }
+        val pixels = times * RetroGrid.ICON
         Image(
             painter = painterResource(resourceId),
             contentDescription = contentDescription,
