@@ -32,7 +32,7 @@ enum class DurationUnit(val millis: Long) {
 }
 
 /**
- * How a DURATION is written: in several units ("1 h 25 min") or in its precision alone ("85 min").
+ * How a DURATION is written: in several units ("1h 25m") or in its precision alone ("85m").
  */
 enum class DurationForm {
     COMPOSED,
@@ -83,7 +83,7 @@ object Durations {
         amounts.entries.sumOf { (unit, amount) -> unit.millis * amount }
 
     /**
-     * The text form of a duration: "1 h 25 min" when composed, "85 min" in a single unit.
+     * The text form of a duration: "1h 25m" when composed, "85m" in a single unit.
      *
      * Composed, the units worth zero are left out, and a duration below the precision is
      * "0" in that precision, so that nothing is ever written as an empty string.

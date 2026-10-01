@@ -1329,10 +1329,10 @@
     <string name="reduction_count">Count</string>
     <string name="reduction_earliest">Earliest</string>
     <string name="reduction_latest">Latest</string>
-    <string name="duration_amount">%1$s %2$s</string>
+    <string name="duration_amount">%1$s%2$s</string>
     <string name="duration_unit_day">d</string>
     <string name="duration_unit_hour">h</string>
-    <string name="duration_unit_minute">min</string>
+    <string name="duration_unit_minute">m</string>
     <string name="duration_unit_second">s</string>
     <string name="duration_unit_millisecond">ms</string>
     <string name="duration_unit_day_display_name">Day</string>
