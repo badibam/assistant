@@ -1741,4 +1741,15 @@
     <string name="service_error_tool_keeps_no_entries">A %1$s keeps no entries of its own: it shows those of other tools.</string>
     <string name="verbalize_unknown_operation">Unknown operation: %1$s</string>
     <string name="tools_config_error_zone_update">Unable to move the tool to that zone</string>
+    <!-- Demo -->
+    <string name="demo_texts_file">texts-en.json</string>
+    <string name="demo_error_unreadable">The demo could not be read: %1$s</string>
+    <string name="demo_installed">Demo installed</string>
+    <string name="demo_reinstall_now">Reinstall now</string>
+    <string name="action_verbalize_demo_install">Demo installation</string>
+    <string name="action_verbalize_demo_remove">Demo removal</string>
+    <string name="settings_demo">Demo</string>
+    <string name="settings_demo_description">A demo zone group, installed afresh at each update</string>
+    <string name="settings_demo_install_on_update">Install the demo at each update</string>
+    <string name="settings_demo_install_on_update_help">Off, the demo there is goes. What you add to the demo goes at each reinstall.</string>
 </resources>

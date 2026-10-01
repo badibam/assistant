@@ -35,6 +35,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import com.assistant.core.utils.LogManager
 import java.util.concurrent.TimeUnit
@@ -132,7 +133,21 @@ class MainActivity : ComponentActivity() {
                         com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
                         com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
                     ) {
-                        MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
+                        // The demo first, installed afresh after an update, before the home screen
+                        // reads the zones; once per activity, a recreation finding it done
+                        var demoReady by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+                        if (!demoReady) {
+                            androidx.compose.runtime.LaunchedEffect(Unit) {
+                                val failed = withContext(Dispatchers.IO) { com.assistant.core.demo.DemoStartup.run(this@MainActivity) }
+                                if (failed != null) com.assistant.core.ui.UI.Toast(this@MainActivity, failed, com.assistant.core.ui.Duration.LONG)
+                                demoReady = true
+                            }
+                            androidx.compose.foundation.layout.Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                                com.assistant.core.ui.UI.LoadingIndicator()
+                            }
+                        } else {
+                            MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
+                        }
                     }
                 }
             }

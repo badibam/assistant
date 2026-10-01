@@ -1,0 +1,10 @@
+{
+  "zone_group": "zone_group",
+  "zones": [
+    {"id": "demo-course", "name": "course_name", "description": "course_description", "icon": "footprints", "display_mode": "CONDENSED", "grid_x": 0, "grid_y": 0, "tool_groups": ["course_group_training", "course_group_body", "course_group_analysis"]},
+    {"id": "demo-work", "name": "work_name", "description": "work_description", "icon": "briefcase", "display_mode": "CONDENSED", "grid_x": 2, "grid_y": 0, "tool_groups": []},
+    {"id": "demo-kitchen", "name": "kitchen_name", "description": "kitchen_description", "icon": "chef-hat", "display_mode": "LINE", "grid_x": 0, "grid_y": 2, "tool_groups": ["kitchen_group_meals", "kitchen_group_pantry"]},
+    {"id": "demo-balcony", "name": "balcony_name", "description": "balcony_description", "icon": "sprout", "display_mode": "MINIMAL", "grid_x": 0, "grid_y": 3, "tool_groups": []},
+    {"id": "demo-italian", "name": "italian_name", "description": "italian_description", "icon": "languages", "display_mode": "ICON", "grid_x": 2, "grid_y": 3, "tool_groups": []}
+  ]
+}

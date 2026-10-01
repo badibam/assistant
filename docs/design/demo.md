@@ -12,9 +12,9 @@ Chaque description de zone et d'outil dit sa place dans l'ensemble : ce qu'il li
 
 ## Les zones
 
-Toutes dans le groupe de zones « Démo », chaque tuile de zone dans un mode différent.
+Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles dans les quatre modes qu'une zone prend (`ZonePositions.MODES`) : Course et Travail côte à côte en CONDENSED, Cuisine en LINE dessous, Balcon en MINIMAL et Italien en ICON en bas.
 
-### Course (tuile FULL) — groupes Entraînement, Corps, Analyse
+### Course (tuile CONDENSED) — groupes Entraînement, Corps, Analyse
 
 - Entraînement
   - Sorties : suivi numérique (km), EXTENDED. Champs : Durée (durée), Type (choix : footing, fractionné, sortie longue, côtes), Ressenti (échelle 1–5). ≈ 3 par semaine, sortie longue de 8 à 16 km, semaine creuse au rush. Raccourcis « Footing 8 km », « Fractionné ».
@@ -45,7 +45,7 @@ Toutes dans le groupe de zones « Démo », chaque tuile de zone dans un mode di
 - Hors groupe : automation Menu de la semaine.
 - Variables : `kcal_jour` (formule, Σ quantité × kcal de l'aliment référencé ÷ 100), `objectif_calorique` (constante 2 300).
 
-### Travail (tuile SQUARE) — sans groupes
+### Travail (tuile CONDENSED) — sans groupes
 
 - Heures : suivi durée par chronomètre, EXTENDED. L'entrée porte le client (Studio Brume, Librairie Le Rameau, Mairie de Villeurbanne). Champs : Projet (choix), Facturable (oui/non). 2 à 4 sessions par jour ouvré, la semaine de rush à 50 h. Un chronomètre tourne, lancé 40 min avant l'installation, sur Studio Brume. Un raccourci par client.
 - Tâches : liste avec échéances (`docs/design/list-due-dates.md`), 11 tâches dont 3 cochées. « Relancer la Librairie », échue ce matin, en retard → en attente ; « Rappeler Studio Brume », à l'installation + 1 min — la notification de la première minute ; d'autres avec une échéance à venir ou sans.
@@ -55,7 +55,7 @@ Toutes dans le groupe de zones « Démo », chaque tuile de zone dans un mode di
 - Automation Point du matin.
 - Variable : `heures_semaine` (formule, somme depuis lundi). Ce qu'elle compte d'un chronomètre en cours : celui du code, constaté à l'implémentation et dit dans sa description.
 
-### Balcon (tuile CONDENSED) — sans groupes
+### Balcon (tuile MINIMAL) — sans groupes
 
 - Plantes : donnée structurée, 6 fiches. Champs : Semé le (date), Exposition (choix), Arrosage (texte).
 - Récoltes : suivi numérique (g), LINE, champ Plante (référence vers Plantes). ≈ 25 récoltes à partir de la semaine 5.
@@ -113,6 +113,6 @@ Elles restent actives dans les outils de la démo : la démo les montre. Une dan
 ## Les garanties, en tests
 
 - Chaque config et chaque entrée de la démo passe la validation du schéma de son type d'outil.
-- Couverture : les 9 types d'outils, les 8 types de suivi, les 7 modes de tuile (outils et zones), chaque type de champ parmi les champs à soi, un groupe d'outils, un outil hors groupe, une automation rangée dans un groupe, un outil désactivé, un chronomètre en cours, un message non lu, un élément de liste en retard, une échéance dans la minute, un objectif en cours, une semaine d'objectif manquée.
+- Couverture : les 9 types d'outils, les 8 types de suivi, les 7 modes de tuile d'outil et les 4 de zone, chaque type de champ parmi les champs à soi, un groupe d'outils, un outil hors groupe, une automation rangée dans un groupe, un outil désactivé, un chronomètre en cours, un message non lu, un élément de liste en retard, une échéance dans la minute, un objectif en cours, une semaine d'objectif manquée.
 - Les deux fichiers de textes ont exactement les mêmes clés, et chaque clé que la structure demande existe.
 - Réinstaller ne touche à rien de ce qui n'est pas de la démo, et supprime tout ce qui l'est.

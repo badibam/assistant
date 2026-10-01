@@ -73,6 +73,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
     var showFormat by rememberSaveable { mutableStateOf(false) }
     var showAILimits by rememberSaveable { mutableStateOf(false) }
     var showValidation by rememberSaveable { mutableStateOf(false) }
+    var showDemo by rememberSaveable { mutableStateOf(false) }
     var showUI by rememberSaveable { mutableStateOf(false) }
     var showData by rememberSaveable { mutableStateOf(false) }
     var showLogs by rememberSaveable { mutableStateOf(false) }
@@ -257,6 +258,11 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
             onBack = { showValidation = false }
         )
         return // Exit MainScreen composition when showing Validation settings
+    }
+
+    if (showDemo) {
+        com.assistant.core.ui.screens.settings.DemoSettingsScreen(onBack = { showDemo = false })
+        return
     }
 
     // Show UI settings screen when requested
@@ -490,6 +496,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                     "format" -> showFormat = true
                     "ai_limits" -> showAILimits = true
                     "validation" -> showValidation = true
+                    "demo" -> showDemo = true
                     "ui" -> showUI = true
                     "data" -> showData = true
                     "logs" -> showLogs = true

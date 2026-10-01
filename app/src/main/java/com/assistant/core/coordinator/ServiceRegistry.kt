@@ -18,6 +18,7 @@ import com.assistant.core.ai.services.AISessionService
 import com.assistant.core.ai.services.AIProviderConfigService
 import com.assistant.core.ai.services.AutomationService
 import com.assistant.core.notifications.NotificationService
+import com.assistant.core.demo.DemoService
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.LogManager
 
@@ -44,7 +45,8 @@ class ServiceRegistry(private val context: Context) {
         "ai_sessions" to ::AISessionService,
         "ai_provider_config" to ::AIProviderConfigService,
         "automations" to ::AutomationService,
-        "notifications" to ::NotificationService
+        "notifications" to ::NotificationService,
+        "demo" to ::DemoService
     )
     
     /**

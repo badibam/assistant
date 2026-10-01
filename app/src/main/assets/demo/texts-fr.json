@@ -1,0 +1,18 @@
+{
+  "zone_group": "Démo",
+  "course_name": "Course",
+  "course_description": "Camille prépare un semi-marathon dans six semaines. Les sorties, le renfo et les étirements nourrissent l'objectif de la semaine et les graphiques ; le poids, le sommeil et l'humeur disent comment le corps suit. Démo : ce que vous ajoutez ici disparaît à la prochaine mise à jour.",
+  "course_group_training": "Entraînement",
+  "course_group_body": "Corps",
+  "course_group_analysis": "Analyse",
+  "work_name": "Travail",
+  "work_description": "Camille est graphiste indépendante. Le chronomètre compte les heures par client, les tâches portent leurs échéances, le carnet raconte les projets ; une semaine de rush se lit aussi dans la zone Course. Démo : ce que vous ajoutez ici disparaît à la prochaine mise à jour.",
+  "kitchen_name": "Cuisine",
+  "kitchen_description": "Chaque repas pointe vers une fiche d'aliment ; une variable en tire les calories du jour, qu'un graphique compare à l'objectif. Les courses et les recettes vivent à côté. Démo : ce que vous ajoutez ici disparaît à la prochaine mise à jour.",
+  "kitchen_group_meals": "Repas",
+  "kitchen_group_pantry": "Placard",
+  "balcony_name": "Balcon",
+  "balcony_description": "Tomates, basilic et piments : les fiches des plantes, les récoltes qui pointent vers elles, les rappels d'arrosage et d'engrais, et ce qui a été fait. Démo : ce que vous ajoutez ici disparaît à la prochaine mise à jour.",
+  "italian_name": "Italien",
+  "italian_description": "Une soirée d'italien chaque soir avant le voyage à Rome : un questionnaire, l'objectif de la semaine qui le compte, les phrases utiles et la valise. Démo : ce que vous ajoutez ici disparaît à la prochaine mise à jour."
+}

@@ -85,6 +85,11 @@ fun SettingsDialog(
                 description = s.shared("settings_ui_description")
             ),
             SettingsOption(
+                id = "demo",
+                label = s.shared("settings_demo"),
+                description = s.shared("settings_demo_description")
+            ),
+            SettingsOption(
                 id = "data",
                 label = s.shared("settings_data"),
                 description = s.shared("settings_data_description")

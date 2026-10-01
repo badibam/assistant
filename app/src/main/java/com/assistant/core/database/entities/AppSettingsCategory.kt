@@ -23,6 +23,7 @@ object AppSettingCategories {
     const val AI_LIMITS = "ai_limits"
     const val VALIDATION_CONFIG = "validation_config"
     const val MAIN_SCREEN = "main_screen"
+    const val DEMO = "demo"
 
     // Future categories:
     // const val UI = "ui"

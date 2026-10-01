@@ -46,7 +46,8 @@ object AppSettings {
         AppSettingCategories.FORMAT,
         AppSettingCategories.AI_LIMITS,
         AppSettingCategories.VALIDATION_CONFIG,
-        AppSettingCategories.MAIN_SCREEN
+        AppSettingCategories.MAIN_SCREEN,
+        AppSettingCategories.DEMO
     )
 
     fun nodes(category: String, context: Context): List<SettingNode> {
@@ -96,6 +97,10 @@ object AppSettings {
                         FieldType.TEXT, false, mapOf("length" to TextLength.SHORT.name))),
                     required = true, distinct = true)
             )
+            AppSettingCategories.DEMO -> listOf(
+                field(com.assistant.core.demo.DemoStartup.INSTALL_ON_UPDATE, text("settings_demo_install_on_update"),
+                    text("settings_demo_install_on_update_help"), FieldType.BOOLEAN, required = true)
+            )
             else -> throw IllegalArgumentException("No declaration for settings category '$category'")
         }
     }
@@ -120,6 +125,7 @@ object AppSettings {
             AppSettingCategories.AI_LIMITS -> s.shared("settings_ai_limits")
             AppSettingCategories.VALIDATION_CONFIG -> s.shared("settings_validation")
             AppSettingCategories.MAIN_SCREEN -> s.shared("label_main_screen_config")
+            AppSettingCategories.DEMO -> s.shared("settings_demo")
             else -> throw IllegalArgumentException("No declaration for settings category '$category'")
         }
     }

@@ -36,9 +36,18 @@ import org.json.JSONObject
 /**
  * The screen of one settings category (AppSettings): the form of its declaration, saved through
  * the service, which checks it and says what it refuses.
+ *
+ * @param afterSave What a category does once its settings are saved, with them; the error to
+ *        show, or null. The screen closes either way: the settings are saved.
+ * @param below What a category shows under its form, beside its settings
  */
 @Composable
-fun AppSettingsScreen(category: String, onBack: () -> Unit) {
+fun AppSettingsScreen(
+    category: String,
+    onBack: () -> Unit,
+    afterSave: (suspend (JSONObject) -> String?)? = null,
+    below: @Composable () -> Unit = {}
+) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val coordinator = remember { Coordinator(context) }
@@ -64,11 +73,15 @@ fun AppSettingsScreen(category: String, onBack: () -> Unit) {
         isSaving = true
         scope.launch {
             val result = coordinator.processUserAction("app_config.set", mapOf("category" to category, "settings" to JsonUtils.toMap(settings)))
-            isSaving = false
             if (result.isSuccess) {
-                UI.Toast(context, s.shared("settings_saved"), Duration.SHORT)
+                // Still saving meanwhile: what follows a save may take its time
+                val failed = afterSave?.invoke(settings)
+                isSaving = false
+                if (failed != null) UI.Toast(context, failed, Duration.LONG)
+                else UI.Toast(context, s.shared("settings_saved"), Duration.SHORT)
                 onBack()
             } else {
+                isSaving = false
                 UI.Toast(context, result.error ?: s.shared("error_operation_failed"), Duration.LONG)
             }
         }
@@ -97,6 +110,8 @@ fun AppSettingsScreen(category: String, onBack: () -> Unit) {
                 SettingsForm(nodes, settings, { settings = it }, context)
             }
         }
+
+        below()
 
         UI.FormActions {
             UI.ActionButton(action = ButtonAction.SAVE, enabled = !isSaving && load == LoadState.LOADED, onClick = { save() })

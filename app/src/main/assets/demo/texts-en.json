@@ -1,0 +1,18 @@
+{
+  "zone_group": "Demo",
+  "course_name": "Running",
+  "course_description": "Camille is training for a half marathon in six weeks. Runs, strength work and stretching feed the week's goal and the charts; weight, sleep and mood tell how the body keeps up. Demo: what you add here goes at the next update.",
+  "course_group_training": "Training",
+  "course_group_body": "Body",
+  "course_group_analysis": "Analysis",
+  "work_name": "Work",
+  "work_description": "Camille is a freelance designer. The stopwatch counts the hours per client, the tasks carry their due dates, the notebook tells the projects; a rush week shows in the Running zone too. Demo: what you add here goes at the next update.",
+  "kitchen_name": "Kitchen",
+  "kitchen_description": "Each meal points to a food card; a variable draws the day's calories from them, which a chart sets against the target. The shopping list and the recipes live beside them. Demo: what you add here goes at the next update.",
+  "kitchen_group_meals": "Meals",
+  "kitchen_group_pantry": "Pantry",
+  "balcony_name": "Balcony",
+  "balcony_description": "Tomatoes, basil and chillies: the plants' cards, the harvests pointing to them, the watering and feeding reminders, and what was done. Demo: what you add here goes at the next update.",
+  "italian_name": "Italian",
+  "italian_description": "An Italian evening every night before the trip to Rome: a questionnaire, the week's goal counting it, useful phrases and the suitcase. Demo: what you add here goes at the next update."
+}

@@ -1741,4 +1741,15 @@
     <string name="service_error_tool_keeps_no_entries">Un outil %1$s ne garde pas d\'entrées à lui : il montre celles d\'autres outils.</string>
     <string name="verbalize_unknown_operation">Opération inconnue : %1$s</string>
     <string name="tools_config_error_zone_update">Impossible de déplacer l\'outil dans cette zone</string>
+    <!-- Demo -->
+    <string name="demo_texts_file">texts-fr.json</string>
+    <string name="demo_error_unreadable">La démo n\'a pas pu être lue : %1$s</string>
+    <string name="demo_installed">Démo installée</string>
+    <string name="demo_reinstall_now">Réinstaller maintenant</string>
+    <string name="action_verbalize_demo_install">Installation de la démo</string>
+    <string name="action_verbalize_demo_remove">Suppression de la démo</string>
+    <string name="settings_demo">Démo</string>
+    <string name="settings_demo_description">Un groupe de zones de démonstration, réinstallé à chaque mise à jour</string>
+    <string name="settings_demo_install_on_update">Installer la démo à chaque mise à jour</string>
+    <string name="settings_demo_install_on_update_help">Désactivé, la démo présente est supprimée. Ce que vous ajoutez à la démo disparaît à chaque réinstallation.</string>
 </resources>
