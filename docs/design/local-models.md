@@ -82,9 +82,8 @@ En français, l'émulateur réglé en français : la démo prend la langue du t�
 | GPU 24 Go | `google/gemma-4-31b-it` | 0,09 |
 | Serveur 64-128 Go | `openai/gpt-oss-120b` | 0,037 |
 | Hébergé seulement | `deepseek/deepseek-v4-flash` | 0,042 |
-| Référence, sans forçage (comme en vrai) | `anthropic/claude-sonnet-5.5` | ≈ 2 |
 
-**Coût** : un appel mesuré le 2026-10-01 sur le téléphone (vraies données, pas la démo) envoie 28 682 tokens. Estimé, non mesuré : 3 appels par scénario, soit ≈ 1,7 M tokens par modèle pour 19 scénarios ; de 0,10 à 0,30 $ par modèle libre, ≈ 4 $ pour la référence ; ≈ 5 $ en tout. Un modèle qui raisonne écrit plus que prévu. Le premier modèle passé recale l'estimation.
+**Coût** : un appel mesuré le 2026-10-01 sur le téléphone (vraies données, pas la démo) envoie 28 682 tokens. Estimé, non mesuré : 3 appels par scénario, soit ≈ 1,7 M tokens par modèle pour 19 scénarios ; de 0,10 à 0,30 $ par modèle, ≈ 1 $ en tout. Sans modèle de référence, un scénario qu'aucun modèle ne réussit se relit à la main : le scénario lui-même peut être en cause. Un modèle qui raisonne écrit plus que prévu. Le premier modèle passé recale l'estimation.
 
 Le téléphone : le banc dit si un 3B comprend un prompt de ≈ 29k tokens, pas s'il tourne sur l'appareil avec ce contexte.
 
