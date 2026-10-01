@@ -149,12 +149,13 @@ interface ToolTypeContract {
      * ToolDataService calls it on every create, update and delete of an entry of this tool type,
      * whoever the caller — screen or AI — and stores its answer in the same transaction as the write.
      *
-     * @param entries Every entry of the tool instance as it will stand once the write is done
+     * @param entries Every entry of the tool instance as it will stand once the write is done,
+     *        read only when called: a tool type with no such rule never pays for reading them
      * @param writtenId The entry just created or updated; null after a delete
      * @return The entries whose content must change, the written one included if it must;
      *         empty when the rule already holds
      */
-    fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> = emptyList()
+    suspend fun settleEntries(entries: suspend () -> List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> = emptyList()
 
     /**
      * [config] completed with what only this tool type writes, on every create and update of an

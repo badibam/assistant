@@ -110,7 +110,7 @@ override fun enrichData(data: Map<String, Any>, context: Context): Map<String, A
 **Usage** : Unifié UI + IA, logique pré-persistence sans interception manuelle.
 
 ### settleEntries Pattern
-**Principe** : une règle qui porte sur toutes les entrées d'une instance, et non sur une seule. `ToolDataService` l'appelle à chaque création, modification ou suppression d'une entrée du tooltype, avec toutes les entrées de l'instance telles qu'elles seront après l'écriture, et l'id de l'entrée écrite (null après une suppression). Il enregistre les entrées renvoyées dans la même transaction que l'écriture. Unifié UI + IA, comme enrichData.
+**Principe** : une règle qui porte sur toutes les entrées d'une instance, et non sur une seule. `ToolDataService` l'appelle à chaque création, modification ou suppression d'une entrée du tooltype, avec de quoi lire toutes les entrées de l'instance telles qu'elles seront après l'écriture — lues seulement s'il les demande, un type d'outil sans règle n'en payant pas la lecture —, et l'id de l'entrée écrite (null après une suppression). Il enregistre les entrées renvoyées dans la même transaction que l'écriture. Unifié UI + IA, comme enrichData.
 
 **Ordre manuel** : `ManualOrder` (cœur) garde les positions 0, 1, 2… sans trou ni doublon, sous `state.position`, pour un type d'outil dont l'utilisateur ordonne les entrées à la main (Notes, Liste). Écrire la position p place l'entrée en p et décale les suivantes ; une entrée sans position va en dernier.
 

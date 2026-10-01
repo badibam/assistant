@@ -245,6 +245,6 @@ object TrackingToolType : ToolTypeContract {
     override fun rememberTile(tool: com.assistant.core.database.entities.ToolInstance, open: (com.assistant.core.tools.EntryToOpen) -> Unit): com.assistant.core.tools.ToolTile =
         com.assistant.tools.tracking.ui.rememberTrackingTile(tool)
 
-    override fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =
-        TrackingStopwatch.settle(entries, writtenId)
+    override suspend fun settleEntries(entries: suspend () -> List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =
+        TrackingStopwatch.settle(entries(), writtenId)
 }
