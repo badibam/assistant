@@ -33,7 +33,7 @@ La règle vaut pour tout le projet et vit dans `docs/reference.md`, gardée par 
 ### Opérations CRUD Complètes ToolDataService
 **Opérations disponibles** : create, update, delete, get (avec pagination), get_single (par ID), stats, delete_all, batch_create, batch_update, batch_delete
 
-**Opérations batch** : Toutes les opérations de données IA utilisent par défaut les opérations batch pour efficacité. Les batch réutilisent la logique des opérations unitaires pour cohérence.
+**Opérations batch** : Toutes les opérations de données IA utilisent par défaut les opérations batch pour efficacité. Les batch réutilisent la logique des opérations unitaires pour cohérence. Un batch lit une seule fois les entrées de chaque outil qu'il écrit et les tient à jour en mémoire (noms uniques, règle entre entrées), puis prévient les écrans une fois par outil à sa fin ; son résultat donne chaque refus par sa place dans le batch (`refusals` : `index`, `error`).
 
 ### Gestion des Tokens
 Chaque opération reçoit automatiquement un CancellationToken unique avec création par CommandDispatcher, stockage en ConcurrentHashMap et nettoyage automatique.

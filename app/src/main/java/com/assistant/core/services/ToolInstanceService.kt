@@ -372,7 +372,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (plan.deleted.isEmpty()) return
         // A rule spanning the entries (a manual order) settles again once some are gone
         val toolType = ToolTypeManager.getToolType(tool.tooltype) ?: return
-        toolType.settleEntries(dao.getByToolInstance(tool.id), null).forEach { dao.update(it) }
+        toolType.settleEntries({ dao.getByToolInstance(tool.id) }, null).forEach { dao.update(it) }
     }
     
     /**

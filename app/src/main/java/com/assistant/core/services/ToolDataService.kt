@@ -80,7 +80,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
     }
 
-    private suspend fun createEntry(params: JSONObject, token: CancellationToken): OperationResult {
+    /** @param batch The batch the entry belongs to, which keeps the tool's entries and notifies once at its end */
+    private suspend fun createEntry(params: JSONObject, token: CancellationToken, batch: Batch? = null): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("tool_instance_id")
@@ -145,21 +146,18 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
 
         val dao = getToolDataDao()
+        val known = batch?.entriesOf(toolInstanceId)
         try {
-            storeSettled(tooltype, dao.getByToolInstance(toolInstanceId) + entity, entity.id, checked.grown(grownConfig)) { settled ->
-                refuseTakenName(checked, entity)
+            val stored = storeSettled(tooltype, { (known?.all() ?: dao.getByToolInstance(toolInstanceId)) + entity }, entity.id, checked.grown(grownConfig)) { settled ->
+                refuseTakenName(checked, entity, known)
                 dao.insert(settled ?: entity)
             }
+            known?.putAll(stored, entity)
         } catch (taken: NameTaken) {
             return OperationResult.error(taken.message ?: "")
         }
 
-        // Notify UI of data change in this tool instance, and of its config when the entry grew it
-        val zoneId = getZoneIdForTool(toolInstanceId)
-        if (zoneId != null) {
-            DataChangeNotifier.notifyToolDataChanged(toolInstanceId, zoneId)
-            if (grownConfig != null) DataChangeNotifier.notifyToolsChanged(zoneId)
-        }
+        notifyWritten(toolInstanceId, grownConfig != null, batch)
 
         return OperationResult.success(
             data = mapOf(
@@ -175,50 +173,120 @@ class ToolDataService(private val context: Context) : ExecutableService {
     /**
      * Refuses [entry] when its tool type keeps names unique (EntryFields.nameUnique) and another
      * entry of the tool has the same one, the case and the spaces around not counted, naming it.
-     * Run inside the write's transaction.
+     * Run inside the write's transaction; [known], a batch's entries of the tool, are looked up by
+     * name instead of reading the tool's entries.
      */
-    private suspend fun refuseTakenName(target: WriteTarget.Ready, entry: ToolDataEntity) {
+    private suspend fun refuseTakenName(target: WriteTarget.Ready, entry: ToolDataEntity, known: ToolEntries? = null) {
         val name = entry.name ?: return
         val declared = ToolTypeManager.getToolType(target.tool.tooltype)?.getEntryFields(target.config, context) ?: return
         if (!declared.nameUnique) return
         val key = com.assistant.core.fields.CoreFields.uniqueKey(name)
-        getToolDataDao().getByToolInstance(entry.toolInstanceId)
-            .firstOrNull { it.id != entry.id && it.name != null && com.assistant.core.fields.CoreFields.uniqueKey(it.name) == key }
-            ?.let { throw NameTaken(s.shared("service_error_name_taken").format(it.name, it.id)) }
+        val taken = if (known != null) known.named(key, except = entry.id)
+            else getToolDataDao().getByToolInstance(entry.toolInstanceId)
+                .firstOrNull { it.id != entry.id && it.name != null && com.assistant.core.fields.CoreFields.uniqueKey(it.name) == key }
+        taken?.let { throw NameTaken(s.shared("service_error_name_taken").format(it.name, it.id)) }
+    }
+
+    /**
+     * The entries of one tool as a batch writes them: read once, then kept up to date with what
+     * the batch stores, found by id and by name. A write in a batch reads them here: reading the
+     * tool at each write made a batch of n entries cost n times the tool's size.
+     */
+    private class ToolEntries(entries: List<ToolDataEntity>) {
+        private val byId = LinkedHashMap<String, ToolDataEntity>().apply { entries.forEach { put(it.id, it) } }
+        private val byName = HashMap<String, MutableSet<String>>().apply {
+            entries.forEach { e -> e.name?.let { getOrPut(com.assistant.core.fields.CoreFields.uniqueKey(it)) { mutableSetOf() }.add(e.id) } }
+        }
+
+        fun all(): List<ToolDataEntity> = byId.values.toList()
+
+        fun byId(id: String): ToolDataEntity? = byId[id]
+
+        /** An entry other than [except] whose name has the key [key]. */
+        fun named(key: String, except: String): ToolDataEntity? =
+            byName[key]?.firstOrNull { it != except }?.let { byId[it] }
+
+        /** [written] as stored, the tool type's version of it if [settled] has one, and the others it settled. */
+        fun putAll(settled: Map<String, ToolDataEntity>, written: ToolDataEntity) {
+            put(settled[written.id] ?: written)
+            settled.values.filter { it.id != written.id }.forEach { put(it) }
+        }
+
+        private fun put(entry: ToolDataEntity) {
+            byId[entry.id]?.name?.let { byName[com.assistant.core.fields.CoreFields.uniqueKey(it)]?.remove(entry.id) }
+            byId[entry.id] = entry
+            entry.name?.let { byName.getOrPut(com.assistant.core.fields.CoreFields.uniqueKey(it)) { mutableSetOf() }.add(entry.id) }
+        }
+    }
+
+    /** What a batch writes: the entries of each tool it touches, and the tools to notify at its end. */
+    private inner class Batch {
+        private val tools = HashMap<String, ToolEntries>()
+        private val written = mutableSetOf<String>()
+        private val grown = mutableSetOf<String>()
+
+        suspend fun entriesOf(toolInstanceId: String): ToolEntries =
+            tools.getOrPut(toolInstanceId) { ToolEntries(getToolDataDao().getByToolInstance(toolInstanceId)) }
+
+        fun wrote(toolInstanceId: String, configGrown: Boolean) {
+            written.add(toolInstanceId)
+            if (configGrown) grown.add(toolInstanceId)
+        }
+
+        /** Each tool written notified once. */
+        suspend fun notifyAll() = written.forEach { notifyWritten(it, it in grown, null) }
+    }
+
+    /**
+     * The screens told that [toolInstanceId]'s entries changed, and its config when a write grew
+     * it; inside [batch], kept for its end.
+     */
+    private suspend fun notifyWritten(toolInstanceId: String, configGrown: Boolean, batch: Batch?) {
+        if (batch != null) return batch.wrote(toolInstanceId, configGrown)
+        val zoneId = getZoneIdForTool(toolInstanceId) ?: return
+        DataChangeNotifier.notifyToolDataChanged(toolInstanceId, zoneId)
+        if (configGrown) DataChangeNotifier.notifyToolsChanged(zoneId)
     }
 
     /**
      * Store one write together with what its tool type rewrites around it, all or nothing.
      *
-     * [after] is the tool instance's entries as they stand once the write is done, [writtenId] the
-     * entry created or updated (null after a delete). [write] stores the write itself, handed the
-     * version the tool type settled it to, or null when it left it as it was. [toolConfig] is the
-     * tool with its config grown by an open choice, stored in the same transaction.
+     * [after] gives the tool instance's entries as they stand once the write is done, read only
+     * when the tool type keeps a rule over them; [writtenId] is the entry created or updated (null
+     * after a delete). [write] stores the write itself, handed the version the tool type settled
+     * it to, or null when it left it as it was. [toolConfig] is the tool with its config grown by
+     * an open choice, stored in the same transaction.
+     *
+     * @return The entries the tool type settled, by id, each stored as it is here
      */
     private suspend fun storeSettled(
         tooltype: String,
-        after: List<ToolDataEntity>,
+        after: suspend () -> List<ToolDataEntity>,
         writtenId: String?,
         toolConfig: ToolInstance? = null,
         write: suspend (settled: ToolDataEntity?) -> Unit
-    ) {
+    ): Map<String, ToolDataEntity> {
+        val now = System.currentTimeMillis()
+        // The others the rule changed are stored with the time of this write
         val settled = ToolTypeManager.getToolType(tooltype)
             ?.settleEntries(after, writtenId)
+            ?.map { if (it.id == writtenId) it else it.copy(updatedAt = now) }
             ?.associateBy { it.id }
             ?: emptyMap()
         val dao = getToolDataDao()
-        val now = System.currentTimeMillis()
 
         AppDatabase.getDatabase(context).withTransaction {
             toolConfig?.let { AppDatabase.getDatabase(context).toolInstanceDao().updateToolInstance(it) }
             write(writtenId?.let { settled[it] })
             settled.values
                 .filter { it.id != writtenId }
-                .forEach { dao.update(it.copy(updatedAt = now)) }
+                .forEach { dao.update(it) }
         }
+        return settled
     }
 
-    private suspend fun updateEntry(params: JSONObject, token: CancellationToken): OperationResult {
+    /** @param batch The batch the entry belongs to, which keeps the tool's entries and notifies once at its end */
+    private suspend fun updateEntry(params: JSONObject, token: CancellationToken, batch: Batch? = null): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val entryId = params.optString("id")
@@ -295,23 +363,21 @@ class ToolDataService(private val context: Context) : ExecutableService {
         checkReferences(checked, updatedEntity.data, updatedEntity.extra, before = existingEntity)
             ?.let { return OperationResult.error(it) }
 
-        val after = dao.getByToolInstance(existingEntity.toolInstanceId)
-            .map { if (it.id == updatedEntity.id) updatedEntity else it }
+        val known = batch?.entriesOf(existingEntity.toolInstanceId)
+        val after: suspend () -> List<ToolDataEntity> = {
+            (known?.all() ?: dao.getByToolInstance(existingEntity.toolInstanceId)).map { if (it.id == updatedEntity.id) updatedEntity else it }
+        }
         try {
-            storeSettled(existingEntity.tooltype, after, updatedEntity.id, checked.grown(grownConfig)) { settled ->
-                refuseTakenName(checked, updatedEntity)
+            val stored = storeSettled(existingEntity.tooltype, after, updatedEntity.id, checked.grown(grownConfig)) { settled ->
+                refuseTakenName(checked, updatedEntity, known)
                 dao.update(settled ?: updatedEntity)
             }
+            known?.putAll(stored, updatedEntity)
         } catch (taken: NameTaken) {
             return OperationResult.error(taken.message ?: "")
         }
 
-        // Notify UI of data change in this tool instance, and of its config when the entry grew it
-        val zoneId = getZoneIdForTool(existingEntity.toolInstanceId)
-        if (zoneId != null) {
-            DataChangeNotifier.notifyToolDataChanged(existingEntity.toolInstanceId, zoneId)
-            if (grownConfig != null) DataChangeNotifier.notifyToolsChanged(zoneId)
-        }
+        notifyWritten(existingEntity.toolInstanceId, grownConfig != null, batch)
 
         return OperationResult.success(
             data = mapOf(
@@ -336,8 +402,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
         ToolTypeManager.getToolType(entity.tooltype)?.refuseChange(entity, context)?.let { return OperationResult.error(it) }
 
-        val after = dao.getByToolInstance(entity.toolInstanceId).filter { it.id != entryId }
-        storeSettled(entity.tooltype, after, null) {
+        storeSettled(entity.tooltype, { dao.getByToolInstance(entity.toolInstanceId).filter { it.id != entryId } }, null) {
             dao.deleteById(entryId)
         }
 
@@ -551,11 +616,13 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("tool_instance_id, entries"))
         }
 
-        val dao = getToolDataDao()
         val createdIds = mutableListOf<String>()
         var successCount = 0
         var failureCount = 0
         val failures = mutableListOf<String>() // Track individual failure messages
+        // Each refusal by the entry's place in the batch, for a caller that answers line by line
+        val refusals = mutableListOf<Map<String, Any>>()
+        val batch = Batch()
 
         // Process each entry
         for (i in 0 until entriesArray.length()) {
@@ -567,27 +634,31 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 val singleParams = BatchEntryParams.forCreate(entryJson, toolInstanceId)
 
                 // Use existing createEntry logic
-                val result = createEntry(singleParams, token)
+                val result = createEntry(singleParams, token, batch)
 
                 if (result.success) {
                     result.data?.get("id")?.let { createdIds.add(it.toString()) }
                     successCount++
-                    LogManager.service("Batch entry $i created successfully", "DEBUG")
                 } else {
                     val error = "Entry $i: ${result.error ?: "unknown error"}"
                     failures.add(error)
+                    refusals.add(mapOf("index" to i, "error" to (result.error ?: "")))
                     failureCount++
                     LogManager.service("Batch create failed for entry $i: ${result.error}", "WARN")
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 val error = "Entry $i: ${e.message}"
                 failures.add(error)
+                refusals.add(mapOf("index" to i, "error" to (e.message ?: "")))
                 failureCount++
                 LogManager.service("Batch create exception for entry $i: ${e.message}", "ERROR", e)
             }
         }
 
-        // Note: No notification here - createEntry() already notifies for each entry
+        // Each tool written notified once, at the end
+        batch.notifyAll()
 
         // MAJOR: Return error if ALL entries failed (AI must know about total failure)
         // Return success with visible counts if partial success (AI can parse failed_count)
@@ -611,6 +682,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         return OperationResult.success(mapOf(
             "created_count" to successCount,
             "failed_count" to failureCount,
+            "refusals" to refusals,
             "ids" to createdIds,
             "tool_instance_name" to toolInstanceId // For CommandExecutor system messages
         ))
@@ -629,12 +701,14 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("entries"))
         }
 
-        val dao = getToolDataDao()
         var successCount = 0
         var failureCount = 0
 
         // Process each entry
         val failures = mutableListOf<String>() // Track individual failure messages
+        // Each refusal by the entry's place in the batch, for a caller that answers line by line
+        val refusals = mutableListOf<Map<String, Any>>()
+        val batch = Batch()
 
         for (i in 0 until entriesArray.length()) {
             if (token.isCancelled) return OperationResult.cancelled()
@@ -646,6 +720,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (entryId.isEmpty()) {
                     val error = "Entry $i: missing id"
                     failures.add(error)
+                    refusals.add(mapOf("index" to i, "error" to s.shared("service_error_missing_id")))
                     LogManager.service(
                         "Batch update failed for entry $i: missing id",
                         "WARN"
@@ -657,22 +732,26 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 val singleParams = BatchEntryParams.forUpdate(entryJson, entryId)
 
                 // Use existing updateEntry logic
-                val result = updateEntry(singleParams, token)
+                val result = updateEntry(singleParams, token, batch)
 
                 if (result.success) {
                     successCount++
                 } else {
                     val error = "Entry $i (id=$entryId): ${result.error ?: "unknown error"}"
                     failures.add(error)
+                    refusals.add(mapOf("index" to i, "error" to (result.error ?: "")))
                     LogManager.service(
                         "Batch update failed for entry $i (id=$entryId): ${result.error}",
                         "WARN"
                     )
                     failureCount++
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 val error = "Entry $i: ${e.message}"
                 failures.add(error)
+                refusals.add(mapOf("index" to i, "error" to (e.message ?: "")))
                 LogManager.service(
                     "Batch update exception for entry $i: ${e.message}",
                     "ERROR",
@@ -682,7 +761,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
             }
         }
 
-        // Note: No notification here - updateEntry() already notifies for each entry
+        // Each tool written notified once, at the end
+        batch.notifyAll()
 
         // MAJOR: Return error if ALL entries failed (AI must know about total failure)
         // Return success with visible counts if partial success (AI can parse failed_count)
@@ -705,7 +785,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         return OperationResult.success(mapOf(
             "updated_count" to successCount,
-            "failed_count" to failureCount
+            "failed_count" to failureCount,
+            "refusals" to refusals
         ))
     }
 
@@ -898,8 +979,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             ?.let { return OperationResult.error(it) }
 
         val dao = getToolDataDao()
-        val after = dao.getByToolInstance(updated.toolInstanceId).map { if (it.id == updated.id) updated else it }
-        storeSettled(updated.tooltype, after, updated.id) { settled -> dao.update(settled ?: updated) }
+        storeSettled(updated.tooltype, { dao.getByToolInstance(updated.toolInstanceId).map { if (it.id == updated.id) updated else it } }, updated.id) { settled -> dao.update(settled ?: updated) }
 
         getZoneIdForTool(updated.toolInstanceId)?.let { DataChangeNotifier.notifyToolDataChanged(updated.toolInstanceId, it) }
         return OperationResult.success(result)
