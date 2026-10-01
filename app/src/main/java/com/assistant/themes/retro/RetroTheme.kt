@@ -721,7 +721,7 @@ object RetroTheme : ThemeContract {
             } else {
                 val isPassword = fieldType == FieldType.PASSWORD
                 var revealed by remember { mutableStateOf(false) }
-                Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true) {
+                Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, minRows = WORD_ROWS) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         BasicTextField(
                             value = value,
@@ -763,7 +763,7 @@ object RetroTheme : ThemeContract {
         Column(verticalArrangement = Arrangement.spacedBy(grid.dp(3))) {
             FieldLabel(label, required)
             Pressable(onClick = { open = true }) { pressed ->
-                Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, pressed = pressed) {
+                Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, minRows = WORD_ROWS, pressed = pressed) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.weight(1f)) { Line(selected, grid.text, s.ink.srgb, maxLines = 1) }
                         Line(ARROW_DOWN.toString(), grid.text, s.dim.srgb)
@@ -877,7 +877,7 @@ object RetroTheme : ThemeContract {
                         modifier = if (compact) Modifier else Modifier.weight(1f)
                     ) { pressed ->
                         val fill = if (compact) Modifier else Modifier.fillMaxWidth()
-                        Framed(modifier = fill, input = !chosen, compact = true, pressed = pressed) {
+                        Framed(modifier = fill, input = !chosen, compact = true, minRows = WORD_ROWS, pressed = pressed) {
                             Box(modifier = fill, contentAlignment = Alignment.Center) {
                                 Line(text, if (chosen) grid.text else grid.thin, (if (chosen) retroColors.panel.strong else retroSurface.dim).srgb)
                             }
@@ -1051,8 +1051,8 @@ object RetroTheme : ThemeContract {
     }
 
     /**
-     * A button's word in three frame rows: four pixels of border, then five and six of air around its
-     * fourteen rows, where two left it touching the border.
+     * A button's word, a field's line, a yes or no in three frame rows: four pixels of border, then
+     * five and six of air around its fourteen rows, where two left it touching the border.
      */
     private val WORD_ROWS = 3
 
