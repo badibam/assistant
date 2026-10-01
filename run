@@ -457,6 +457,16 @@ def task_clean():
     return gradle("clean")
 
 
+def task_bench(*args):
+    """Free models played on the app's scenarios, on the emulator (docs/design/local-models.md).
+
+    Bare, it asks which models and levels and shows the cost before playing; with arguments,
+    they go to scripts/bench.py as they are.
+    """
+    return subprocess.run([sys.executable, str(ROOT / "scripts" / "bench.py"), *args], cwd=ROOT,
+                          check=False).returncode
+
+
 ACTIONS = {
     "compile": task_compile,
     "test": task_test,
@@ -468,6 +478,7 @@ ACTIONS = {
     "release": task_release,
     "install-release": task_install_release,
     "db": task_db,
+    "bench": task_bench,
     "clean": task_clean,
 }
 
@@ -482,6 +493,7 @@ LABELS = {
     "release": "release    assemble the signed release APK",
     "install-release": "install-release   assemble, install and start the release",
     "db": "db         back up or restore the device database",
+    "bench": "bench      free models played on the app's scenarios, on the emulator",
     "clean": "clean      drop build outputs",
 }
 
@@ -523,7 +535,7 @@ def menu():
     choices = [Separator("Build")]
     choices += [Choice(LABELS[k], k) for k in ("compile", "strings", "build", "install")]
     choices += [Separator("Device")]
-    choices += [Choice(LABELS[k], k) for k in ("logs", "devices", "db")]
+    choices += [Choice(LABELS[k], k) for k in ("logs", "devices", "db", "bench")]
     choices += [Separator("Release")]
     choices += [Choice(LABELS[k], k) for k in ("release", "install-release")]
     choices += [Separator(""), Choice(LABELS["clean"], "clean")]

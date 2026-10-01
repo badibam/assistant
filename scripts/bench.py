@@ -195,8 +195,53 @@ def model_dir(model):
     return model.replace("/", "__")
 
 
+# Campaign 1's models, one per class of machine (docs/design/local-models.md)
+CAMPAIGN_MODELS = (
+    ("téléphone", "mistralai/ministral-3b-2512"),
+    ("portable 32 Go", "qwen/qwen3.6-35b-a3b"),
+    ("GPU 24 Go", "google/gemma-4-31b-it"),
+    ("serveur 64-128 Go", "openai/gpt-oss-120b"),
+    ("hébergé seulement", "deepseek/deepseek-v4-flash"),
+)
+# For the estimate shown before playing: tokens sent per scenario, measured on the phone
+# (one call ≈ 29k tokens) times calls per scenario, assumed
+ESTIMATED_TOKENS_PER_PLAY = 3 * 29_000
+
+
+def ask():
+    """The models and levels to play, chosen in a menu, with the estimated cost confirmed first."""
+    try:
+        import questionary
+    except ImportError:
+        sys.exit("questionary is missing: sudo apt install python3-questionary\nOr: scripts/bench.py run <model> ...")
+    models = questionary.checkbox("Modèles", choices=[
+        questionary.Choice(f"{model}  ({machine})", model, checked=True) for machine, model in CAMPAIGN_MODELS]).ask()
+    if not models:
+        return None
+    forcings = questionary.checkbox("Forçage", choices=[
+        questionary.Choice(f, f, checked=f in CAMPAIGN_FORCINGS) for f in ("none", "json", "schema")]).ask()
+    if not forcings:
+        return None
+    table = prices()
+    plays = len(SCENARIOS) * len(forcings)
+    estimate = sum(plays * ESTIMATED_TOKENS_PER_PLAY * table[m][0] for m in models)
+    print(f"{plays * len(models)} scénarios joués, environ {plays * len(models) * 45 // 60} min, "
+          f"coût estimé ≈ {estimate:.2f} $ (au plus, sans le cache)")
+    if not questionary.confirm("Lancer ?", default=False).ask():
+        return None
+    return models, forcings
+
+
 def main(argv):
-    if not argv or argv[0] not in ("play", "run"):
+    if not argv:
+        chosen = ask()
+        if chosen is None:
+            return 0
+        key = api_key()
+        prepare_device()
+        campaign(chosen[0], chosen[1], list(SCENARIOS), key)
+        return 0
+    if argv[0] not in ("play", "run"):
         print(__doc__)
         return 2
     key = api_key()
