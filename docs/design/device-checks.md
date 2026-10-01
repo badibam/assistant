@@ -9,6 +9,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Chat IA
 
+- Actions coupées : pendant un import long lancé par l'IA, « Stop » arrête tout de suite, aucune fiche n'est écrite, un message dit que l'action en cours a été abandonnée, et une nouvelle session s'ouvre. Fermer l'app de force pendant l'import puis la rouvrir : la session montre « Actions coupées par la fermeture de l'app… » et revient au repos, sans relancer l'import.
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
 - « Importe ce fichier dans une nouvelle table » avec un CSV joint : l'IA crée la table, puis au tour suivant `IMPORT_PLAN` et `IMPORT_DATA` ; la carte de validation nomme le fichier, ses lignes et la table ; la table a ses colonnes et ses lignes.
 - Le message de départ d'une automation ne propose pas le trombone.
