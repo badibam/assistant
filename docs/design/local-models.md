@@ -17,7 +17,9 @@ La dette du `manifest.md` (adresse OpenAI en dur, prix d'un serveur inconnu) se 
 
 ## Le banc
 
-- **L'app joue les scénarios elle-même**, sur l'émulateur ou le téléphone, par un point d'entrée de débogage : une zone de test remise à zéro, la vraie session, le vrai pipeline, autant de tours qu'il en faut. Aucun résultat n'est figé ni simulé : seul l'app sait ce que répond une requête, et deux requêtes justes écrites par un modèle ne sont presque jamais identiques.
+- **L'app joue les scénarios elle-même** : la vraie session, le vrai pipeline, autant de tours qu'il en faut.
+- **Lancement** : des tests d'instrumentation (`androidTest/`), un par scénario, le modèle et le niveau de forçage en arguments, lancés par `./run bench`, qui rassemble les résultats dans le terminal et un fichier. Rien dans l'app livrée. **Sur l'émulateur seulement** : ces tests écrivent dans la base de l'app.
+- **Base de départ : la démo** (`docs/design/demo.md`). Avant chaque scénario : base vidée, fournisseur reconfiguré depuis les arguments, démo installée (`demo.install`). Le modèle cherche le bon outil parmi une vingtaine, comme en vrai, et les scénarios s'écrivent contre des données connues. Le banc se construit après la démo. Aucun résultat n'est figé ni simulé : seul l'app sait ce que répond une requête, et deux requêtes justes écrites par un modèle ne sont presque jamais identiques.
 - **Deux adresses** :
   - OpenRouter, pour cartographier les capacités par taille de modèle : une clé, des centaines de modèles libres, un filtre sur l'hébergeur (forçage par schéma accepté) et sur la compression du modèle (pour tester un modèle compressé comme il le serait sur la machine visée).
   - Ollama sur l'ordinateur, pour la vitesse avec le vrai prompt : servi en https (ci-dessus), donc pas par l'adresse `10.0.2.2` de l'émulateur, qui est en http. Le téléphone comme machine de calcul demande un modèle dans l'app elle-même ; hors de ce banc.
