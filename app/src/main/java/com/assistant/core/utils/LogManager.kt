@@ -5,7 +5,9 @@ import android.util.Log
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.LogEntry
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Centralized logging manager
@@ -56,6 +58,20 @@ object LogManager {
     private const val MAX_THROWABLE_LENGTH = 5000
 
     /**
+     * The lines waiting to be written, at most [PENDING_CAPACITY], by one writer.
+     *
+     * While a long transaction holds the database (an import of 64 000 lines), no line can be
+     * written: a task per line kept every one waiting with its text, until the app ran out of
+     * memory. Past the capacity a line goes to the console only, and the number of those is
+     * written once the database is free again ([dropped]).
+     */
+    private const val PENDING_CAPACITY = 2_000
+    private val pending = Channel<LogEntry>(PENDING_CAPACITY)
+    private val dropped = AtomicInteger(0)
+    @Volatile
+    private var writerStarted = false
+
+    /**
      * Check purge every N insertions (probabilistic to reduce DB queries)
      * More aggressive than before (1 in 5 instead of 1 in 10)
      */
@@ -71,6 +87,38 @@ object LogManager {
      */
     fun initialize(appContext: Context) {
         context = appContext.applicationContext
+        startWriter(appContext.applicationContext)
+    }
+
+    /** The one task that writes the pending lines, started once whatever the activity recreations. */
+    @Synchronized
+    private fun startWriter(ctx: Context) {
+        if (writerStarted) return
+        writerStarted = true
+        GlobalScope.launch {
+            val database = AppDatabase.getDatabase(ctx)
+            for (entry in pending) {
+                try {
+                    dropped.getAndSet(0).takeIf { it > 0 }?.let { lost ->
+                        database.logDao().insertLog(LogEntry(
+                            timestamp = System.currentTimeMillis(), level = "WARN", tag = "Log",
+                            message = "$lost log lines not written: the database was held too long", throwableMessage = null
+                        ))
+                    }
+                    database.logDao().insertLog(entry)
+
+                    // Probabilistic purge check (1 in PURGE_CHECK_PROBABILITY chance)
+                    // This avoids checking on every insertion, reducing DB load
+                    insertionCounter++
+                    if (insertionCounter % PURGE_CHECK_PROBABILITY == 0) {
+                        purgeOldLogsIfNeeded(database)
+                    }
+                } catch (e: Exception) {
+                    // Silent failure - don't log errors from logging system to avoid infinite loop
+                    println("LogManager: Failed to persist log to database: ${e.message}")
+                }
+            }
+        }
     }
 
     fun schema(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
@@ -159,50 +207,21 @@ object LogManager {
         .replace("\uE001", "\\\\\"")    // Restore \\\" (double escape)
 
     /**
-     * Persist log entry to database with automatic purge
-     * Non-blocking (uses GlobalScope for fire-and-forget)
+     * Queue a log entry for the writer ([pending]); a full queue counts it as dropped.
      *
-     * Features:
-     * - Inserts log to database with size limits to prevent overflow
-     * - Truncates stack traces to prevent CursorWindow overflow (messages arrive already cut)
-     * - Probabilistic purge check (1 in N chance) to limit DB queries
-     * - Keeps each class of levels under its own ceiling (MAX_CHATTY_LOGS, MAX_KEPT_LOGS)
-     *
-     * Note: GlobalScope is appropriate here because logs are:
-     * - Fire-and-forget operations
-     * - Not tied to any specific lifecycle
-     * - Should persist even if activity is destroyed
+     * Logs are fire-and-forget: not tied to any screen's lifecycle, kept even if the activity is
+     * destroyed. The stack trace is cut here, the message arrives already cut.
      */
     private fun persistToDatabase(tag: String, message: String, level: String, throwable: Throwable?) {
-        val ctx = context ?: return  // Not initialized yet, skip persistence
-
-        GlobalScope.launch {
-            try {
-                val database = AppDatabase.getDatabase(ctx)
-
-                // Truncate throwable stack trace if too long (the message arrives already cut)
-                val truncatedThrowable = throwable?.stackTraceToString()?.let { truncate(it, MAX_THROWABLE_LENGTH) }
-
-                val logEntry = LogEntry(
-                    timestamp = System.currentTimeMillis(),
-                    level = level.uppercase(),
-                    tag = tag,
-                    message = message,
-                    throwableMessage = truncatedThrowable
-                )
-                database.logDao().insertLog(logEntry)
-
-                // Probabilistic purge check (1 in PURGE_CHECK_PROBABILITY chance)
-                // This avoids checking on every insertion, reducing DB load
-                insertionCounter++
-                if (insertionCounter % PURGE_CHECK_PROBABILITY == 0) {
-                    purgeOldLogsIfNeeded(database)
-                }
-            } catch (e: Exception) {
-                // Silent failure - don't log errors from logging system to avoid infinite loop
-                println("LogManager: Failed to persist log to database: ${e.message}")
-            }
-        }
+        if (context == null) return  // Not initialized yet, skip persistence
+        val entry = LogEntry(
+            timestamp = System.currentTimeMillis(),
+            level = level.uppercase(),
+            tag = tag,
+            message = message,
+            throwableMessage = throwable?.stackTraceToString()?.let { truncate(it, MAX_THROWABLE_LENGTH) }
+        )
+        if (pending.trySend(entry).isFailure) dropped.incrementAndGet()
     }
 
     /**
