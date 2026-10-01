@@ -29,7 +29,8 @@ ROOT = Path(__file__).resolve().parent.parent
 # The main checkout, where .env lives, whichever worktree runs this
 MAIN_ROOT = Path(subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
                                 cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()).parent
-OUT = ROOT / "tmp" / "bench"
+# In the main checkout: a worktree's tmp/ goes with it when it is removed
+OUT = MAIN_ROOT / "tmp" / "bench"
 
 APP = "com.assistant.debug"
 RUNNER = f"{APP}.test/androidx.test.runner.AndroidJUnitRunner"
