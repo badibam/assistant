@@ -1783,5 +1783,5 @@
     <string name="settings_demo">Démo</string>
     <string name="settings_demo_description">Un groupe de zones de démonstration, réinstallé à chaque mise à jour</string>
     <string name="settings_demo_install_on_update">Installer la démo à chaque mise à jour</string>
-    <string name="settings_demo_install_on_update_help">Désactivé, la démo présente est supprimée. Ce que vous ajoutez à la démo disparaît à chaque réinstallation.</string>
+    <string name="settings_demo_install_on_update_help">Activé, la démo s\'installe à la prochaine mise à jour ; désactivé, la démo présente est supprimée. Ce que vous ajoutez à la démo disparaît à chaque réinstallation.</string>
 </resources>

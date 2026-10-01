@@ -102,9 +102,9 @@ Elles restent actives dans les outils de la démo : la démo les montre. Une dan
 - Reconnaissance : tout ce que la démo crée a un identifiant préfixé `demo-` (zones, outils, entrées, variables, automations, sessions, messages). Réinstaller supprime d'abord tout ce qui porte le préfixe, plus ce qui vit dans une zone ou un outil `demo-` (entrées saisies par l'utilisateur, outil ajouté dans une zone de démo).
 - Groupe : « Démo » s'ajoute à `main_screen.zone_groups` s'il n'y est pas, et n'en est jamais retiré.
 - Déclencheur : au démarrage, si `PackageInfo.lastUpdateTime` diffère de celui gardé, réinstaller puis garder le nouveau. Une première installation reçoit la démo. Avant l'accueil, avec un écran d'attente.
-- Une transaction : un échec n'écrit rien, va aux journaux et s'affiche une fois ; l'app démarre sans démo.
-- Réglages, catégorie Démo : « Installer la démo à chaque mise à jour » (oui par défaut ; non supprime la démo présente) ; bouton « Réinstaller maintenant », qui la remet à flot à l'instant.
-- Opération `demo.install` du dispatcher, qui écrit par la base dans une transaction, comme l'import de sauvegarde.
+- Toute la démo ou rien : un échec supprime ce qui a été construit, va aux journaux et s'affiche une fois ; l'app démarre sans démo.
+- Réglages, catégorie Démo : « Installer la démo à chaque mise à jour » (oui par défaut ; l'activer attend la prochaine mise à jour, le désactiver supprime la démo présente) ; « Réinstaller maintenant », qui la remet à flot à l'instant ; « Supprimer la démo », après confirmation, sans toucher au réglage.
+- Opération `demo.install` du dispatcher, qui construit la démo par les services, avec l'origine de l'app (seule à pouvoir donner un identifiant `demo-`) ; une étape refusée arrête tout et supprime ce qui a été construit, en nommant l'étape. Sa progression s'affiche au démarrage comme depuis les réglages.
 
 ## La forme
 

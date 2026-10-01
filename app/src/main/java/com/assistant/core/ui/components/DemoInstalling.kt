@@ -19,26 +19,35 @@ import com.assistant.core.ui.UI
 
 /**
  * The screen the app shows at its start while the demo is checked: the wheel alone, and once an
- * install runs, what it does and how far it is (DemoProgress).
+ * install runs, what it does and how far it is.
  */
 @Composable
 fun DemoInstalling() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        DemoInstallProgress()
+    }
+}
+
+/**
+ * The wheel, and under it, while an install of the demo runs, what it does and how far it is
+ * (DemoProgress): at the app's start and from the demo's settings alike.
+ */
+@Composable
+fun DemoInstallProgress() {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val step by DemoProgress.step.collectAsState()
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            UI.LoadingIndicator()
-            step?.let { current ->
-                UI.Text(s.shared("demo_installing"), TextType.SUBTITLE)
-                UI.Text(when (current.phase) {
-                    DemoProgress.Phase.ZONES -> s.shared("demo_phase_zones")
-                    DemoProgress.Phase.TOOLS -> s.shared("demo_phase_tools").format(current.done.toString(), current.total.toString())
-                    DemoProgress.Phase.ENTRIES -> s.shared("demo_phase_entries").format(current.done.toString(), current.total.toString())
-                    DemoProgress.Phase.GOALS -> s.shared("demo_phase_goals")
-                    DemoProgress.Phase.AUTOMATIONS -> s.shared("demo_phase_automations")
-                }, TextType.BODY)
-            }
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        UI.LoadingIndicator()
+        step?.let { current ->
+            UI.Text(s.shared("demo_installing"), TextType.SUBTITLE)
+            UI.Text(when (current.phase) {
+                DemoProgress.Phase.ZONES -> s.shared("demo_phase_zones")
+                DemoProgress.Phase.TOOLS -> s.shared("demo_phase_tools").format(current.done.toString(), current.total.toString())
+                DemoProgress.Phase.ENTRIES -> s.shared("demo_phase_entries").format(current.done.toString(), current.total.toString())
+                DemoProgress.Phase.GOALS -> s.shared("demo_phase_goals")
+                DemoProgress.Phase.AUTOMATIONS -> s.shared("demo_phase_automations")
+            }, TextType.BODY)
         }
     }
 }

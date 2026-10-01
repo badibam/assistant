@@ -19,10 +19,11 @@ import com.assistant.core.ui.UI
 import kotlinx.coroutines.launch
 
 /**
- * The demo's settings (docs/design/demo.md): whether it is installed at each update, applied as
- * soon as it is saved changed — turned off removes the demo there is, turned on installs it now —, a button that
- * installs it afresh, afloat at this moment, and one that removes it, once confirmed. Removing
- * leaves the setting as the user set it: on, the next update brings the demo back.
+ * The demo's settings (docs/design/demo.md): whether it is installed at each update — turned on,
+ * it waits for the next update; turned off, it removes the demo there is —, a button that
+ * installs it afresh, afloat at this moment, its progress shown while it runs, and one that
+ * removes it, once confirmed. Removing leaves the setting as the user set it: on, the next update
+ * brings the demo back.
  */
 @Composable
 fun DemoSettingsScreen(onBack: () -> Unit) {
@@ -58,10 +59,10 @@ fun DemoSettingsScreen(onBack: () -> Unit) {
         category = AppSettingCategories.DEMO,
         onBack = onBack,
         afterSave = { before, after ->
-            val on = after.optBoolean(DemoStartup.INSTALL_ON_UPDATE)
-            // Saved unchanged, the demo stays as it is: a reinstall takes some 30 seconds
-            if (on == before.optBoolean(DemoStartup.INSTALL_ON_UPDATE)) null
-            else coordinator.processUserAction(if (on) "demo.install" else "demo.remove", emptyMap())
+            // Turned off, the demo there is goes; turned on or saved unchanged, nothing until the next update
+            val turnedOff = before.optBoolean(DemoStartup.INSTALL_ON_UPDATE) && !after.optBoolean(DemoStartup.INSTALL_ON_UPDATE)
+            if (!turnedOff) null
+            else coordinator.processUserAction("demo.remove", emptyMap())
                 .let { if (it.isSuccess) null else it.error ?: s.shared("error_operation_failed") }
         },
         below = {
@@ -72,6 +73,7 @@ fun DemoSettingsScreen(onBack: () -> Unit) {
             UI.Button(type = ButtonType.DEFAULT, state = state, onClick = { if (!working) confirmingRemoval = true }) {
                 UI.Text(s.shared("demo_remove_now"), TextType.LABEL)
             }
+            if (working) com.assistant.core.ui.components.DemoInstallProgress()
         }
     )
 }
