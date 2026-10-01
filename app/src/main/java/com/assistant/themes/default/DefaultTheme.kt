@@ -457,17 +457,19 @@ object DefaultTheme : ThemeContract {
     
     /** The size of an action's icon in a button of [size]. */
     /**
-     * A button without a fill, at [size]'s button size: its content in the colour [type] would
-     * fill it with (the error colour for a danger), dimmed when disabled.
+     * A button without a fill, at [size]'s button size: its content in the colour of [type] (the
+     * error colour for a danger), dimmed when disabled.
      */
     @Composable
     private fun BareButton(type: ButtonType, size: Size, enabled: Boolean, onClick: () -> Unit, content: @Composable () -> Unit) {
         val config = getButtonConfig(size, type)
         val scheme = CurrentTheme.getCurrentColorScheme()
         val ink = when (type) {
+            ButtonType.PRIMARY -> scheme.primary
+            ButtonType.SECONDARY -> scheme.secondary
+            ButtonType.TERTIARY -> scheme.tertiary
             ButtonType.DANGER -> scheme.error
             ButtonType.DEFAULT -> scheme.onSurfaceVariant
-            else -> config.containerColor
         }
         Surface(
             color = Color.Transparent,
