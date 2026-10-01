@@ -551,14 +551,15 @@ object UI {
 
     /**
      * The header of a tile, filling the space it is given: its icon ([TileIcon]) at the start,
-     * its name centered in the width left.
+     * its name centered in the width left, and [subtitle] under it in the caption when given.
      */
     @Composable
-    fun TileHeader(iconName: String?, name: String, waiting: Boolean, running: Boolean, textType: TextType) {
+    fun TileHeader(iconName: String?, name: String, waiting: Boolean, running: Boolean, textType: TextType, subtitle: String? = null) {
         Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             TileIcon(iconName, waiting, running)
-            Box(modifier = Modifier.weight(1f).padding(start = Space.M), contentAlignment = Alignment.Center) {
+            Column(modifier = Modifier.weight(1f).padding(start = Space.M), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(name, textType, maxLines = 2, fillMaxWidth = true, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                if (subtitle != null) Text(subtitle, TextType.CAPTION, maxLines = 1, fillMaxWidth = true, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
     }
@@ -643,7 +644,9 @@ object UI {
         running: Boolean
     ) {
         val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
-        TileHeader(settings.string("icon_name"), settings.string("name")!!, waiting, running, TextType.BODY)
+        // The name a size up, its tool type under it
+        TileHeader(settings.string("icon_name"), settings.string("name")!!, waiting, running, TextType.TILE_TITLE,
+            subtitle = com.assistant.core.tools.ToolTypeManager.getToolTypeName(tool.tooltype, context))
     }
 
     /**

@@ -260,8 +260,10 @@ object RetroTheme : ThemeContract {
     // =====================================
 
     /**
-     * One size, the register's: a title stands out by the strong ink, a caption steps back by the
-     * thin weight in the dim ink. Cartouche has no bold.
+     * The register's size: a title stands out by the strong ink, a caption steps back by the thin
+     * weight in the dim ink. Cartouche has no bold. A tile's title alone is a size up, one more
+     * screen pixel to each of its drawing pixels: still whole pixels, though larger than the
+     * screen's others and off the cells.
      */
     @Composable
     override fun Text(text: String, type: TextType, fillMaxWidth: Boolean, textAlign: TextAlign?, maxLines: Int) {

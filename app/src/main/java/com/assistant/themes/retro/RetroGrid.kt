@@ -100,6 +100,14 @@ fun retroGrid(): RetroGrid {
     }
 }
 
+/** The grid one screen pixel up from [retroGrid]'s, for the one text a size above the rest. */
+@Composable
+fun retroGridUp(): RetroGrid {
+    val density = LocalDensity.current
+    val grid = retroGrid()
+    return remember(density, grid.scale) { RetroGrid(grid.scale + 1, density) }
+}
+
 /** Cartouche's two weights, embedded (res/font, checked against the font's project). */
 val Cartouche = FontFamily(
     Font(R.font.cartouche_thin, FontWeight.Thin),

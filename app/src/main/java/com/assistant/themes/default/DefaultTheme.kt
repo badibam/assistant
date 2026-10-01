@@ -490,6 +490,7 @@ object DefaultTheme : ThemeContract {
         val style = when (type) {
             TextType.TITLE -> MaterialTheme.typography.headlineMedium
             TextType.SUBTITLE -> MaterialTheme.typography.headlineSmall
+            TextType.TILE_TITLE -> MaterialTheme.typography.titleMedium
             TextType.BODY -> MaterialTheme.typography.bodyMedium
             TextType.STRONG -> MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             TextType.CAPTION -> MaterialTheme.typography.bodySmall
