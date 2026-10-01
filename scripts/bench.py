@@ -229,6 +229,20 @@ def show(folder):
     result = folder / "result.json"
     if result.is_file():
         print("END  ", result.read_text(encoding="utf-8").replace("\n", " "))
+    # What changed, counted by table and tool: rows added, modified, removed
+    before = sqlite3.connect(folder / "before.db")
+    for table in ("tool_data", "tool_instances", "zones", "variables"):
+        owner = "tool_instance_id" if table == "tool_data" else "'-'"
+        old = {r[0]: r for r in before.execute(f"SELECT id, {owner}, * FROM {table}")}
+        new = {r[0]: r for r in db.execute(f"SELECT id, {owner}, * FROM {table}")}
+        counts = {}
+        for id_ in old.keys() | new.keys():
+            kind = "added" if id_ not in old else "removed" if id_ not in new else "modified" if old[id_] != new[id_] else None
+            if kind:
+                key = ((new.get(id_) or old[id_])[1], kind)
+                counts[key] = counts.get(key, 0) + 1
+        for (owner_, kind), n in sorted(counts.items()):
+            print(f"DIFF  {table} {owner_} {kind} {n}")
     return 0
 
 
