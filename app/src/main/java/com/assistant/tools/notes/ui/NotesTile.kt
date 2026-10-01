@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.entities.ToolInstance
@@ -94,9 +93,9 @@ fun rememberNotesTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolTile
             override fun Body(rows: Int?) {
                 val loaded = notes ?: return
                 TileGrid(rows, loaded, columns = 2, itemLines = 2) { note ->
-                    Box(modifier = Modifier.fillMaxSize().padding(vertical = 2.dp).clickable { open(EntryToOpen.Existing(note.id)) }) {
+                    Box(modifier = Modifier.fillMaxSize().padding(vertical = UI.Space.XS).clickable { open(EntryToOpen.Existing(note.id)) }) {
                         UI.Card(type = CardType.DEFAULT) {
-                            Box(modifier = Modifier.fillMaxSize().padding(6.dp)) {
+                            Box(modifier = Modifier.fillMaxSize().padding(UI.Space.XS)) {
                                 UI.Text(note.content.ifBlank { s.tool("content_empty") }, TextType.CAPTION, maxLines = 2)
                             }
                         }

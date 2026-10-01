@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
@@ -75,8 +74,8 @@ fun SessionCostDisplay(sessionId: String) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 // Title
                 UI.Text(
@@ -85,7 +84,7 @@ fun SessionCostDisplay(sessionId: String) {
                     fillMaxWidth = true
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(UI.Space.XS))
 
                 // Token counts
                 val totalUncachedInputTokens = data["total_uncached_input_tokens"] as? Int ?: 0
@@ -140,7 +139,7 @@ fun SessionCostDisplay(sessionId: String) {
                     )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(UI.Space.XS))
 
                 // Total cost row
                 Row(

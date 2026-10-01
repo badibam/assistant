@@ -9,7 +9,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
@@ -109,8 +108,8 @@ fun CreateZoneScreen(
     Column(
         modifier = Modifier
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(UI.Space.XL),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.Text(
             text = if (isEditing) s.shared("action_edit_zone") else s.shared("action_create_zone"),
@@ -119,7 +118,7 @@ fun CreateZoneScreen(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(UI.Space.S))
 
         SettingsForm(nodes, settings, { settings = it }, context, editors)
 

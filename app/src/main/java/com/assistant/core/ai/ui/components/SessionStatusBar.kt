@@ -43,11 +43,11 @@ fun SessionStatusBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 8.dp),
+            .padding(vertical = UI.Space.S, horizontal = UI.Space.S),
         contentAlignment = Alignment.Center
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // The countdown before closing shows a timer beside its text

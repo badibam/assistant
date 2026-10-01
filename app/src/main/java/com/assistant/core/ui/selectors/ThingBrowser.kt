@@ -79,7 +79,7 @@ fun ThingBrowser(path: ThingPath, onPath: (ThingPath) -> Unit, target: Reference
             rows("entries").map { Place(path.copy(entry = named(it))) }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
         Trail(path, s.shared("pointer_level_app")) { onPath(path.upTo(it)) }
         if (searching) {
             UI.FormField(label = s.shared("field_reference_search"), value = query, onChange = { query = it }, required = false)
@@ -131,7 +131,7 @@ private fun Trail(path: ThingPath, appName: String, onUp: (ReferenceKind) -> Uni
         path.variable?.let { ReferenceKind.VARIABLE to it.name },
         path.entry?.let { ReferenceKind.ENTRY to it.name }
     )
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
         steps.forEachIndexed { i, (kind, name) ->
             if (i > 0) UI.Icon(iconName = "chevron-right", size = 20.dp)
             val last = i == steps.lastIndex

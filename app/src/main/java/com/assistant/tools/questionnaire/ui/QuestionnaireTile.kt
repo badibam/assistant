@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.entities.ToolInstance
@@ -107,7 +106,7 @@ fun rememberQuestionnaireTile(tool: ToolInstance): ToolTile {
             override fun Body(rows: Int?) {
                 val answers = passings?.lastFilled?.answers ?: return
                 TileGrid(rows, questions, columns = 1) { question ->
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UI.Space.S), verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.weight(1f)) { UI.Text(question.displayName, TextType.CAPTION, maxLines = 1) }
                         UI.Text(answers[question.name]?.let { question.formatValue(it, context) } ?: s.shared("label_no_value"), TextType.BODY, maxLines = 1)
                     }

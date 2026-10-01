@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
 import com.assistant.tools.journal.utils.DateFormatUtils
@@ -63,8 +62,8 @@ fun JournalCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
     ) {
         // Date/time line
         UI.Text(

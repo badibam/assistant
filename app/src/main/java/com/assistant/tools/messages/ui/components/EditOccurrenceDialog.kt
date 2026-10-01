@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.CustomFieldsInput
@@ -92,7 +91,7 @@ fun EditOccurrenceDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.L)
         ) {
             UI.Text(s.tool("edit_occurrence_title"), TextType.SUBTITLE)
             UI.Text(s.tool("edit_occurrence_hint"), TextType.CAPTION)

@@ -37,7 +37,19 @@ object UI {
     // =====================================
     // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
     // NO wrappers - direct access for maximum flexibility
-    
+
+    /**
+     * The spaces a screen puts between and around its elements, sized by the theme: never a dp
+     * written in a screen, which a retro theme could not turn into whole cells.
+     */
+    object Space {
+        val XS: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.XS)
+        val S: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.S)
+        val M: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.M)
+        val L: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.L)
+        val XL: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.XL)
+    }
+
     // =====================================
     // INTERACTIVE
     // =====================================

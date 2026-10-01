@@ -7,7 +7,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
 
@@ -111,8 +110,8 @@ fun SettingsDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(scrollState)
-                .padding(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(vertical = UI.Space.S),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             // Dialog title
             UI.Text(
@@ -120,7 +119,7 @@ fun SettingsDialog(
                 type = TextType.TITLE
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(UI.Space.S))
 
             // Settings options list
             options.forEach { option ->
@@ -132,10 +131,10 @@ fun SettingsDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onOptionSelected(option.id) }
-                            .padding(12.dp)
+                            .padding(UI.Space.M)
                     ) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                            verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
                         ) {
                             UI.Text(
                                 text = option.label,

@@ -47,7 +47,7 @@ fun IconSelector(
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.M)
     ) {
         UI.Text(s.shared("tools_config_label_icon"), TextType.LABEL)
         UI.Icon(iconName = current, size = 32.dp)
@@ -95,7 +95,7 @@ private fun IconPickerDialog(
         // A category or a search can hold hundreds of icons: the dialog body scrolls
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             UI.Text(s.shared("tools_config_dialog_choose_icon"), TextType.SUBTITLE)
 
@@ -157,9 +157,9 @@ private fun CategoryList(
             onClick = { onOpen(category.id) }
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(4.dp),
+                modifier = Modifier.fillMaxWidth().padding(UI.Space.XS),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.M)
             ) {
                 UI.Icon(iconName = category.icon, size = 24.dp)
                 Box(modifier = Modifier.weight(1f)) {
@@ -193,7 +193,7 @@ private fun IconGrid(
                     onClick = { onPick(name) }
                 ) {
                     Column(
-                        modifier = Modifier.size(64.dp).padding(4.dp),
+                        modifier = Modifier.size(64.dp).padding(UI.Space.XS),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {

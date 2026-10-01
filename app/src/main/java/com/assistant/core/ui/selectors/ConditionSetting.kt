@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.conditions.Conditions
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -49,7 +48,7 @@ fun ConditionSetting(
         ?: JSONObject().put("reading", JSONObject().put("selection", JSONObject()).put("reduction", Reduction.COUNT.name))
     fun with(change: JSONObject.() -> Unit) = onChange(JSONObject(current.toString()).apply(change))
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text(text = label, type = TextType.SUBTITLE)
         if (entered == null) {
             TermPicker(left, remember { FieldDefinition("left", label, null, FieldType.NUMERIC, false, null) }, { term ->
@@ -150,7 +149,7 @@ fun RowConditionSetting(
     val field = path?.let { fields[it] }
     fun with(change: JSONObject.() -> Unit) = onChange(JSONObject(current.toString()).apply(change))
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text(text = label, type = TextType.SUBTITLE)
         FieldPicker(
             label = s.shared("pointer_filter_field"),

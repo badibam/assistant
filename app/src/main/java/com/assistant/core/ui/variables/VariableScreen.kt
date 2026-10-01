@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldDefinition
@@ -110,8 +109,8 @@ fun VariableScreen(zoneId: String, variableId: String?, group: String?, onDone: 
     val terms = json.optJSONObject("terms") ?: JSONObject()
 
     Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.PageHeader(
             title = name.ifBlank { s.shared("variable_new") },
@@ -173,7 +172,7 @@ fun VariableScreen(zoneId: String, variableId: String?, group: String?, onDone: 
 
         error?.let { UI.Text(text = it, type = TextType.ERROR) }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             UI.Button(type = ButtonType.PRIMARY, onClick = {
                 scope.launch {
                     val params = mutableMapOf<String, Any>("name" to name, "definition" to JsonUtils.toMap(JSONObject(draft)))
@@ -222,7 +221,7 @@ private fun FormulaEditor(formula: String, terms: List<String>, variables: List<
             .takeIf { it.isNotEmpty() }?.let { s.shared("variable_unknown_names").format(it.joinToString(", ")) }
     }
     problem?.let { UI.Text(text = it, type = TextType.ERROR) }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(UI.Space.XS), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
         (terms + variables + listOf("+", "-", "×", "÷", "(", ")") + Formula.Function.entries.map { s.shared("formula_function_${it.canonical}") + "(" }).forEach { token ->
             UI.Button(type = ButtonType.SECONDARY, onClick = {
                 val (text, cursor) = insertToken(shown.text, shown.selection.min, shown.selection.max, token)
@@ -262,8 +261,8 @@ private fun TermEditor(
 ) {
     var shownName by remember(name) { mutableStateOf(name) }
     UI.Card(type = CardType.DEFAULT) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                 androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) {
                     UI.FormField(label = s.shared("variable_term_name"), value = shownName, onChange = { shownName = it }, required = true,
                         fieldModifier = com.assistant.core.ui.FieldModifier(onFocusChanged = { state -> if (!state.isFocused && shownName != name && shownName.isNotBlank()) onRename(shownName) }))
@@ -303,7 +302,7 @@ private fun ValueTypeEditor(field: JSONObject?, deducible: Boolean, s: StringsCo
     val config = field?.optJSONObject("config") ?: return
     fun edit(key: String, value: Any?) = onChange(JSONObject(field.toString()).put("config", JSONObject(config.toString()).apply { if (value == null) remove(key) else put(key, value) }))
     when (type) {
-        FieldType.NUMERIC -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FieldType.NUMERIC -> Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
             androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) {
                 UI.FormField(label = s.shared("field_config_unit"), value = config.optString("unit"), onChange = { edit("unit", it.takeIf { u -> u.isNotBlank() }) }, required = false)
             }
@@ -312,7 +311,7 @@ private fun ValueTypeEditor(field: JSONObject?, deducible: Boolean, s: StringsCo
                     onChange = { t -> t.toIntOrNull()?.let { edit("decimals", it) } }, fieldType = com.assistant.core.ui.FieldType.NUMERIC, required = true)
             }
         }
-        FieldType.SCALE -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FieldType.SCALE -> Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
             listOf("min" to "field_config_min", "max" to "field_config_max").forEach { (key, labelKey) ->
                 androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) {
                     UI.FormField(label = s.shared(labelKey), value = config.opt(key)?.toString() ?: "",

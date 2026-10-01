@@ -5,7 +5,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.Automation
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.ai.orchestration.AIOrchestrator
@@ -90,13 +89,13 @@ fun AutomationCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(UI.Space.M),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             // Header row: Name + Enabled toggle
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.M),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Name
@@ -118,7 +117,7 @@ fun AutomationCard(
             // Trigger type and status
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Status indicator text
@@ -161,7 +160,7 @@ fun AutomationCard(
             // Action buttons row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Cancel execution button (if queued)

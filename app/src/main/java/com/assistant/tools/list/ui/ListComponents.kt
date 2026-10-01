@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.CustomFieldsInput
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.defaultValues
@@ -60,7 +59,7 @@ internal fun ListItemDialog(
     ) {
         Column(
             modifier = androidx.compose.ui.Modifier.verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.M)
         ) {
             UI.Text(s.tool("edit_item_title"), TextType.SUBTITLE)
             UI.FormField(
@@ -118,7 +117,7 @@ internal fun ListAddDialog(
     ) {
         Column(
             modifier = androidx.compose.ui.Modifier.verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.M)
         ) {
             UI.Text(s.tool("add_item_title"), TextType.SUBTITLE)
             UI.FormField(
@@ -162,7 +161,7 @@ internal fun DueAtLine(item: ListItem, now: Long) {
     val field = remember { ListToolType.dueAtField(context) }
     androidx.compose.foundation.layout.Row(
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
     ) {
         com.assistant.core.fields.FieldValue(field, dueAt, context)
         if (DueNotice.isLate(item, now)) UI.Text(s.tool("due_late"), TextType.ERROR)

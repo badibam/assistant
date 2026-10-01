@@ -8,7 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.mapSingleData
@@ -90,8 +89,8 @@ fun TrackingScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         if (isLoading) {
             Box(
@@ -129,8 +128,8 @@ fun TrackingScreen(
             // Input interface section
             UI.Card(type = CardType.DEFAULT) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.L)
                 ) {
                     UI.Text(s.tool("usage_section_new_entry"), TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
                     
@@ -148,8 +147,8 @@ fun TrackingScreen(
             // History section
             UI.Card(type = CardType.DEFAULT) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.L)
                 ) {
                     UI.Text(s.tool("usage_section_history"), TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
                     

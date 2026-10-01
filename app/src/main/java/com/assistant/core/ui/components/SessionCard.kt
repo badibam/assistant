@@ -5,7 +5,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
@@ -44,8 +43,8 @@ fun SessionCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(UI.Space.M),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             // Row 1: Session name (title)
             UI.Text(
@@ -68,7 +67,7 @@ fun SessionCard(
             // Row 3: Metadata - Created date | Message count
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left column: Created date
@@ -107,7 +106,7 @@ fun SessionCard(
                     onClick = onResumeClick
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(UI.Space.S))
 
                 // Rename button
                 UI.ActionButton(
@@ -117,7 +116,7 @@ fun SessionCard(
                     onClick = onRenameClick
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(UI.Space.S))
 
                 // Delete button
                 UI.ActionButton(

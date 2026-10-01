@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.demo.DemoProgress
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.TextType
@@ -27,7 +26,7 @@ fun DemoInstalling() {
     val s = remember { Strings.`for`(context = context) }
     val step by DemoProgress.step.collectAsState()
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(UI.Space.L)) {
             UI.LoadingIndicator()
             step?.let { current ->
                 UI.Text(s.shared("demo_installing"), TextType.SUBTITLE)

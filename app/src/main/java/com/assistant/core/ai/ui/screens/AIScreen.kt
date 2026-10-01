@@ -171,7 +171,7 @@ fun AIScreen(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
                 UI.Text(
                     text = errorMessage ?: s.shared("ai_error_session_not_found"),
@@ -325,7 +325,7 @@ private fun ChatMode(
         // Composer
         UI.Card(type = CardType.DEFAULT) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(UI.Space.L)
             ) {
                 UI.RichComposer(
                     segments = segments,
@@ -518,7 +518,7 @@ private fun SeedMode(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.L)
                 ) {
                     UI.Text(
                         text = errorMessage ?: s.shared("error_automation_not_found"),
@@ -556,8 +556,8 @@ private fun SeedMode(
             onCancel = { showTriggersEditor = false }
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
                 UI.Text(
                     text = s.shared("automation_triggers_config_title"),
@@ -659,8 +659,8 @@ private fun SeedMode(
             onCancel = { showDeleteConfirmation = false }
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
                 UI.Text(
                     text = s.shared("automation_delete_confirm_title"),
@@ -696,10 +696,10 @@ private fun SeedMode(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(16.dp)
+                .padding(UI.Space.L)
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(UI.Space.M)
             ) {
                 UI.Text(
                     text = s.shared("automation_seed_message_label"),
@@ -714,7 +714,7 @@ private fun SeedMode(
 
                     if (textContent.isNotEmpty()) {
                         UI.Card(type = CardType.DEFAULT) {
-                            Box(modifier = Modifier.padding(12.dp)) {
+                            Box(modifier = Modifier.padding(UI.Space.M)) {
                                 UI.Text(
                                     text = textContent,
                                     type = TextType.BODY
@@ -724,7 +724,7 @@ private fun SeedMode(
                     }
 
                     if (enrichmentBlocks.isNotEmpty()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                             UI.Text(
                                 text = s.shared("automation_enrichments_label"),
                                 type = TextType.LABEL
@@ -732,8 +732,8 @@ private fun SeedMode(
                             enrichmentBlocks.forEach { block ->
                                 UI.Card(type = CardType.DEFAULT) {
                                     Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        modifier = Modifier.padding(UI.Space.M),
+                                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
                                     ) {
                                         UI.Icon(iconName = block.type.iconName, size = 20.dp)
                                         UI.Text(text = com.assistant.core.ai.ui.components.rememberDisplayText(block), type = TextType.BODY)
@@ -753,7 +753,7 @@ private fun SeedMode(
 
         // Editor footer with composer and config buttons
         UI.Card(type = CardType.DEFAULT) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(UI.Space.L)) {
                 com.assistant.core.ai.ui.automation.AutomationEditorFooter(
                     automation = automation,
                     segments = segments,
@@ -969,8 +969,8 @@ private fun ChatOptionsDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
                 // Header
                 UI.Text(
@@ -990,8 +990,8 @@ private fun ChatOptionsDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onInterruptAndChat() }
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                            .padding(UI.Space.M),
+                        verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
                     ) {
                         UI.Text(
                             text = s.shared("ai_chat_option_interrupt_title"),
@@ -1010,8 +1010,8 @@ private fun ChatOptionsDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onChatAfter() }
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                            .padding(UI.Space.M),
+                        verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
                     ) {
                         UI.Text(
                             text = s.shared("ai_chat_option_after_title"),
@@ -1056,8 +1056,8 @@ private fun ChatHeader(
             onCancel = { showStopConfirmation = false }
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
                 UI.Text(
                     text = s.shared("ai_session_stop_title"),
@@ -1120,8 +1120,8 @@ private fun ChatHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = UI.Space.M, vertical = UI.Space.S),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Title with phase status
@@ -1176,8 +1176,8 @@ private fun SeedHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = UI.Space.M, vertical = UI.Space.S),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Title
@@ -1233,8 +1233,8 @@ private fun AutomationHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = UI.Space.M, vertical = UI.Space.S),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Title
@@ -1343,8 +1343,8 @@ fun ChatMessageList(
 
     LazyColumn(
         state = listState,
-        modifier = modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = modifier.padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.M)
     ) {
         if (messages.isEmpty()) {
             item {

@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
@@ -408,8 +407,8 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(vertical = UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
             // Header with Settings and Config buttons
             UI.PageHeader(
@@ -473,7 +472,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         if (gridEditor.selectedId == null) Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp)
+                .padding(UI.Space.L)
         ) {
             UI.ActionButton(
                 action = ButtonAction.AI_CHAT,
@@ -567,7 +566,7 @@ private fun ZoneGroupSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(UI.Space.M),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -586,7 +585,7 @@ private fun ZoneGroupSection(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(UI.Space.L),
                 contentAlignment = Alignment.Center
             ) {
                 UI.Text(

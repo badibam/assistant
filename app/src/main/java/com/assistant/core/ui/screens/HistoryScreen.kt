@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.coordinator.Coordinator
@@ -193,8 +192,8 @@ fun HistoryScreen(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         // Header
         UI.PageHeader(
@@ -204,7 +203,7 @@ fun HistoryScreen(
         )
 
         // Search bar
-        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = UI.Space.L)) {
             UI.FormField(
                 required = false,
                 label = s.shared("history_search_placeholder"),
@@ -216,9 +215,9 @@ fun HistoryScreen(
 
         // Filters row
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.L),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = UI.Space.L)
         ) {
             // Period filter dropdown
             Box(modifier = Modifier.weight(1f)) {
@@ -309,7 +308,7 @@ fun HistoryScreen(
         // Loading state
         if (isLoading && sessions.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(UI.Space.L),
                 contentAlignment = Alignment.Center
             ) {
                 UI.CenteredText(s.shared("tools_loading"), TextType.BODY)
@@ -319,7 +318,7 @@ fun HistoryScreen(
         // Empty state
         if (!isLoading && sessions.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(UI.Space.L),
                 contentAlignment = Alignment.Center
             ) {
                 UI.CenteredText(s.shared("history_empty"), TextType.BODY)
@@ -329,8 +328,8 @@ fun HistoryScreen(
         // Session list
         if (sessions.isNotEmpty()) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.M)
             ) {
                 sessions.forEach { session ->
                     SessionCard(
@@ -394,8 +393,8 @@ fun HistoryScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
                 // Title
                 UI.Text(
@@ -438,7 +437,7 @@ fun HistoryScreen(
                         }
                     )
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(UI.Space.S))
 
                     UI.ActionButton(
                         action = ButtonAction.SAVE,

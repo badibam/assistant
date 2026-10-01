@@ -16,7 +16,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldType
@@ -112,7 +111,7 @@ fun ImportDialog(toolInstanceId: String, csv: String, onDismiss: () -> Unit) {
             }
         }
     ) {
-        Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             UI.Text(s.shared("import_title"), TextType.TITLE)
             error?.let { UI.Text(it, TextType.ERROR) }
             when {
@@ -138,7 +137,7 @@ fun ImportDialog(toolInstanceId: String, csv: String, onDismiss: () -> Unit) {
 private fun ColumnEditor(column: JSONObject, fields: Map<String, com.assistant.core.fields.FieldDefinition>, zone: java.time.ZoneId, s: com.assistant.core.strings.StringsContext, onChange: (JSONObject) -> Unit) {
     fun edit(change: JSONObject.() -> Unit) = onChange(JSONObject(column.toString()).apply(change))
     UI.Card(type = CardType.DEFAULT) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
             UI.Text(column.getString("column"), TextType.SUBTITLE)
             val targets = listOf("KEY", "FIELD", "NEW", "IGNORE").map { it to s.shared("import_target_${it.lowercase()}") }
             UI.FormSelection(

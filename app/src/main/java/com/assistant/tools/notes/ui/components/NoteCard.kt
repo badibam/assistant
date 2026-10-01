@@ -62,7 +62,7 @@ fun NoteCard(
                                 )
                             }
                         }
-                        .padding(16.dp)
+                        .padding(UI.Space.L)
                 ) {
                     // Content display logic
                     when {
@@ -101,7 +101,7 @@ fun NoteCard(
                                 )
 
                                 // Custom fields display (always shown for alwaysVisible fields)
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(UI.Space.S))
                                 CustomFieldsDisplay(
                                     toolType = com.assistant.tools.notes.NotesToolType,
                                     config = config,
@@ -122,8 +122,8 @@ fun NoteCard(
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        .padding(UI.Space.S),
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.XS)
                 ) {
                     UI.ActionButton(
                         action = ButtonAction.ADD,

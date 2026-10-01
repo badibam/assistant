@@ -11,7 +11,6 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.ReferenceTarget
 import com.assistant.core.selection.EntryPeriod
 import com.assistant.core.selection.EntrySelection
@@ -50,7 +49,7 @@ fun SelectionSetting(label: String, selection: JSONObject?, reference: String, o
         draft = stored?.target?.id?.let { toolPath(it, context) }?.let { SelectionDraft.of(stored, it) } ?: SelectionDraft()
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text(text = label, type = TextType.SUBTITLE)
         val current = draft ?: return@Column UI.LoadingIndicator()
         SelectionPicker(current, { next ->

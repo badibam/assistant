@@ -79,7 +79,16 @@ object DefaultTheme : ThemeContract {
     override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
 
     override val gridMaxWidth = 480.dp
-    
+
+    @Composable
+    override fun spacing(spacing: com.assistant.core.ui.Spacing): Dp = when (spacing) {
+        com.assistant.core.ui.Spacing.XS -> 4.dp
+        com.assistant.core.ui.Spacing.S -> 8.dp
+        com.assistant.core.ui.Spacing.M -> 12.dp
+        com.assistant.core.ui.Spacing.L -> 16.dp
+        com.assistant.core.ui.Spacing.XL -> 24.dp
+    }
+
 
     // =====================================
     // PALETTE SYSTEM IMPLEMENTATION

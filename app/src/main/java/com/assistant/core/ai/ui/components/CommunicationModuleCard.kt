@@ -6,7 +6,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.CommunicationModule
 import com.assistant.core.ai.data.CommunicationModules
 import com.assistant.core.fields.FieldValue
@@ -62,7 +61,7 @@ fun CommunicationModuleCard(
         content = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(UI.Space.M)
             ) {
                 if (module.fields.isNotEmpty()) {
                     SettingsForm(
@@ -85,7 +84,7 @@ fun CommunicationModuleCard(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
@@ -116,7 +115,7 @@ fun CommunicationModuleCard(
                 // The other ways to answer
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (note == null) {
@@ -174,7 +173,7 @@ fun CommunicationAnswer(module: CommunicationModule, answer: String) {
         return
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         module.fields.forEach { field ->
             UI.Text(text = field.definition.displayName, type = TextType.LABEL)
             FieldValue(field.definition, JsonUtils.toValue(values.opt(field.definition.name)), context)

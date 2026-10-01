@@ -41,7 +41,14 @@ interface ThemeContract {
 
     /** How wide a zone's tool grid grows at most; a wider screen centers it (ToolGrid). */
     val gridMaxWidth: Dp
-    
+
+    /**
+     * The size of a named space (UI.Space). Composable, as a size in whole cells depends on the
+     * screen's density.
+     */
+    @Composable
+    fun spacing(spacing: com.assistant.core.ui.Spacing): Dp
+
     // =====================================
     // LAYOUTS: USE COMPOSE DIRECTLY
     // =====================================

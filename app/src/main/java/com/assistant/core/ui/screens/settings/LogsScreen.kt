@@ -9,7 +9,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.AppDatabase
@@ -139,7 +138,7 @@ fun LogsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 16.dp)
+            .padding(vertical = UI.Space.L)
     ) {
         // Header with back button (not scrollable)
         UI.PageHeader(
@@ -152,7 +151,7 @@ fun LogsScreen(
             onRightClick = null
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(UI.Space.L))
 
         // Filters section (scrollable with content)
         Column(
@@ -169,8 +168,8 @@ fun LogsScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.M)
                 ) {
                     // Time range filter
                     val timeRangeOptions = LogTimeRange.entries.map { range ->
@@ -231,7 +230,7 @@ fun LogsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(UI.Space.L))
 
             // Logs list
             when {
@@ -253,7 +252,7 @@ fun LogsScreen(
                     // Display logs (newest first already from query ORDER BY timestamp DESC)
                     logs.forEach { log ->
                         LogEntryCard(log = log, s = s)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(UI.Space.S))
                     }
                 }
             }
@@ -274,13 +273,13 @@ private fun LogEntryCard(log: LogEntry, s: com.assistant.core.strings.StringsCon
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(UI.Space.M),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             // Header row: timestamp + level + tag
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 // Level badge (color-coded) - Use native Compose Text for color support
                 val levelColor = when (log.level) {

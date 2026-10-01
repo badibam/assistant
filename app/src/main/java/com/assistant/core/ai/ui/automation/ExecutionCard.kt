@@ -67,13 +67,13 @@ fun ExecutionCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(UI.Space.M),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             // Row 1: Scheduled time | Status (EndReason if exists, else Phase)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left column: Scheduled execution time
@@ -90,7 +90,7 @@ fun ExecutionCard(
 
                 // Right column: EndReason if exists, else Phase (both with status indicator)
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     UI.StatusIndicator(color = statusColor, size = 8.dp)
@@ -108,7 +108,7 @@ fun ExecutionCard(
             // Row 2: Started time
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left column: Started time
@@ -125,7 +125,7 @@ fun ExecutionCard(
             // Row 3: Duration | Roundtrips
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left column: Duration
@@ -148,7 +148,7 @@ fun ExecutionCard(
             // Row 4: Tokens | Cost
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left column: Tokens

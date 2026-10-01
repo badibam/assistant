@@ -15,7 +15,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.ReferenceTarget
@@ -61,7 +60,7 @@ fun SelectionPicker(
     var browsing by rememberSaveable(stateSaver = ThingPathSaver) { mutableStateOf(if (final(draft.path)) null else draft.path) }
     val chosen = draft.level in target.kinds
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
         val open = browsing
         if (open != null) {
             ThingBrowser(open, { path ->
@@ -69,7 +68,7 @@ fun SelectionPicker(
                 browsing = if (final(path)) null else path
             }, target)
         } else {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                 Box(modifier = Modifier.weight(1f)) {
                     UI.Text(text = listOfNotNull(draft.tool?.name, draft.zone?.name).let { names ->
                         if (names.size == 2) s.shared("selection_place_in_zone").format(names[0], names[1]) else names.firstOrNull() ?: ""

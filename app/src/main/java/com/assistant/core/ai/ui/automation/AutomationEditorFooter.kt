@@ -46,7 +46,7 @@ fun AutomationEditorFooter(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         // Message composer with enrichments
         // sessionType = SEED because this is a SEED session template
@@ -64,7 +64,7 @@ fun AutomationEditorFooter(
         // Configuration buttons row
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             // Schedule configuration button
             Box(modifier = Modifier.weight(1f)) {
@@ -73,7 +73,7 @@ fun AutomationEditorFooter(
                     onClick = onConfigureSchedule
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
                     ) {
                         UI.Icon(iconName = "clock", size = 20.dp)
                         UI.Text(
@@ -91,7 +91,7 @@ fun AutomationEditorFooter(
                     onClick = onConfigureTriggers
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
                     ) {
                         UI.Icon(iconName = "zap", size = 20.dp)
                         UI.Text(
@@ -111,7 +111,7 @@ fun AutomationEditorFooter(
         // declaration, a limit chosen explicitly and a delay when limited
         if (scheduleConfig != null) {
             UI.Card(type = CardType.DEFAULT) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.padding(UI.Space.L), verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
                     UI.Text(s.shared("automation_catch_up_title"), TextType.SUBTITLE)
                     com.assistant.core.fields.settings.SettingsForm(
                         remember { com.assistant.core.ai.data.AutomationSettings.catchUpNodes(context) },
@@ -124,7 +124,7 @@ fun AutomationEditorFooter(
         // Form actions
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             // Refresh button - Update message from composer to DB
             UI.ActionButton(

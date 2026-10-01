@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.grid.Grid
@@ -189,7 +188,7 @@ fun GridEditBar(editor: GridEditor) {
     val s = remember { Strings.`for`(context = context) }
     UI.Card(type = CardType.DEFAULT) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(UI.Space.S),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -198,9 +197,9 @@ fun GridEditBar(editor: GridEditor) {
                 action = action, display = ButtonDisplay.ICON, size = Size.M,
                 enabled = editor.canMove(direction), onClick = { editor.move(direction) }
             )
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
                 Arrow(ButtonAction.UP, Grid.Direction.UP)
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.XS), verticalAlignment = Alignment.CenterVertically) {
                     Arrow(ButtonAction.LEFT, Grid.Direction.LEFT)
                     UI.ActionButton(action = ButtonAction.CONFIRM, display = ButtonDisplay.ICON, size = Size.M, onClick = { editor.validate() })
                     Arrow(ButtonAction.RIGHT, Grid.Direction.RIGHT)
@@ -232,7 +231,7 @@ fun Faded(faded: Boolean, content: @Composable () -> Unit) {
  */
 @Composable
 fun GridSectionButtons(key: String, hasTiles: Boolean, editor: GridEditor, onAdd: () -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S), verticalAlignment = Alignment.CenterVertically) {
         if (hasTiles) UI.ActionButton(
             action = ButtonAction.ARRANGE,
             display = ButtonDisplay.ICON,

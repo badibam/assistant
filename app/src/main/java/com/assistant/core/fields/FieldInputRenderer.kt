@@ -6,7 +6,6 @@ import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.TextType
@@ -151,13 +150,13 @@ fun FieldInput(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 UI.FieldLabel(fieldDef.displayName, required)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     // The range is marked as a whole, above: its two bounds bear no mark
                     Box(modifier = Modifier.weight(1f)) {
@@ -246,7 +245,7 @@ fun FieldInput(
 private fun Clearable(showClear: Boolean, onClear: () -> Unit, content: @Composable () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
     ) {
         Box(modifier = Modifier.weight(1f)) { content() }
@@ -287,13 +286,13 @@ private fun DurationInput(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
     ) {
         UI.FieldLabel(fieldDef.displayName, required)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             units.forEach { unit ->
                 Box(modifier = Modifier.weight(1f)) {
@@ -369,7 +368,7 @@ fun CustomFieldsInput(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.S)
     ) {
         // Each field with its name small above its input, as in every form, a line between two
         resolvedFields.forEachIndexed { index, field ->
@@ -434,10 +433,10 @@ fun CustomFieldsDisplay(
     when (layout) {
         FieldsLayout.EXPANDED -> Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.M)
         ) {
             shown.forEach { field ->
-                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
                     if (showLabels) UI.Text(text = field.displayName, type = TextType.SUBTITLE, fillMaxWidth = true)
                     FieldValue(field, values[field.name], context)
                 }
@@ -446,12 +445,12 @@ fun CustomFieldsDisplay(
 
         FieldsLayout.LINE -> Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
         ) {
             shown.forEach { field ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                 ) {
                     if (showLabels) UI.Text(s.shared("field_label_inline").format(field.displayName), TextType.SUBTITLE)
@@ -463,15 +462,15 @@ fun CustomFieldsDisplay(
         // Two fields per row, the last one alone keeping half the width
         FieldsLayout.COMPACT -> Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
         ) {
             shown.chunked(2).forEach { row ->
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                     row.forEach { field ->
                         FlowRow(
                             modifier = Modifier.weight(1f),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                            horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
+                            verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
                         ) {
                             if (showLabels) UI.Text(s.shared("field_label_inline").format(field.displayName), TextType.LABEL)
                             FieldValue(field, values[field.name], context)
@@ -594,7 +593,7 @@ private fun ChoiceInput(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
     ) {
         when (settings.shape) {
             ChoiceShape.SINGLE -> {
@@ -635,11 +634,11 @@ private fun ChoiceInput(
                 UI.ReorderableColumn(
                     items = ranking,
                     onMove = { from, to -> onChange(ranking.toMutableList().apply { add(to, removeAt(from)) }) },
-                    spacing = 4.dp
+                    spacing = UI.Space.XS
                 ) { index, option ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
@@ -658,7 +657,7 @@ private fun ChoiceInput(
             var typed by rememberSaveable { mutableStateOf("") }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.weight(1f)) {

@@ -44,7 +44,7 @@ fun ValidationUI(
         content = {
             // The action list
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 context.verbalizedActions.forEach { action ->
                     ActionItem(
@@ -84,13 +84,13 @@ private fun ActionItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+            .padding(vertical = UI.Space.XS),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
     ) {
         // Description, with the warning icon when needed
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Warning icon si action sensible (config)
@@ -112,7 +112,7 @@ private fun ActionItem(
         // Validation reason, when there is one
         if (validationReason != null) {
             androidx.compose.foundation.layout.Box(
-                modifier = Modifier.padding(start = if (showWarning) 28.dp else 12.dp)
+                modifier = Modifier.padding(start = if (showWarning) UI.Space.XL else UI.Space.M)
             ) {
                 UI.Text(
                     text = "  $validationReason",
@@ -132,8 +132,8 @@ fun ProposedEntryItem(entry: com.assistant.core.ai.validation.ProposedEntry) {
     val context = LocalContext.current
     UI.Card(type = com.assistant.core.ui.CardType.DEFAULT) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.fillMaxWidth().padding(UI.Space.S),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
         ) {
             entry.values.forEach { proposed ->
                 UI.Text(text = proposed.field.displayName, type = TextType.LABEL)

@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
@@ -133,8 +132,8 @@ private fun NoActiveSessionView(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = UI.Space.M, vertical = UI.Space.S),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(modifier = Modifier.weight(1f)) {
@@ -160,8 +159,8 @@ private fun NoActiveSessionView(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier.padding(32.dp)
+                verticalArrangement = Arrangement.spacedBy(UI.Space.XL),
+                modifier = Modifier.padding(UI.Space.XL)
             ) {
                 UI.Text(
                     text = s.shared("ai_chat_no_active_session"),

@@ -130,15 +130,15 @@ fun DuplicateSelector(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(UI.Space.L),
             shape = MaterialTheme.shapes.medium,
             tonalElevation = 6.dp
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
                 // Title
                 UI.Text(
@@ -154,7 +154,7 @@ fun DuplicateSelector(
                 // Breadcrumb
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // The step being chosen is the last one of the path, after a chevron
@@ -274,7 +274,7 @@ private fun ZoneList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.S)
     ) {
         items(zones) { zone ->
             Surface(
@@ -292,7 +292,7 @@ private fun ZoneList(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(UI.Space.L),
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -317,7 +317,7 @@ private fun InstanceList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.S)
     ) {
         items(instances) { instance ->
             Surface(
@@ -335,8 +335,8 @@ private fun InstanceList(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                        .padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
                 ) {
                     UI.Text(
                         text = instance.name,

@@ -34,6 +34,15 @@ enum class Size {
     XS, S, M, L, XL, XXL
 }
 
+/**
+ * The spaces of a screen, from the smallest to the largest: the gaps between elements, the
+ * margins inside a container, the blanks. Screens name one (UI.Space) and the theme gives its
+ * size, so that a retro theme can make each a whole number of cells.
+ */
+enum class Spacing {
+    XS, S, M, L, XL
+}
+
 // =====================================
 // INTEGRATED VALIDATION
 // =====================================

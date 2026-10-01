@@ -8,7 +8,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.executeWithLoading
@@ -215,7 +214,7 @@ fun JournalScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(vertical = 16.dp)
+                .padding(vertical = UI.Space.L)
         ) {
             if (isLoading) {
                 Box(
@@ -231,7 +230,7 @@ fun JournalScreen(
                 val toolDescription = settings.string("description").orEmpty()
 
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = UI.Space.L)
                 ) {
                     UI.PageHeader(
                         title = toolName,
@@ -244,7 +243,7 @@ fun JournalScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(UI.Space.L))
 
                 // Entries list or empty state
                 if (entries.isEmpty()) {
@@ -252,8 +251,8 @@ fun JournalScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                            .padding(horizontal = UI.Space.L),
+                        verticalArrangement = Arrangement.spacedBy(UI.Space.S),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         UI.Text(
@@ -270,8 +269,8 @@ fun JournalScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(horizontal = UI.Space.L),
+                        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
                     ) {
                         entries.forEach { entry ->
                             UI.Card(type = CardType.DEFAULT) {
@@ -299,7 +298,7 @@ fun JournalScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(UI.Space.L),
                 contentAlignment = Alignment.BottomEnd
             ) {
                 UI.ActionButton(

@@ -20,7 +20,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.EnrichmentType
 import com.assistant.core.ai.data.MessageSegment
 import com.assistant.core.ai.enrichments.PointerConfig
@@ -157,8 +156,8 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
     val history = loaded.filter { it.status != QuestionnaireToolType.Status.TO_FILL }.sortedByDescending { it.timestamp }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.PageHeader(
             title = name,
@@ -178,13 +177,13 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
             return@Column
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             UI.Button(type = ButtonType.PRIMARY, onClick = { passing = "" }) { UI.Text(s.tool("action_fill_now"), TextType.LABEL) }
             UI.Button(type = ButtonType.SECONDARY, onClick = { withAi(null) }) { UI.Text(s.tool("action_with_ai"), TextType.LABEL) }
         }
 
         if (toFill.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
                 UI.Text(s.tool("tab_to_fill").format(toFill.size), TextType.SUBTITLE)
                 UI.Button(type = ButtonType.DEFAULT, onClick = {
                     write({ coordinator.processUserAction("questionnaire.ignore_all", mapOf("tool_instance_id" to toolInstanceId)) })
@@ -192,9 +191,9 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
             }
             toFill.forEach { entry ->
                 UI.Card(type = CardType.DEFAULT) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(modifier = Modifier.padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                         UI.Text(title(entry), TextType.BODY)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                             UI.Button(type = ButtonType.PRIMARY, onClick = { passing = entry.id }) { UI.Text(s.tool("action_fill"), TextType.LABEL) }
                             UI.Button(type = ButtonType.SECONDARY, onClick = { withAi(entry) }) { UI.Text(s.tool("action_with_ai"), TextType.LABEL) }
                             UI.Button(type = ButtonType.DEFAULT, onClick = {
@@ -209,7 +208,7 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
         UI.Text(s.tool("history"), TextType.SUBTITLE)
         if (history.isEmpty()) UI.Text(s.tool("history_empty"), TextType.CAPTION)
         history.forEach { entry ->
-            Row(modifier = Modifier.fillMaxWidth().clickable { openId = entry.id }.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().clickable { openId = entry.id }.padding(vertical = UI.Space.XS), horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                 UI.Text(title(entry), TextType.BODY)
                 UI.Text(s.tool("status_${entry.status}"), TextType.CAPTION)
             }
@@ -234,13 +233,13 @@ private fun Passing(
     val context = LocalContext.current
     var answers by rememberSaveable(stateSaver = com.assistant.core.ui.FieldValuesSaver) { mutableStateOf(entry?.answers ?: emptyMap()) }
     var index by rememberSaveable { mutableIntStateOf(questions.indexOfFirst { entry?.answers?.get(it.name) == null }.coerceAtLeast(0)) }
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(UI.Space.L), verticalArrangement = Arrangement.spacedBy(UI.Space.L)) {
         UI.PageHeader(title = s.tool("passing_title").format(index + 1, questions.size), leftButton = ButtonAction.BACK, onLeftClick = onCancel)
         if (questions.isEmpty()) { UI.Text(s.tool("no_question"), TextType.CAPTION); return@Column }
         val question = questions[index]
         question.description?.let { UI.Text(it, TextType.CAPTION) }
         FieldInput(question, answers[question.name], { answers = answers + (question.name to it) }, context, required = false)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             if (index > 0) UI.Button(type = ButtonType.SECONDARY, onClick = { index-- }) { UI.Text(s.tool("action_previous"), TextType.LABEL) }
             val last = index == questions.size - 1
             UI.Button(type = ButtonType.PRIMARY, onClick = {
@@ -264,7 +263,7 @@ private fun EntryView(entry: QuestionnaireEntry, title: String, config: JSONObje
         UI.Button(type = ButtonType.PRIMARY, onClick = { draft = entry.answers; editing = true }) { UI.Text(s.tool("action_edit"), TextType.LABEL) }
     } else {
         CustomFieldsInput(customFieldsMetadata = questions, values = draft, onValuesChange = { draft = it }, context = context)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             UI.Button(type = ButtonType.PRIMARY, onClick = { onSave(questions.associate { it.name to draft[it.name] }); editing = false }) { UI.Text(s.shared("action_save"), TextType.LABEL) }
             UI.Button(type = ButtonType.SECONDARY, onClick = { editing = false }) { UI.Text(s.shared("action_cancel"), TextType.LABEL) }
         }
