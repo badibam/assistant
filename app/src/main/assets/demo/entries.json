@@ -1,0 +1,1123 @@
+{
+  "demo-kitchen-foods": [
+    {
+      "id": "demo-food-oats",
+      "name": "@food_oats",
+      "extra": {
+        "kcal_100g": 370,
+        "protein_100g": 13.5,
+        "carbs_100g": 58.7,
+        "category": "cereal"
+      }
+    },
+    {
+      "id": "demo-food-banana",
+      "name": "@food_banana",
+      "extra": {
+        "kcal_100g": 89,
+        "protein_100g": 1.1,
+        "carbs_100g": 22.8,
+        "category": "fruit"
+      }
+    },
+    {
+      "id": "demo-food-rice",
+      "name": "@food_rice",
+      "extra": {
+        "kcal_100g": 130,
+        "protein_100g": 2.7,
+        "carbs_100g": 28.2,
+        "category": "cereal"
+      }
+    },
+    {
+      "id": "demo-food-brown_rice",
+      "name": "@food_brown_rice",
+      "extra": {
+        "kcal_100g": 112,
+        "protein_100g": 2.6,
+        "carbs_100g": 23.5,
+        "category": "cereal"
+      }
+    },
+    {
+      "id": "demo-food-pasta",
+      "name": "@food_pasta",
+      "extra": {
+        "kcal_100g": 149,
+        "protein_100g": 5.9,
+        "carbs_100g": 30.6,
+        "category": "cereal"
+      }
+    },
+    {
+      "id": "demo-food-bread",
+      "name": "@food_bread",
+      "extra": {
+        "kcal_100g": 260,
+        "protein_100g": 8.5,
+        "carbs_100g": 50.0,
+        "category": "cereal"
+      }
+    },
+    {
+      "id": "demo-food-chicken",
+      "name": "@food_chicken",
+      "extra": {
+        "kcal_100g": 165,
+        "protein_100g": 31.0,
+        "carbs_100g": 0.0,
+        "category": "protein"
+      }
+    },
+    {
+      "id": "demo-food-salmon",
+      "name": "@food_salmon",
+      "extra": {
+        "kcal_100g": 208,
+        "protein_100g": 20.0,
+        "carbs_100g": 0.0,
+        "category": "protein"
+      }
+    },
+    {
+      "id": "demo-food-eggs",
+      "name": "@food_eggs",
+      "extra": {
+        "kcal_100g": 143,
+        "protein_100g": 12.6,
+        "carbs_100g": 0.7,
+        "category": "protein"
+      }
+    },
+    {
+      "id": "demo-food-lentils",
+      "name": "@food_lentils",
+      "extra": {
+        "kcal_100g": 116,
+        "protein_100g": 9.0,
+        "carbs_100g": 20.0,
+        "category": "protein"
+      }
+    },
+    {
+      "id": "demo-food-tofu",
+      "name": "@food_tofu",
+      "extra": {
+        "kcal_100g": 144,
+        "protein_100g": 15.6,
+        "carbs_100g": 2.8,
+        "category": "protein"
+      }
+    },
+    {
+      "id": "demo-food-chickpeas",
+      "name": "@food_chickpeas",
+      "extra": {
+        "kcal_100g": 139,
+        "protein_100g": 7.6,
+        "carbs_100g": 22.5,
+        "category": "protein"
+      }
+    },
+    {
+      "id": "demo-food-skyr",
+      "name": "@food_skyr",
+      "extra": {
+        "kcal_100g": 63,
+        "protein_100g": 11.0,
+        "carbs_100g": 4.0,
+        "category": "dairy"
+      }
+    },
+    {
+      "id": "demo-food-yogurt",
+      "name": "@food_yogurt",
+      "extra": {
+        "kcal_100g": 61,
+        "protein_100g": 3.5,
+        "carbs_100g": 4.7,
+        "category": "dairy"
+      }
+    },
+    {
+      "id": "demo-food-comte",
+      "name": "@food_comte",
+      "extra": {
+        "kcal_100g": 409,
+        "protein_100g": 28.0,
+        "carbs_100g": 0.0,
+        "category": "dairy"
+      }
+    },
+    {
+      "id": "demo-food-milk",
+      "name": "@food_milk",
+      "extra": {
+        "kcal_100g": 46,
+        "protein_100g": 3.3,
+        "carbs_100g": 4.8,
+        "category": "dairy"
+      }
+    },
+    {
+      "id": "demo-food-apple",
+      "name": "@food_apple",
+      "extra": {
+        "kcal_100g": 52,
+        "protein_100g": 0.3,
+        "carbs_100g": 13.8,
+        "category": "fruit"
+      }
+    },
+    {
+      "id": "demo-food-orange",
+      "name": "@food_orange",
+      "extra": {
+        "kcal_100g": 47,
+        "protein_100g": 0.9,
+        "carbs_100g": 11.8,
+        "category": "fruit"
+      }
+    },
+    {
+      "id": "demo-food-berries",
+      "name": "@food_berries",
+      "extra": {
+        "kcal_100g": 50,
+        "protein_100g": 1.0,
+        "carbs_100g": 9.0,
+        "category": "fruit"
+      }
+    },
+    {
+      "id": "demo-food-avocado",
+      "name": "@food_avocado",
+      "extra": {
+        "kcal_100g": 160,
+        "protein_100g": 2.0,
+        "carbs_100g": 8.5,
+        "category": "fruit"
+      }
+    },
+    {
+      "id": "demo-food-almonds",
+      "name": "@food_almonds",
+      "extra": {
+        "kcal_100g": 579,
+        "protein_100g": 21.0,
+        "carbs_100g": 21.6,
+        "category": "other"
+      }
+    },
+    {
+      "id": "demo-food-honey",
+      "name": "@food_honey",
+      "extra": {
+        "kcal_100g": 304,
+        "protein_100g": 0.3,
+        "carbs_100g": 82.0,
+        "category": "other"
+      }
+    },
+    {
+      "id": "demo-food-olive_oil",
+      "name": "@food_olive_oil",
+      "extra": {
+        "kcal_100g": 884,
+        "protein_100g": 0.0,
+        "carbs_100g": 0.0,
+        "category": "other"
+      }
+    },
+    {
+      "id": "demo-food-dark_chocolate",
+      "name": "@food_dark_chocolate",
+      "extra": {
+        "kcal_100g": 546,
+        "protein_100g": 7.8,
+        "carbs_100g": 46.0,
+        "category": "other"
+      }
+    },
+    {
+      "id": "demo-food-broccoli",
+      "name": "@food_broccoli",
+      "extra": {
+        "kcal_100g": 34,
+        "protein_100g": 2.8,
+        "carbs_100g": 6.6,
+        "category": "vegetable"
+      }
+    },
+    {
+      "id": "demo-food-carrots",
+      "name": "@food_carrots",
+      "extra": {
+        "kcal_100g": 41,
+        "protein_100g": 0.9,
+        "carbs_100g": 9.6,
+        "category": "vegetable"
+      }
+    },
+    {
+      "id": "demo-food-tomatoes",
+      "name": "@food_tomatoes",
+      "extra": {
+        "kcal_100g": 18,
+        "protein_100g": 0.9,
+        "carbs_100g": 3.9,
+        "category": "vegetable"
+      }
+    },
+    {
+      "id": "demo-food-zucchini",
+      "name": "@food_zucchini",
+      "extra": {
+        "kcal_100g": 17,
+        "protein_100g": 1.2,
+        "carbs_100g": 3.1,
+        "category": "vegetable"
+      }
+    },
+    {
+      "id": "demo-food-spinach",
+      "name": "@food_spinach",
+      "extra": {
+        "kcal_100g": 23,
+        "protein_100g": 2.9,
+        "carbs_100g": 3.6,
+        "category": "vegetable"
+      }
+    },
+    {
+      "id": "demo-food-sweet_potato",
+      "name": "@food_sweet_potato",
+      "extra": {
+        "kcal_100g": 86,
+        "protein_100g": 1.6,
+        "carbs_100g": 20.0,
+        "category": "vegetable"
+      }
+    }
+  ],
+  "demo-balcony-plants": [
+    {
+      "id": "demo-plant-tomato",
+      "name": "@plant_tomato",
+      "extra": {
+        "exposure": "sun",
+        "watering": "@plant_tomato_watering",
+        "ideal_temp": {
+          "start": 18,
+          "end": 28
+        }
+      },
+      "sown_weeks_ago": 13,
+      "sown_weekday": 3,
+      "repotted": [
+        8,
+        6,
+        "10:30"
+      ]
+    },
+    {
+      "id": "demo-plant-basil",
+      "name": "@plant_basil",
+      "extra": {
+        "exposure": "sun",
+        "watering": "@plant_basil_watering",
+        "ideal_temp": {
+          "start": 18,
+          "end": 30
+        }
+      },
+      "sown_weeks_ago": 12,
+      "sown_weekday": 6,
+      "repotted": null
+    },
+    {
+      "id": "demo-plant-mint",
+      "name": "@plant_mint",
+      "extra": {
+        "exposure": "part_shade",
+        "watering": "@plant_mint_watering",
+        "ideal_temp": {
+          "start": 12,
+          "end": 25
+        }
+      },
+      "sown_weeks_ago": 14,
+      "sown_weekday": 2,
+      "repotted": null
+    },
+    {
+      "id": "demo-plant-strawberry",
+      "name": "@plant_strawberry",
+      "extra": {
+        "exposure": "sun",
+        "watering": "@plant_strawberry_watering",
+        "ideal_temp": {
+          "start": 15,
+          "end": 25
+        }
+      },
+      "sown_weeks_ago": 15,
+      "sown_weekday": 4,
+      "repotted": null
+    },
+    {
+      "id": "demo-plant-chilli",
+      "name": "@plant_chilli",
+      "extra": {
+        "exposure": "sun",
+        "watering": "@plant_chilli_watering",
+        "ideal_temp": {
+          "start": 20,
+          "end": 30
+        }
+      },
+      "sown_weeks_ago": 13,
+      "sown_weekday": 5,
+      "repotted": [
+        8,
+        6,
+        "10:30"
+      ]
+    },
+    {
+      "id": "demo-plant-chives",
+      "name": "@plant_chives",
+      "extra": {
+        "exposure": "part_shade",
+        "watering": "@plant_chives_watering",
+        "ideal_temp": {
+          "start": 10,
+          "end": 24
+        }
+      },
+      "sown_weeks_ago": 12,
+      "sown_weekday": 2,
+      "repotted": null
+    }
+  ],
+  "demo-kitchen-shopping": [
+    {
+      "id": "demo-shop-milk",
+      "name": "@shop_milk",
+      "position": 0,
+      "checked": null
+    },
+    {
+      "id": "demo-shop-eggs",
+      "name": "@shop_eggs",
+      "position": 1,
+      "checked": null
+    },
+    {
+      "id": "demo-shop-bananas",
+      "name": "@shop_bananas",
+      "position": 2,
+      "checked": null
+    },
+    {
+      "id": "demo-shop-oats",
+      "name": "@shop_oats",
+      "position": 3,
+      "checked": null
+    },
+    {
+      "id": "demo-shop-salmon",
+      "name": "@shop_salmon",
+      "position": 4,
+      "checked": null
+    },
+    {
+      "id": "demo-shop-broccoli",
+      "name": "@shop_broccoli",
+      "position": 5,
+      "checked": null
+    },
+    {
+      "id": "demo-shop-brown_rice",
+      "name": "@shop_brown_rice",
+      "position": 6,
+      "checked": null
+    },
+    {
+      "id": "demo-shop-skyr",
+      "name": "@shop_skyr",
+      "position": 7,
+      "checked": null
+    },
+    {
+      "id": "demo-shop-bread",
+      "name": "@shop_bread",
+      "position": 8,
+      "checked": null
+    },
+    {
+      "id": "demo-shop-honey",
+      "name": "@shop_honey",
+      "position": 9,
+      "checked": [
+        0,
+        2,
+        "18:10"
+      ]
+    },
+    {
+      "id": "demo-shop-almonds",
+      "name": "@shop_almonds",
+      "position": 10,
+      "checked": [
+        0,
+        2,
+        "18:11"
+      ]
+    },
+    {
+      "id": "demo-shop-olive_oil",
+      "name": "@shop_olive_oil",
+      "position": 11,
+      "checked": [
+        1,
+        6,
+        "11:00"
+      ]
+    },
+    {
+      "id": "demo-shop-chickpeas",
+      "name": "@shop_chickpeas",
+      "position": 12,
+      "checked": [
+        1,
+        6,
+        "11:02"
+      ]
+    },
+    {
+      "id": "demo-shop-berries",
+      "name": "@shop_berries",
+      "position": 13,
+      "checked": [
+        1,
+        6,
+        "11:03"
+      ]
+    }
+  ],
+  "demo-work-tasks": [
+    {
+      "id": "demo-task-call_brume",
+      "name": "@task_call_brume",
+      "position": 0,
+      "due": "in_one_minute",
+      "checked": null
+    },
+    {
+      "id": "demo-task-chase_rameau",
+      "name": "@task_chase_rameau",
+      "position": 1,
+      "due": "this_morning",
+      "checked": null
+    },
+    {
+      "id": "demo-task-mockups_v2",
+      "name": "@task_mockups_v2",
+      "position": 2,
+      "due": null,
+      "checked": [
+        0,
+        1,
+        "16:40"
+      ]
+    },
+    {
+      "id": "demo-task-quote_mairie",
+      "name": "@task_quote_mairie",
+      "position": 3,
+      "due": null,
+      "checked": [
+        1,
+        4,
+        "10:15"
+      ]
+    },
+    {
+      "id": "demo-task-invoice_sept",
+      "name": "@task_invoice_sept",
+      "position": 4,
+      "due": null,
+      "checked": [
+        1,
+        1,
+        "09:30"
+      ]
+    },
+    {
+      "id": "demo-task-print_files",
+      "name": "@task_print_files",
+      "position": 5,
+      "due": [
+        0,
+        5,
+        "17:00"
+      ],
+      "checked": null
+    },
+    {
+      "id": "demo-task-fonts",
+      "name": "@task_fonts",
+      "position": 6,
+      "due": [
+        1,
+        3,
+        "12:00"
+      ],
+      "checked": null
+    },
+    {
+      "id": "demo-task-portfolio",
+      "name": "@task_portfolio",
+      "position": 7,
+      "due": null,
+      "checked": null
+    },
+    {
+      "id": "demo-task-accountant",
+      "name": "@task_accountant",
+      "position": 8,
+      "due": [
+        2,
+        1,
+        "10:00"
+      ],
+      "checked": null
+    },
+    {
+      "id": "demo-task-backup",
+      "name": "@task_backup",
+      "position": 9,
+      "due": null,
+      "checked": null
+    },
+    {
+      "id": "demo-task-meeting_rameau",
+      "name": "@task_meeting_rameau",
+      "position": 10,
+      "due": [
+        1,
+        2,
+        "09:00"
+      ],
+      "checked": null
+    }
+  ],
+  "demo-balcony-todo": [
+    {
+      "id": "demo-btodo-repot_basil",
+      "name": "@btodo_repot_basil",
+      "position": 0,
+      "due": "next_saturday",
+      "checked": null
+    },
+    {
+      "id": "demo-btodo-aphids",
+      "name": "@btodo_aphids",
+      "position": 1,
+      "due": [
+        -1,
+        2,
+        "19:00"
+      ],
+      "checked": null
+    },
+    {
+      "id": "demo-btodo-stakes",
+      "name": "@btodo_stakes",
+      "position": 2,
+      "due": null,
+      "checked": null
+    },
+    {
+      "id": "demo-btodo-compost",
+      "name": "@btodo_compost",
+      "position": 3,
+      "due": null,
+      "checked": [
+        1,
+        6,
+        "10:00"
+      ]
+    }
+  ],
+  "demo-italian-suitcase": [
+    {
+      "id": "demo-suit-passport",
+      "name": "@suit_passport",
+      "position": 0,
+      "checked": [
+        1,
+        7,
+        "20:10"
+      ]
+    },
+    {
+      "id": "demo-suit-tickets",
+      "name": "@suit_tickets",
+      "position": 1,
+      "checked": [
+        1,
+        7,
+        "20:11"
+      ]
+    },
+    {
+      "id": "demo-suit-adapter",
+      "name": "@suit_adapter",
+      "position": 2,
+      "checked": null
+    },
+    {
+      "id": "demo-suit-shoes",
+      "name": "@suit_shoes",
+      "position": 3,
+      "checked": null
+    },
+    {
+      "id": "demo-suit-phrasebook",
+      "name": "@suit_phrasebook",
+      "position": 4,
+      "checked": null
+    },
+    {
+      "id": "demo-suit-raincoat",
+      "name": "@suit_raincoat",
+      "position": 5,
+      "checked": null
+    },
+    {
+      "id": "demo-suit-charger",
+      "name": "@suit_charger",
+      "position": 6,
+      "checked": null
+    },
+    {
+      "id": "demo-suit-sunglasses",
+      "name": "@suit_sunglasses",
+      "position": 7,
+      "checked": null
+    },
+    {
+      "id": "demo-suit-camera",
+      "name": "@suit_camera",
+      "position": 8,
+      "checked": null
+    },
+    {
+      "id": "demo-suit-notebook",
+      "name": "@suit_notebook",
+      "position": 9,
+      "checked": null
+    },
+    {
+      "id": "demo-suit-medicine",
+      "name": "@suit_medicine",
+      "position": 10,
+      "checked": null
+    },
+    {
+      "id": "demo-suit-gift",
+      "name": "@suit_gift",
+      "position": 11,
+      "checked": null
+    }
+  ],
+  "demo-kitchen-recipes": [
+    {
+      "id": "demo-recipe-porridge",
+      "position": 0,
+      "data": {
+        "content": "@recipe_porridge"
+      }
+    },
+    {
+      "id": "demo-recipe-lentils",
+      "position": 1,
+      "data": {
+        "content": "@recipe_lentils"
+      }
+    },
+    {
+      "id": "demo-recipe-salmon",
+      "position": 2,
+      "data": {
+        "content": "@recipe_salmon"
+      }
+    },
+    {
+      "id": "demo-recipe-pesto",
+      "position": 3,
+      "data": {
+        "content": "@recipe_pesto"
+      }
+    },
+    {
+      "id": "demo-recipe-chickpeas",
+      "position": 4,
+      "data": {
+        "content": "@recipe_chickpeas"
+      }
+    },
+    {
+      "id": "demo-recipe-skyr",
+      "position": 5,
+      "data": {
+        "content": "@recipe_skyr"
+      }
+    }
+  ],
+  "demo-italian-phrases": [
+    {
+      "id": "demo-phrase-table",
+      "position": 0,
+      "data": {
+        "content": "@phrase_table"
+      }
+    },
+    {
+      "id": "demo-phrase-bill",
+      "position": 1,
+      "data": {
+        "content": "@phrase_bill"
+      }
+    },
+    {
+      "id": "demo-phrase-platform",
+      "position": 2,
+      "data": {
+        "content": "@phrase_platform"
+      }
+    },
+    {
+      "id": "demo-phrase-ticket",
+      "position": 3,
+      "data": {
+        "content": "@phrase_ticket"
+      }
+    },
+    {
+      "id": "demo-phrase-checkin",
+      "position": 4,
+      "data": {
+        "content": "@phrase_checkin"
+      }
+    },
+    {
+      "id": "demo-phrase-run",
+      "position": 5,
+      "data": {
+        "content": "@phrase_run"
+      }
+    },
+    {
+      "id": "demo-phrase-way",
+      "position": 6,
+      "data": {
+        "content": "@phrase_way"
+      }
+    },
+    {
+      "id": "demo-phrase-coffee",
+      "position": 7,
+      "data": {
+        "content": "@phrase_coffee"
+      }
+    }
+  ],
+  "demo-work-notebook": [
+    {
+      "id": "demo-wnote-brume_kickoff",
+      "at": [
+        11,
+        1,
+        "18:30"
+      ],
+      "name": "@wnote_brume_kickoff_title",
+      "data": {
+        "content": "@wnote_brume_kickoff"
+      }
+    },
+    {
+      "id": "demo-wnote-rameau_site",
+      "at": [
+        10,
+        3,
+        "19:00"
+      ],
+      "name": "@wnote_rameau_site_title",
+      "data": {
+        "content": "@wnote_rameau_site"
+      }
+    },
+    {
+      "id": "demo-wnote-brume_logo",
+      "at": [
+        8,
+        2,
+        "20:15"
+      ],
+      "name": "@wnote_brume_logo_title",
+      "data": {
+        "content": "@wnote_brume_logo"
+      }
+    },
+    {
+      "id": "demo-wnote-mairie_call",
+      "at": [
+        6,
+        5,
+        "18:45"
+      ],
+      "name": "@wnote_mairie_call_title",
+      "data": {
+        "content": "@wnote_mairie_call"
+      }
+    },
+    {
+      "id": "demo-wnote-rush_1",
+      "at": [
+        5,
+        2,
+        "23:40"
+      ],
+      "name": "@wnote_rush_1_title",
+      "data": {
+        "content": "@wnote_rush_1"
+      }
+    },
+    {
+      "id": "demo-wnote-rush_2",
+      "at": [
+        5,
+        5,
+        "21:30"
+      ],
+      "name": "@wnote_rush_2_title",
+      "data": {
+        "content": "@wnote_rush_2"
+      }
+    },
+    {
+      "id": "demo-wnote-after_rush",
+      "at": [
+        3,
+        1,
+        "18:00"
+      ],
+      "name": "@wnote_after_rush_title",
+      "data": {
+        "content": "@wnote_after_rush"
+      }
+    },
+    {
+      "id": "demo-wnote-rameau_late",
+      "at": [
+        2,
+        3,
+        "19:20"
+      ],
+      "name": "@wnote_rameau_late_title",
+      "data": {
+        "content": "@wnote_rameau_late"
+      }
+    },
+    {
+      "id": "demo-wnote-brume_posters",
+      "at": [
+        1,
+        4,
+        "18:10"
+      ],
+      "name": "@wnote_brume_posters_title",
+      "data": {
+        "content": "@wnote_brume_posters"
+      }
+    }
+  ],
+  "demo-balcony-notebook": [
+    {
+      "id": "demo-bnote-sowing",
+      "at": [
+        12,
+        6,
+        "11:00"
+      ],
+      "name": "@bnote_sowing_title",
+      "data": {
+        "content": "@bnote_sowing"
+      }
+    },
+    {
+      "id": "demo-bnote-outside",
+      "at": [
+        9,
+        7,
+        "10:30"
+      ],
+      "name": "@bnote_outside_title",
+      "data": {
+        "content": "@bnote_outside"
+      }
+    },
+    {
+      "id": "demo-bnote-first_tomato",
+      "at": [
+        7,
+        6,
+        "18:00"
+      ],
+      "name": "@bnote_first_tomato_title",
+      "data": {
+        "content": "@bnote_first_tomato"
+      }
+    },
+    {
+      "id": "demo-bnote-neglect",
+      "at": [
+        5,
+        7,
+        "17:00"
+      ],
+      "name": "@bnote_neglect_title",
+      "data": {
+        "content": "@bnote_neglect"
+      }
+    },
+    {
+      "id": "demo-bnote-aphids",
+      "at": [
+        3,
+        6,
+        "09:45"
+      ],
+      "name": "@bnote_aphids_title",
+      "data": {
+        "content": "@bnote_aphids"
+      }
+    },
+    {
+      "id": "demo-bnote-harvest",
+      "at": [
+        1,
+        7,
+        "11:15"
+      ],
+      "name": "@bnote_harvest_title",
+      "data": {
+        "content": "@bnote_harvest"
+      }
+    }
+  ],
+  "demo-balcony-observations": [
+    {
+      "id": "demo-obs-flower",
+      "at": [
+        8,
+        2,
+        "19:10"
+      ],
+      "name": "@observations_entry_name",
+      "data": {
+        "value": "@obs_flower"
+      }
+    },
+    {
+      "id": "demo-obs-red",
+      "at": [
+        6,
+        4,
+        "19:05"
+      ],
+      "name": "@observations_entry_name",
+      "data": {
+        "value": "@obs_red"
+      }
+    },
+    {
+      "id": "demo-obs-droop",
+      "at": [
+        5,
+        6,
+        "10:00"
+      ],
+      "name": "@observations_entry_name",
+      "data": {
+        "value": "@obs_droop"
+      }
+    },
+    {
+      "id": "demo-obs-aphids",
+      "at": [
+        3,
+        6,
+        "09:30"
+      ],
+      "name": "@observations_entry_name",
+      "data": {
+        "value": "@obs_aphids"
+      }
+    },
+    {
+      "id": "demo-obs-aphids_gone",
+      "at": [
+        2,
+        3,
+        "19:15"
+      ],
+      "name": "@observations_entry_name",
+      "data": {
+        "value": "@obs_aphids_gone"
+      }
+    },
+    {
+      "id": "demo-obs-runners",
+      "at": [
+        1,
+        5,
+        "19:00"
+      ],
+      "name": "@observations_entry_name",
+      "data": {
+        "value": "@obs_runners"
+      }
+    },
+    {
+      "id": "demo-obs-chilli_red",
+      "at": [
+        0,
+        1,
+        "19:05"
+      ],
+      "name": "@observations_entry_name",
+      "data": {
+        "value": "@obs_chilli_red"
+      }
+    }
+  ],
+  "_evening_phrases": [
+    "@evening_phrase_0",
+    "@evening_phrase_1",
+    "@evening_phrase_2",
+    "@evening_phrase_3",
+    "@evening_phrase_4",
+    "@evening_phrase_5",
+    "@evening_phrase_6",
+    "@evening_phrase_7",
+    "@evening_phrase_8",
+    "@evening_phrase_9",
+    "@evening_phrase_10",
+    "@evening_phrase_11"
+  ]
+}

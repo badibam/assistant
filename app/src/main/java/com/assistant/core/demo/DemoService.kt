@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.withTransaction
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.Origin
 import com.assistant.core.coordinator.Source
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.AppDatabase
@@ -13,9 +14,13 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.DisplayMode
+import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.JsonUtils
 import com.assistant.core.utils.LogManager
+import com.assistant.tools.goal.GoalDefinition
+import com.assistant.tools.goal.GoalToolType
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -49,8 +54,10 @@ class DemoService(private val context: Context) : ExecutableService {
     }
 
     private suspend fun install(): OperationResult {
+        val texts: JSONObject
         val content = try {
-            DemoContent.read(asset("demo/structure.json"), asset("demo/${s.shared("demo_texts_file")}"))
+            texts = asset("demo/${s.shared("demo_texts_file")}")
+            DemoContent.read(asset("demo/structure.json"), texts)
         } catch (e: Exception) {
             LogManager.service("Demo not read: ${e.message}", "ERROR", e)
             return OperationResult.error(s.shared("demo_error_unreadable").format(e.message ?: ""))
@@ -59,6 +66,7 @@ class DemoService(private val context: Context) : ExecutableService {
         return try {
             addZoneGroup(content.group)
             build(content)
+            fill(texts)
             LogManager.service("Demo installed: ${content.zones.size} zones, ${content.tools.size} tools, ${content.variables.size} variables", "INFO")
             OperationResult.success(mapOf("zones" to content.zones.size, "tools" to content.tools.size, "variables" to content.variables.size))
         } catch (e: Refused) {
@@ -87,6 +95,42 @@ class DemoService(private val context: Context) : ExecutableService {
                     .apply { section.second?.let { put("group", it) } }
                     .put("places", places(tools)))
             }
+    }
+
+    /**
+     * The entries, afloat now: each tool's written in one batch, as the app; then the goals'
+     * attempts, opened with their copy of the goal as the scheduler opens them, and those before
+     * last week validated as the user validates them, judged on the demo's own entries.
+     */
+    private suspend fun fill(texts: JSONObject) {
+        val data = DemoData(System.currentTimeMillis(), AppConfigManager.getDateTimeConfig().getZoneId(), asset("demo/entries.json"))
+        data.entries().forEach { (tool, entries) ->
+            if (entries.isEmpty()) return@forEach
+            val written = run("tool_data.batch_create", JSONObject()
+                .put("tool_instance_id", tool)
+                .put("entries", JSONArray(entries.map { DemoContent.resolve(it, texts) })))
+            val failed = (written["failed_count"] as? Number)?.toInt() ?: 0
+            if (failed > 0) throw Refused("tool_data.batch_create $tool: $failed refused, ${written["refusals"]}")
+        }
+        for (attempt in data.attempts()) {
+            @Suppress("UNCHECKED_CAST")
+            val tool = run("tools.get", JSONObject().put("tool_instance_id", attempt.toolId))["tool_instance"] as Map<String, Any?>
+            @Suppress("UNCHECKED_CAST")
+            val config = JsonUtils.toJSONObject(tool["config"] as Map<String, Any?>)
+            val id = "demo-e-attempt-${attempt.toolId}-${attempt.start}"
+            run("tool_data.create", JSONObject()
+                .put("id", id)
+                .put("tool_instance_id", attempt.toolId)
+                .put("name", config.getString("name"))
+                .put("timestamp", attempt.start)
+                .put("data", JSONObject(attempt.entered.toString()).put(GoalToolType.DEFINITION, GoalDefinition.copyOf(config).toString()))
+                .put("state", JSONObject().put(GoalToolType.STATUS, attempt.status).put(GoalToolType.PERIOD_END, attempt.end)))
+            // Validated by the user, as Camille would: a goal's validation is a person's or the AI's
+            if (attempt.validate) withContext(Origin(Source.USER, byTheApp = true)) {
+                val validated = coordinator.processUserAction("goal.validate", mapOf("id" to id))
+                if (!validated.isSuccess) throw Refused("goal.validate $id: ${validated.error}")
+            }
+        }
     }
 
     /**

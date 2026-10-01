@@ -61,16 +61,24 @@ class DemoContent(
             return DemoContent(resolved.getString("zone_group"), zones, tools, variables)
         }
 
-        /** [value] with each string `@key` replaced by the text of key, at any depth. */
-        private fun resolve(value: Any?, texts: JSONObject): Any? = when (value) {
-            is JSONObject -> JSONObject().also { out -> value.keys().forEach { out.put(it, resolve(value.get(it), texts)) } }
+        /**
+         * [value] with each string `@key` replaced by the text of key, and each `{"@": key, "args": […]}`
+         * by that text with its values put in (`%1$s`…), themselves resolved first, at any depth.
+         *
+         * @throws IllegalStateException when a key has no text
+         */
+        fun resolve(value: Any?, texts: JSONObject): Any? = when (value) {
+            is JSONObject -> if (value.has("@")) {
+                val args = value.optJSONArray("args")?.let { a -> (0 until a.length()).map { resolve(a.get(it), texts).toString() } } ?: emptyList()
+                text(value.getString("@"), texts).format(*args.toTypedArray())
+            } else JSONObject().also { out -> value.keys().forEach { out.put(it, resolve(value.get(it), texts)) } }
             is JSONArray -> JSONArray().also { out -> (0 until value.length()).forEach { out.put(resolve(value.get(it), texts)) } }
-            is String -> if (value.startsWith("@")) {
-                val key = value.substring(1)
-                texts.optString(key).takeIf { it.isNotEmpty() } ?: error("Demo text '$key' missing")
-            } else value
+            is String -> if (value.startsWith("@")) text(value.substring(1), texts) else value
             else -> value
         }
+
+        private fun text(key: String, texts: JSONObject): String =
+            texts.optString(key).takeIf { it.isNotEmpty() } ?: error("Demo text '$key' missing")
 
         /** Whether the tool [item] reads a variable anywhere in its config: a term `{"variable": …}`. */
         fun readsVariable(item: JSONObject): Boolean = hasVariable(item.getJSONObject("config"))

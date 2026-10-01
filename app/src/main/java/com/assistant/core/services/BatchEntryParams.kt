@@ -20,6 +20,8 @@ internal object BatchEntryParams {
     fun forCreate(entry: JSONObject, toolInstanceId: String): JSONObject =
         JSONObject().apply {
             put("tool_instance_id", toolInstanceId)
+            // An id given, which the create accepts from the app's demo alone (GivenId)
+            if (entry.has("id")) put("id", entry.getString("id"))
             put("data", entry.optJSONObject("data") ?: JSONObject())
             if (entry.has("extra")) put("extra", entry.getJSONObject("extra"))
             if (entry.has("state")) put("state", entry.getJSONObject("state"))

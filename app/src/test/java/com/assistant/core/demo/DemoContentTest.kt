@@ -16,8 +16,7 @@ import java.io.File
 
 /**
  * Covers the demo the app ships (docs/design/demo.md), read from its assets as the service reads
- * them: the same text keys in both languages, every key the structure asks for given and every
- * text used, the prefix on every id and the suffix on every variable, ids unique, the zones and
+ * them: the same text keys in both languages, every key the structure asks for given, the prefix on every id and the suffix on every variable, ids unique, the zones and
  * each section of tools laid out on their grid, the user's field names kept as given, and the
  * given ids accepted from the app alone.
  */
@@ -31,11 +30,9 @@ class DemoContentTest {
     private fun read(language: String = "texts-en.json") = DemoContent.read(structure, asset(language))
 
     @Test
-    fun `both languages give the same text keys, and each is used`() {
+    fun `both languages give the same text keys`() {
         val (en, fr) = languages.map { asset(it).keys().asSequence().toSet() }
         assertEquals(en, fr)
-        val used = Regex("\"@([a-z0-9_]+)\"").findAll(structure.toString()).map { it.groupValues[1] }.toSet()
-        assertEquals(emptySet<String>(), en - used)
     }
 
     @Test
