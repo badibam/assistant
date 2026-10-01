@@ -33,12 +33,20 @@ object Icons {
      * icon -- the caller shows its two first letters instead. A former Lucide name finds the
      * icon it became.
      */
-    fun drawable(context: Context, iconName: String): Int? {
+    fun drawable(context: Context, iconName: String): Int? = when (CurrentTheme.current.iconSource) {
+        IconSource.LUCIDE -> drawableOf(context, "lucide", iconName)
+        IconSource.OWN -> drawableOf(context, CurrentTheme.getCurrentThemeId(), iconName)
+    }
+
+    /**
+     * Lucide's drawing of [iconName], whatever the theme, or null when the name designates no
+     * icon. For the places a theme does not reach, such as the status bar, which keeps only an
+     * icon's silhouette and scales it by no whole factor.
+     */
+    fun lucideDrawable(context: Context, iconName: String): Int? = drawableOf(context, "lucide", iconName)
+
+    private fun drawableOf(context: Context, prefix: String, iconName: String): Int? {
         val name = index(context).resolve(iconName) ?: return null
-        val prefix = when (CurrentTheme.current.iconSource) {
-            IconSource.LUCIDE -> "lucide"
-            IconSource.OWN -> CurrentTheme.getCurrentThemeId()
-        }
         val id = context.resources.getIdentifier("${prefix}_${name.replace('-', '_')}", "drawable", context.packageName)
         return id.takeIf { it != 0 }
     }

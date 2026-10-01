@@ -1,6 +1,7 @@
 package com.assistant.core.icons
 
 import com.assistant.core.ai.data.EnrichmentType
+import com.assistant.core.notifications.NotificationService
 import com.assistant.core.tools.ToolTypeScanner
 import com.assistant.core.ui.ButtonAction
 import org.junit.Assert.assertTrue
@@ -9,7 +10,7 @@ import java.io.File
 
 /**
  * Every icon name the code asks for is in the vocabulary. A name that is not shows as two
- * letters, or breaks an action button, on the device only: this finds it before.
+ * letters, breaks an action button or refuses a notification, on the device only: this finds it before.
  */
 class IconNamesInCodeTest {
 
@@ -20,6 +21,7 @@ class IconNamesInCodeTest {
         val names = mutableListOf<Pair<String, String>>()
         ButtonAction.entries.forEach { names.add("ButtonAction.$it" to it.iconName) }
         EnrichmentType.entries.forEach { names.add("EnrichmentType.$it" to it.iconName) }
+        names.add("NotificationService.APP_ICON" to NotificationService.APP_ICON)
         // Every registered tool type, so a new one is checked without being listed here
         ToolTypeScanner.scanForToolTypes().values.forEach { toolType ->
             val owner = toolType::class.simpleName

@@ -97,6 +97,7 @@ object QuestionnaireScheduler : ToolScheduler {
                 "title" to (config.optString("name").ifEmpty { s.tool("display_name") }),
                 "content" to s.tool("notification_to_fill"),
                 "priority" to "default",
+                "icon_name" to config.optString("icon_name").ifEmpty { QuestionnaireToolType.getDefaultIconName() },
                 "tool_instance_id" to id
             ))
         }

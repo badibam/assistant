@@ -7,6 +7,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.assistant.MainActivity
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.icons.Icons
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
@@ -31,13 +32,18 @@ import org.json.JSONObject
  * - Channels created before sending first notification
  *
  * Operation: send
- * - Params: title (required), content (optional), priority (required)
+ * - Params: title (required), content (optional), priority (required), icon_name (optional)
  * - Returns: success or error
  * - Best effort: No retry mechanism (Android notification delivery is fire-and-forget)
  *
  * @param context Application context
  */
 class NotificationService(private val context: Context) : ExecutableService {
+
+    companion object {
+        /** The app's icon, on a notification that no tool sends. */
+        const val APP_ICON = "sparkles"
+    }
 
     private val notificationManager = NotificationManagerCompat.from(context)
 
@@ -66,6 +72,8 @@ class NotificationService(private val context: Context) : ExecutableService {
      * Optional params:
      * - content: String? (notification body)
      * - notification_id: Int? (for updating/replacing notifications, auto-generated if null)
+     * - icon_name: String? (a Lucide name, the icon of the tool that sends; the app's own,
+     *   APP_ICON, when nothing sends on a tool's behalf). Lucide's drawing whatever the theme.
      *
      * Returns:
      * - success: true with notification_id
@@ -93,6 +101,13 @@ class NotificationService(private val context: Context) : ExecutableService {
             val content = params.optString("content", null)
             // The tool it is about, opened on its oldest entry that waits when it is touched
             val toolInstanceId = params.optString("tool_instance_id").takeIf { it.isNotEmpty() }
+            val iconName = params.optString("icon_name").ifEmpty { APP_ICON }
+            val icon = Icons.lucideDrawable(context, iconName)
+            if (icon == null) {
+                val error = s.shared("notification_error_unknown_icon").format(iconName)
+                LogManager.service("NotificationService.send: $error", "ERROR")
+                return OperationResult.error(error)
+            }
             val notificationId = if (params.has("notification_id")) params.getInt("notification_id") else generateNotificationId()
 
             // Get channel ID for priority
@@ -108,6 +123,7 @@ class NotificationService(private val context: Context) : ExecutableService {
                 channelId = channelId,
                 title = title,
                 content = content,
+                icon = icon,
                 toolInstanceId = toolInstanceId,
                 requestCode = notificationId
             )
@@ -134,6 +150,7 @@ class NotificationService(private val context: Context) : ExecutableService {
      * @param channelId Notification channel ID
      * @param title Notification title
      * @param content Notification body (optional)
+     * @param icon The small icon's drawable, of which the status bar keeps the silhouette
      * @param toolInstanceId The tool the app opens when it is touched, null for the app alone
      * @param requestCode Its own, so that two notifications keep their own tool
      * @return NotificationCompat.Builder configured notification
@@ -142,6 +159,7 @@ class NotificationService(private val context: Context) : ExecutableService {
         channelId: String,
         title: String,
         content: String?,
+        icon: Int,
         toolInstanceId: String?,
         requestCode: Int
     ): NotificationCompat.Builder {
@@ -160,7 +178,7 @@ class NotificationService(private val context: Context) : ExecutableService {
 
         // Build notification
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Default Android icon (TODO: Use custom app icon)
+            .setSmallIcon(icon)
             .setContentTitle(title)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true) // Dismiss when clicked

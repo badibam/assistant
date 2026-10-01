@@ -400,6 +400,7 @@ object MessageScheduler : ToolScheduler {
             val params = mutableMapOf<String, Any>(
                 "title" to title,
                 "priority" to priority,
+                "icon_name" to settings.string("icon_name")!!,
                 "tool_instance_id" to toolInstanceId
             )
             if (content != null) params["content"] = content

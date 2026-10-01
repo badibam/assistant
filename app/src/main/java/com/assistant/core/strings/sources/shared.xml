@@ -1599,6 +1599,7 @@
     <string name="notification_error_missing_title">Notification title missing</string>
     <string name="notification_error_missing_priority">Notification priority missing</string>
     <string name="notification_error_send_failed">Failed to send the notification</string>
+    <string name="notification_error_unknown_icon">Notification icon unknown: %1$s</string>
 
 
     

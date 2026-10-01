@@ -57,6 +57,7 @@ object ListDueScheduler : ToolScheduler {
                 "title" to config.getString("name"),
                 "content" to item.name,
                 "priority" to "default",
+                "icon_name" to config.optString("icon_name").ifEmpty { ListToolType.getDefaultIconName() },
                 "tool_instance_id" to toolInstanceId
             ))
             if (!sent.isSuccess) LogManager.service("ListDueScheduler: notification of ${item.id} failed: ${sent.error}", "WARN")
