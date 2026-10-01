@@ -166,8 +166,9 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
 ### Liste (List)
 **Usage** : L'état présent de ce qui reste à faire (courses, tâches, check-list), sans historique : ce qui a été fait et quand relève d'un suivi « occurrence »
-**Configuration** : `remove_when_checked`, un élément coché est supprimé aussitôt (les courses) ; ce qu'un élément porte au-delà de son nom (quantité, échéance) est un champ personnalisé
-**Données** : Une entrée par élément : son nom, et dans `state` sa position (`ManualOrder`) et `checked_at`, l'instant où il a été coché, absent sinon ; décocher l'efface. L'écran montre les non cochés dans l'ordre manuel, réordonnés en glissant, puis, sous un trait, les cochés dans l'ordre où ils l'ont été ; « Tout décocher » agit en un lot. La tuile se coche sans ouvrir l'outil (`ListTile`)
+**Configuration** : `remove_when_checked`, un élément coché est supprimé aussitôt (les courses) ; `due_dates`, les éléments peuvent porter une échéance ; ce qu'un élément porte d'autre au-delà de son nom (une quantité) est un champ personnalisé
+**Données** : Une entrée par élément : son nom, dans `data` son échéance `due_at` (déclarée seulement avec `due_dates`), et dans `state` sa position (`ManualOrder`), `checked_at`, l'instant où il a été coché, absent sinon — décocher l'efface —, et `due_notified`, l'échéance déjà notifiée. L'écran montre les non cochés dans l'ordre manuel, réordonnés en glissant, puis, sous un trait, les cochés dans l'ordre où ils l'ont été ; « Tout décocher » agit en un lot. La tuile se coche sans ouvrir l'outil (`ListTile`)
+**Échéances** : une chose à faire une fois avant un moment (un rythme fixe relève de Messages). `ListDueScheduler` notifie une fois chaque échéance passée d'un élément non coché et la marque dans `due_notified` ; un élément marqué et non coché attend (le point), les conditions d'attente ne connaissant pas l'heure ; `DueNotice` efface la marque quand l'échéance qu'elle nomme change. L'écran montre l'échéance sous le nom, « En retard » une fois passée ; la tuile met les éléments en retard en tête et les compte
 
 ### Objectif (Goal)
 **Usage** : Un objectif jugé par comptage de ses critères, une tentative par période

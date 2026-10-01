@@ -17,10 +17,16 @@
     <string name="field_checked_at">Coché le</string>
     <string name="schema_data_position">Place dans la liste, 0 en haut, parmi tous les éléments, cochés ou non. Une position déjà prise y place l\'élément et décale les suivants ; sans position, l\'élément va en dernier. Les positions restent 0, 1, 2… sans trou</string>
     <string name="schema_data_checked_at">Quand l\'élément a été coché ; absent tant qu\'il ne l\'est pas. Écrit par les opérations check et uncheck, jamais envoyé</string>
+    <string name="field_due_at">Échéance</string>
+    <string name="schema_data_due_at">Le moment avant lequel l\'élément est à faire, dans une liste à échéances (due_dates) ; facultatif. À ce moment, une notification part une fois, et l\'élément attend tant qu\'il n\'est pas coché. Envoyé à null pour retirer l\'échéance</string>
+    <string name="field_due_notified">Échéance notifiée</string>
+    <string name="schema_data_due_notified">L\'échéance dont la notification est partie, écrite par l\'app ; effacée quand l\'échéance change. Jamais envoyé</string>
 
     <!-- Réglage -->
     <string name="field_remove_when_checked">Un élément coché est supprimé aussitôt</string>
     <string name="schema_config_remove_when_checked">Si cocher un élément le supprime aussitôt, pour une liste dont les éléments faits n\'ont plus rien à dire (les courses). Dans une telle liste, l\'opération check supprime l\'élément</string>
+    <string name="field_due_dates">Échéances</string>
+    <string name="schema_config_due_dates">Si les éléments peuvent porter une échéance (due_at), notifiée à son heure ; un élément en retard attend qu\'on le coche. Pour une chose à faire une fois avant un moment ; un rythme fixe relève de l\'outil Messages</string>
 
     <!-- Écran -->
     <string name="list_empty">La liste est vide</string>
@@ -28,10 +34,13 @@
     <string name="action_uncheck_all">Tout décocher</string>
     <string name="edit_item_title">Élément</string>
     <string name="delete_item_confirm">Supprimer « %1$s » ?</string>
+    <string name="due_late">En retard</string>
 
     <!-- Tuile sur une zone -->
     <string name="tile_empty">Liste vide</string>
     <string name="tile_all_checked">Tout est coché</string>
     <string name="tile_left_one">1 restant</string>
     <string name="tile_left_many">%1$s restants</string>
+    <string name="tile_late_one">1 en retard</string>
+    <string name="tile_late_many">%1$s en retard</string>
 </resources>

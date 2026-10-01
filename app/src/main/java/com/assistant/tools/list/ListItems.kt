@@ -12,13 +12,17 @@ import org.json.JSONObject
  * @property position Its place in the manual order, among every item, checked or not
  * @property checkedAt When it was checked, null while it is not
  * @property extra The list's own fields
+ * @property dueAt Its due date, null without one or in a list without due dates
+ * @property dueNotified The due date whose notification went out, null before
  */
 data class ListItem(
     val id: String,
     val name: String,
     val position: Int,
     val checkedAt: Long?,
-    val extra: Map<String, Any?>
+    val extra: Map<String, Any?>,
+    val dueAt: Long? = null,
+    val dueNotified: Long? = null
 ) {
     val isChecked: Boolean get() = checkedAt != null
 }
@@ -55,33 +59,44 @@ object ListItems {
         return entries.map { entry ->
             val map = entry as Map<*, *>
             val state = map["state"] as? Map<*, *> ?: emptyMap<String, Any?>()
+            val data = map["data"] as? Map<*, *> ?: emptyMap<String, Any?>()
             @Suppress("UNCHECKED_CAST")
             ListItem(
                 id = map["id"] as String,
                 name = map["name"] as String,
                 position = (state[ManualOrder.POSITION] as? Number)?.toInt() ?: Int.MAX_VALUE,
                 checkedAt = (state[ListToolType.CHECKED_AT] as? Number)?.toLong(),
-                extra = map["extra"] as? Map<String, Any?> ?: emptyMap()
+                extra = map["extra"] as? Map<String, Any?> ?: emptyMap(),
+                dueAt = (data[ListToolType.DUE_AT] as? Number)?.toLong(),
+                dueNotified = (state[ListToolType.DUE_NOTIFIED] as? Number)?.toLong()
             )
         }
     }
 
-    /** Adds an item named [name]; without a position, the service puts it last. */
-    suspend fun add(coordinator: Coordinator, toolInstanceId: String, name: String, extra: Map<String, Any?>) =
+    /**
+     * Adds an item named [name], with its due date when given; without a position, the service
+     * puts it last.
+     */
+    suspend fun add(coordinator: Coordinator, toolInstanceId: String, name: String, extra: Map<String, Any?>, dueAt: Long? = null) =
         coordinator.processUserAction("tool_data.create", buildMap {
             put("tool_instance_id", toolInstanceId)
             put("tooltype", "list")
             put("name", name.trim())
+            if (dueAt != null) put("data", JSONObject().put(ListToolType.DUE_AT, dueAt))
             if (extra.isNotEmpty()) put("extra", JSONObject(extra))
         })
 
-    /** Renames [item] and sets its fields, those emptied sent as null to be cleared. */
-    suspend fun update(coordinator: Coordinator, item: ListItem, name: String, extra: Map<String, Any?>) =
-        coordinator.processUserAction("tool_data.update", mapOf(
-            "id" to item.id,
-            "name" to name.trim(),
-            "extra" to com.assistant.core.fields.extraForUpdate(item.extra, extra)
-        ))
+    /**
+     * Renames [item] and sets its fields, those emptied sent as null to be cleared; in a list
+     * with due dates ([dueDates]), sets its due date too, null clearing it.
+     */
+    suspend fun update(coordinator: Coordinator, item: ListItem, name: String, extra: Map<String, Any?>, dueDates: Boolean = false, dueAt: Long? = null) =
+        coordinator.processUserAction("tool_data.update", buildMap {
+            put("id", item.id)
+            put("name", name.trim())
+            put("extra", com.assistant.core.fields.extraForUpdate(item.extra, extra))
+            if (dueDates) put("data", JSONObject().put(ListToolType.DUE_AT, dueAt ?: JSONObject.NULL))
+        })
 
     /**
      * Checks the item [id] now, or unchecks it, which forgets when it was checked. In a list set

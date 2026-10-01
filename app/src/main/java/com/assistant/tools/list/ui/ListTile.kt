@@ -33,6 +33,7 @@ import com.assistant.core.ui.UI
 import com.assistant.core.ui.components.TileGrid
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.tools.list.DueNotice
 import com.assistant.tools.list.ListItem
 import com.assistant.tools.list.ListItems
 import com.assistant.tools.list.ListToolType
@@ -41,9 +42,10 @@ import org.json.JSONObject
 
 /**
  * A list's tile, its boxes checked and its items added without opening the tool. The summary
- * counts the items left unchecked ("3 restants"), beside a button adding one; the body shows
- * the unchecked items in their order, two per line on two columns, each with its box: four per
- * row of cells, all of them in FULL. The checked ones stay in the tool.
+ * counts the items left unchecked ("3 restants"), or the late ones in a list with due dates
+ * ("2 en retard"), beside a button adding one; the body shows the unchecked items, the late
+ * ones first and the others in their order, two per line on two columns, each with its box:
+ * four per row of cells, all of them in FULL. The checked ones stay in the tool.
  */
 @Composable
 fun rememberListTile(tool: ToolInstance): ToolTile {
@@ -55,6 +57,7 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
     val removeWhenChecked = remember(tool.config_json) {
         ToolConfigSettings.read(ListToolType, JSONObject(tool.config_json), context).boolean(ListToolType.REMOVE_WHEN_CHECKED)
     }
+    val dueDates = remember(tool.config_json) { ListToolType.hasDueDates(JSONObject(tool.config_json)) }
 
     val fields = remember(tool.config_json) { JSONObject(tool.config_json).optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList() }
 
@@ -82,9 +85,10 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
     if (adding) {
         ListAddDialog(
             fields = fields,
-            onAdd = { name, extra ->
+            dueDates = dueDates,
+            onAdd = { name, extra, dueAt ->
                 scope.launch {
-                    val result = ListItems.add(coordinator, tool.id, name, extra)
+                    val result = ListItems.add(coordinator, tool.id, name, extra, dueAt.takeIf { dueDates })
                     if (result.isSuccess) adding = false
                     else UI.Toast(context, result.error ?: s.shared("message_error_simple"), Duration.LONG)
                 }
@@ -93,18 +97,22 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
         )
     }
 
-    return remember(tool.id, removeWhenChecked) {
+    return remember(tool.id, removeWhenChecked, dueDates) {
         object : ToolTile {
             @Composable
             override fun Summary() {
                 // Nothing to show until loaded: the tile keeps its header alone meanwhile
                 val loaded = items ?: return
                 val left = loaded.count { !it.isChecked }
+                val now = System.currentTimeMillis()
+                val late = if (dueDates) loaded.count { DueNotice.isLate(it, now) } else 0
                 Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         UI.Text(
                             text = when {
                                 loaded.isEmpty() -> s.tool("tile_empty")
+                                late == 1 -> s.tool("tile_late_one")
+                                late > 1 -> s.tool("tile_late_many").format(late.toString())
                                 left == 0 -> s.tool("tile_all_checked")
                                 left == 1 -> s.tool("tile_left_one")
                                 else -> s.tool("tile_left_many").format(left.toString())
@@ -122,7 +130,10 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
             @Composable
             override fun Body(rows: Int?) {
                 val loaded = items ?: return
-                TileGrid(rows, ListItems.shown(loaded).filterNot { it.isChecked }, columns = 2) { item ->
+                val now = System.currentTimeMillis()
+                // The late ones first, each part keeping the list's order: a stable sort
+                val left = ListItems.shown(loaded).filterNot { it.isChecked }.sortedBy { if (DueNotice.isLate(it, now)) 0 else 1 }
+                TileGrid(rows, left, columns = 2) { item ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         UI.Checkbox(checked = item.isChecked, onCheckedChange = { checked -> check(item, checked) })
                         UI.Text(item.name, TextType.BODY, maxLines = 1)

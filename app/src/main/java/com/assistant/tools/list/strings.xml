@@ -17,10 +17,16 @@
     <string name="field_checked_at">Checked on</string>
     <string name="schema_data_position">Place in the list, 0 at the top, among every item, checked or not. A position already taken puts the item there and moves the following ones down; without a position the item goes last. Positions stay 0, 1, 2… with no gap</string>
     <string name="schema_data_checked_at">When the item was checked; absent while it is not. Written by the check and uncheck operations, never sent</string>
+    <string name="field_due_at">Due</string>
+    <string name="schema_data_due_at">The moment before which the item is to be done, in a list with due dates (due_dates); optional. At that moment one notification goes out, and the item waits as long as it is not checked. Sent as null to remove the due date</string>
+    <string name="field_due_notified">Due date notified</string>
+    <string name="schema_data_due_notified">The due date whose notification went out, written by the app; cleared when the due date changes. Never sent</string>
 
     <!-- Setting -->
     <string name="field_remove_when_checked">A checked item is removed at once</string>
     <string name="schema_config_remove_when_checked">Whether checking an item deletes it at once, for a list whose done items have nothing left to say (shopping). In such a list, the check operation deletes the item</string>
+    <string name="field_due_dates">Due dates</string>
+    <string name="schema_config_due_dates">Whether items may carry a due date (due_at), notified when it comes; a late item waits to be checked. For something to do once before a moment; a fixed rhythm belongs to the Messages tool</string>
 
     <!-- Screen -->
     <string name="list_empty">The list is empty</string>
@@ -28,10 +34,13 @@
     <string name="action_uncheck_all">Uncheck all</string>
     <string name="edit_item_title">Item</string>
     <string name="delete_item_confirm">Delete \"%1$s\"?</string>
+    <string name="due_late">Late</string>
 
     <!-- Tile on a zone -->
     <string name="tile_empty">Empty list</string>
     <string name="tile_all_checked">All checked</string>
     <string name="tile_left_one">1 left</string>
     <string name="tile_left_many">%1$s left</string>
+    <string name="tile_late_one">1 late</string>
+    <string name="tile_late_many">%1$s late</string>
 </resources>

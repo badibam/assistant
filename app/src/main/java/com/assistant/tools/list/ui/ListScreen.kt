@@ -53,7 +53,9 @@ import org.json.JSONObject
  * a button to uncheck them all; last, the form adding an item. A list set to remove what is
  * checked deletes an item checked.
  *
- * Touching an item's name opens it, for its name and the list's own fields.
+ * Touching an item's name opens it, for its name and the list's own fields. In a list with due
+ * dates, an item shows its due date below its name, marked late once passed while unchecked,
+ * and its forms enter it.
  */
 @Composable
 fun ListScreen(
@@ -77,6 +79,7 @@ fun ListScreen(
     // What the user produced: the new item's name and fields, the item open
     var typed by rememberSaveable { mutableStateOf("") }
     var typedExtra by rememberSaveable(stateSaver = com.assistant.core.ui.FieldValuesSaver) { mutableStateOf<Map<String, Any?>>(emptyMap()) }
+    var typedDue by rememberSaveable { mutableStateOf<Long?>(null) }
     var openItemId by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(toolInstanceId, configVersion) {
@@ -128,6 +131,9 @@ fun ListScreen(
 
     val settings = ToolConfigSettings.read(ListToolType, loadedConfig, context)
     val removeWhenChecked = settings.boolean(ListToolType.REMOVE_WHEN_CHECKED)
+    val dueDates = settings.boolean(ListToolType.DUE_DATES)
+    // Late is read against the moment drawn: a due date coming is redrawn by the scheduler's mark
+    val now = System.currentTimeMillis()
     val fields: List<FieldDefinition> = loadedConfig.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
     val shown = ListItems.shown(loadedItems)
     val (checked, left) = shown.partition { it.isChecked }
@@ -162,7 +168,7 @@ fun ListScreen(
                 write({ ListItems.move(coordinator, left[from], ListItems.positionForMove(left, from, to)) })
             }
         ) { _, item ->
-            ItemRow(item, loadedConfig, onCheck = { write({ ListItems.setChecked(coordinator, item.id, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id }) {
+            ItemRow(item, loadedConfig, now, onCheck = { write({ ListItems.setChecked(coordinator, item.id, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id }) {
                 DragHandle()
             }
         }
@@ -173,7 +179,7 @@ fun ListScreen(
             if (left.isNotEmpty()) UI.Divider()
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 checked.forEach { item ->
-                    ItemRow(item, loadedConfig, onCheck = { write({ ListItems.setChecked(coordinator, item.id, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id })
+                    ItemRow(item, loadedConfig, now, onCheck = { write({ ListItems.setChecked(coordinator, item.id, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id })
                 }
             }
         }
@@ -198,9 +204,10 @@ fun ListScreen(
                 size = Size.S,
                 enabled = typed.isNotBlank(),
                 onClick = {
-                    write({ ListItems.add(coordinator, toolInstanceId, typed, typedExtra.filterValues { it != null }) }) {
+                    write({ ListItems.add(coordinator, toolInstanceId, typed, typedExtra.filterValues { it != null }, typedDue.takeIf { dueDates }) }) {
                         typed = ""
                         typedExtra = fields.defaultValues()
+                        typedDue = null
                     }
                 }
             )
@@ -212,6 +219,7 @@ fun ListScreen(
             fieldType = FieldType.TEXT,
             required = false
         )
+        if (dueDates) DueAtInput(typedDue) { typedDue = it }
         // A line between the content and the list's fields, as between two of those fields
         if (fields.isNotEmpty()) UI.Divider()
         com.assistant.core.fields.CustomFieldsInput(
@@ -230,7 +238,8 @@ fun ListScreen(
         ListItemDialog(
             item = openItem,
             fields = fields,
-            onSave = { name, extra -> write({ ListItems.update(coordinator, openItem, name, extra) }) { openItemId = null } },
+            dueDates = dueDates,
+            onSave = { name, extra, dueAt -> write({ ListItems.update(coordinator, openItem, name, extra, dueDates, dueAt) }) { openItemId = null } },
             onDelete = { write({ ListItems.delete(coordinator, openItem) }) { openItemId = null } },
             onCancel = { openItemId = null }
         )
@@ -241,13 +250,14 @@ fun ListScreen(
 }
 
 /**
- * One item: its box, its name as large as a subtitle and, compact below it, the list's fields it
- * shows; the name opens it. A checked item is told by its box and its place below the others.
+ * One item: its box, its name as large as a subtitle and, below it, its due date and, compact,
+ * the list's fields it shows; the name opens it. A checked item is told by its box and its place below the others.
  */
 @Composable
 private fun ItemRow(
     item: ListItem,
     config: JSONObject,
+    now: Long,
     onCheck: (Boolean) -> Unit,
     onOpen: () -> Unit,
     trailing: @Composable () -> Unit = {}
@@ -262,6 +272,7 @@ private fun ItemRow(
                 .padding(vertical = 8.dp)
         ) {
             UI.Text(item.name, TextType.SUBTITLE)
+            DueAtLine(item, now)
             com.assistant.core.fields.CustomFieldsDisplay(ListToolType, config, item.extra, com.assistant.core.fields.FieldsLayout.COMPACT, context)
         }
         trailing()

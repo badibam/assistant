@@ -23,21 +23,25 @@ import com.assistant.core.ui.FieldType
 import com.assistant.core.ui.FieldValuesSaver
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.tools.list.DueNotice
 import com.assistant.tools.list.ListItem
+import com.assistant.tools.list.ListToolType
 
 /**
- * An item opened: its name, required, and the list's own fields; it can be deleted from here.
+ * An item opened: its name, required, its due date in a list that has them, and the list's own
+ * fields; it can be deleted from here.
  *
  * What is typed survives a rotation, kept by the item's id; the dialog is only shown with the
  * item loaded, so it never saves over it from empty values.
  *
- * @param onSave The name and the values of the list's fields, emptied ones absent
+ * @param onSave The name, the values of the list's fields, emptied ones absent, and the due date, null for none
  */
 @Composable
 internal fun ListItemDialog(
     item: ListItem,
     fields: List<FieldDefinition>,
-    onSave: (name: String, extra: Map<String, Any?>) -> Unit,
+    dueDates: Boolean,
+    onSave: (name: String, extra: Map<String, Any?>, dueAt: Long?) -> Unit,
     onDelete: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -46,10 +50,11 @@ internal fun ListItemDialog(
 
     var name by rememberSaveable(item.id) { mutableStateOf(item.name) }
     var extra by rememberSaveable(item.id, stateSaver = FieldValuesSaver) { mutableStateOf(item.extra) }
+    var dueAt by rememberSaveable(item.id) { mutableStateOf(item.dueAt) }
 
     UI.Dialog(
         type = DialogType.CONFIRM,
-        onConfirm = { onSave(name, extra) },
+        onConfirm = { onSave(name, extra, dueAt) },
         onCancel = onCancel,
         confirmEnabled = name.isNotBlank()
     ) {
@@ -65,6 +70,7 @@ internal fun ListItemDialog(
                 fieldType = FieldType.TEXT,
                 required = true
             )
+            if (dueDates) DueAtInput(dueAt) { dueAt = it }
             // A line between the content and the list's fields, as between two of those fields
             if (fields.isNotEmpty()) UI.Divider()
             CustomFieldsInput(
@@ -85,15 +91,16 @@ internal fun ListItemDialog(
 }
 
 /**
- * A new item: its name, required, and the list's own fields at their default values. What is
- * typed survives a rotation.
+ * A new item: its name, required, its due date in a list that has them, and the list's own
+ * fields at their default values. What is typed survives a rotation.
  *
- * @param onAdd The name and the values of the list's fields, emptied ones absent
+ * @param onAdd The name, the values of the list's fields, emptied ones absent, and the due date, null for none
  */
 @Composable
 internal fun ListAddDialog(
     fields: List<FieldDefinition>,
-    onAdd: (name: String, extra: Map<String, Any?>) -> Unit,
+    dueDates: Boolean,
+    onAdd: (name: String, extra: Map<String, Any?>, dueAt: Long?) -> Unit,
     onCancel: () -> Unit
 ) {
     val context = LocalContext.current
@@ -101,10 +108,11 @@ internal fun ListAddDialog(
 
     var name by rememberSaveable { mutableStateOf("") }
     var extra by rememberSaveable(stateSaver = FieldValuesSaver) { mutableStateOf(fields.defaultValues()) }
+    var dueAt by rememberSaveable { mutableStateOf<Long?>(null) }
 
     UI.Dialog(
         type = DialogType.CONFIRM,
-        onConfirm = { onAdd(name, extra.filterValues { it != null }) },
+        onConfirm = { onAdd(name, extra.filterValues { it != null }, dueAt) },
         onCancel = onCancel,
         confirmEnabled = name.isNotBlank()
     ) {
@@ -120,6 +128,7 @@ internal fun ListAddDialog(
                 fieldType = FieldType.TEXT,
                 required = true
             )
+            if (dueDates) DueAtInput(dueAt) { dueAt = it }
             // A line between the content and the list's fields, as between two of those fields
             if (fields.isNotEmpty()) UI.Divider()
             CustomFieldsInput(
@@ -130,5 +139,32 @@ internal fun ListAddDialog(
                 newEntry = true
             )
         }
+    }
+}
+
+/** An item's due date, entered as its field: emptied, the item has none. */
+@Composable
+internal fun DueAtInput(dueAt: Long?, onChange: (Long?) -> Unit) {
+    val context = LocalContext.current
+    val field = remember { ListToolType.dueAtField(context) }
+    com.assistant.core.fields.FieldInput(field, dueAt, { onChange((it as? Number)?.toLong()) }, context)
+}
+
+/**
+ * An item's due date as a line below its name: the date as its field shows it, and "late" once
+ * it has passed while the item is not checked. Nothing without a due date.
+ */
+@Composable
+internal fun DueAtLine(item: ListItem, now: Long) {
+    val dueAt = item.dueAt ?: return
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(tool = "list", context = context) }
+    val field = remember { ListToolType.dueAtField(context) }
+    androidx.compose.foundation.layout.Row(
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        com.assistant.core.fields.FieldValue(field, dueAt, context)
+        if (DueNotice.isLate(item, now)) UI.Text(s.tool("due_late"), TextType.ERROR)
     }
 }
