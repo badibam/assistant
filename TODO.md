@@ -46,6 +46,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Une opération lourde en trois temps (lire, calculer longtemps sans bloquer les autres opérations, écrire), le résultat rendu à celui qui l'a lancée, un seul calcul lourd à la fois dans toute l'app et arrêté si son écran se ferme — au premier calcul qui fige l'app.
 - Streaming des réponses IA (Claude et OpenAI), avec le TCP keep-alive — quand des messages « requête envoyée, réponse perdue » s'accumulent dans les sessions : le réseau coupe les connexions restées silencieuses pendant la génération.
 - Le journal de l'app ne garde que ses ~12 000 dernières lignes, 24 minutes d'usage le 2026-10-01 (VERBOSE 7 562 dont 3 782 « Service result » du coordinateur, DEBUG 2 439) : les lignes utiles, migrations comprises, en sortent avant d'être lues. Réduire ce que VERBOSE et DEBUG écrivent, ou ne garder qu'eux en rotation courte.
+- La mémoire d'un import grandit avec son fichier : le texte entier, toutes ses cellules (`CsvReader.read`), le plan de toutes les lignes et les fiches du lot sont tenus ensemble ; 64 659 lignes (5 Mo) ont atteint 276 Mo de tas Java pour une limite de 256 Mo le 2026-10-01, en 3 min 19 s. À lire au fil de l'eau et écrire par tranches dans la même transaction (le contrôle des doublons sur les seules clés), puis l'écran d'une table qui charge toutes ses fiches — au premier import qui plante, ou à une limite de mémoire plus basse.
 
 ## Recette sur l'appareil
 
