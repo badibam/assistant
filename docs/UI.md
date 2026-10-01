@@ -78,7 +78,9 @@ Row avec fillMaxWidth, padding vertical `UI.Space.XS`, espacement `UI.Space.S` e
 
 **UI.Button** - Générique et flexible avec type (PRIMARY/SECONDARY/DEFAULT), size (XS à XXL), state et content personnalisé.
 
-**UI.ActionButton** - Actions standardisées avec action prédéfinie, display (ICON/LABEL), size et confirmation optionnelle. En ICON, le bouton montre l'icône Lucide que porte l'action (`ButtonAction.iconName`), dessinée par le thème. `active` le montre allumé tant que dure ce qu'il ouvre (le mode d'édition d'un groupe), dessiné par le thème (le thème par défaut : un fond plein de la couleur principale).
+**UI.ActionButton** - Actions standardisées avec action prédéfinie, display (ICON/LABEL), size et confirmation optionnelle. En ICON, le bouton montre l'icône Lucide que porte l'action (`ButtonAction.iconName`), dessinée par le thème. `active` le montre allumé tant que dure ce qu'il ouvre (le mode d'édition d'un groupe), dessiné par le thème (le thème par défaut : un fond plein de la couleur principale). Le thème par défaut dessine un bouton en icône sans fond, l'icône dans la couleur de son type, et le bouton principal en cadre de la couleur principale.
+
+**UI.FloatingButton** - Un bouton posé au-dessus du contenu (le chat, sur l'accueil), sur un fond à lui, pour que ce qui défile dessous ne se voie pas au travers.
 
 ### Actions Disponibles
 - **Principales** : SAVE, CREATE, UPDATE, DELETE, CANCEL, CONFIRM
