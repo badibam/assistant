@@ -10,7 +10,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.entities.AppSettingCategories
-import com.assistant.core.demo.DemoStartup
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.ButtonType
 import com.assistant.core.ui.Duration
@@ -19,11 +18,10 @@ import com.assistant.core.ui.UI
 import kotlinx.coroutines.launch
 
 /**
- * The demo's settings (docs/design/demo.md): whether it is installed at each update — turned on,
- * it waits for the next update; turned off, it removes the demo there is —, a button that
- * installs it afresh, afloat at this moment, its progress shown while it runs, and one that
- * removes it, once confirmed. Removing leaves the setting as the user set it: on, the next update
- * brings the demo back.
+ * The demo's settings (docs/design/demo.md): whether it is installed at each update, which acts at
+ * the next update only and never removes it; a button that installs it afresh, afloat at this
+ * moment, its progress shown while it runs; and one that removes it, once confirmed. The buttons
+ * leave the setting as the user set it.
  */
 @Composable
 fun DemoSettingsScreen(onBack: () -> Unit) {
@@ -58,13 +56,6 @@ fun DemoSettingsScreen(onBack: () -> Unit) {
     AppSettingsScreen(
         category = AppSettingCategories.DEMO,
         onBack = onBack,
-        afterSave = { before, after ->
-            // Turned off, the demo there is goes; turned on or saved unchanged, nothing until the next update
-            val turnedOff = before.optBoolean(DemoStartup.INSTALL_ON_UPDATE) && !after.optBoolean(DemoStartup.INSTALL_ON_UPDATE)
-            if (!turnedOff) null
-            else coordinator.processUserAction("demo.remove", emptyMap())
-                .let { if (it.isSuccess) null else it.error ?: s.shared("error_operation_failed") }
-        },
         below = {
             val state = if (working) com.assistant.core.ui.ComponentState.LOADING else com.assistant.core.ui.ComponentState.NORMAL
             UI.Button(type = ButtonType.DEFAULT, state = state, onClick = { runDemo("demo.install", s.shared("demo_installed")) }) {

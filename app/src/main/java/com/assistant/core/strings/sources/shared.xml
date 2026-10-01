@@ -1783,5 +1783,5 @@
     <string name="settings_demo">Demo</string>
     <string name="settings_demo_description">A demo zone group, installed afresh at each update</string>
     <string name="settings_demo_install_on_update">Install the demo at each update</string>
-    <string name="settings_demo_install_on_update_help">On, the demo is installed at the next update; off, the demo there is goes. What you add to the demo goes at each reinstall.</string>
+    <string name="settings_demo_install_on_update_help">On, the demo is installed afresh at each update; off, it is left as it is. What you add to the demo goes at each reinstall.</string>
 </resources>
