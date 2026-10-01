@@ -456,6 +456,7 @@
     <string name="time_ago_seconds">il y a %1$ds</string>
     <string name="time_ago_minutes">il y a %1$d min</string>
     <string name="time_ago_hours">il y a %1$dh</string>
+    <string name="time_ago_day_one">il y a 1 jour</string>
     <string name="time_ago_days">il y a %1$d jours</string>
 
     <!-- Labels de formulaire -->

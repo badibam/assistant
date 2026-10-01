@@ -456,6 +456,7 @@
     <string name="time_ago_seconds">%1$ds ago</string>
     <string name="time_ago_minutes">%1$d min ago</string>
     <string name="time_ago_hours">%1$dh ago</string>
+    <string name="time_ago_day_one">1 day ago</string>
     <string name="time_ago_days">%1$d days ago</string>
 
     <!-- Form labels -->

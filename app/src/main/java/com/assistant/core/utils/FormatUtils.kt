@@ -109,6 +109,7 @@ object FormatUtils {
         val days = hours / 24
 
         return when {
+            days == 1L -> s.shared("time_ago_day_one")
             days > 0 -> s.shared("time_ago_days").format(days)
             hours > 0 -> s.shared("time_ago_hours").format(hours)
             minutes > 0 -> s.shared("time_ago_minutes").format(minutes)
