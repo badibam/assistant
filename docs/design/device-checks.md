@@ -161,25 +161,15 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Grille
 
-- Une zone en portrait, puis sur un écran plus large que 480 dp : quatre colonnes, cases carrées, la grille centrée au-delà.
-- Chaque mode de chaque type d'outil (Suivi, Journal, Notes, Liste, Messages, Objectif, Questionnaire, Données structurées, Graphique) : rien ne déborde de sa tuile ni ne défile dedans, le résumé tient sur deux lignes, le corps sur ses rangées ; un texte trop long s'arrête sur « … ».
-- Un outil en FULL : la zone s'ouvre (pas de plantage), la tuile est aussi haute que son contenu, arrondie à la case.
-- Les boutons d'une tuile agissent sans ouvrir l'outil (cocher une Liste, « Encore » du Suivi, arrêter un chronomètre) ; un toucher ailleurs ouvre l'outil, l'appui long sa config ; « Écrire une entrée », « Nouvelle note », « Nouvelle fiche » ouvrent l'outil sur une entrée neuve, une entrée montrée s'ouvre en la touchant.
-- Un chronomètre lancé : la pastille du coin bas de l'icône apparaît sur la tuile de l'outil et sur celle de sa zone à l'accueil, et part à l'arrêt ; la pastille d'attente est au coin haut.
-- Passer un outil de MINIMAL à CONDENSED dans sa config : ceux qu'il recouvre descendent sous lui, gardent leur colonne, rien ne se chevauche.
-- Mode d'édition : le bouton du titre du groupe s'allume, le quadrillage montre les trous, le reste de l'écran est atténué et ne réagit pas. Toucher un outil : la barre apparaît, chaque flèche va à la prochaine place ou est grisée, ↓ puis ↓ ouvre une ligne puis passe sous la suivante. Valider, puis quitter et revenir : la place est gardée ; « Annuler » remet tout ; toucher un autre outil valide le premier.
+- Les modes d'un Suivi (ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE), une fois corrigé le Suivi de type choix dont l'écran ne montre pas les options : rien ne déborde de sa tuile ni ne défile dedans, le résumé tient sur deux lignes, le corps sur ses rangées ; un texte trop long s'arrête sur « … ».
 - Un déplacement en cours, bouton retour du téléphone : « Quitter la zone ? » ; confirmer ramène à l'accueil sans rien enregistrer.
 - Déplacer une tuile tout en bas : l'écran défile juste assez pour la garder visible au-dessus de la barre.
 - Un déplacement en cours, puis thème sombre ou « Ne pas conserver les activités » : la sélection et le déplacement sont toujours là.
-- Accueil : une zone en ICON, MINIMAL, LINE et CONDENSED (sa config) ; le mode d'édition d'un groupe de zones fait comme celui des outils. Retirer un groupe de zones dans la config de l'accueil : ses zones passent en bas du hors groupe.
 
 ## Graphique
 
 - Créer un Graphique à la main : « Une vue », une couche « Une grille de pas », pas « Jour », période « Il y a 29 jours, début » → « Le moment même » ; une colonne `kcal` lisant une variable ; marque « Barres », x : « Pas », y : `kcal`. Enregistrer : trente barres, les jours sans valeur en trou hachuré ; toucher un trou : sa cause et les entrées à corriger, dont chacune ouvre son outil.
-- Demander à l'IA le premier graphique de `tracking_alimentaire` : `kcal_aliments` et `kcal_vides` repliés (`fold`) en barres empilées de deux couleurs, `objectif_calorique` en ligne en paliers, le poids à droite en ligne avec points. Les deux axes verticaux, chacun son unité ; la légende en bas nomme les deux sortes.
 - Mettre le poids du même côté que les kcal : l'enregistrement est refusé et propose l'autre côté.
-- Des bornes fixes `[60, 80]` sur le poids avec une pesée à 95 : un triangle au bord haut, pas de point écrasé contre lui ; le toucher montre la pesée.
-- Un camembert des macros d'un jour, un calendrier de l'humeur (`rect`, x `week` en catégories ordonnées, y `weekday`, couleur de la moyenne) : lisibles en portrait.
 - Dans le formulaire, le choix d'une colonne d'un canal ne propose que celles de sa couche (après ses transformations) ; les colonnes d'un `fold` proposent celles d'avant lui.
 - Ajouter une entrée au suivi que lit le graphique, revenir : le graphique l'a prise. Tourner l'écran : le graphique se redessine à la nouvelle largeur.
 
