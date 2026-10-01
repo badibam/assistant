@@ -146,20 +146,36 @@ object RetroTheme : ThemeContract {
     // GRID, SPACES, SOUNDS
     // =====================================
 
-    /**
-     * The largest even number of cells four cases take with a cell between two: a line of a tile
-     * is half a case, and an odd case would put it between two pixels.
-     */
+    /** The most cells four cases take with a cell between two: the grid spans the screen's width. */
     @Composable
     override fun gridCellPx(availableWidthPx: Int): Int {
         val grid = retroGrid()
-        val perCase = ((availableWidthPx / grid.cellPx - 3) / 4).let { if (it % 2 == 0) it else it - 1 }.coerceAtLeast(2)
-        return perCase * grid.cellPx
+        return ((availableWidthPx / grid.cellPx - 3) / 4).coerceAtLeast(2) * grid.cellPx
+    }
+
+    /**
+     * The even number of drawing pixels nearest the case's width, one more when the width is
+     * odd: with the row gap (gridRowGapPx), every tile's lines are then whole pixels.
+     */
+    @Composable
+    override fun gridRowPx(cellPx: Int): Int {
+        val grid = retroGrid()
+        val width = cellPx / grid.scale
+        return grid.px(if (width % 2 == 0) width else width + 1)
     }
 
     /** A cell between two tiles, outside them: the grid spans every cell the screen has. */
     @Composable
-    override fun gridGapPx(): Int = retroGrid().cellPx
+    override fun gridColumnGapPx(): Int = retroGrid().cellPx
+
+    /**
+     * Ten drawing pixels between two rows, one short of a cell, so that a tile's inside, its frame's
+     * cell taken off each side, splits into whole pixels for every height a tile has: in two lines
+     * on one row (2h - 22), four on two (4h + 10 - 22), eight on four (8h + 30 - 22), h being half
+     * a row. The vertical is free of the cells; only the width keeps to them.
+     */
+    @Composable
+    override fun gridRowGapPx(): Int = retroGrid().px(RetroGrid.ROW_GAP)
 
     override fun sound(signal: UISignal): Int? = when (signal) {
         UISignal.CONFIRM -> R.raw.retro_confirm

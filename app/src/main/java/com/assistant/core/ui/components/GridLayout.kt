@@ -34,20 +34,21 @@ import org.json.JSONObject
  */
 data class GridEdit(val places: List<Grid.Tile>, val selectedId: String?, val onSelect: (String) -> Unit)
 
-/** The side of a cell of the grid a tile stands in. */
-val LocalGridCell = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.unit.Dp> { error("No grid around this tile") }
+/** The height of a row of the grid a tile stands in (ThemeContract.gridRowPx). */
+val LocalGridRow = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.unit.Dp> { error("No grid around this tile") }
 
 /** How far the tiles not being moved fade while one is. */
 private const val FADED = 0.4f
 
 /**
- * Tiles laid on a grid: four columns of square cells, each [tiles] at its place, [item] drawing
- * the one at an index. The theme sizes a cell from the width there is (gridCellPx) and the gap
- * between two cells (gridGapPx), which a tile spanning several cells covers; the grid is
- * centered in what it leaves.
+ * Tiles laid on a grid: four columns of cells, each [tiles] at its place, [item] drawing the one
+ * at an index. The theme sizes a cell from the width there is (gridCellPx), a row's height from
+ * the cell's width (gridRowPx), and the gaps between two columns and two rows (gridColumnGapPx,
+ * gridRowGapPx), which a tile spanning several cells covers; the grid is centered in what it
+ * leaves.
  *
- * A row is one cell high, except the row of a tile that grows with its content ([grows]: a
- * FULL tile), which is as tall as what it shows, rounded up to whole cells. Such a tile is measured
+ * A row is one row high, except the row of a tile that grows with its content ([grows]: a
+ * FULL tile), which is as tall as what it shows, rounded up to whole rows. Such a tile is measured
  * once, its width fixed and its height free, and keeps the height it takes: the rest of its row
  * stays empty under it. It is never asked for its intrinsic height, which a tile holding a layout
  * measured by its constraints (BoxWithConstraints, a lazy list) cannot give. An empty cell stays
@@ -69,7 +70,9 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         val cellPx = CurrentTheme.current.gridCellPx(constraints.maxWidth)
-        val gap = CurrentTheme.current.gridGapPx()
+        val rowPx = CurrentTheme.current.gridRowPx(cellPx)
+        val gap = CurrentTheme.current.gridColumnGapPx()
+        val rowGap = CurrentTheme.current.gridRowGapPx()
         Layout(
             content = {
                 // In edit mode, first the cells, one per cell of the grid, then the tiles over them
@@ -80,8 +83,8 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
                         val requester = remember { BringIntoViewRequester() }
                         if (selected) {
                             LaunchedEffect(place) {
-                                val line = cellPx / 2f
-                                requester.bringIntoView(Rect(0f, -line, place.width * (cellPx + gap).toFloat(), place.height * (cellPx + gap) + line))
+                                val line = rowPx / 2f
+                                requester.bringIntoView(Rect(0f, -line, place.width * (cellPx + gap).toFloat(), place.height * (rowPx + rowGap) + line))
                             }
                         }
                         Box(
@@ -89,7 +92,7 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
                                 .bringIntoViewRequester(requester)
                                 .alpha(if (edit?.selectedId != null && !selected) FADED else 1f)
                         ) {
-                            androidx.compose.runtime.CompositionLocalProvider(LocalGridCell provides with(LocalDensity.current) { cellPx.toDp() }) { item(i) }
+                            androidx.compose.runtime.CompositionLocalProvider(LocalGridRow provides with(LocalDensity.current) { rowPx.toDp() }) { item(i) }
                             // In edit mode the tile's own gestures give way to a touch that selects
                             if (edit != null) {
                                 Box(
@@ -111,20 +114,20 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
             val left = { column: Int -> column * (cell + gap) }
 
             // A tile that grows is measured first, at its width and a free height; its row takes
-            // that height in whole cells
-            val rowHeights = IntArray(rowCount) { cell }
+            // that height in whole rows
+            val rowHeights = IntArray(rowCount) { rowPx }
             val grown = tiles.mapIndexedNotNull { i, tile ->
                 if (!grows[i]) return@mapIndexedNotNull null
                 val width = span(tile.width)
-                val placeable = measurables[cells + i].measure(Constraints(minWidth = width, maxWidth = width, minHeight = cell))
-                rowHeights[tile.row] = maxOf(rowHeights[tile.row], (placeable.height + cell - 1) / cell * cell)
+                val placeable = measurables[cells + i].measure(Constraints(minWidth = width, maxWidth = width, minHeight = rowPx))
+                rowHeights[tile.row] = maxOf(rowHeights[tile.row], (placeable.height + rowPx - 1) / rowPx * rowPx)
                 i to placeable
             }.toMap()
             // Each row's top, a gap after every row but the last
             val rowTops = IntArray(rowCount + 1)
-            for (row in 0 until rowCount) rowTops[row + 1] = rowTops[row] + rowHeights[row] + if (row < rowCount - 1) gap else 0
+            for (row in 0 until rowCount) rowTops[row + 1] = rowTops[row] + rowHeights[row] + if (row < rowCount - 1) rowGap else 0
             /** The pixels from the top of [row] to the bottom of the row before [end]. */
-            fun height(row: Int, end: Int) = rowTops[end] - rowTops[row] - if (end < rowCount) gap else 0
+            fun height(row: Int, end: Int) = rowTops[end] - rowTops[row] - if (end < rowCount) rowGap else 0
 
             val cellPlaceables = (0 until cells).map { index ->
                 measurables[index].measure(Constraints.fixed(cell, rowHeights[index / Grid.COLUMNS]))

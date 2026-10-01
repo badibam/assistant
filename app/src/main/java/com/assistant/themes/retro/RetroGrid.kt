@@ -82,6 +82,9 @@ class RetroGrid(
         /** A frame's border, in drawing pixels: the font's pieces are cut to it. */
         const val BORDER = 4
 
+        /** Between two rows of the tile grid, in drawing pixels (RetroTheme.gridRowGapPx). */
+        const val ROW_GAP = 10
+
         /** An icon's box, the register's second size: two cells. */
         const val ICON = 22
     }

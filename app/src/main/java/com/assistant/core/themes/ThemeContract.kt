@@ -46,8 +46,8 @@ interface ThemeContract {
     val iconSource: com.assistant.core.icons.IconSource
 
     /**
-     * The side of a cell of the tile grid (GridLayout), in pixels, given the width there is for
-     * its four columns and the three gaps between them (gridGapPx), in pixels; the grid is
+     * The width of a cell of the tile grid (GridLayout), in pixels, given the width there is for
+     * its four columns and the three gaps between them (gridColumnGapPx), in pixels; the grid is
      * centered in what it leaves. Composable, as a size
      * in whole cells of the font depends on the screen's density.
      */
@@ -55,11 +55,22 @@ interface ThemeContract {
     fun gridCellPx(availableWidthPx: Int): Int
 
     /**
-     * The space between two cells of the tile grid, in pixels, left empty by the grid: a theme
+     * The height of a row of the tile grid, in pixels, for cells [cellPx] wide: their width for
+     * square cells, or near it where a theme needs the lines of a tile to fall on whole pixels.
+     */
+    @Composable
+    fun gridRowPx(cellPx: Int): Int
+
+    /**
+     * The space between two columns of the tile grid, in pixels, left empty by the grid: a theme
      * whose tiles keep their gap inside their cells gives none.
      */
     @Composable
-    fun gridGapPx(): Int
+    fun gridColumnGapPx(): Int
+
+    /** The space between two rows of the tile grid, in pixels, as gridColumnGapPx is between columns. */
+    @Composable
+    fun gridRowGapPx(): Int
 
     /**
      * The raw resource of the sound that answers [signal] in this theme, or null for silence
