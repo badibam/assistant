@@ -1763,6 +1763,12 @@
     <string name="verbalize_unknown_operation">Opération inconnue : %1$s</string>
     <string name="tools_config_error_zone_update">Impossible de déplacer l\'outil dans cette zone</string>
     <!-- Demo -->
+    <string name="demo_installing">Installation de la démo</string>
+    <string name="demo_phase_zones">Zones</string>
+    <string name="demo_phase_tools">Outils : %1$s / %2$s</string>
+    <string name="demo_phase_entries">Entrées : %1$s / %2$s</string>
+    <string name="demo_phase_goals">Objectifs</string>
+    <string name="demo_phase_automations">Automations</string>
     <string name="demo_error_refused">La démo n\'a pas pu être construite : %1$s</string>
     <string name="service_error_id_not_given">Un identifiant est attribué par l\'app, il ne peut pas être donné : %1$s</string>
     <string name="demo_texts_file">texts-fr.json</string>

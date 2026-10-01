@@ -62,15 +62,18 @@ class DemoService(private val context: Context) : ExecutableService {
             LogManager.service("Demo not read: ${e.message}", "ERROR", e)
             return OperationResult.error(s.shared("demo_error_unreadable").format(e.message ?: ""))
         }
+        DemoProgress.at(DemoProgress.Phase.ZONES)
         database.withTransaction { removeAll() }
         return try {
             addZoneGroup(content.group)
             build(content)
             fill(texts)
             automate(content)
+            DemoProgress.end()
             LogManager.service("Demo installed: ${content.zones.size} zones, ${content.tools.size} tools, ${content.variables.size} variables", "INFO")
             OperationResult.success(mapOf("zones" to content.zones.size, "tools" to content.tools.size, "variables" to content.variables.size))
         } catch (e: Refused) {
+            DemoProgress.end()
             database.withTransaction { removeAll() }
             DataChangeNotifier.notifyZonesChanged()
             LogManager.service("Demo not installed: ${e.message}", "ERROR")
@@ -86,9 +89,14 @@ class DemoService(private val context: Context) : ExecutableService {
         content.zones.forEach { run("zones.create", DemoContent.paramsOf(it)) }
         placeZones(content)
         val (readingVariables, others) = content.tools.partition { DemoContent.readsVariable(it) }
-        others.forEach { run("tools.create", DemoContent.paramsOf(it)) }
+        var created = 0
+        suspend fun create(tool: JSONObject) {
+            DemoProgress.at(DemoProgress.Phase.TOOLS, created++, content.tools.size)
+            run("tools.create", DemoContent.paramsOf(tool))
+        }
+        others.forEach { create(it) }
         content.variables.forEach { run("variables.create", it) }
-        readingVariables.forEach { run("tools.create", DemoContent.paramsOf(it)) }
+        readingVariables.forEach { create(it) }
         content.tools.groupBy { it.getString("zone_id") to it.getJSONObject("config").optString("group").takeIf { g -> g.isNotEmpty() } }
             .forEach { (section, tools) ->
                 run("tools.place", JSONObject()
@@ -105,6 +113,7 @@ class DemoService(private val context: Context) : ExecutableService {
      */
     private suspend fun automate(content: DemoContent) {
         if (content.automations.isEmpty()) return
+        DemoProgress.at(DemoProgress.Phase.AUTOMATIONS)
         @Suppress("UNCHECKED_CAST")
         val providers = run("ai_provider_config.list", JSONObject())["providers"] as List<Map<String, Any?>>
         val provider = (providers.firstOrNull { it["is_configured"] == true } ?: providers.first())["id"] as String
@@ -127,14 +136,20 @@ class DemoService(private val context: Context) : ExecutableService {
      */
     private suspend fun fill(texts: JSONObject) {
         val data = DemoData(System.currentTimeMillis(), AppConfigManager.getDateTimeConfig().getZoneId(), asset("demo/entries.json"))
-        data.entries().forEach { (tool, entries) ->
+        val all = data.entries()
+        val total = all.values.sumOf { it.size }
+        var written = 0
+        all.forEach { (tool, entries) ->
             if (entries.isEmpty()) return@forEach
-            val written = run("tool_data.batch_create", JSONObject()
+            DemoProgress.at(DemoProgress.Phase.ENTRIES, written, total)
+            written += entries.size
+            val batch = run("tool_data.batch_create", JSONObject()
                 .put("tool_instance_id", tool)
                 .put("entries", JSONArray(entries.map { DemoContent.resolve(it, texts) })))
-            val failed = (written["failed_count"] as? Number)?.toInt() ?: 0
-            if (failed > 0) throw Refused("tool_data.batch_create $tool: $failed refused, ${written["refusals"]}")
+            val failed = (batch["failed_count"] as? Number)?.toInt() ?: 0
+            if (failed > 0) throw Refused("tool_data.batch_create $tool: $failed refused, ${batch["refusals"]}")
         }
+        DemoProgress.at(DemoProgress.Phase.GOALS)
         for (attempt in data.attempts()) {
             @Suppress("UNCHECKED_CAST")
             val tool = run("tools.get", JSONObject().put("tool_instance_id", attempt.toolId))["tool_instance"] as Map<String, Any?>

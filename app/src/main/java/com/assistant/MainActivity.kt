@@ -128,24 +128,23 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // What waits for the user and the stopwatches running, marked on every tile of every screen
-                    androidx.compose.runtime.CompositionLocalProvider(
-                        com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
-                        com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
-                    ) {
-                        // The demo first, installed afresh after an update, before the home screen
-                        // reads the zones; once per activity, a recreation finding it done
-                        var demoReady by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-                        if (!demoReady) {
-                            androidx.compose.runtime.LaunchedEffect(Unit) {
-                                val failed = withContext(Dispatchers.IO) { com.assistant.core.demo.DemoStartup.run(this@MainActivity) }
-                                if (failed != null) com.assistant.core.ui.UI.Toast(this@MainActivity, failed, com.assistant.core.ui.Duration.LONG)
-                                demoReady = true
-                            }
-                            androidx.compose.foundation.layout.Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                                com.assistant.core.ui.UI.LoadingIndicator()
-                            }
-                        } else {
+                    // The demo first, installed afresh after an update, before the home screen
+                    // reads the zones; once per activity, a recreation finding it done
+                    var demoReady by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+                    if (!demoReady) {
+                        androidx.compose.runtime.LaunchedEffect(Unit) {
+                            val failed = withContext(Dispatchers.IO) { com.assistant.core.demo.DemoStartup.run(this@MainActivity) }
+                            if (failed != null) com.assistant.core.ui.UI.Toast(this@MainActivity, failed, com.assistant.core.ui.Duration.LONG)
+                            demoReady = true
+                        }
+                        com.assistant.core.ui.components.DemoInstalling()
+                    } else {
+                        // What waits for the user and the stopwatches running, marked on every tile of
+                        // every screen: watched once the demo is written, not at each of its writes
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
+                            com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
+                        ) {
                             MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
                         }
                     }
