@@ -157,11 +157,6 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - « Avec l'IA » sur une entrée à remplir : le chat s'ouvre, sa saisie porte le message et les pointeurs vers l'outil et l'entrée ; envoyé, l'IA pose les questions, écrit les réponses et marque l'entrée remplie.
 - Toucher une entrée de l'historique : ses réponses en entier, modifiables.
 
-## Grille
-
-- Les modes d'un Suivi (ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE), un Suivi de type choix compris : rien ne déborde de sa tuile ni ne défile dedans, le résumé tient sur deux lignes, le corps sur ses rangées ; un texte trop long s'arrête sur « … ».
-- Un déplacement en cours, puis thème sombre ou « Ne pas conserver les activités » : la sélection et le déplacement sont toujours là.
-
 ## Graphique
 
 - Créer un Graphique à la main : « Une vue », une couche « Une grille de pas », pas « Jour », période « Il y a 29 jours, début » → « Le moment même » ; une colonne `kcal` lisant une variable ; marque « Barres », x : « Pas », y : `kcal`. Enregistrer : trente barres, les jours sans valeur en trou hachuré ; toucher un trou : sa cause et les entrées à corriger, dont chacune ouvre son outil.
