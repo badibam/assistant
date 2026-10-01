@@ -19,7 +19,7 @@ import com.assistant.core.ui.UI
 import kotlinx.coroutines.launch
 
 /**
- * The demo's settings (docs/design/demo.md): whether it is installed at each update, which acts at
+ * The demo's settings: whether it is installed at each update, which acts at
  * the next update only and never removes it; a button that installs it afresh, afloat at this
  * moment, its progress shown while it runs; and one that removes it, once confirmed. The buttons
  * leave the setting as the user set it.

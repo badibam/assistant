@@ -26,7 +26,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * The demo (docs/design/demo.md), as the resource `demo`:
+ * The demo, as the resource `demo`:
  * - install: removes the demo there is, then builds the one the app ships through the services,
  *   as the app itself (Source.SYSTEM), which alone may give the demo's ids; its zone group joins
  *   the home screen's groups when it is not there yet, and never leaves them
@@ -109,8 +109,8 @@ class DemoService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * The automations, off: each one's seed session, its message the instruction, then the
-     * automation on it. Their provider is the first one configured, or the first there is when
+     * The automations, off — on, an automation calls the AI at the user's cost: each one's seed
+     * session, its message the instruction, then the automation on it; none has a past. Their provider is the first one configured, or the first there is when
      * none is: switching one on then says the provider is not configured.
      */
     private suspend fun automate(content: DemoContent) {
@@ -213,14 +213,10 @@ class DemoService(private val context: Context) : ExecutableService {
         return OperationResult.success()
     }
 
-    private suspend fun removeAll() {
-        val dao = database.demoDao()
-        dao.deleteEntries()
-        dao.deleteTools()
-        dao.deleteVariables()
-        dao.deleteSessions()
-        dao.deleteAutomations()
-        dao.deleteZones()
+    /** Everything of the demo (DemoRemoval); called inside a transaction. */
+    private fun removeAll() {
+        val db = database.openHelper.writableDatabase
+        DemoRemoval.STATEMENTS.forEach { db.execSQL(it) }
     }
 
     /**

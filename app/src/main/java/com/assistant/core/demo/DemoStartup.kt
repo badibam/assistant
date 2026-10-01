@@ -8,7 +8,7 @@ import com.assistant.core.utils.LogManager
 import java.io.File
 
 /**
- * The demo at the app's start (docs/design/demo.md): installed afresh once per installation of
+ * The demo at the app's start: installed afresh once per installation of
  * the app, which `PackageInfo.lastUpdateTime` marks — a release as a debug build, an update as a
  * first install. The installation the demo was last installed for is kept in a file of the app's
  * own, which only this reads.

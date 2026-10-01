@@ -83,7 +83,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun logDao(): LogDao
     abstract fun variableDao(): VariableDao
     abstract fun attachedFileDao(): AttachedFileDao
-    abstract fun demoDao(): com.assistant.core.demo.DemoDao
 
     companion object {
         /**

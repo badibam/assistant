@@ -15,7 +15,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Covers the demo the app ships (docs/design/demo.md), read from its assets as the service reads
+ * Covers the demo the app ships, read from its assets as the service reads
  * them: the same text keys in both languages, every key the structure asks for given, the prefix on every id and the suffix on every variable, ids unique, the zones and
  * each section of tools laid out on their grid, the user's field names kept as given, and the
  * given ids accepted from the app alone.
@@ -100,7 +100,7 @@ class DemoContentTest {
     }
 
     @Test
-    fun `the demo shows every tool type, tracking type and tile mode, and every field type among the user's fields`() {
+    fun `the demo shows every tool type, tracking type and tile mode, every field type among the user's fields, a tool in a group and one outside`() {
         val content = read()
         assertEquals(setOf("tracking", "goal", "chart", "journal", "list", "messages", "notes", "questionnaire", "structured"),
             content.tools.map { it.getString("tooltype") }.toSet())
@@ -112,6 +112,11 @@ class DemoContentTest {
             tool.getJSONObject("config").optJSONArray("extra_fields")?.let { f -> (0 until f.length()).map { f.getJSONObject(it).getString("type") } } ?: emptyList()
         }.toSet()
         assertEquals(com.assistant.core.fields.FieldType.entries.map { it.name }.toSet(), fieldTypes)
+        // In a zone that has groups, a tool in a group and one outside any
+        val grouped = content.zones.filter { it.getJSONArray("tool_groups").length() > 0 }.map { it.getString("id") }.toSet()
+        val inGrouped = content.tools.filter { it.getString("zone_id") in grouped }.map { it.getJSONObject("config").optString("group") }
+        assertTrue(inGrouped.any { it.isNotEmpty() })
+        assertTrue(inGrouped.any { it.isEmpty() })
     }
 
     @Test
