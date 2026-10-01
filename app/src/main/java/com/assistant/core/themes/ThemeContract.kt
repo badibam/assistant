@@ -111,6 +111,13 @@ interface ThemeContract {
         content: @Composable () -> Unit
     )
     
+    /**
+     * A button that floats over the screen's content (the chat's, on the home screen): its icon on
+     * a fill of its own, for what scrolls under it never to show through.
+     */
+    @Composable
+    fun FloatingButton(action: ButtonAction, onClick: () -> Unit)
+
     @Composable
     fun ActionButton(
         action: ButtonAction,

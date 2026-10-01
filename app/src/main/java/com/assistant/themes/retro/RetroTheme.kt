@@ -219,6 +219,11 @@ object RetroTheme : ThemeContract {
         }
     }
 
+    /** An icon's frame, as any icon button: a frame has its own fill. */
+    @Composable
+    override fun FloatingButton(action: ButtonAction, onClick: () -> Unit) =
+        ActionButton(action, ButtonDisplay.ICON, Size.L, null, true, false, null, false, onClick)
+
     @Composable
     override fun ActionButton(
         action: ButtonAction,

@@ -360,6 +360,17 @@ object DefaultTheme : ThemeContract {
     ) {
         // État du dialogue de confirmation
         var showConfirmDialog by rememberSaveable { mutableStateOf(false) }
+    /** Material's floating button, in the main colour. */
+    @Composable
+    override fun FloatingButton(action: ButtonAction, onClick: () -> Unit) {
+        val context = LocalContext.current
+        val icon = requireNotNull(com.assistant.core.icons.Icons.drawable(context, action.iconName)) { "No drawable for the icon ${action.iconName} of $action" }
+        val scheme = CurrentTheme.getCurrentColorScheme()
+        androidx.compose.material3.FloatingActionButton(onClick = onClick, containerColor = scheme.primary, contentColor = scheme.onPrimary) {
+            Icon(painter = painterResource(icon), contentDescription = action.label(), modifier = Modifier.size(getButtonIconSize(Size.L)))
+        }
+    }
+
         
         // Determine default type based on action; switched on, it is filled with the main color
         val buttonType = if (active) ButtonType.PRIMARY else type ?: action.defaultType()

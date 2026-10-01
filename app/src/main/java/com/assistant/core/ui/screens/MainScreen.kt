@@ -473,12 +473,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                 .align(Alignment.BottomEnd)
                 .padding(UI.Space.L)
         ) {
-            UI.ActionButton(
-                action = ButtonAction.AI_CHAT,
-                display = ButtonDisplay.ICON,
-                size = Size.L,
-                onClick = { showAIChat = true }
-            )
+            UI.FloatingButton(action = ButtonAction.AI_CHAT, onClick = { showAIChat = true })
         }
         }
     }

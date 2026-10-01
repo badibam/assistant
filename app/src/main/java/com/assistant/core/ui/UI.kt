@@ -92,6 +92,13 @@ object UI {
         }
     }
 
+    /** A button floating over the content, on a fill of its own (ThemeContract.FloatingButton). */
+    @Composable
+    fun FloatingButton(action: ButtonAction, onClick: () -> Unit) {
+        val sound = rememberUISound()
+        CurrentTheme.current.FloatingButton(action) { sound(action.signal()); onClick() }
+    }
+
     /**
      * What a disabled element is wrapped in: a touch on it is heard, and answered by the refusal
      * sound, in every theme (a touch with no answer reads as a screen that saw nothing). The
