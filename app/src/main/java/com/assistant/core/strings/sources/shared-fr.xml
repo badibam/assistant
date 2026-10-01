@@ -424,6 +424,8 @@
 
     <!-- AI Round Interruption -->
     <string name="ai_round_interrupted">Round IA interrompu</string>
+    <string name="ai_actions_stopped">Actions arrêtées pendant leur exécution : celles terminées avant l\'arrêt ont eu lieu, celle en cours a été abandonnée, les suivantes n\'ont pas eu lieu. Vérifier ce qui existe avant de les relancer.</string>
+    <string name="ai_actions_cut_by_app_closing">Actions coupées par la fermeture de l\'app pendant leur exécution : celles terminées avant ont eu lieu, celle en cours a été abandonnée, les suivantes n\'ont pas eu lieu. Vérifier ce qui existe avant de les relancer.</string>
     <string name="ai_call_cut_after_sending">La requête était déjà partie quand elle a été coupée : son coût est inconnu</string>
 
     <!-- AI Session Scheduler -->

@@ -75,6 +75,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "stop_duration" -> stopDuration(params, token)    // It stops, and the time elapsed is added to it
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // The caller stopped (a stop during an import): the write in progress is abandoned
+            throw e
         } catch (e: Exception) {
             OperationResult.error(s.shared("service_error_tool_data_service").format(e.message ?: ""))
         }
