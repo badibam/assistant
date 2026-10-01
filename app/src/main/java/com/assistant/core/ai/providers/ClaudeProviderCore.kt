@@ -125,7 +125,8 @@ internal class ClaudeProviderCore(
      */
     fun configSettings(context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
-        val text = { name: String -> FieldDefinition(name, "", null, FieldType.TEXT, false, mapOf("length" to TextLength.SHORT.name)) }
+        // MEDIUM: an API key runs past SHORT's 60 characters (an OpenRouter key over 70, a Claude one over 100)
+        val text = { name: String -> FieldDefinition(name, "", null, FieldType.TEXT, false, mapOf("length" to TextLength.MEDIUM.name)) }
         return listOfNotNull(
             SettingNode.Field(text("api_key").copy(displayName = s.shared("${api.stringPrefix}_api_key"),
                 description = s.shared("${api.stringPrefix}_schema_api_key")), required = true, secret = true),

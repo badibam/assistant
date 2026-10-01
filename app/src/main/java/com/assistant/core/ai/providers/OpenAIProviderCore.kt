@@ -70,9 +70,10 @@ internal class OpenAIProviderCore(
     /** The settings of this variant's config: its API key (secret), the model, temperature and longest answer. */
     fun configSettings(context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
+        // MEDIUM: an API key runs past SHORT's 60 characters (an OpenRouter key over 70, a Claude one over 100)
         fun text(name: String, secret: Boolean = false) = SettingNode.Field(
             FieldDefinition(name, s.shared("ai_provider_openai_$name"), s.shared("ai_provider_openai_schema_$name"), FieldType.TEXT, false,
-                mapOf("length" to TextLength.SHORT.name)),
+                mapOf("length" to TextLength.MEDIUM.name)),
             required = true, secret = secret)
         return listOf(
             text("api_key", secret = true),

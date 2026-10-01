@@ -66,9 +66,10 @@ internal class OpenAICompatibleProviderCore(
     /** The settings of this variant's config. */
     fun configSettings(context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
+        // MEDIUM: an API key runs past SHORT's 60 characters (an OpenRouter key over 70, a Claude one over 100)
         fun text(name: String, required: Boolean, secret: Boolean = false) = SettingNode.Field(
             FieldDefinition(name, s.shared("ai_provider_compatible_$name"), s.shared("ai_provider_compatible_schema_$name"), FieldType.TEXT, false,
-                mapOf("length" to TextLength.SHORT.name)),
+                mapOf("length" to TextLength.MEDIUM.name)),
             required = required, secret = secret)
         val forcings = OutputForcing.entries.map { it.stored }
         return listOf(
