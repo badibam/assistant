@@ -394,6 +394,7 @@
     <string name="ai_phase_waiting_data_confirmation">Waiting for your decision on the data</string>
     <string name="ai_system_data_too_large_automation">Data not sent: %1$d characters, above the automation threshold of %2$d. Narrow the request (fewer fields, a shorter period) or split what is really needed.</string>
     <string name="ai_system_data_refused_by_user">Data not sent: the user refused %1$d characters of data. Narrow the request (fewer fields, a shorter period) or ask the user what is needed.</string>
+    <string name="ai_system_result_cut">[… %1$s characters not sent]</string>
     <string name="ai_data_confirmation_title">Large data</string>
     <string name="ai_data_confirmation_text">The data requested is %1$d characters, above your threshold of %2$d. Send it to the AI?</string>
     <string name="ai_data_confirmation_send">Send</string>
@@ -423,6 +424,8 @@
 
     <!-- AI Round Interruption -->
     <string name="ai_round_interrupted">AI round interrupted</string>
+    <string name="ai_actions_stopped">Actions stopped while running: those finished before the stop took place, the one in progress was abandoned, the next ones did not run. Check what is there before running them again.</string>
+    <string name="ai_actions_cut_by_app_closing">Actions cut by the app closing while they ran: those finished before took place, the one in progress was abandoned, the next ones did not run. Check what is there before running them again.</string>
     <string name="ai_call_cut_after_sending">The request had already gone out when it was cut: its cost is unknown</string>
 
     <!-- AI Session Scheduler -->
@@ -979,7 +982,6 @@
     <string name="ai_provider_fetching_models">Retrieving the models...</string>
     <string name="ai_provider_no_models">No model available</string>
     <string name="ai_provider_fetch_error">Error: %1$s</string>
-    <string name="ai_provider_enter_api_key_first">Please enter an API key first</string>
     <string name="ai_provider_claude_effort">Reasoning effort</string>
     <string name="ai_provider_claude_schema_effort">Reasoning effort asked of the model</string>
     <string name="ai_provider_claude_effort_low">Low</string>
@@ -1002,6 +1004,21 @@
     <string name="ai_provider_openai_schema_model">OpenAI model to use</string>
     <string name="ai_provider_openai_schema_temperature">Sampling temperature (0.0 to 2.0)</string>
     <string name="ai_provider_openai_schema_max_output_tokens">Maximum token limit for the answers</string>
+    <string name="ai_provider_fill_in_first">Fill in first: %1$s</string>
+    <string name="ai_provider_compatible_base_url">Server address</string>
+    <string name="ai_provider_compatible_schema_base_url">Base address of the server\'s OpenAI-compatible API, https only (e.g. https://openrouter.ai/api/v1)</string>
+    <string name="ai_provider_compatible_api_key">API key (if the server asks for one)</string>
+    <string name="ai_provider_compatible_schema_api_key">Key sent to the server as a bearer token; none for a server that asks for none</string>
+    <string name="ai_provider_compatible_model">Model</string>
+    <string name="ai_provider_compatible_schema_model">Model to use, among those the server lists</string>
+    <string name="ai_provider_compatible_output_forcing">Output forcing</string>
+    <string name="ai_provider_compatible_schema_output_forcing">How far the server holds the answer to a form: none, any valid JSON, or the exact schema of the answer</string>
+    <string name="ai_provider_compatible_output_forcing_none">None</string>
+    <string name="ai_provider_compatible_output_forcing_json">Valid JSON</string>
+    <string name="ai_provider_compatible_output_forcing_schema">Exact schema</string>
+    <string name="ai_provider_compatible_help">Any server speaking the OpenAI Chat Completions API: Ollama, llama.cpp, vLLM, LM Studio, OpenRouter. The address ends before /chat/completions, usually with /v1 (Ollama: https://&lt;host&gt;/v1). Only https: plain http would send your data in clear. A server at home can get a certificate through tailscale serve or a reverse proxy such as Caddy.</string>
+    <string name="ai_provider_compatible_output_forcing_help">Output forcing: the server holds the model to valid JSON, or to the exact schema of the answer. Small models need it most; a server that does not support the level chosen answers an error.</string>
+    <string name="ai_provider_compatible_https_required">The server address must start with https://: plain http would send your data in clear</string>
 
     <!-- AI ERRORS - Provider related (additional) -->
     <string name="ai_error_no_provider_configured">No AI provider configured. Please configure a provider in the settings.</string>
@@ -1218,7 +1235,11 @@
     <string name="import_missing_writing">column "%1$s": a writing of %2$s, among %3$s</string>
     <string name="import_missing_new_field">column "%1$s": the new field\'s definition</string>
     <string name="import_missing_one_key">one key column at most</string>
-    <string name="import_missing_name">no column gives the name, which this tool requires: declare one as the key, or as the field "name" where names are not unique</string>
+    <string name="import_missing_name_key">no column gives the name, which this tool requires: declare the column that holds it as the key</string>
+    <string name="import_missing_name_field">no column gives the name, which this tool requires: declare the column that holds it as the field name</string>
+    <string name="batch_refused_all">All %1$s entries refused: %2$s</string>
+    <string name="batch_refusal_reason">%1$s (%2$s, entries %3$s)</string>
+    <string name="batch_refusal_more">; and %1$s other reasons</string>
     <string name="import_error_duplicate_keys">These names appear twice in the file, where names are unique: %1$s</string>
     <string name="import_refused_cell">"%1$s" does not read as %2$s</string>
     <string name="action_verbalize_imports_detect">Reading a file to import</string>

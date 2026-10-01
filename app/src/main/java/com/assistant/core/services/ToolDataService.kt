@@ -75,6 +75,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "stop_duration" -> stopDuration(params, token)    // It stops, and the time elapsed is added to it
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // The caller stopped (a stop during an import): the write in progress is abandoned
+            throw e
         } catch (e: Exception) {
             OperationResult.error(s.shared("service_error_tool_data_service").format(e.message ?: ""))
         }
@@ -606,7 +609,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val createdIds = mutableListOf<String>()
         var successCount = 0
         var failureCount = 0
-        val failures = mutableListOf<String>() // Track individual failure messages
         // Each refusal by the entry's place in the batch, for a caller that answers line by line
         val refusals = mutableListOf<Map<String, Any>>()
         val batch = Batch()
@@ -627,8 +629,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     result.data?.get("id")?.let { createdIds.add(it.toString()) }
                     successCount++
                 } else {
-                    val error = "Entry $i: ${result.error ?: "unknown error"}"
-                    failures.add(error)
                     refusals.add(mapOf("index" to i, "error" to (result.error ?: "")))
                     failureCount++
                     LogManager.service("Batch create failed for entry $i: ${result.error}", "WARN")
@@ -636,8 +636,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val error = "Entry $i: ${e.message}"
-                failures.add(error)
                 refusals.add(mapOf("index" to i, "error" to (e.message ?: "")))
                 failureCount++
                 LogManager.service("Batch create exception for entry $i: ${e.message}", "ERROR", e)
@@ -650,12 +648,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // MAJOR: Return error if ALL entries failed (AI must know about total failure)
         // Return success with visible counts if partial success (AI can parse failed_count)
         if (successCount == 0 && failureCount > 0) {
-            val detailedError = if (failures.isNotEmpty()) {
-                "All batch entries failed ($failureCount): ${failures.joinToString("; ")}"
-            } else {
-                "All batch entries failed: $failureCount failed"
-            }
-            return OperationResult.error(detailedError)
+            return OperationResult.error(BatchRefusals.summary(refusals.map { (it["index"] as Int) to (it["error"] as String) }) { s.shared(it) })
         }
 
         // Log warning if partial failures occurred
@@ -692,7 +685,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
         var failureCount = 0
 
         // Process each entry
-        val failures = mutableListOf<String>() // Track individual failure messages
         // Each refusal by the entry's place in the batch, for a caller that answers line by line
         val refusals = mutableListOf<Map<String, Any>>()
         val batch = Batch()
@@ -705,8 +697,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 val entryId = entryJson.optString("id")
 
                 if (entryId.isEmpty()) {
-                    val error = "Entry $i: missing id"
-                    failures.add(error)
                     refusals.add(mapOf("index" to i, "error" to s.shared("service_error_missing_id")))
                     LogManager.service(
                         "Batch update failed for entry $i: missing id",
@@ -724,8 +714,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (result.success) {
                     successCount++
                 } else {
-                    val error = "Entry $i (id=$entryId): ${result.error ?: "unknown error"}"
-                    failures.add(error)
                     refusals.add(mapOf("index" to i, "error" to (result.error ?: "")))
                     LogManager.service(
                         "Batch update failed for entry $i (id=$entryId): ${result.error}",
@@ -736,8 +724,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val error = "Entry $i: ${e.message}"
-                failures.add(error)
                 refusals.add(mapOf("index" to i, "error" to (e.message ?: "")))
                 LogManager.service(
                     "Batch update exception for entry $i: ${e.message}",
@@ -754,12 +740,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // MAJOR: Return error if ALL entries failed (AI must know about total failure)
         // Return success with visible counts if partial success (AI can parse failed_count)
         if (successCount == 0 && failureCount > 0) {
-            val detailedError = if (failures.isNotEmpty()) {
-                "All batch entries failed ($failureCount): ${failures.joinToString("; ")}"
-            } else {
-                "All batch entries failed: $failureCount failed"
-            }
-            return OperationResult.error(detailedError)
+            return OperationResult.error(BatchRefusals.summary(refusals.map { (it["index"] as Int) to (it["error"] as String) }) { s.shared(it) })
         }
 
         // Log warning if partial failures occurred
@@ -793,7 +774,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         var successCount = 0
         var failureCount = 0
-        val failures = mutableListOf<String>() // Track individual failure messages
+        // Each refusal by the entry's place in the batch
+        val refusals = mutableListOf<Map<String, Any>>()
 
         // Process each ID
         for (i in 0 until idsArray.length()) {
@@ -803,8 +785,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 val entryId = idsArray.getString(i)
 
                 if (entryId.isEmpty()) {
-                    val error = "Entry $i: missing id"
-                    failures.add(error)
+                    refusals.add(mapOf("index" to i, "error" to s.shared("service_error_missing_id")))
                     LogManager.service(
                         "Batch delete failed for entry $i: missing id",
                         "WARN"
@@ -824,17 +805,17 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (result.success) {
                     successCount++
                 } else {
-                    val error = "Entry $i (id=$entryId): ${result.error ?: "unknown error"}"
-                    failures.add(error)
+                    refusals.add(mapOf("index" to i, "error" to (result.error ?: "")))
                     LogManager.service(
                         "Batch delete failed for entry $i (id=$entryId): ${result.error}",
                         "WARN"
                     )
                     failureCount++
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
-                val error = "Entry $i: ${e.message}"
-                failures.add(error)
+                refusals.add(mapOf("index" to i, "error" to (e.message ?: "")))
                 LogManager.service(
                     "Batch delete exception for entry $i: ${e.message}",
                     "ERROR",
@@ -849,12 +830,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // MAJOR: Return error if ALL entries failed (AI must know about total failure)
         // Return success with visible counts if partial success (AI can parse failed_count)
         if (successCount == 0 && failureCount > 0) {
-            val detailedError = if (failures.isNotEmpty()) {
-                "All batch entries failed ($failureCount): ${failures.joinToString("; ")}"
-            } else {
-                "All batch entries failed: $failureCount failed"
-            }
-            return OperationResult.error(detailedError)
+            return OperationResult.error(BatchRefusals.summary(refusals.map { (it["index"] as Int) to (it["error"] as String) }) { s.shared(it) })
         }
 
         // Log warning if partial failures occurred

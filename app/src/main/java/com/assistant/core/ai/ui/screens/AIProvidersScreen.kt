@@ -123,6 +123,15 @@ fun AIProvidersScreen(
         }
     }
 
+    // Error display (toast pattern), before the config screen's early return: a refused save
+    // shows while the config screen is still open, not once it is left
+    errorMessage?.let { error ->
+        LaunchedEffect(error) {
+            UI.Toast(context, error, Duration.LONG)
+            errorMessage = null
+        }
+    }
+
     // Show provider config screen if provider selected
     configuringProviderId?.let { providerId ->
         val registry = remember { AIProviderRegistry(context) }
@@ -223,14 +232,6 @@ fun AIProvidersScreen(
             onLeftClick = onBack,
             onRightClick = { }
         )
-
-        // Error display (toast pattern)
-        errorMessage?.let { error ->
-            LaunchedEffect(error) {
-                UI.Toast(context, error, Duration.LONG)
-                errorMessage = null
-            }
-        }
 
         // Content based on loading state
         when {

@@ -53,6 +53,8 @@ class AIEventProcessor(
     private var networkRetryJob: Job? = null
     // The AI call in flight, run apart from the state loop so Stop and Interrupt can cancel it
     @Volatile private var aiCallJob: Job? = null
+    // The actions being executed, apart from the state loop for the same reason
+    @Volatile private var actionsJob: Job? = null
     private var sessionClosureJob: Job? = null
     private var initialized = false
     private var stateCollectorJob: Job? = null
@@ -79,6 +81,8 @@ class AIEventProcessor(
         )
 
         stateCollectorJob = processingScope.launch {
+            // Before the restored state is handled: its actions must not run a second time
+            settleActionsCutByAppClosing()
             stateRepository.state.collect { state ->
                 handleStateChange(state)
             }
@@ -98,6 +102,7 @@ class AIEventProcessor(
             // transition, so no answer can arrive for a session that has moved on
             if (event is AIEvent.AIRoundInterrupted || event is AIEvent.SessionCompleted) {
                 cancelAICall()
+                cancelActions()
             }
 
             // Special handling for SchedulerHeartbeat before state transition
@@ -345,7 +350,10 @@ class AIEventProcessor(
             }
 
             Phase.EXECUTING_ACTIONS -> {
-                executeActions(state)
+                // Off the state loop: an action can take minutes (an import), and Stop and
+                // Interrupt must be handled meanwhile
+                actionsJob?.cancel()
+                actionsJob = processingScope.launch { executeActions(state) }
             }
 
             Phase.WAITING_NETWORK_RETRY -> {
@@ -1408,7 +1416,10 @@ class AIEventProcessor(
                         textContent = null,
                         aiMessage = null,
                         aiMessageJson = null,
-                        systemMessage = result.systemMessage,
+                        // Sent without asking anyone: held to the session's data threshold
+                        systemMessage = result.systemMessage.withinChars(
+                            AppConfigManager.getAILimits().getLimitsForSessionType(state.sessionType ?: SessionType.CHAT).maxDataChars
+                        ) { com.assistant.core.strings.Strings.`for`(context = context).shared("ai_system_result_cut").format(it) },
                         executionMetadata = null,
                         excludeFromPrompt = false
                     )
@@ -1450,10 +1461,60 @@ class AIEventProcessor(
                         ))
                     }
 
+        } catch (e: CancellationException) {
+            // Stopped or interrupted: what ran is done, the operation in progress was abandoned
+            withContext(NonCancellable) { storeActionsCutMessage(state, "ai_actions_stopped") }
+            throw e
         } catch (e: Exception) {
             LogManager.aiSession("executeActions failed: ${e.message}", "ERROR", e)
             emit(AIEvent.SystemErrorOccurred(e.message ?: "Unknown error"))
         }
+    }
+
+    /**
+     * Cancel the actions being executed, and wait for their end to be recorded: the message that
+     * says so comes before what the stop or the interruption writes. Not waited for from inside
+     * them, which would wait for itself.
+     */
+    private suspend fun cancelActions() {
+        val job = actionsJob ?: return
+        actionsJob = null
+        if (job == currentCoroutineContext()[Job]) job.cancel() else job.cancelAndJoin()
+    }
+
+    /**
+     * A session the app was closed on while it executed actions is not executed again: an
+     * action replayed would be done twice (an entry created twice, an import run again). Its
+     * restored state ends there, with a message that says so, to the AI as to the user: a CHAT
+     * goes back to idle, an AUTOMATION ends INTERRUPTED, which the scheduler does not resume.
+     * Reads (enrichments, data queries) and the AI call are resumed as before: running them
+     * again changes nothing.
+     */
+    private suspend fun settleActionsCutByAppClosing() {
+        val state = stateRepository.currentState
+        if (state.phase != Phase.EXECUTING_ACTIONS) return
+        LogManager.aiSession("Session ${state.sessionId} restored while executing actions: not run again", "WARN")
+        storeActionsCutMessage(state, "ai_actions_cut_by_app_closing")
+        if (state.sessionType == SessionType.AUTOMATION) emit(AIEvent.SessionCompleted(SessionEndReason.INTERRUPTED))
+        else emit(AIEvent.AIRoundInterrupted)
+    }
+
+    /** A message, sent to the AI too, that the actions of [state]'s session were cut, in the words of [key]. */
+    private suspend fun storeActionsCutMessage(state: AIState, key: String) {
+        val sessionId = state.sessionId ?: return
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+        messageRepository.storeMessage(sessionId, SessionMessage(
+            id = UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            sender = MessageSender.SYSTEM,
+            richContent = null,
+            textContent = s.shared(key),
+            aiMessage = null,
+            aiMessageJson = null,
+            systemMessage = null,
+            executionMetadata = null,
+            excludeFromPrompt = false // The AI must know which of its actions may not have run
+        ))
     }
 
     /**

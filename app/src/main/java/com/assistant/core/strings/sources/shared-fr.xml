@@ -394,6 +394,7 @@
     <string name="ai_phase_waiting_data_confirmation">En attente de ta décision sur les données</string>
     <string name="ai_system_data_too_large_automation">Données non envoyées : %1$d caractères, au-delà du seuil des automations de %2$d. Resserre la requête (moins de champs, une période plus courte) ou découpe ce qui est vraiment nécessaire.</string>
     <string name="ai_system_data_refused_by_user">Données non envoyées : l\'utilisateur a refusé %1$d caractères de données. Resserre la requête (moins de champs, une période plus courte) ou demande-lui ce qui est nécessaire.</string>
+    <string name="ai_system_result_cut">[… %1$s caractères non envoyés]</string>
     <string name="ai_data_confirmation_title">Données volumineuses</string>
     <string name="ai_data_confirmation_text">Les données demandées font %1$d caractères, au-delà de ton seuil de %2$d. Les envoyer à l\'IA ?</string>
     <string name="ai_data_confirmation_send">Envoyer</string>
@@ -423,6 +424,8 @@
 
     <!-- AI Round Interruption -->
     <string name="ai_round_interrupted">Round IA interrompu</string>
+    <string name="ai_actions_stopped">Actions arrêtées pendant leur exécution : celles terminées avant l\'arrêt ont eu lieu, celle en cours a été abandonnée, les suivantes n\'ont pas eu lieu. Vérifier ce qui existe avant de les relancer.</string>
+    <string name="ai_actions_cut_by_app_closing">Actions coupées par la fermeture de l\'app pendant leur exécution : celles terminées avant ont eu lieu, celle en cours a été abandonnée, les suivantes n\'ont pas eu lieu. Vérifier ce qui existe avant de les relancer.</string>
     <string name="ai_call_cut_after_sending">La requête était déjà partie quand elle a été coupée : son coût est inconnu</string>
 
     <!-- AI Session Scheduler -->
@@ -979,7 +982,6 @@
     <string name="ai_provider_fetching_models">Récupération des modèles...</string>
     <string name="ai_provider_no_models">Aucun modèle disponible</string>
     <string name="ai_provider_fetch_error">Erreur: %1$s</string>
-    <string name="ai_provider_enter_api_key_first">Veuillez d\'abord entrer une clé API</string>
     <string name="ai_provider_claude_effort">Effort de raisonnement</string>
     <string name="ai_provider_claude_schema_effort">Effort de raisonnement demandé au modèle</string>
     <string name="ai_provider_claude_effort_low">Faible</string>
@@ -1002,6 +1004,21 @@
     <string name="ai_provider_openai_schema_model">Modèle OpenAI à utiliser</string>
     <string name="ai_provider_openai_schema_temperature">Température d\'échantillonnage (0.0 à 2.0)</string>
     <string name="ai_provider_openai_schema_max_output_tokens">Limite maximale de tokens pour les réponses</string>
+    <string name="ai_provider_fill_in_first">Renseignez d\'abord : %1$s</string>
+    <string name="ai_provider_compatible_base_url">Adresse du serveur</string>
+    <string name="ai_provider_compatible_schema_base_url">Adresse de base de l\'API compatible OpenAI du serveur, en https seulement (ex. https://openrouter.ai/api/v1)</string>
+    <string name="ai_provider_compatible_api_key">Clé API (si le serveur en demande une)</string>
+    <string name="ai_provider_compatible_schema_api_key">Clé envoyée au serveur comme jeton ; aucune pour un serveur qui n\'en demande pas</string>
+    <string name="ai_provider_compatible_model">Modèle</string>
+    <string name="ai_provider_compatible_schema_model">Modèle à utiliser, parmi ceux que liste le serveur</string>
+    <string name="ai_provider_compatible_output_forcing">Forçage de la sortie</string>
+    <string name="ai_provider_compatible_schema_output_forcing">Jusqu\'où le serveur tient la réponse à une forme : rien, un JSON valide quelconque, ou le schéma exact de la réponse</string>
+    <string name="ai_provider_compatible_output_forcing_none">Aucun</string>
+    <string name="ai_provider_compatible_output_forcing_json">JSON valide</string>
+    <string name="ai_provider_compatible_output_forcing_schema">Schéma exact</string>
+    <string name="ai_provider_compatible_help">Tout serveur qui parle l\'API Chat Completions d\'OpenAI : Ollama, llama.cpp, vLLM, LM Studio, OpenRouter. L\'adresse s\'arrête avant /chat/completions, le plus souvent sur /v1 (Ollama : https://&lt;hôte&gt;/v1). En https seulement : le http enverrait vos données en clair. Un serveur à la maison obtient un certificat par tailscale serve ou un proxy inverse comme Caddy.</string>
+    <string name="ai_provider_compatible_output_forcing_help">Forçage de la sortie : le serveur tient le modèle à un JSON valide, ou au schéma exact de la réponse. Les petits modèles en ont le plus besoin ; un serveur qui n\'accepte pas le niveau choisi répond par une erreur.</string>
+    <string name="ai_provider_compatible_https_required">L\'adresse du serveur doit commencer par https:// : le http enverrait vos données en clair</string>
 
     <!-- AI ERRORS - Provider related (additional) -->
     <string name="ai_error_no_provider_configured">Aucun fournisseur IA configuré. Veuillez configurer un fournisseur dans les paramètres.</string>
@@ -1218,7 +1235,11 @@
     <string name="import_missing_writing">colonne « %1$s » : une écriture de %2$s, parmi %3$s</string>
     <string name="import_missing_new_field">colonne « %1$s » : la définition du nouveau champ</string>
     <string name="import_missing_one_key">une seule colonne clé au plus</string>
-    <string name="import_missing_name">aucune colonne ne donne le nom, obligatoire dans cet outil : en déclarer une comme clé, ou comme champ « name » là où les noms ne sont pas uniques</string>
+    <string name="import_missing_name_key">aucune colonne ne donne le nom, obligatoire dans cet outil : déclarer comme clé la colonne qui le porte</string>
+    <string name="import_missing_name_field">aucune colonne ne donne le nom, obligatoire dans cet outil : déclarer comme champ name la colonne qui le porte</string>
+    <string name="batch_refused_all">Les %1$s entrées refusées : %2$s</string>
+    <string name="batch_refusal_reason">%1$s (%2$s, entrées %3$s)</string>
+    <string name="batch_refusal_more"> ; et %1$s autres raisons</string>
     <string name="import_error_duplicate_keys">Ces noms figurent deux fois dans le fichier, où les noms sont uniques : %1$s</string>
     <string name="import_refused_cell">« %1$s » ne se lit pas en %2$s</string>
     <string name="action_verbalize_imports_detect">Lecture d\'un fichier à importer</string>
