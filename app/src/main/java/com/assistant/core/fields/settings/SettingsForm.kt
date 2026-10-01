@@ -87,18 +87,141 @@ private fun rowFields(): Map<String, com.assistant.core.fields.FieldDefinition>?
 }
 
 /**
+ * One step from a page of the form to a page it opens: a group by its name, or an element of a
+ * list by the list's name and its position.
+ */
+private sealed class Step {
+    data class Group(val name: String) : Step()
+    data class Element(val list: String, val index: Int) : Step()
+
+    /** The keys and positions it goes through in the stored config. */
+    val keys: List<Any> get() = when (this) {
+        is Group -> listOf(name)
+        is Element -> listOf(list, index)
+    }
+}
+
+/** The pages open, from the root, kept across a recreation of the screen. */
+private val TrailSaver: androidx.compose.runtime.saveable.Saver<List<Step>, String> = androidx.compose.runtime.saveable.Saver(
+    save = { trail ->
+        JSONArray(trail.map { step ->
+            when (step) {
+                is Step.Group -> JSONObject().put("group", step.name)
+                is Step.Element -> JSONObject().put("list", step.list).put("index", step.index)
+            }
+        }).toString()
+    },
+    restore = { saved ->
+        val array = JSONArray(saved)
+        (0 until array.length()).map { i ->
+            val step = array.getJSONObject(i)
+            if (step.has("group")) Step.Group(step.getString("group")) else Step.Element(step.getString("list"), step.getInt("index"))
+        }
+    }
+)
+
+/** The page being drawn, [trail] from the root, and how a line on it opens the page under it. */
+private class Pages(val trail: List<Step>, private val go: (List<Step>) -> Unit) {
+    fun open(step: Step) = go(trail + step)
+}
+
+private val LocalPages = androidx.compose.runtime.compositionLocalOf<Pages?> { null }
+
+/**
+ * Whether settings hold more than values — a group, a list, or a brick drawn by its selector —
+ * which makes the object holding them a page of its own (docs/design/settings-pages.md). A
+ * variant counts by all its options, so that an object does not turn from a page into a card
+ * when another one is chosen.
+ */
+private fun List<SettingNode>.isPage(): Boolean = any { node ->
+    when (node) {
+        is SettingNode.Group, is SettingNode.ListOf, is SettingNode.Term,
+        is SettingNode.Selection, is SettingNode.Condition -> true
+        is SettingNode.Section -> node.nodes.isPage()
+        is SettingNode.Variant -> node.cases.values.any { it.isPage() }
+        is SettingNode.Field, is SettingNode.Period -> false
+    }
+}
+
+/**
+ * The nodes stored in the object these nodes describe, as the form shows them over [config]: a
+ * section's, and the case of a variant that [config] chooses.
+ */
+private fun List<SettingNode>.shown(config: JSONObject): List<SettingNode> = flatMap { node ->
+    when (node) {
+        is SettingNode.Section -> node.nodes.shown(config)
+        is SettingNode.Variant -> {
+            val chosen = config.optString(node.selector.definition.name).ifEmpty { node.selector.default?.toString() }
+            listOf(node) + (node.cases[chosen] ?: emptyList()).shown(config)
+        }
+        else -> listOf(node)
+    }
+}
+
+/** A page reached by a trail: its settings, the object they are stored in, its name in the path. */
+private data class Page(val nodes: List<SettingNode>, val config: JSONObject, val label: String)
+
+/**
+ * The pages [trail] goes through from [nodes] over [config], as far as they still exist: an
+ * element removed, a group whose variant was switched away, end it there.
+ */
+private fun pagesOf(nodes: List<SettingNode>, config: JSONObject, trail: List<Step>): List<Page> {
+    val pages = mutableListOf<Page>()
+    var level = nodes
+    var current = config
+    for (step in trail) {
+        val page = when (step) {
+            is Step.Group -> level.shown(current).filterIsInstance<SettingNode.Group>().firstOrNull { it.name == step.name }
+                ?.let { Page(it.nodes, current.optJSONObject(it.name) ?: JSONObject(), it.label) }
+            is Step.Element -> level.shown(current).filterIsInstance<SettingNode.ListOf>().firstOrNull { it.name == step.list }?.let { list ->
+                val element = current.optJSONArray(list.name)?.opt(step.index) as? JSONObject
+                val shape = list.item as? SettingNode.Item.Of
+                if (element == null || shape == null) null
+                else Page(shape.nodes, element, summaryText(list, element, step.index))
+            }
+        } ?: break
+        pages += page
+        level = page.nodes
+        current = page.config
+    }
+    return pages
+}
+
+/** [container] with [value] put where [keys] lead, every object and list on the way copied. */
+private fun replaced(container: Any, keys: List<Any>, value: Any): Any {
+    if (keys.isEmpty()) return value
+    val key = keys.first()
+    return when (container) {
+        is JSONObject -> JSONObject(container.toString()).apply {
+            put(key as String, replaced(container.opt(key)?.takeIf { it != JSONObject.NULL } ?: JSONObject(), keys.drop(1), value))
+        }
+        is JSONArray -> JSONArray(container.toString()).apply { put(key as Int, replaced(container.get(key), keys.drop(1), value)) }
+        else -> error("Nothing to step into at '$key'")
+    }
+}
+
+/**
  * The form of any settings declaration (docs/DATA.md): a field by the
  * input of its field type, a group as a card, a list with add, remove and reorder, a variant with
  * the settings of the option chosen, a section as a titled card over settings stored beside it.
  * A setting the app writes itself (SettingNode.Field.systemWritten) is not shown; a secret one
  * is entered masked; a schedule (ScheduleSettings.group) opens its own editor.
  *
- * Stateless: [config] is the object being edited, and every change hands a new one to [onChange].
+ * A group, or an element of a list, holding more than values is a page of its own
+ * (docs/design/settings-pages.md): one line in its parent's page, which opens it full width under
+ * the path from the root; the phone's back goes up one page. Every page edits the same [config].
+ *
+ * Stateless: [config] is the object being edited, and every change hands a new one to [onChange];
+ * the form keeps only which page is open.
  *
  * @param editors Parts drawn by their owner, by setting name (SettingEditor), at the top level of
  *   the declaration only: a name inside a group or a list element may mean something else there
  * @param rows The fields of the rows [config] describes, for the settings that choose among them;
  *   given where [config] is the whole config, never inside it
+ * @param scroll The scrolling of the screen around the form, brought back to its top when
+ *   another page opens
+ * @param root What its owner shows with the settings of the root page and no other, above them:
+ *   what is not a setting of [config] (a tool's zone)
  */
 @Composable
 fun SettingsForm(
@@ -107,13 +230,178 @@ fun SettingsForm(
     onChange: (JSONObject) -> Unit,
     context: Context,
     editors: Map<String, SettingEditor> = emptyMap(),
-    rows: RowFields? = null
+    rows: RowFields? = null,
+    scroll: androidx.compose.foundation.ScrollState? = null,
+    root: (@Composable () -> Unit)? = null
 ) {
-    if (rows != null) {
-        androidx.compose.runtime.CompositionLocalProvider(LocalPlace provides Place(config, emptyList(), rows)) {
-            NodesForm(nodes, nodes, config, onChange, context, editors)
+    var trail by rememberSaveable(stateSaver = TrailSaver) { mutableStateOf(emptyList<Step>()) }
+    val pages = pagesOf(nodes, config, trail)
+    // A page that no longer exists (its element removed by the AI, its variant switched) gives
+    // way to the deepest one still there
+    if (pages.size < trail.size) androidx.compose.runtime.SideEffect { trail = trail.take(pages.size) }
+    val shown = trail.take(pages.size)
+    androidx.activity.compose.BackHandler(enabled = shown.isNotEmpty()) { trail = shown.dropLast(1) }
+
+    // A page opened, or left for another, shows from the top of the screen; not when it opens
+    var drawn by remember { mutableStateOf<List<Step>?>(null) }
+    androidx.compose.runtime.LaunchedEffect(shown) {
+        if (drawn != null && drawn != shown) scroll?.scrollTo(0)
+        drawn = shown
+    }
+
+    val keys = shown.flatMap { it.keys }
+    val page = pages.lastOrNull()
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalPages provides Pages(shown) { trail = it },
+        LocalPlace provides rows?.let { Place(config, keys, it) }
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
+            if (page == null) {
+                root?.invoke()
+                NodesForm(nodes, nodes, config, onChange, context, editors)
+            } else {
+                PageHeader(pages.map { it.label }, context) { depth -> trail = shown.take(depth) }
+                // Owners attach editors at the top level only
+                NodesForm(page.nodes, page.nodes, page.config, { changed -> onChange(replaced(config, keys, changed) as JSONObject) }, context, emptyMap())
+            }
         }
-    } else NodesForm(nodes, nodes, config, onChange, context, editors)
+    }
+}
+
+/**
+ * The head of a page under the root: a button up one page, the page's name, and under it the
+ * path it was reached by, each step going back to its page.
+ *
+ * @param labels The pages from the root's first to the one open
+ * @param onGo The number of pages to keep open, 0 for the root
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PageHeader(labels: List<String>, context: Context, onGo: (Int) -> Unit) {
+    val s = remember { Strings.`for`(context = context) }
+    UI.Card(type = CardType.DEFAULT, highlight = true) {
+        Row(modifier = Modifier.padding(UI.Space.S), verticalAlignment = Alignment.CenterVertically) {
+            UI.ActionButton(action = ButtonAction.BACK, display = ButtonDisplay.ICON, size = Size.M, onClick = { onGo(labels.size - 1) })
+            Column(modifier = Modifier.weight(1f).padding(start = UI.Space.S), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
+                UI.Text(labels.last(), TextType.SUBTITLE)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(UI.Space.S), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
+                    (listOf(s.shared("settings_path_root")) + labels.dropLast(1)).forEachIndexed { depth, label ->
+                        if (depth > 0) UI.Text(s.shared("settings_path_separator"), TextType.CAPTION)
+                        Box(modifier = Modifier.clickable { onGo(depth) }) { UI.Text(label, TextType.CAPTION) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The line of a page in its parent's: its [title], [summary] under it, then what the page holds
+ * where [nodes] describe [config] — the phrase of each brick, the count of each list; touched, it
+ * opens the page. [trailing] keeps its own gestures.
+ */
+@Composable
+private fun PageLine(
+    title: (@Composable () -> Unit)?,
+    summary: @Composable () -> Unit,
+    nodes: List<SettingNode>,
+    config: JSONObject,
+    context: Context,
+    onOpen: () -> Unit,
+    trailing: @Composable () -> Unit
+) {
+    val counts = counts(nodes, config, context)
+    val phrases = brickPhrases(nodes, config, context)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onOpen)
+                .padding(start = UI.Space.M, top = UI.Space.S, bottom = UI.Space.S),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
+                title?.invoke()
+                summary()
+                phrases.forEach { UI.Text(it, TextType.CAPTION, maxLines = 2) }
+                if (counts.isNotEmpty()) UI.Text(counts.joinToString(" ${Strings.`for`(context = context).shared("list_item_summary_separator")} "), TextType.CAPTION, maxLines = 2)
+            }
+            UI.Icon("chevron-right", size = 20.dp)
+        }
+        trailing()
+    }
+}
+
+/**
+ * What each term and selection of entries [config] holds where [nodes] describe it says, in one
+ * line: "Meals › Kcal · Sum · Filters: 2", a variable's name, a constant. The names are read, so
+ * the lines come once read; a read that fails says so in its line.
+ */
+@Composable
+private fun brickPhrases(nodes: List<SettingNode>, config: JSONObject, context: Context): List<String> {
+    val bricks = nodes.shown(config).mapNotNull { node ->
+        when (node) {
+            is SettingNode.Term -> config.optJSONObject(node.name)?.let { node.label to it }
+            is SettingNode.Selection -> config.optJSONObject(node.name)?.let { node.label to JSONObject().put("selection", it) }
+            else -> null
+        }
+    }
+    val key = bricks.joinToString { it.second.toString() }
+    val phrases by androidx.compose.runtime.produceState(emptyList<String>(), key) {
+        val s = Strings.`for`(context = context)
+        value = bricks.map { (label, brick) ->
+            s.shared("settings_count").format(label, try { brickPhrase(brick, context) } catch (e: IllegalStateException) { e.message ?: "" })
+        }
+    }
+    return phrases
+}
+
+/**
+ * The phrase of one brick as stored: `{"constant"}`, `{"variable"}`, `{"reading"}`, or a selection
+ * wrapped as `{"selection"}`.
+ *
+ * @throws IllegalStateException when a name cannot be read
+ */
+private suspend fun brickPhrase(brick: JSONObject, context: Context): String {
+    val s = Strings.`for`(context = context)
+    val separator = " ${s.shared("list_item_summary_separator")} "
+    suspend fun name(kind: com.assistant.core.selection.ReferenceKind, id: String): String =
+        when (val named = com.assistant.core.fields.loadReferenceNames(listOf(com.assistant.core.selection.Reference(kind, id)), context).values.firstOrNull()) {
+            is com.assistant.core.fields.ReferenceName.Named -> named.name
+            else -> s.shared("pointer_target_deleted")
+        }
+    // The tool a selection reads, its field by its label, and the number of its filters
+    suspend fun selection(selection: JSONObject, field: String?): List<String> {
+        val target = com.assistant.core.fields.ReferenceTarget.referenceOf(selection.opt("target")) ?: return emptyList()
+        val toolId = target.id ?: return emptyList()
+        val tool = name(target.kind, toolId)
+        val fieldLabel = field?.let { path -> com.assistant.core.fields.ToolFields.filterable(toolId, context, s)[path]?.displayName ?: path }
+        val filters = selection.optJSONArray("filters")?.length() ?: 0
+        return listOfNotNull(
+            listOfNotNull(tool, fieldLabel).joinToString(" ${s.shared("settings_path_separator")} "),
+            s.shared("settings_phrase_filters").format(filters).takeIf { filters > 0 }
+        )
+    }
+    return when {
+        brick.has("constant") -> JsonUtils.toValue(brick.opt("constant").takeIf { it != JSONObject.NULL })?.toString() ?: ""
+        brick.has("variable") -> brick.optString("variable").takeIf { it.isNotEmpty() }
+            ?.let { name(com.assistant.core.selection.ReferenceKind.VARIABLE, it) } ?: ""
+        brick.has("reading") -> {
+            val reading = brick.getJSONObject("reading")
+            val parts = selection(reading.optJSONObject("selection") ?: JSONObject(), reading.optString("field").takeIf { it.isNotEmpty() }).toMutableList()
+            reading.optString("reduction").takeIf { it.isNotEmpty() }?.let { parts.add(minOf(1, parts.size), s.shared("reduction_${it.lowercase()}")) }
+            parts.joinToString(separator)
+        }
+        else -> selection(brick.getJSONObject("selection"), null).joinToString(separator)
+    }
+}
+
+/** The lists [config] holds where [nodes] describe it, those not empty, each with its number of elements. */
+private fun counts(nodes: List<SettingNode>, config: JSONObject, context: Context): List<String> {
+    val s = Strings.`for`(context = context)
+    return nodes.shown(config).filterIsInstance<SettingNode.ListOf>().mapNotNull { list ->
+        config.optJSONArray(list.name)?.length()?.takeIf { it > 0 }?.let { s.shared("settings_count").format(list.label, it) }
+    }
 }
 
 /**
@@ -203,11 +491,23 @@ private fun NodeForm(
             // A schedule is drawn by its editor on every screen, without its owner attaching it
             val editor = editors[node.name]
                 ?: if (node.name == ScheduleSettings.NAME) ScheduleSettingEditor(node.label, Strings.`for`(context = context)) else null
-            if (editor != null) editor.Edit(config.optJSONObject(node.name)) { set(node.name, it) }
             // An optional group set can be removed whole: left out, it is none
-            else Titled(node.label, onRemove = if (!node.required && config.has(node.name)) {{ set(node.name, null) }} else null) {
+            val onRemove = if (!node.required && config.has(node.name)) {{ set(node.name, null) }} else null
+            val pages = LocalPages.current
+            if (editor != null) editor.Edit(config.optJSONObject(node.name)) { set(node.name, it) }
+            else if (pages != null && node.nodes.isPage()) UI.Card(type = CardType.DEFAULT) {
+                PageLine(
+                    title = { UI.Text(node.label, TextType.SUBTITLE) },
+                    summary = {},
+                    nodes = node.nodes,
+                    config = config.optJSONObject(node.name) ?: JSONObject(),
+                    context = context,
+                    onOpen = { pages.open(Step.Group(node.name)) }
+                ) { onRemove?.let { UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = it) } }
+            }
+            else Titled(node.label, onRemove = onRemove) {
                 Into(node.name) {
-                    SettingsForm(node.nodes, config.optJSONObject(node.name) ?: JSONObject(), { set(node.name, it) }, context)
+                    NodesForm(node.nodes, node.nodes, config.optJSONObject(node.name) ?: JSONObject(), { set(node.name, it) }, context, emptyMap())
                 }
             }
         }
@@ -362,6 +662,22 @@ private fun ListForm(
             }
             is SettingNode.Item.Of -> UI.Card(type = CardType.DEFAULT) {
                 val element = item as? JSONObject ?: JSONObject()
+                val pages = LocalPages.current
+                // An element holding more than values is a line opening its page
+                if (pages != null && shape.nodes.isPage()) {
+                    PageLine(
+                        title = null,
+                        summary = { Summary(list.summary, shape.nodes, element, context) },
+                        nodes = shape.nodes,
+                        config = element,
+                        context = context,
+                        onOpen = { pages.open(Step.Element(list.name, index)) }
+                    ) {
+                        DragHandle()
+                        UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = { remove() })
+                    }
+                    return@Card
+                }
                 val isOpen = index in open
                 Column {
                     // The summary line opens and closes the element; the handle and the bin keep
@@ -383,9 +699,9 @@ private fun ListForm(
                     if (isOpen) {
                         Column(modifier = Modifier.padding(start = UI.Space.M, end = UI.Space.M, bottom = UI.Space.M)) {
                             Into(index) {
-                                SettingsForm(shape.nodes, element, { changed ->
+                                NodesForm(shape.nodes, shape.nodes, element, { changed ->
                                     publish(values.toMutableList().also { it[index] = changed })
-                                }, context)
+                                }, context, emptyMap())
                             }
                         }
                     }
@@ -393,14 +709,18 @@ private fun ListForm(
             }
         }
     }
+    val pages = LocalPages.current
     UI.ActionButton(action = ButtonAction.ADD, display = ButtonDisplay.ICON, size = Size.S, onClick = {
-        // A new element starts from its defaults, open to be filled in; a value starts empty
-        val fresh: Any = when (val shape = list.item) {
+        // A new element starts from its defaults, open to be filled in — on its page when it has
+        // one; a value starts empty
+        val shape = list.item
+        val fresh: Any = when (shape) {
             is SettingNode.Item.Of -> SettingDefaults.of(shape.nodes)
             is SettingNode.Item.Value -> JSONObject.NULL
         }
-        open = open + values.size
         publish(values + fresh)
+        if (pages != null && shape is SettingNode.Item.Of && shape.nodes.isPage()) pages.open(Step.Element(list.name, values.size))
+        else open = open + values.size
     })
 }
 
@@ -433,6 +753,21 @@ private fun Summary(summary: List<String>, nodes: List<SettingNode>, element: JS
             else FieldValue(definition, value, context)
         }
     }
+}
+
+/**
+ * The name of an element in the path: its [SettingNode.ListOf.summary] values as text, or the
+ * list's label and its position when they are empty.
+ */
+private fun summaryText(list: SettingNode.ListOf, element: JSONObject, index: Int): String {
+    val shown = list.summary.mapNotNull { key ->
+        when (val value = JsonUtils.toValue(element.opt(key)?.takeIf { it != JSONObject.NULL })) {
+            null -> null
+            is List<*> -> value.joinToString(", ").takeIf { it.isNotEmpty() }
+            else -> value.toString().takeIf { it.isNotEmpty() }
+        }
+    }
+    return shown.joinToString(" · ").ifEmpty { "${list.label} ${index + 1}" }
 }
 
 /** A card with [label] as its title, over [content]; with [onRemove], a button removing what it holds. */

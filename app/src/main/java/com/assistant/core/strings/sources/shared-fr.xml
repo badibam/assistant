@@ -486,6 +486,11 @@
     <string name="label_no_value">Aucune valeur</string>
     <string name="list_item_untitled">Sans nom</string>
     <string name="list_item_summary_separator">·</string>
+    <string name="settings_path_root">Réglages</string>
+    <string name="settings_path_separator">›</string>
+    <string name="settings_count">%1$s : %2$s</string>
+    <string name="settings_phrase_filters">Filtres : %1$s</string>
+    <string name="settings_leave_unsaved">Quitter sans enregistrer ? Vos changements seront perdus.</string>
     <string name="field_label_inline">%1$s :</string>
     <string name="tag_color_red">Rouge</string>
     <string name="tag_color_orange">Orange</string>
