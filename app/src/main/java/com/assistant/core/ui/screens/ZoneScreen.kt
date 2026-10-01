@@ -274,7 +274,7 @@ fun ZoneScreen(
 
     // Show tool usage screen if selected
     selectedToolInstance?.let { toolInstance ->
-        ToolTypeManager.getToolType(toolInstance.tooltype)?.getUsageScreen(
+        com.assistant.core.ui.components.ShownScreen { ToolTypeManager.getToolType(toolInstance.tooltype)?.getUsageScreen(
             toolInstanceId = toolInstance.id,
             configJson = toolInstance.config_json,
             zoneName = zone.name,
@@ -286,7 +286,7 @@ fun ZoneScreen(
                 showingConfigFor = toolInstance.tooltype
             },
             openEntry = openEntry
-        )
+        ) }
         return // Exit ZoneScreen composition when showing usage screen
     }
 

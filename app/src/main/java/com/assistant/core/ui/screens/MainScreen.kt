@@ -346,7 +346,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
 
     // Show ZoneScreen when a zone is selected
     selectedZone?.let { zone ->
-        ZoneScreen(
+        com.assistant.core.ui.components.ShownScreen { ZoneScreen(
             zone = zone,
             opening = opening,
             onOpened = { opening = null },
@@ -370,7 +370,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                     com.assistant.core.ai.orchestration.ChatRequests.open(prefill)
                 }
             }
-        )
+        ) }
         return // Exit MainScreen composition when showing ZoneScreen
     }
     
