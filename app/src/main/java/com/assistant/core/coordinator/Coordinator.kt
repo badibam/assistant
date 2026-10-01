@@ -6,6 +6,7 @@ import com.assistant.core.commands.CommandResult
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
+import com.assistant.core.strings.Strings
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
@@ -15,9 +16,10 @@ import java.util.concurrent.ConcurrentHashMap
  * CommandDispatcher - orchestrates all operations with unified resource.operation pattern.
  *
  * The operations given to one instance run one at a time, in the order they came: each caller
- * runs its own and gets its own result back.
+ * runs its own and gets its own result back. A long operation (`ExecutableService.longOperations`)
+ * runs in the app's one place for it (`LongOperation`), whoever calls it.
  */
-class Coordinator(context: Context) {
+class Coordinator(private val context: Context) {
     private val lock = Mutex()
 
     private val serviceRegistry = ServiceRegistry(context)
@@ -81,6 +83,13 @@ class Coordinator(context: Context) {
                         status = CommandStatus.ERROR,
                         error = "Service not found for resource: $resource"
                     )
+                } else if (operation in service.longOperations) {
+                    // A long operation takes the app's one place for it, or is refused while another runs
+                    val params = com.assistant.core.utils.JsonUtils.toJSONObject(command.params)
+                    LongOperation.run(
+                        label = service.verbalize(operation, params, context),
+                        busy = { running -> CommandResult(status = CommandStatus.ERROR, error = Strings.`for`(context = context).shared("long_operation_busy").format(running.label)) }
+                    ) { executeServiceOperation(command, service, operation) }
                 } else {
                     executeServiceOperation(command, service, operation)
                 }

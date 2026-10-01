@@ -4,6 +4,7 @@ import android.content.Context
 import com.assistant.core.ai.database.getById
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.LongOperation
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.AppDatabase
 import androidx.room.withTransaction
@@ -44,6 +45,9 @@ class ImportService(private val context: Context) : ExecutableService {
 
     private val s = Strings.`for`(context = context)
     private val coordinator = Coordinator(context)
+
+    /** Writing a file's lines: never with another import, the demo or a backup. */
+    override val longOperations = setOf("apply")
 
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -170,17 +174,27 @@ class ImportService(private val context: Context) : ExecutableService {
                     if (found != null) updates.add(line.line to entry + ("id" to found)) else creates.add(line.line to entry)
                 }
 
-                /** Writes [batch] by [operation]; the number written, its refusals added to the report by line. */
-                suspend fun write(operation: String, countKey: String, batch: List<Pair<Int, Map<String, Any>>>): Int {
-                    if (batch.isEmpty()) return 0
-                    val result = coordinator.processUserAction(operation, mapOf("tool_instance_id" to toolInstanceId, "entries" to batch.map { it.second }))
-                    // Every entry of the batch refused: the import as a whole, with what the service said
-                    if (!result.isSuccess) throw Refused(result.error ?: "")
-                    (result.data?.get("refusals") as? List<*>).orEmpty().filterIsInstance<Map<*, *>>().forEach { refusal ->
-                        refused.add(mapOf("line" to batch[(refusal["index"] as Number).toInt()].first, "reason" to (refusal["error"] as? String ?: "")))
+                // The lines written so far, said as the operation's step, slice after slice
+                val total = creates.size + updates.size
+                var done = 0
+                LongOperation.at(s.shared("import_progress").format(done.toString(), total.toString()))
+
+                /**
+                 * Writes [lines] by [operation], in slices of [SLICE] lines, each saying how far the
+                 * import is; the number written, the refusals added to the report by line.
+                 */
+                suspend fun write(operation: String, countKey: String, lines: List<Pair<Int, Map<String, Any>>>): Int =
+                    lines.chunked(SLICE).sumOf { batch ->
+                        val result = coordinator.processUserAction(operation, mapOf("tool_instance_id" to toolInstanceId, "entries" to batch.map { it.second }))
+                        // Every entry of the slice refused: the import as a whole, with what the service said
+                        if (!result.isSuccess) throw Refused(result.error ?: "")
+                        (result.data?.get("refusals") as? List<*>).orEmpty().filterIsInstance<Map<*, *>>().forEach { refusal ->
+                            refused.add(mapOf("line" to batch[(refusal["index"] as Number).toInt()].first, "reason" to (refusal["error"] as? String ?: "")))
+                        }
+                        done += batch.size
+                        LongOperation.at(s.shared("import_progress").format(done.toString(), total.toString()))
+                        (result.data?.get(countKey) as? Number)?.toInt() ?: 0
                     }
-                    return (result.data?.get(countKey) as? Number)?.toInt() ?: 0
-                }
                 val created = write("tool_data.batch_create", "created_count", creates)
                 val updated = write("tool_data.batch_update", "updated_count", updates)
                 mapOf(
@@ -198,6 +212,11 @@ class ImportService(private val context: Context) : ExecutableService {
 
     /** A refusal that undoes the whole import. */
     private class Refused(message: String) : Exception(message)
+
+    private companion object {
+        /** The lines written by one call of the service, between two steps said. */
+        const val SLICE = 500
+    }
 
     override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)

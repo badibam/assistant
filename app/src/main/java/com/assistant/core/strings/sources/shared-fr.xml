@@ -1766,7 +1766,6 @@
     <string name="demo_remove_now">Supprimer la démo</string>
     <string name="demo_remove_confirm">Supprimer les zones de démo et tout ce qu\'elles contiennent, ce que vous y avez ajouté compris ? Le réglage ci-dessus reste tel quel : activé, la prochaine mise à jour réinstalle la démo.</string>
     <string name="demo_removed">Démo supprimée</string>
-    <string name="demo_installing">Installation de la démo</string>
     <string name="demo_phase_zones">Zones</string>
     <string name="demo_phase_tools">Outils : %1$s / %2$s</string>
     <string name="demo_phase_entries">Entrées : %1$s / %2$s</string>
@@ -1780,6 +1779,13 @@
     <string name="demo_reinstall_now">Réinstaller maintenant</string>
     <string name="action_verbalize_demo_install">Installation de la démo</string>
     <string name="action_verbalize_demo_remove">Suppression de la démo</string>
+    <string name="action_verbalize_backup_export">Export des données</string>
+    <string name="action_verbalize_backup_import">Restauration d\'une sauvegarde</string>
+    <string name="action_verbalize_backup_reset">Réinitialisation des données</string>
+    <string name="long_operation_busy">%1$s en cours : réessayer une fois fini.</string>
+    <string name="long_operation_done">%1$s : terminé</string>
+    <string name="long_operation_failed">%1$s : échec. %2$s</string>
+    <string name="import_progress">Lignes : %1$s / %2$s</string>
     <string name="settings_demo">Démo</string>
     <string name="settings_demo_description">Un groupe de zones de démonstration, réinstallé à chaque mise à jour</string>
     <string name="settings_demo_install_on_update">Installer la démo à chaque mise à jour</string>

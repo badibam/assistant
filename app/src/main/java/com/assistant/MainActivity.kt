@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
+import com.assistant.core.coordinator.isSuccess
 import androidx.compose.runtime.setValue
 import com.assistant.core.ui.screens.MainScreen
 import com.assistant.core.commands.CommandStatus
@@ -145,7 +146,22 @@ class MainActivity : ComponentActivity() {
                             com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
                             com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
                         ) {
-                            MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
+                            // A long operation running shows over every screen; one whose caller
+                            // left (its screen closed) says once here how it ended
+                            androidx.compose.runtime.LaunchedEffect(Unit) {
+                                com.assistant.core.coordinator.LongOperation.unclaimed.collect { ended ->
+                                    val s = com.assistant.core.strings.Strings.`for`(context = this@MainActivity)
+                                    val message = if (ended.result.isSuccess) s.shared("long_operation_done").format(ended.label)
+                                        else s.shared("long_operation_failed").format(ended.label, ended.result.error ?: "")
+                                    com.assistant.core.ui.UI.Toast(this@MainActivity, message, com.assistant.core.ui.Duration.LONG)
+                                }
+                            }
+                            androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+                                com.assistant.core.ui.components.LongOperationBar()
+                                androidx.compose.foundation.layout.Box(Modifier.weight(1f)) {
+                                    MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
+                                }
+                            }
                         }
                     }
                 }

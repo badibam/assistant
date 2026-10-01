@@ -1,6 +1,7 @@
 package com.assistant.core.ui.screens.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,14 +58,17 @@ fun DemoSettingsScreen(onBack: () -> Unit) {
         category = AppSettingCategories.DEMO,
         onBack = onBack,
         below = {
-            val state = if (working) com.assistant.core.ui.ComponentState.LOADING else com.assistant.core.ui.ComponentState.NORMAL
+            // A long operation running, this screen's or another started elsewhere, holds the buttons
+            val running by com.assistant.core.coordinator.LongOperation.running.collectAsState()
+            val busy = working || running != null
+            val state = if (busy) com.assistant.core.ui.ComponentState.LOADING else com.assistant.core.ui.ComponentState.NORMAL
             UI.Button(type = ButtonType.DEFAULT, state = state, onClick = { runDemo("demo.install", s.shared("demo_installed")) }) {
                 UI.Text(s.shared("demo_reinstall_now"), TextType.LABEL)
             }
-            UI.Button(type = ButtonType.DEFAULT, state = state, onClick = { if (!working) confirmingRemoval = true }) {
+            UI.Button(type = ButtonType.DEFAULT, state = state, onClick = { if (!busy) confirmingRemoval = true }) {
                 UI.Text(s.shared("demo_remove_now"), TextType.LABEL)
             }
-            if (working) com.assistant.core.ui.components.DemoInstallProgress()
+            if (busy) com.assistant.core.ui.components.LongOperationProgress()
         }
     )
 }
