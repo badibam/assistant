@@ -55,7 +55,9 @@ private data class PaletteFile(val palettes: List<PaletteEntry>)
 object RetroPalettes {
 
     val entries: List<PaletteEntry> by lazy {
-        val stream = RetroPalettes::class.java.getResourceAsStream("palettes.json")
+        // An absolute path: the release build renames and moves this class out of its package,
+        // and a relative one would then be looked up beside the renamed class, where it is not.
+        val stream = RetroPalettes::class.java.getResourceAsStream("/com/assistant/themes/retro/palettes.json")
             ?: error("palettes.json is missing from the retro theme's resources")
         val text = stream.bufferedReader(Charsets.UTF_8).use { it.readText() }
         Json { ignoreUnknownKeys = false }.decodeFromString(PaletteFile.serializer(), text).palettes
