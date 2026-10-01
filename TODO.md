@@ -11,7 +11,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 - Les conditions typées à l'écriture, conçues dans `docs/design/typed-conditions.md` : le type de chaque côté d'une condition connu sans lire de données, les constantes de l'IA traduites à l'entrée, la vérification au service, et le refus d'un changement dont dépend une condition ailleurs.
 - Le formulaire de config en pages (`docs/design/settings-pages.md`) est dans `develop`, essayé sur le téléphone le 2026-10-01. Reste à coder : les marques d'un problème sur la ligne d'une page et celles au-dessus ; la phrase d'une condition sur la ligne de sa page (deux côtés et un opérateur), comme celle d'un terme. Puis élaguer la spec.
-- L'icône d'une notification : `NotificationService` met l'icône système `ic_dialog_info` sur toutes. Un paramètre `icon_name` (nom Lucide) que chaque source passe (Messages, Liste, Objectif, Questionnaire : l'icône de leur outil), l'icône de l'app quand il n'y en a pas. Toujours la version Lucide, quel que soit le thème : la barre d'état n'a pas de facteur entier, et Android ne garde que la silhouette. Reste à choisir l'icône de l'app, une seule couleur (un nom Lucide, ou une silhouette dessinée exprès).
 
 ## En attente d'un déclencheur
 
