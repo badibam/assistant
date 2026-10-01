@@ -10,7 +10,8 @@ import android.content.Context
  */
 class StringsContext(
     private val sharedStrings: SharedStrings,
-    private val toolStrings: ToolStrings?
+    private val toolStrings: ToolStrings?,
+    private val themeStrings: ThemeStrings? = null
 ) {
     
     /**
@@ -22,6 +23,11 @@ class StringsContext(
      * Access to tooltype-specific strings
      */
     fun tool(key: String): String = toolStrings?.s(key) ?: "[$key]"
+
+    /**
+     * Access to a theme's own strings: its name, its palettes' names
+     */
+    fun theme(key: String): String = themeStrings?.s(key) ?: "[$key]"
 }
 
 object StringsFactory {
@@ -33,10 +39,11 @@ object StringsFactory {
      * @param context Android Context
      * @return StringsContext with automatically loaded namespaces
      */
-    fun `for`(tool: String? = null, context: Context): StringsContext {
+    fun `for`(tool: String? = null, context: Context, theme: String? = null): StringsContext {
         return StringsContext(
             sharedStrings = SharedStrings(context),
-            toolStrings = tool?.let { ToolStrings(it, context) }
+            toolStrings = tool?.let { ToolStrings(it, context) },
+            themeStrings = theme?.let { ThemeStrings(it, context) }
         )
     }
     

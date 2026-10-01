@@ -130,6 +130,13 @@ import kotlin.math.roundToInt
 object RetroTheme : ThemeContract {
 
     /** Lucide's vectors for now: the pixelized set (icons/, iconSource OWN) is still to be made. */
+    override fun name(context: android.content.Context): String =
+        com.assistant.core.strings.Strings.`for`(context = context, theme = "retro").theme("name")
+
+    /** A palette's name is its id past the theme's: "retro_dark" is named by palette_dark. */
+    override fun paletteName(paletteId: String, context: android.content.Context): String =
+        com.assistant.core.strings.Strings.`for`(context = context, theme = "retro").theme("palette_${paletteId.removePrefix("retro_")}")
+
     override val iconSource = IconSource.LUCIDE
 
     // =====================================

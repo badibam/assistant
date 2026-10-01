@@ -111,22 +111,24 @@ androidComponents {
 // A source with no translation lands in the default output alone, where every locale reaches
 // it by fallback. That is what ai_prompt_chunks.xml wants: those go to the AI, not on screen.
 tasks.register("generateStringResources") {
-    description = "Generate string resources from tool and shared XML files, one output per locale"
+    description = "Generate string resources from tool, theme and shared XML files, one output per locale"
     group = "build"
     
     val toolsDir = file("src/main/java/com/assistant/tools")
+    val themesDir = file("src/main/java/com/assistant/themes")
     val sharedStringsDir = file("src/main/java/com/assistant/core/strings/sources") // Sources strings shared
     val resDir = file("src/main/res")
     
     // Gradle cache: run if any source changed
     inputs.dir(toolsDir)
+    inputs.dir(themesDir)
     if (sharedStringsDir.exists()) inputs.dir(sharedStringsDir)
-    outputs.files(stringSourcesByLocale(toolsDir, sharedStringsDir).keys.map { localeOutputFile(resDir, it) })
+    outputs.files(stringSourcesByLocale(toolsDir, themesDir, sharedStringsDir).keys.map { localeOutputFile(resDir, it) })
     
     doLast {
         println("Generating string resources...")
         
-        stringSourcesByLocale(toolsDir, sharedStringsDir).forEach { (locale, sources) ->
+        stringSourcesByLocale(toolsDir, themesDir, sharedStringsDir).forEach { (locale, sources) ->
             val aggregatedStrings = StringBuilder()
             aggregatedStrings.append("""<?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -159,9 +161,10 @@ fun localeOutputFile(resDir: File, locale: String): File =
  *
  * The locale is the `-xx` (or `-xx-rYY`) suffix of the file's base name, absent for the default,
  * which the map keys as "". Each source is paired with the namespace its keys take: the tool's
- * own name for a tool source, "shared" for everything under the shared sources directory.
+ * own name for a tool source, "theme_" and its name for a theme's, "shared" for everything under
+ * the shared sources directory.
  */
-fun stringSourcesByLocale(toolsDir: File, sharedDir: File): Map<String, List<Pair<File, String>>> {
+fun stringSourcesByLocale(toolsDir: File, themesDir: File, sharedDir: File): Map<String, List<Pair<File, String>>> {
     val localePattern = Regex("""^.+?(?:-([a-zA-Z]{2}(?:-r[A-Z]{2})?))?\.xml$""")
     val byLocale = sortedMapOf<String, MutableList<Pair<File, String>>>()
     
@@ -179,6 +182,15 @@ fun stringSourcesByLocale(toolsDir: File, sharedDir: File): Map<String, List<Pai
         }
     }
     
+    if (themesDir.exists()) {
+        themesDir.listFiles()?.filter { it.isDirectory }?.sortedBy { it.name }?.forEach { themeDir ->
+            themeDir.listFiles()
+                ?.filter { it.name.startsWith("strings") && it.extension == "xml" }
+                ?.sortedBy { it.name }
+                ?.forEach { collect(it, "theme_${themeDir.name}") }
+        }
+    }
+
     if (sharedDir.exists()) {
         sharedDir.listFiles()
             ?.filter { it.extension == "xml" }

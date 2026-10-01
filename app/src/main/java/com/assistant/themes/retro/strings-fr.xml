@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="name">Rétro</string>
+    <string name="palette_dark">sombre</string>
+    <string name="palette_light">clair</string>
+</resources>

@@ -76,6 +76,13 @@ import java.util.Calendar
 @OptIn(ExperimentalFoundationApi::class)
 object DefaultTheme : ThemeContract {
 
+    override fun name(context: android.content.Context): String =
+        com.assistant.core.strings.Strings.`for`(context = context, theme = "default").theme("name")
+
+    /** A palette's name is its id past the theme's: "default_dark" is named by palette_dark. */
+    override fun paletteName(paletteId: String, context: android.content.Context): String =
+        com.assistant.core.strings.Strings.`for`(context = context, theme = "default").theme("palette_${paletteId.removePrefix("default_")}")
+
     override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
 
     /** A quarter of the width, the grid growing no wider than 480 dp. */
