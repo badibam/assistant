@@ -1334,8 +1334,7 @@
             "name": "sown_on",
             "display_name": "@plants_field_sown",
             "type": "DATE",
-            "always_visible": false,
-            "config": {}
+            "always_visible": false
           },
           {
             "name": "exposure",

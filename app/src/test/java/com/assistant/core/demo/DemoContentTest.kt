@@ -130,6 +130,18 @@ class DemoContentTest {
     }
 
     @Test
+    fun `a field whose type has no settings carries no config`() {
+        read().tools.forEach { tool ->
+            val fields = tool.getJSONObject("config").optJSONArray("extra_fields") ?: return@forEach
+            (0 until fields.length()).map { fields.getJSONObject(it) }.forEach { field ->
+                val type = com.assistant.core.fields.FieldType.valueOf(field.getString("type"))
+                if (com.assistant.core.fields.settings.FieldTypeSettings.configNodes(type) { it }.isEmpty())
+                    assertFalse("${tool.getString("id")} ${field.getString("name")}", field.has("config"))
+            }
+        }
+    }
+
+    @Test
     fun `names and descriptions keep within their lengths, in each language`() {
         val short = com.assistant.core.validation.FieldLimits.SHORT_LENGTH
         val medium = com.assistant.core.validation.FieldLimits.MEDIUM_LENGTH
