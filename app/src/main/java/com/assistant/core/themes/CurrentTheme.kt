@@ -32,6 +32,14 @@ object CurrentTheme {
         private set
     
     /**
+     * How many whole steps the interface's size is moved by, from -1 to +2: a pixel theme changes
+     * its integer factor by that much, so everything grows together and nothing falls between two
+     * pixels. Kept in memory, like the theme and the palette.
+     */
+    var sizeStep: Int by mutableStateOf(0)
+        private set
+
+    /**
      * Changes current theme by ID
      * All UI components will be automatically re-rendered
      * 
@@ -42,6 +50,8 @@ object CurrentTheme {
         val theme = ThemeScanner.getTheme(themeId)
         return if (theme != null) {
             current = theme
+            // A palette belongs to its theme: the new one starts on its own dark palette
+            if (theme.getAllPalettes().none { it.id == currentPaletteId }) resetPaletteToDefault()
             true
         } else {
             false
