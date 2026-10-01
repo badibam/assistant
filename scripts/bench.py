@@ -191,6 +191,26 @@ def write_table(folder, results, models, forcings, names):
     (folder / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def show(folder):
+    """The conversation a scenario left: what the user sent, each answer of the AI, what the app replied."""
+    import sqlite3
+    db = sqlite3.connect(folder / "after.db")
+    for sender, rich, parsed, system in db.execute(
+            "SELECT sender, rich_content_json, ai_message_parsed_json, system_message_json FROM session_messages "
+            "WHERE session_id NOT LIKE 'demo-%' ORDER BY timestamp"):
+        if sender == "AI" and parsed:
+            print("AI   ", json.dumps(json.loads(parsed), ensure_ascii=False)[:1500])
+        elif sender == "SYSTEM" and system:
+            message = json.loads(system)
+            print("APP  ", message.get("type"), "-", (message.get("summary") or "")[:300])
+        elif sender == "USER":
+            print("USER ", (rich or "")[:300])
+    result = folder / "result.json"
+    if result.is_file():
+        print("END  ", result.read_text(encoding="utf-8").replace("\n", " "))
+    return 0
+
+
 def model_dir(model):
     return model.replace("/", "__")
 
@@ -241,6 +261,8 @@ def main(argv):
         prepare_device()
         campaign(chosen[0], chosen[1], list(SCENARIOS), key)
         return 0
+    if argv[0] == "show":
+        return show(Path(argv[1]))
     if argv[0] not in ("play", "run"):
         print(__doc__)
         return 2
