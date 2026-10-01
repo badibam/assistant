@@ -5,12 +5,14 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -172,9 +174,12 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
     val columns = fields.take((settings.number(StructuredToolType.TABLE_COLUMNS)?.toInt() ?: 2).coerceAtLeast(0))
 
     // What is shown: the filtered sheets, and those kept while open, in the order asked
-    val shown = (loadedSheets + kept.values.filter { k -> loadedSheets.none { it.id == k.id } })
-        .let { list -> sorted(list, sortKey, ascending) }
-        .map { sheet -> kept[sheet.id]?.takeIf { loadedSheets.none { it.id == sheet.id } } ?: sheet }
+    // Sorted once per change, not at every recomposition: a table can hold tens of thousands
+    val shown = remember(loadedSheets, kept, sortKey, ascending) {
+        (loadedSheets + kept.values.filter { k -> loadedSheets.none { it.id == k.id } })
+            .let { list -> sorted(list, sortKey, ascending) }
+            .map { sheet -> kept[sheet.id]?.takeIf { loadedSheets.none { it.id == sheet.id } } ?: sheet }
+    }
     val openSheet = openId?.takeIf { it.isNotEmpty() }?.let { id -> shown.find { it.id == id } }
     val position = openSheet?.let { shown.indexOf(it) }
 
@@ -196,11 +201,13 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+    // A lazy list: only the rows on screen are composed, whatever the size of the table
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        UI.PageHeader(
+        item { UI.PageHeader(
             title = if (openId == null) settings.string("name")!! else if (openId == "") s.tool("new_sheet") else openSheet?.name ?: "",
             subtitle = settings.string("description")?.takeIf { it.isNotBlank() && openId == null },
             icon = settings.string("icon_name"),
@@ -208,10 +215,10 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
             rightButton = if (openId == null) ButtonAction.CONFIGURE else null,
             onLeftClick = { if (openId != null) close() else onNavigateBack() },
             onRightClick = onConfigureClick
-        )
+        ) }
 
         // The filter header: one line summing it up, the whole of it when opened
-        if (!editing) {
+        if (!editing) item {
             val summary = listOfNotNull(
                 search.takeIf { it.isNotBlank() }?.let { "« $it »" },
                 *JSONArray(filters).let { a -> (0 until a.length()).map { PointerDescription.filter(a.getJSONObject(it), filterable, s) } }.toTypedArray(),
@@ -246,17 +253,17 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
 
         if (openId == null) {
             val empty = loadedSheets.isEmpty() && search.isBlank() && JSONArray(filters).length() == 0
-            SheetsTable(shown, columns, sortKey, ascending, empty, s, context,
+            sheetsTable(shown, columns, sortKey, ascending, empty, s, context,
                 onSort = { key -> if (key == sortKey) ascending = !ascending else { sortKey = key; ascending = true } },
                 onOpen = { open(it) })
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 UI.ActionButton(action = ButtonAction.ADD, onClick = { open(null) })
                 // Always there; put forward while the table is empty, a new table being most often filled from a file
                 UI.Button(type = if (empty) ButtonType.PRIMARY else ButtonType.SECONDARY, onClick = { pickFile.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel")) }) {
                     UI.Text(s.shared("import_action"), TextType.LABEL)
                 }
-            }
-        } else if (editing) {
+            } }
+        } else if (editing) { item { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             UI.FormField(label = s.shared("label_name"), value = draftName, onChange = { draftName = it }, fieldType = FieldType.TEXT, required = true)
             CustomFieldsInput(customFieldsMetadata = fields, values = draftExtra, onValuesChange = { draftExtra = it }, context = context, newEntry = openId == "")
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -284,7 +291,7 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
                 }) { UI.Text(s.shared("action_save"), TextType.LABEL) }
                 UI.Button(type = ButtonType.SECONDARY, onClick = { if (openId == "") close() else editing = false }) { UI.Text(s.shared("action_cancel"), TextType.LABEL) }
             }
-        } else if (openSheet != null && position != null) {
+        } } } else if (openSheet != null && position != null) { item { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SheetView(openSheet, loadedConfig, context,
                 onPrevious = if (position > 0) ({ open(shown[position - 1]) }) else null,
                 onNext = if (position < shown.size - 1) ({ open(shown[position + 1]) }) else null)
@@ -292,7 +299,7 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
                 UI.Button(type = ButtonType.PRIMARY, onClick = { open(openSheet); editing = true }) { UI.Text(s.tool("action_edit"), TextType.LABEL) }
                 UI.ActionButton(action = ButtonAction.DELETE, onClick = { confirmDelete = true })
             }
-        }
+        } } }
     }
 
     // A sheet deleted meanwhile closes it
@@ -336,9 +343,8 @@ private fun sorted(sheets: List<Sheet>, key: String, ascending: Boolean): List<S
     return ordered + sheets.filter { valueOf(it) == null }
 }
 
-/** The table: the names of its columns once, in the header, then one line of values per sheet. */
-@Composable
-private fun SheetsTable(
+/** The table: the names of its columns once, in the header, then one line of values per sheet, each an item of the list. */
+private fun LazyListScope.sheetsTable(
     sheets: List<Sheet>,
     columns: List<FieldDefinition>,
     sortKey: String,
@@ -350,19 +356,21 @@ private fun SheetsTable(
     onOpen: (Sheet) -> Unit
 ) {
     if (sheets.isEmpty()) {
-        UI.Text(s.tool(if (empty) "table_empty" else "no_match"), TextType.CAPTION)
+        item { UI.Text(s.tool(if (empty) "table_empty" else "no_match"), TextType.CAPTION) }
         return
     }
     val keys = listOf(BY_NAME to s.shared("label_name")) + columns.map { it.name to it.displayName }
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        keys.forEach { (key, label) ->
-            Box(modifier = Modifier.weight(1f).clickable { onSort(key) }) {
-                UI.Text(label + if (key == sortKey) (if (ascending) " ↑" else " ↓") else "", TextType.LABEL)
+    item {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            keys.forEach { (key, label) ->
+                Box(modifier = Modifier.weight(1f).clickable { onSort(key) }) {
+                    UI.Text(label + if (key == sortKey) (if (ascending) " ↑" else " ↓") else "", TextType.LABEL)
+                }
             }
         }
     }
-    UI.Divider()
-    sheets.forEach { sheet ->
+    item { UI.Divider() }
+    items(sheets, key = { it.id }) { sheet ->
         Row(modifier = Modifier.fillMaxWidth().clickable { onOpen(sheet) }.padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(modifier = Modifier.weight(1f)) { UI.Text(sheet.name, TextType.BODY) }
             columns.forEach { field ->

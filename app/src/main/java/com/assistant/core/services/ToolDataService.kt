@@ -1,5 +1,6 @@
 package com.assistant.core.services
 
+import com.assistant.core.fields.EntryFields
 import android.content.Context
 import androidx.room.withTransaction
 import com.assistant.core.coordinator.CancellationToken
@@ -100,7 +101,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             is com.assistant.core.coordinator.GivenId.Read.Refused -> return OperationResult.error(s.shared("service_error_id_not_given").format(given.id))
         }
 
-        val target = when (val loaded = loadWriteTarget(toolInstanceId)) {
+        val target = when (val loaded = batch?.targetOf(toolInstanceId) ?: loadWriteTarget(toolInstanceId)) {
             is WriteTarget.Refused -> return OperationResult.error(loaded.error)
             is WriteTarget.Ready -> loaded
         }
@@ -120,7 +121,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Milliseconds are the contract. An absent timestamp means now, which is a default
         // written into the contract; any number is taken as milliseconds, Int and Double
         // included, since JSON decides the width on its own. Anything else is refused.
-        val timestampAbsent = ToolTypeManager.getToolType(tooltype)?.getEntryFields(target.config, context)?.timestamp == CoreFieldUsage.ABSENT
+        val timestampAbsent = target.entryFields?.timestamp == CoreFieldUsage.ABSENT
         val timestamp = when {
             // A tool type whose entries have no date gets none; one sent is refused by the schema
             !params.has("timestamp") && timestampAbsent -> null
@@ -168,6 +169,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error(taken.message ?: "")
         }
 
+        if (grownConfig != null) batch?.grew(toolInstanceId, checked)
         notifyWritten(toolInstanceId, grownConfig != null, batch)
 
         return OperationResult.success(
@@ -189,7 +191,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
      */
     private suspend fun refuseTakenName(target: WriteTarget.Ready, entry: ToolDataEntity, known: ToolEntries? = null) {
         val name = entry.name ?: return
-        val declared = ToolTypeManager.getToolType(target.tool.tooltype)?.getEntryFields(target.config, context) ?: return
+        val declared = target.entryFields ?: return
         if (!declared.nameUnique) return
         val key = com.assistant.core.fields.CoreFields.uniqueKey(name)
         val taken = if (known != null) known.named(key, except = entry.id)
@@ -230,14 +232,28 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
     }
 
-    /** What a batch writes: the entries of each tool it touches, and the tools to notify at its end. */
+    /**
+     * What a batch writes: the entries of each tool it touches, the target each is written to
+     * (the tool, its config and its entry schema, the same for every entry until one grows the
+     * config), and the tools to notify at its end.
+     */
     private inner class Batch {
         private val tools = HashMap<String, ToolEntries>()
+        private val targets = HashMap<String, WriteTarget.Ready>()
         private val written = mutableSetOf<String>()
         private val grown = mutableSetOf<String>()
 
         suspend fun entriesOf(toolInstanceId: String): ToolEntries =
             tools.getOrPut(toolInstanceId) { ToolEntries(getToolDataDao().getByToolInstance(toolInstanceId)) }
+
+        /** The tool's target, read once; a refusal is not kept, each entry gets it as it comes. */
+        suspend fun targetOf(toolInstanceId: String): WriteTarget =
+            targets[toolInstanceId] ?: loadWriteTarget(toolInstanceId).also { if (it is WriteTarget.Ready) targets[toolInstanceId] = it }
+
+        /** The tool's target once an entry grew its config (an open choice's new option). */
+        fun grew(toolInstanceId: String, target: WriteTarget.Ready) {
+            targets[toolInstanceId] = target
+        }
 
         fun wrote(toolInstanceId: String, configGrown: Boolean) {
             written.add(toolInstanceId)
@@ -312,7 +328,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
         ToolTypeManager.getToolType(existingEntity.tooltype)?.refuseChange(existingEntity, context)?.let { return OperationResult.error(it) }
 
-        val target = when (val loaded = loadWriteTarget(existingEntity.toolInstanceId)) {
+        val target = when (val loaded = batch?.targetOf(existingEntity.toolInstanceId) ?: loadWriteTarget(existingEntity.toolInstanceId)) {
             is WriteTarget.Refused -> return OperationResult.error(loaded.error)
             is WriteTarget.Ready -> loaded
         }
@@ -377,6 +393,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error(taken.message ?: "")
         }
 
+        if (grownConfig != null) batch?.grew(existingEntity.toolInstanceId, checked)
         notifyWritten(existingEntity.toolInstanceId, grownConfig != null, batch)
 
         return OperationResult.success(
@@ -1036,11 +1053,24 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
     /** The tool an entry is written to, as the write path needs it, or why it cannot be written to. */
     private sealed interface WriteTarget {
-        /** [schema] is the entry schema generated for the tool: its type's fields and the user's. */
-        class Ready(val tool: ToolInstance, val config: JSONObject, val schema: Schema) : WriteTarget {
+        /**
+         * [schema] is the entry schema generated for the tool: its type's fields and the user's.
+         * The field declarations are read once, at their first use, for every write that uses
+         * this target (a batch keeps one per tool).
+         */
+        class Ready(val tool: ToolInstance, val config: JSONObject, val schema: Schema, context: Context) : WriteTarget {
+            /** The core fields and the tool type's, as its type declares them for [config]. */
+            val entryFields: EntryFields? by lazy { ToolTypeManager.getToolType(tool.tooltype)?.getEntryFields(config, context) }
+
+            /** The fields the tool type declares in the entries' data. */
+            val declaredFields: List<FieldDefinition> by lazy { entryFields?.data?.map { it.definition } ?: emptyList() }
+
+            /** The user's fields, from the config's extra_fields. */
+            val userFields: List<FieldDefinition> by lazy { config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList() }
+
             /** The same tool with [config], its schema generated anew. */
             fun withConfig(config: JSONObject, context: Context): Ready = Ready(
-                tool, config, schema.copy(content = BaseSchemas.getEntrySchema(ToolTypeManager.getToolType(tool.tooltype)!!, config, context))
+                tool, config, schema.copy(content = BaseSchemas.getEntrySchema(ToolTypeManager.getToolType(tool.tooltype)!!, config, context)), context
             )
 
             /** The tool to store with [grownConfig], or null when the config did not grow. */
@@ -1106,17 +1136,16 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 description = "",
                 category = com.assistant.core.validation.SchemaCategory.TOOL_DATA,
                 content = BaseSchemas.getEntrySchema(toolType, config, context)
-            )
+            ),
+            context
         )
     }
 
     /** The fields the tool type declares in the entries' data, for [target]'s config. */
-    private fun declaredFields(target: WriteTarget.Ready): List<FieldDefinition> =
-        ToolTypeManager.getToolType(target.tool.tooltype)?.getEntryFields(target.config, context)?.data?.map { it.definition } ?: emptyList()
+    private fun declaredFields(target: WriteTarget.Ready): List<FieldDefinition> = target.declaredFields
 
     /** The user's fields of [target], from its config's extra_fields. */
-    private fun userFields(target: WriteTarget.Ready): List<FieldDefinition> =
-        target.config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
+    private fun userFields(target: WriteTarget.Ready): List<FieldDefinition> = target.userFields
 
     /**
      * Check an entry exactly as it is about to be stored: against its tool's data schema, custom
