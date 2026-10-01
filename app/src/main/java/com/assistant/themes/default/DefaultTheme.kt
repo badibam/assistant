@@ -224,12 +224,21 @@ object DefaultTheme : ThemeContract {
         val border: BorderStroke?
     )
     
-    private fun getButtonConfig(size: Size, type: ButtonType): ButtonConfig {
+    /**
+     * The look of a button of [type] at [size]. The main one is a frame in the main colour, its
+     * word in that colour: filled, it outweighed the icons beside it. [filled] fills it, for a
+     * button switched on.
+     */
+    private fun getButtonConfig(size: Size, type: ButtonType, filled: Boolean = false): ButtonConfig {
         val (containerColor, contentColor, border) = when (type) {
-            ButtonType.PRIMARY -> Triple(
+            ButtonType.PRIMARY -> if (filled) Triple(
                 CurrentTheme.getCurrentColorScheme().primary,
                 CurrentTheme.getCurrentColorScheme().onPrimary,
                 null
+            ) else Triple(
+                Color.Transparent,
+                CurrentTheme.getCurrentColorScheme().primary,
+                BorderStroke(1.dp, CurrentTheme.getCurrentColorScheme().primary)
             )
             ButtonType.SECONDARY -> Triple(
                 CurrentTheme.getCurrentColorScheme().secondary,
@@ -324,11 +333,16 @@ object DefaultTheme : ThemeContract {
             ComponentState.LOADING, ComponentState.DISABLED, ComponentState.ERROR, ComponentState.READONLY -> false
         }
         
-        val config = getButtonConfig(size, type)
-        
+        DrawButton(getButtonConfig(size, type), isEnabled, onClick, content)
+    }
+
+    /** A button drawn as [config] says; its texts take its content colour (LocalDefaultInk). */
+    @Composable
+    private fun DrawButton(config: ButtonConfig, isEnabled: Boolean, onClick: () -> Unit, content: @Composable () -> Unit) {
+        val ink = if (isEnabled) config.contentColor else CurrentTheme.getCurrentColorScheme().onSurfaceVariant
         Surface(
             color = if (isEnabled) config.containerColor else CurrentTheme.getCurrentColorScheme().surfaceVariant,
-            contentColor = if (isEnabled) config.contentColor else CurrentTheme.getCurrentColorScheme().onSurfaceVariant,
+            contentColor = ink,
             shape = config.shape,
             border = if (isEnabled) config.border else null,
             modifier = Modifier
@@ -341,11 +355,22 @@ object DefaultTheme : ThemeContract {
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.padding(config.padding)
             ) {
-                content()
+                CompositionLocalProvider(LocalDefaultInk provides ink) { content() }
             }
         }
     }
     
+    /** Material's floating button, in the main colour. */
+    @Composable
+    override fun FloatingButton(action: ButtonAction, onClick: () -> Unit) {
+        val context = LocalContext.current
+        val icon = requireNotNull(com.assistant.core.icons.Icons.drawable(context, action.iconName)) { "No drawable for the icon ${action.iconName} of $action" }
+        val scheme = CurrentTheme.getCurrentColorScheme()
+        androidx.compose.material3.FloatingActionButton(onClick = onClick, containerColor = scheme.primary, contentColor = scheme.onPrimary) {
+            Icon(painter = painterResource(icon), contentDescription = action.label(), modifier = Modifier.size(getButtonIconSize(Size.L)))
+        }
+    }
+
     @Composable
     override fun ActionButton(
         action: ButtonAction,
@@ -360,17 +385,6 @@ object DefaultTheme : ThemeContract {
     ) {
         // État du dialogue de confirmation
         var showConfirmDialog by rememberSaveable { mutableStateOf(false) }
-    /** Material's floating button, in the main colour. */
-    @Composable
-    override fun FloatingButton(action: ButtonAction, onClick: () -> Unit) {
-        val context = LocalContext.current
-        val icon = requireNotNull(com.assistant.core.icons.Icons.drawable(context, action.iconName)) { "No drawable for the icon ${action.iconName} of $action" }
-        val scheme = CurrentTheme.getCurrentColorScheme()
-        androidx.compose.material3.FloatingActionButton(onClick = onClick, containerColor = scheme.primary, contentColor = scheme.onPrimary) {
-            Icon(painter = painterResource(icon), contentDescription = action.label(), modifier = Modifier.size(getButtonIconSize(Size.L)))
-        }
-    }
-
         
         // Determine default type based on action; switched on, it is filled with the main color
         val buttonType = if (active) ButtonType.PRIMARY else type ?: action.defaultType()
@@ -408,8 +422,11 @@ object DefaultTheme : ThemeContract {
                 )
             }
         }
-        if (bare) BareButton(buttonType, size, enabled, press, buttonContent)
-        else Button(type = buttonType, size = size, state = state, onClick = press, content = buttonContent)
+        when {
+            bare -> BareButton(buttonType, size, enabled, press, buttonContent)
+            active -> DrawButton(getButtonConfig(size, ButtonType.PRIMARY, filled = true), enabled, press, buttonContent)
+            else -> Button(type = buttonType, size = size, state = state, onClick = press, content = buttonContent)
+        }
         
         // Dialogue de confirmation automatique
         if (showConfirmDialog && requireConfirmation) {
@@ -551,7 +568,8 @@ object DefaultTheme : ThemeContract {
         val color = when (type) {
             TextType.ERROR -> CurrentTheme.getCurrentColorScheme().error
             TextType.WARNING -> CurrentTheme.getCurrentColorScheme().primary // Pas de warning dans M3, utilise primary
-            else -> CurrentTheme.getCurrentColorScheme().onSurface
+            // Inside a button, its content colour: the dark ink on its main colour was unreadable
+            else -> LocalDefaultInk.current ?: CurrentTheme.getCurrentColorScheme().onSurface
         }
         
         // Construction du modifier
@@ -1619,3 +1637,6 @@ object DefaultTheme : ThemeContract {
         }
     }
 }
+
+/** The colour a button gives the texts inside it (DefaultTheme.DrawButton); null outside one. */
+private val LocalDefaultInk = androidx.compose.runtime.compositionLocalOf<Color?> { null }
