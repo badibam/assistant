@@ -1,0 +1,59 @@
+{
+  "_about": "The retro theme's interface sounds, one per UISignal, taken from Saylune's bank as it ships them (FLAC, 10 dB under Kenney's originals); their source and licence, checked when added (pixel-ui).",
+  "sounds": {
+    "res/raw/retro_confirm.flac": {
+      "title": "Interface Sounds · click_004",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/retro_enter.flac": {
+      "title": "Interface Sounds · click_003",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/retro_back.flac": {
+      "title": "Interface Sounds · click_002",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/retro_open.flac": {
+      "title": "UI Audio · switch5",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/ui-audio"
+    },
+    "res/raw/retro_close.flac": {
+      "title": "UI Audio · switch2",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/ui-audio"
+    },
+    "res/raw/retro_toggle.flac": {
+      "title": "UI Audio · switch7",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/ui-audio"
+    },
+    "res/raw/retro_step.flac": {
+      "title": "Interface Sounds · tick_001",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/retro_scroll_end.flac": {
+      "title": "UI Audio · rollover6",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/ui-audio"
+    },
+    "res/raw/retro_refuse.flac": {
+      "title": "Interface Sounds · error_008",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    }
+  }
+}

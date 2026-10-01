@@ -1,6 +1,7 @@
 package com.assistant.core.themes
 
 import com.assistant.themes.default.DefaultTheme
+import com.assistant.themes.retro.RetroTheme
 
 /**
  * ThemeScanner - Discovery pattern for themes
@@ -22,9 +23,7 @@ object ThemeScanner {
     fun scanForThemes(): Map<String, ThemeContract> {
         return mapOf(
             "default" to DefaultTheme,
-            // New themes to be added here only
-            // "retro" to RetroTheme,
-            // "dark" to DarkTheme
+            "retro" to RetroTheme,
         )
     }
     

@@ -943,6 +943,10 @@
 
     <string name="settings_ui">Interface utilisateur</string>
     <string name="settings_ui_description">Configurer l\'apparence et le comportement de l\'interface</string>
+    <string name="settings_ui_appearance">Apparence</string>
+    <string name="settings_ui_appearance_help">Le thème dans lequel l\'app est dessinée, et sa palette.</string>
+    <string name="settings_ui_size_step">Taille de l\'interface</string>
+    <string name="settings_ui_size_step_help">Rapetisse ou agrandit l\'interface par crans entiers, dans les thèmes dessinés au pixel, pour que leurs pixels restent nets : ils ignorent la taille de texte d\'Android. Les autres thèmes gardent leur taille.</string>
     <string name="settings_ui_sounds">Sons de l\'interface</string>
     <string name="settings_ui_sounds_help">Les sons que le thème joue quand vous touchez l\'écran. Le thème par défaut n\'en a pas.</string>
 

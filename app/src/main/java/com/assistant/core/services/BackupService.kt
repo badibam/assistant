@@ -27,6 +27,7 @@ import com.assistant.core.versioning.ScheduleDatesAtV51
 import com.assistant.core.versioning.ConditionsAtV52
 import com.assistant.core.versioning.GridAtV53
 import com.assistant.core.versioning.ZoneGridAtV54
+import com.assistant.core.versioning.UiAppearanceAtV55
 import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
@@ -808,6 +809,9 @@ class BackupService(private val context: Context) : ExecutableService {
             }
             if (fromVersion < 54 && toVersion >= 54) {
                 ZoneGridAtV54.backup(data)
+            }
+            if (fromVersion < 55 && toVersion >= 55) {
+                UiAppearanceAtV55.backup(data)
             }
 
             // Transform app settings

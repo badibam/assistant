@@ -31,7 +31,9 @@ object AppSettingsDefaults {
         AppSettingCategories.VALIDATION_CONFIG -> ValidationConfig().toSettingsJson()
         AppSettingCategories.MAIN_SCREEN -> JSONObject().put("zone_groups", JSONArray()).toString()
         AppSettingCategories.DEMO -> JSONObject().put(com.assistant.core.demo.DemoStartup.INSTALL_ON_UPDATE, true).toString()
-        AppSettingCategories.UI -> JSONObject().put(AppSettings.UI_SOUNDS, true).toString()
+        AppSettingCategories.UI -> JSONObject().put(AppSettings.UI_SOUNDS, true)
+            .put(AppSettings.UI_APPEARANCE, com.assistant.core.versioning.UiAppearanceAtV55.APPEARANCE)
+            .put(AppSettings.UI_SIZE_STEP, com.assistant.core.versioning.UiAppearanceAtV55.SIZE_STEP).toString()
         else -> throw IllegalArgumentException("No defaults for settings category '$category'")
     }
 }

@@ -31,9 +31,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "app" / "src" / "main" / "java"
 SHARED = SOURCES / "com" / "assistant" / "core" / "strings" / "sources"
 TOOLS = SOURCES / "com" / "assistant" / "tools"
+THEMES = SOURCES / "com" / "assistant" / "themes"
 
 KEY = re.compile(r'<string name="([^"]+)"')
-CALL = re.compile(r'\bs\.(shared|tool)\("([A-Za-z0-9_]+)"\)')
+CALL = re.compile(r'\.(shared|tool|theme)\("([A-Za-z0-9_]+)"\)')
 
 
 def keys_in(path):
@@ -61,16 +62,21 @@ def main():
     shared = keys_in(SHARED / "shared.xml") | keys_in(SHARED / "ai_prompt_chunks.xml")
     tool_keys = {d.name: keys_in(d / "strings.xml") for d in TOOLS.iterdir() if (d / "strings.xml").exists()}
     every_tool_key = set().union(*tool_keys.values())
+    theme_keys = {d.name: keys_in(d / "strings.xml") for d in THEMES.iterdir() if (d / "strings.xml").exists()}
 
     missing = []
     for path in sorted(SOURCES.rglob("*.kt")):
         relative = path.relative_to(SOURCES)
         parts = relative.parts
         own_tool = parts[3] if len(parts) > 3 and parts[:3] == ("com", "assistant", "tools") else None
+        own_theme = parts[3] if len(parts) > 3 and parts[:3] == ("com", "assistant", "themes") else None
         for number, line in code_lines(path.read_text(encoding="utf-8")):
             for kind, key in CALL.findall(line):
                 if kind == "shared":
                     known = key in shared
+                elif kind == "theme":
+                    # A theme asks only for its own strings
+                    known = own_theme is not None and key in theme_keys.get(own_theme, set())
                 else:
                     known = key in (tool_keys.get(own_tool, set()) if own_tool else every_tool_key)
                 if not known:

@@ -24,7 +24,7 @@ object Strings {
      * @param context Android Context
      * @return StringsContext with loaded namespaces
      */
-    fun `for`(tool: String? = null, context: Context) = 
-        StringsFactory.`for`(tool = tool, context = context)
+    fun `for`(tool: String? = null, context: Context, theme: String? = null) =
+        StringsFactory.`for`(tool = tool, context = context, theme = theme)
 
 }

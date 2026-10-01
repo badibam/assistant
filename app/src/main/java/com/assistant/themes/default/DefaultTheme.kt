@@ -4,7 +4,6 @@ import com.assistant.core.ui.sound.scrollEndSound
 
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.ExperimentalFoundationApi
-import com.assistant.core.validation.FieldLimits
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -26,10 +25,6 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -61,6 +56,9 @@ import com.assistant.core.ui.FeedbackType
 import com.assistant.core.ui.Duration
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.DisplayMode
+import com.assistant.core.ui.confirmMessage
+import com.assistant.core.ui.defaultType
+import com.assistant.core.ui.label
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.tools.BaseSchemas
@@ -77,6 +75,13 @@ import java.util.Calendar
  */
 @OptIn(ExperimentalFoundationApi::class)
 object DefaultTheme : ThemeContract {
+
+    override fun name(context: android.content.Context): String =
+        com.assistant.core.strings.Strings.`for`(context = context, theme = "default").theme("name")
+
+    /** A palette's name is its id past the theme's: "default_dark" is named by palette_dark. */
+    override fun paletteName(paletteId: String, context: android.content.Context): String =
+        com.assistant.core.strings.Strings.`for`(context = context, theme = "default").theme("palette_${paletteId.removePrefix("default_")}")
 
     override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
 
@@ -340,7 +345,7 @@ object DefaultTheme : ThemeContract {
         var showConfirmDialog by rememberSaveable { mutableStateOf(false) }
         
         // Determine default type based on action; switched on, it is filled with the main color
-        val buttonType = if (active) ButtonType.PRIMARY else type ?: getDefaultButtonType(action)
+        val buttonType = if (active) ButtonType.PRIMARY else type ?: action.defaultType()
         
         // Determine state based on enabled
         val state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED
@@ -368,12 +373,12 @@ object DefaultTheme : ThemeContract {
                 // No tint given: the icon takes the button's content colour, as its text would
                 Icon(
                     painter = painterResource(iconResource),
-                    contentDescription = getButtonText(action),
+                    contentDescription = action.label(),
                     modifier = Modifier.size(getButtonIconSize(size))
                 )
             } else {
                 androidx.compose.material3.Text(
-                    getButtonText(action)
+                    action.label()
                 )
             }
         }
@@ -398,63 +403,13 @@ object DefaultTheme : ThemeContract {
                 confirmEnabled = true
             ) {
                 androidx.compose.material3.Text(
-                    confirmMessage ?: getDefaultConfirmMessage(action),
+                    confirmMessage ?: action.confirmMessage(),
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
                 )
             }
         }
     }
     
-    // Helpers for action -> type/text/icon mapping
-    private fun getDefaultButtonType(action: ButtonAction): ButtonType {
-        return when (action) {
-            // PRIMARY: Actions critiques/importantes
-            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START, ButtonAction.ATTACH, ButtonAction.REPEAT -> ButtonType.PRIMARY
-
-            // DANGER: destructive actions, behind a confirmation
-            ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
-
-            // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.ARRANGE, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW -> ButtonType.DEFAULT
-        }
-    }
-    
-    @Composable
-    private fun getButtonText(action: ButtonAction): String {
-        val context = androidx.compose.ui.platform.LocalContext.current
-        val s = com.assistant.core.strings.Strings.`for`(context = context)
-
-        return when (action) {
-            ButtonAction.SAVE -> s.shared("action_save")
-            ButtonAction.CREATE -> s.shared("action_create")
-            ButtonAction.UPDATE -> s.shared("action_update")
-            ButtonAction.DELETE -> s.shared("action_delete")
-            ButtonAction.CANCEL -> s.shared("action_cancel")
-            ButtonAction.BACK -> s.shared("action_back")
-            ButtonAction.CONFIGURE -> s.shared("action_configure")
-            ButtonAction.ADD -> s.shared("action_add")
-            ButtonAction.EDIT -> s.shared("action_edit")
-            ButtonAction.REFRESH -> s.shared("action_refresh")
-            ButtonAction.SELECT -> s.shared("action_select")
-            ButtonAction.CONFIRM -> s.shared("action_confirm")
-            ButtonAction.RESET -> s.shared("action_reset")
-            ButtonAction.LEFT -> s.shared("action_left")
-            ButtonAction.RIGHT -> s.shared("action_right")
-            ButtonAction.AI_CHAT -> s.shared("action_ai_chat")
-            ButtonAction.INTERRUPT -> s.shared("action_interrupt")
-            ButtonAction.STOP -> s.shared("action_stop")
-            ButtonAction.PAUSE -> s.shared("action_pause")
-            ButtonAction.RESUME -> s.shared("action_resume")
-            ButtonAction.START -> s.shared("action_start")
-            ButtonAction.VIEW -> s.shared("action_view")
-            ButtonAction.ATTACH -> s.shared("action_attach")
-            ButtonAction.REPEAT -> s.shared("action_repeat")
-            ButtonAction.ARRANGE -> s.shared("action_arrange")
-            ButtonAction.UP -> s.shared("action_up")
-            ButtonAction.DOWN -> s.shared("action_down")
-        }
-    }
-
     /** The size of an action's icon in a button of [size]. */
     private fun getButtonIconSize(size: Size): Dp = when (size) {
         Size.XS -> 16.dp
@@ -464,18 +419,6 @@ object DefaultTheme : ThemeContract {
         Size.XXL -> 32.dp
     }
 
-    @Composable
-    private fun getDefaultConfirmMessage(action: ButtonAction): String {
-        val context = androidx.compose.ui.platform.LocalContext.current
-        val s = com.assistant.core.strings.Strings.`for`(context = context)
-
-        return when (action) {
-            ButtonAction.DELETE -> s.shared("confirm_delete")
-            ButtonAction.RESET -> s.shared("confirm_reset")
-            else -> s.shared("confirm_action")
-        }
-    }
-    
     @Composable
     private fun TextField(
         fieldType: FieldType,
@@ -488,77 +431,10 @@ object DefaultTheme : ThemeContract {
         val isError = state == ComponentState.ERROR
         val isReadOnly = state == ComponentState.READONLY
         
-        // Keyboard configured from the field type
-        val keyboardOptions = when (fieldType) {
-            FieldType.TEXT -> KeyboardOptions(
-                capitalization = KeyboardCapitalization.Words,
-                autoCorrect = true,
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next
-            )
-            FieldType.TEXT_MEDIUM -> KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-                autoCorrect = true,
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next
-            )
-            FieldType.TEXT_LONG -> KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-                autoCorrect = true,
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Default
-            )
-            FieldType.TEXT_UNLIMITED -> KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-                autoCorrect = true,
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Default
-            )
-            FieldType.NUMERIC -> KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                autoCorrect = false,
-                imeAction = ImeAction.Next
-            )
-            FieldType.EMAIL -> KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                autoCorrect = false,
-                capitalization = KeyboardCapitalization.None,
-                imeAction = ImeAction.Next
-            )
-            FieldType.PASSWORD -> KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                autoCorrect = false,
-                capitalization = KeyboardCapitalization.None,
-                imeAction = ImeAction.Done
-            )
-            FieldType.SEARCH -> KeyboardOptions(
-                capitalization = KeyboardCapitalization.Words,
-                autoCorrect = true,
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Search
-            )
-        }
-        
-        // Character limit based on field type
-        val maxLength = when (fieldType) {
-            FieldType.TEXT -> FieldLimits.SHORT_LENGTH
-            FieldType.TEXT_MEDIUM -> FieldLimits.MEDIUM_LENGTH
-            FieldType.TEXT_LONG -> FieldLimits.LONG_LENGTH
-            FieldType.TEXT_UNLIMITED -> FieldLimits.UNLIMITED_LENGTH
-            FieldType.NUMERIC, FieldType.EMAIL, FieldType.PASSWORD, FieldType.SEARCH -> FieldLimits.UNLIMITED_LENGTH
-        }
-        
-        // Filter input if there's a character limit
-        val filteredOnChange: (TextFieldValue) -> Unit = if (maxLength < Int.MAX_VALUE) {
-            { newValue ->
-                if (newValue.text.length <= maxLength) {
-                    onChange(newValue)
-                }
-            }
-        } else {
-            onChange
-        }
-        
+        // The keyboard and the length come from the field type (FieldInput)
+        val keyboardOptions = com.assistant.core.ui.FieldInput.keyboardOptions(fieldType)
+        val filteredOnChange = com.assistant.core.ui.FieldInput.limited(fieldType, onChange)
+
         // A password is masked, and shown while the eye is on
         val isPassword = fieldType == FieldType.PASSWORD
         var revealed by remember { mutableStateOf(false) }

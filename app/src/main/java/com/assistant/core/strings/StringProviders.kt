@@ -27,3 +27,10 @@ class ToolStrings(private val toolType: String, private val context: Context) {
         return StringsManager.strings(toolType, key, context = null, context)
     }
 }
+
+/** A theme's own strings (themes/<id>/strings.xml), its keys prefixed theme_<id>. */
+class ThemeStrings(private val themeId: String, private val context: Context) {
+    fun s(key: String): String {
+        return StringsManager.strings("theme_$themeId", key, context = null, context)
+    }
+}

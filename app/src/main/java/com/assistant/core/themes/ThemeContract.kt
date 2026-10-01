@@ -36,6 +36,12 @@ import com.assistant.core.ui.FieldModifier
  */
 interface ThemeContract {
 
+    /** The theme's name, in the app's language, from its own strings (themes/<id>/strings.xml). */
+    fun name(context: Context): String
+
+    /** The name of one of its palettes, from its own strings. */
+    fun paletteName(paletteId: String, context: Context): String
+
     /** Who draws this theme's icons: Lucide, or the theme itself, all of them. */
     val iconSource: com.assistant.core.icons.IconSource
 

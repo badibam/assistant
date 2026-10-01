@@ -26,6 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOLS = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "tools"
+THEMES = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "themes"
 SHARED = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "core" / "strings" / "sources"
 
 # The same shapes the gradle task reads, kept in step with it by hand: a source file is a
@@ -54,6 +55,10 @@ def groups():
     for tool_dir in sorted(p for p in TOOLS.iterdir() if p.is_dir()):
         for path in sorted(tool_dir.glob("strings*.xml")):
             add(path, lambda base, name=tool_dir.name: name)
+
+    for theme_dir in sorted(p for p in THEMES.iterdir() if p.is_dir()):
+        for path in sorted(theme_dir.glob("strings*.xml")):
+            add(path, lambda base, name=theme_dir.name: f"theme_{name}")
 
     for path in sorted(SHARED.glob("*.xml")):
         add(path, lambda base: base)
