@@ -11,7 +11,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 - Les conditions typées à l'écriture, conçues dans `docs/design/typed-conditions.md` : le type de chaque côté d'une condition connu sans lire de données, les constantes de l'IA traduites à l'entrée, la vérification au service, et le refus d'un changement dont dépend une condition ailleurs.
 - Le formulaire du Graphique : chaque niveau d'emboîtement retire de la largeur des deux côtés, au fond tout tient dans une colonne étroite, et le filtre d'une colonne de grille est enfoui six niveaux plus bas (couche › colonnes › colonne › lu › Filtres) sans signe en surface — à concevoir.
-- Le graphique Calories de Panorama met 3,3 à 3,8 s à se lire (grille par jour sur 30 jours, en arrière-plan) — comprendre où va le temps.
+- Le graphique Calories de Panorama (74 lignes) se lit en 1,2 s à l'ouverture de l'outil, 1,9 s à celle de la zone parmi cinq autres lus en 0,2 à 0,3 s ; sa mise en page prend 15 à 19 ms (2026-10-01, version debug). Ses 531 appels aux services : chaque aliment de chaque repas des 30 jours vérifie que sa fiche existe (`references.names`) puis la relit (`tool_data.get_single`), dans `VariableService` — une fiche relue autant de fois qu'elle apparaît.
 
 ## En attente d'un déclencheur
 
