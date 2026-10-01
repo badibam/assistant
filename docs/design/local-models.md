@@ -37,7 +37,7 @@ En français, l'émulateur réglé en français : la démo prend la langue du t�
 1. « J'ai bu 2 verres d'eau » — Eau : +2 au compte du jour.
 2. « Footing de 7,5 km ce matin en 42 minutes, ressenti 4 » — Sorties : 7,5, Durée 42 min, Type footing, Ressenti 4, daté de ce matin.
 3. « Cette nuit j'ai dormi 6 h 50, qualité moyenne » — Sommeil : 6 h 50 datée de la nuit passée, Qualité au milieu de l'échelle.
-4. « Ce midi : 150 g de riz et 120 g de poulet » — Repas : deux entrées au déjeuner, chacune la bonne fiche d'Aliments et sa quantité.
+4. « Ce midi : 150 g de patate douce et 120 g de poulet » — Repas : deux entrées au déjeuner, chacune la bonne fiche d'Aliments et sa quantité.
 5. « Ajoute du parmesan aux courses et coche le lait » — Courses : un élément ajouté, « lait » coché.
 6. « Note : les tomates cerises commencent à rougir » — une entrée dans Observations ou dans le Carnet du balcon, l'un ou l'autre.
 

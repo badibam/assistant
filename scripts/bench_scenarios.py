@@ -9,7 +9,7 @@ SCENARIOS = {
     "entry_water": {"kind": "chat", "message": "J'ai bu 2 verres d'eau"},
     "entry_run": {"kind": "chat", "message": "Footing de 7,5 km ce matin en 42 minutes, ressenti 4"},
     "entry_sleep": {"kind": "chat", "message": "Cette nuit j'ai dormi 6 h 50, qualité moyenne"},
-    "entry_meal": {"kind": "chat", "message": "Ce midi : 150 g de riz et 120 g de poulet"},
+    "entry_meal": {"kind": "chat", "message": "Ce midi : 150 g de patate douce et 120 g de poulet"},
     "entry_shopping": {"kind": "chat", "message": "Ajoute du parmesan aux courses et coche le lait"},
     "entry_ambiguous": {"kind": "chat", "message": "Note : les tomates cerises commencent à rougir"},
     # Reading

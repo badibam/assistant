@@ -199,7 +199,7 @@ def entry_sleep(run):
 def entry_meal(run):
     new = run.new_rows("demo-kitchen-meals")
     got = sorted((r["extra"].get("food", {}).get("id"), r["extra"].get("quantity"), r["data"].get("value")) for r in new)
-    want = sorted([("demo-food-chicken", 120, "lunch"), ("demo-food-rice", 150, "lunch")])
+    want = sorted([("demo-food-chicken", 120, "lunch"), ("demo-food-sweet_potato", 150, "lunch")])
     if got != want:
         run.fail(f"meals added {got}, not {want}")
     if not all(at_today(run, r["timestamp"]) for r in new):
