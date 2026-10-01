@@ -29,7 +29,7 @@
     <string name="field_layer_description">Description</string>
     <string name="schema_layer_description">Ce que montre la couche, quelques mots pour le formulaire</string>
     <string name="field_source">Source</string>
-    <string name="schema_source">D\'où viennent les lignes de la couche, à la place du data de Vega-Lite. entries : une ligne par entrée d\'un outil dans la période (selection), ses colonnes timestamp, name et ses champs par chemin (data.value, extra.mood). grid : une ligne par pas de la période, lue à la fin du pas, ses colonnes timestamp (le début du pas), weekday (1 pour lundi à 7), week (le jour où commence sa semaine), et une par colonne lue.</string>
+    <string name="schema_source">D\'où viennent les lignes de la couche, à la place du data de Vega-Lite : la chaîne « entries » ou « grid », ce qu\'elle lit (selection ; step et columns) étant des clés de la couche à côté d\'elle. entries : une ligne par entrée d\'un outil dans la période (selection), ses colonnes timestamp, name et ses champs par chemin (data.value, extra.mood). grid : une ligne par pas de la période, lue à la fin du pas, ses colonnes timestamp (le début du pas), weekday (1 pour lundi à 7), week (le jour où commence sa semaine), et une par colonne lue.</string>
     <string name="source_grid">Une grille de pas</string>
     <string name="source_entries">Les entrées d\'un outil</string>
     <string name="field_selection">Entrées</string>

@@ -29,7 +29,7 @@
     <string name="field_layer_description">Description</string>
     <string name="schema_layer_description">What the layer shows, a few words for the form</string>
     <string name="field_source">Source</string>
-    <string name="schema_source">Where the layer\'s rows come from, in place of Vega-Lite\'s data. entries: a row per entry of one tool in the period (selection), its columns timestamp, name and its fields by path (data.value, extra.mood). grid: a row per step of the period, read at the end of the step, its columns timestamp (the step\'s start), weekday (1 for Monday to 7), week (the day its week starts), and one per column read.</string>
+    <string name="schema_source">Where the layer\'s rows come from, in place of Vega-Lite\'s data: the string "entries" or "grid", what it reads (selection; step and columns) being keys of the layer beside it. entries: a row per entry of one tool in the period (selection), its columns timestamp, name and its fields by path (data.value, extra.mood). grid: a row per step of the period, read at the end of the step, its columns timestamp (the step\'s start), weekday (1 for Monday to 7), week (the day its week starts), and one per column read.</string>
     <string name="source_grid">A grid of steps</string>
     <string name="source_entries">A tool\'s entries</string>
     <string name="field_selection">Entries</string>
