@@ -20,7 +20,6 @@ import com.assistant.core.ai.services.AutomationService
 import com.assistant.core.notifications.NotificationService
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.LogManager
-import kotlin.reflect.KClass
 
 /**
  * Registry for mapping resource names to services
@@ -28,24 +27,24 @@ import kotlin.reflect.KClass
  */
 class ServiceRegistry(private val context: Context) {
     
-    // Core services mapping
-    private val coreServices = mapOf<String, KClass<*>>(
-        "zones" to ZoneService::class,
-        "tools" to ToolInstanceService::class,
-        "tool_data" to ToolDataService::class,
-        "app_config" to AppConfigService::class,
-        "backup" to BackupService::class,
-        "schemas" to SchemaService::class,
-        "icons" to IconService::class,
-        "references" to ReferenceService::class,
-        "readings" to ReadingService::class,
-        "variables" to VariableService::class,
-        "imports" to ImportService::class,
-        "files" to FileService::class,
-        "ai_sessions" to AISessionService::class,
-        "ai_provider_config" to AIProviderConfigService::class,
-        "automations" to AutomationService::class,
-        "notifications" to NotificationService::class
+    // The core's services, each by its resource: what creates it, the one place a service is named
+    private val coreServices = mapOf<String, (Context) -> ExecutableService>(
+        "zones" to ::ZoneService,
+        "tools" to ::ToolInstanceService,
+        "tool_data" to ::ToolDataService,
+        "app_config" to ::AppConfigService,
+        "backup" to ::BackupService,
+        "schemas" to ::SchemaService,
+        "icons" to ::IconService,
+        "references" to ::ReferenceService,
+        "readings" to ::ReadingService,
+        "variables" to ::VariableService,
+        "imports" to ::ImportService,
+        "files" to ::FileService,
+        "ai_sessions" to ::AISessionService,
+        "ai_provider_config" to ::AIProviderConfigService,
+        "automations" to ::AutomationService,
+        "notifications" to ::NotificationService
     )
     
     /**
@@ -56,9 +55,7 @@ class ServiceRegistry(private val context: Context) {
     fun getService(resource: String): ExecutableService? {
         return try {
             // Try core services first
-            coreServices[resource]?.let { serviceClass ->
-                ServiceFactory.create(serviceClass, context)
-            }
+            coreServices[resource]?.invoke(context)
             // Try tool services via discovery
             ?: ToolTypeManager.getServiceForToolType(resource, context)
         } catch (e: Exception) {

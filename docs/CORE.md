@@ -71,8 +71,8 @@ Intégré à `ToolTypeContract.getScheduler(): ToolScheduler?` (défaut null)
 
 Architecture sans imports hardcodés dans Core, avec ServiceRegistry centralisé.
 
-### ServiceRegistry + ServiceFactory
-Core services via mapOf avec KClass, fallback sur ToolTypeManager pour tool services.
+### ServiceRegistry
+Chaque service du cœur y est associé à sa ressource par son constructeur, en un seul endroit ; une ressource inconnue passe à ToolTypeManager pour les services des outils.
 
 ### ToolTypeManager
 API unifiée pour découverte dynamique : getServiceForToolType(), getDaoForToolType(), getToolTypeName(), getAllToolTypes()
