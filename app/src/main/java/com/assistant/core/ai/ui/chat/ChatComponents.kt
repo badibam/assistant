@@ -15,6 +15,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.strings.Strings
+import com.assistant.core.ui.sound.scrollEndSound
 import com.assistant.core.utils.LogManager
 import com.assistant.core.ui.*
 import kotlinx.coroutines.launch
@@ -359,6 +360,7 @@ fun SettingsMenuDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .scrollEndSound()
                     .padding(UI.Space.L),
                 verticalArrangement = Arrangement.spacedBy(UI.Space.M)
             ) {
@@ -417,6 +419,7 @@ fun SessionSettingsDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .scrollEndSound()
                     .padding(UI.Space.L),
                 verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
@@ -468,6 +471,7 @@ fun SessionStatsDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .scrollEndSound()
                     .padding(UI.Space.L),
                 verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {

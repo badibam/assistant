@@ -26,6 +26,9 @@ object AppConfigManager {
     private var cachedAILimits: AILimitsConfig? = null
 
     @Volatile
+    private var cachedUISounds: Boolean? = null
+
+    @Volatile
     private var isInitialized = false
 
     /**
@@ -42,6 +45,7 @@ object AppConfigManager {
                 cachedWeekStartDay = service.getWeekStartDay()
                 cachedDateTimeConfig = service.getDateTimeConfig()
                 cachedAILimits = service.getAILimits()
+                cachedUISounds = service.getUISounds()
             }
             isInitialized = true
             LogManager.service("AppConfigManager initialized: dayStartHour=$cachedDayStartHour, weekStartDay=$cachedWeekStartDay, dateTimeConfig=$cachedDateTimeConfig, aiLimits=$cachedAILimits")
@@ -91,6 +95,15 @@ object AppConfigManager {
     }
 
     /**
+     * Whether the theme's interface sounds play (cached), read at each touch
+     * Throws IllegalStateException if not initialized
+     */
+    fun getUISounds(): Boolean {
+        check(isInitialized) { "AppConfigManager not initialized. Call initialize(context) at app startup." }
+        return cachedUISounds!!
+    }
+
+    /**
      * Refresh cache from database
      * Call after config changes
      */
@@ -107,6 +120,7 @@ object AppConfigManager {
         cachedWeekStartDay = null
         cachedDateTimeConfig = null
         cachedAILimits = null
+        cachedUISounds = null
         isInitialized = false
     }
 }

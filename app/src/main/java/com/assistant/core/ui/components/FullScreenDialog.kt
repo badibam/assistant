@@ -1,6 +1,10 @@
 package com.assistant.core.ui.components
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.Dialog
@@ -8,6 +12,9 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.hideNavigationBar
+import com.assistant.core.ui.sound.UISignal
+import com.assistant.core.ui.sound.rememberUISound
+import com.assistant.core.ui.sound.scrollEndSound
 
 /**
  * A window over the whole screen (the floating chat), on the theme's background (UI.FullScreen).
@@ -17,8 +24,10 @@ import com.assistant.core.ui.hideNavigationBar
  */
 @Composable
 fun FullScreenDialog(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    val sound = rememberUISound()
+    LaunchedEffect(Unit) { sound(UISignal.OPEN) }
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { sound(UISignal.CLOSE); onDismiss() },
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
             dismissOnBackPress = true,
@@ -27,6 +36,6 @@ fun FullScreenDialog(onDismiss: () -> Unit, content: @Composable () -> Unit) {
     ) {
         val window = (LocalView.current.parent as DialogWindowProvider).window
         SideEffect { hideNavigationBar(window) }
-        UI.FullScreen(content)
+        UI.FullScreen { Box(modifier = Modifier.fillMaxSize().scrollEndSound()) { content() } }
     }
 }

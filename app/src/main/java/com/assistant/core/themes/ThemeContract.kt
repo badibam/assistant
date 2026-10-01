@@ -48,6 +48,12 @@ interface ThemeContract {
     fun gridCellPx(availableWidthPx: Int): Int
 
     /**
+     * The raw resource of the sound that answers [signal] in this theme, or null for silence
+     * (UISounds plays it).
+     */
+    fun sound(signal: com.assistant.core.ui.sound.UISignal): Int?
+
+    /**
      * How far a tool's tile frame (ToolCardContainer) keeps its content from the edge of its
      * cells, on each side, in [displayMode]: the space between tiles and the frame's own margin.
      */

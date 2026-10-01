@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.assistant.core.strings.Strings
+import com.assistant.core.ui.sound.scrollEndSound
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.CardType
@@ -131,6 +132,7 @@ fun DuplicateSelector(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .scrollEndSound()
                     .padding(UI.Space.L),
                 verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {

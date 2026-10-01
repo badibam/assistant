@@ -266,10 +266,9 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
 
     // Show UI settings screen when requested
     if (showUI) {
-        UISettingsScreen(
-            onBack = {
-                showUI = false
-            }
+        com.assistant.core.ui.screens.settings.AppSettingsScreen(
+            category = com.assistant.core.database.entities.AppSettingCategories.UI,
+            onBack = { showUI = false }
         )
         return // Exit MainScreen composition when showing UI settings
     }

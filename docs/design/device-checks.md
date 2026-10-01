@@ -115,6 +115,8 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Icônes : couleur du thème partout, et le sélecteur s'ouvre, cherche et parcourt une catégorie sans lenteur.
 - Couleurs d'état données par le thème : l'écran des journaux montre chaque niveau en pastille puis en libellé (erreur en rouge, avertissement en orange, info en mauve, verbose et debug en gris) ; la pastille d'une carte d'exécution (terminée, interrompue, en erreur) garde sa couleur, le triangle d'une validation sensible prend l'orange doux de la palette.
 - Copier un outil ou une automation : le sélecteur s'ouvre en carte, la zone puis l'élément choisis ressortent mis en avant, le chargement tourne au milieu.
+- Réglages, « Interface utilisateur » : un écran de réglages avec « Sons de l'interface », activé ; le désactiver, enregistrer, rouvrir le retrouve désactivé. Le thème par défaut reste muet dans les deux cas.
+- Boutons désactivés (enregistrer un formulaire incomplet, un bouton d'action grisé) : toujours sans effet au toucher ; le bouton actif, lui, répond comme avant.
 - Espacements nommés, thème par défaut : rien ne bouge, sauf des écarts de 2 à 8 dp, à juger acceptables, là où une valeur rare a été arrondie : les lignes d'une validation et l'avertissement en retrait, les valeurs d'un champ affichées (choix ordonné, tags), les blocs d'une note sur sa tuile, les puces d'une condition et des variables, la carte des variables, le Graphique, une feuille des données structurées, une carte d'exécution, le chat flottant vide.
 - Touche Retour : outil → zone → accueil → confirmation avant de fermer ; annule sur la création de zone, les réglages Claude/OpenAI et une entrée de journal en modification ; ferme les fenêtres sans effet de bord.
 

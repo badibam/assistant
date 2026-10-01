@@ -19,6 +19,7 @@ import com.assistant.core.ui.screens.MainScreen
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
+import com.assistant.core.ui.sound.scrollEndSound
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.ai.orchestration.AIOrchestrator
@@ -126,7 +127,11 @@ class MainActivity : ComponentActivity() {
                             com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
                             com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
                         ) {
-                            MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
+                            // The theme's sounds loaded, and the end of any list of the screens heard
+                            com.assistant.core.ui.sound.UISoundsLoader()
+                            androidx.compose.foundation.layout.Box(modifier = androidx.compose.ui.Modifier.scrollEndSound()) {
+                                MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
+                            }
                         }
                     }
                 }

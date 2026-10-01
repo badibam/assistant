@@ -1,5 +1,7 @@
 package com.assistant.themes.default
 
+import com.assistant.core.ui.sound.scrollEndSound
+
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import com.assistant.core.validation.FieldLimits
@@ -82,6 +84,9 @@ object DefaultTheme : ThemeContract {
     @Composable
     override fun gridCellPx(availableWidthPx: Int): Int =
         minOf(availableWidthPx, with(androidx.compose.ui.platform.LocalDensity.current) { 480.dp.roundToPx() }) / 4
+
+    /** Silent: the default theme has no sounds. */
+    override fun sound(signal: com.assistant.core.ui.sound.UISignal): Int? = null
 
     /** 4 outside the card, between tiles, and the card's padding inside (ToolCardContainer). */
     @Composable
@@ -980,7 +985,7 @@ object DefaultTheme : ThemeContract {
         
         AlertDialog(
             onDismissRequest = onCancel,
-            text = { content() },
+            text = { Box(modifier = Modifier.scrollEndSound()) { content() } },
             confirmButton = if (confirmText != null) {
                 {
                     androidx.compose.material3.Button(

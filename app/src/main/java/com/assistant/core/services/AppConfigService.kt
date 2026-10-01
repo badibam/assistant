@@ -74,6 +74,10 @@ class AppConfigService(private val context: Context) : ExecutableService {
     suspend fun getAILimits(): AILimitsConfig =
         AILimitsConfig.fromSettingsJson(readSettings(AppSettingCategories.AI_LIMITS))
 
+    /** Whether the theme's interface sounds play. */
+    suspend fun getUISounds(): Boolean =
+        readSettings(AppSettingCategories.UI).getBoolean(com.assistant.core.config.AppSettings.UI_SOUNDS)
+
     /**
      * Get structured validation configuration
      * Hierarchy: app > tool > session > AI request (OR logic)

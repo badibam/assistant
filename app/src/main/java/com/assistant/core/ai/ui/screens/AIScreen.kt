@@ -23,6 +23,7 @@ import com.assistant.core.ai.ui.components.RichComposer
 import com.assistant.core.ai.ui.components.SessionStatusBar
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.strings.Strings
+import com.assistant.core.ui.sound.scrollEndSound
 import com.assistant.core.ui.*
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.launch
@@ -967,6 +968,7 @@ private fun ChatOptionsDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .scrollEndSound()
                     .padding(UI.Space.L),
                 verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
