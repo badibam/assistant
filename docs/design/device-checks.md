@@ -162,7 +162,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Grille
 
 - Les modes d'un Suivi (ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE), un Suivi de type choix compris : rien ne déborde de sa tuile ni ne défile dedans, le résumé tient sur deux lignes, le corps sur ses rangées ; un texte trop long s'arrête sur « … ».
-- Un déplacement en cours, bouton retour du téléphone : « Quitter la zone ? » ; confirmer ramène à l'accueil sans rien enregistrer.
+- Un déplacement en cours, bouton retour du téléphone, puis bouton retour de l'en-tête : chacun demande « Quitter la zone ? » ; confirmer ramène à l'accueil sans rien enregistrer, annuler laisse le déplacement en cours.
 - Déplacer une tuile tout en bas : l'écran défile juste assez pour la garder visible au-dessus de la barre.
 - Un déplacement en cours, puis thème sombre ou « Ne pas conserver les activités » : la sélection et le déplacement sont toujours là.
 

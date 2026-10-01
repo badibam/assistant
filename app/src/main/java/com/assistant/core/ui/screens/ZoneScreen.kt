@@ -291,6 +291,11 @@ fun ZoneScreen(
     }
 
     com.assistant.core.ui.components.CloseEditOnLeave(gridEditor)
+
+    // Leaving the zone, by the header's back button or the phone's back key (the header answers
+    // both): a move in progress is cancelled, once asked
+    var confirmLeave by remember { mutableStateOf(false) }
+    val leave = { if (gridEditor.moving) confirmLeave = true else onBack() }
     
     // Edit mode: the grids of one section at a time, the bar under the screen while a tool moves
     Column(modifier = Modifier.fillMaxSize()) {
@@ -309,7 +314,7 @@ fun ZoneScreen(
             icon = zone.icon_name,
             leftButton = ButtonAction.BACK,
             rightButton = ButtonAction.CONFIGURE,
-            onLeftClick = onBack,
+            onLeftClick = leave,
             onRightClick = { onConfigureZone?.invoke(zone.id) }
         )
 
@@ -493,9 +498,6 @@ fun ZoneScreen(
     if (gridEditor.selectedId != null) com.assistant.core.ui.components.GridEditBar(gridEditor)
     }
 
-    // The phone's back key leaves the zone; a move in progress is cancelled, once asked
-    var confirmLeave by remember { mutableStateOf(false) }
-    if (gridEditor.moving) androidx.activity.compose.BackHandler { confirmLeave = true }
     if (confirmLeave) {
         UI.Dialog(
             type = DialogType.CONFIRM,

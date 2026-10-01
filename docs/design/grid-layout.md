@@ -133,7 +133,7 @@ Une tuile se décrit par son résumé (sa LINE) et son corps : ce que montre cha
   - la ligne que la tuile laisse vide se referme aussitôt.
 - **La validation** enregistre la place de cet outil et les lignes ouvertes ou refermées par son déplacement, en une écriture, et le désélectionne ; on reste en édition. **« Annuler »** remet le groupe comme il était quand l'outil a été touché, et le désélectionne.
 - **Toucher un autre outil**, ou fermer l'édition par son bouton, valide le déplacement en cours.
-- **Le bouton retour du téléphone** quitte la zone. Avec un déplacement en cours, il demande d'abord : « Quitter la zone ? Le déplacement en cours sera annulé. »
+- **Le bouton retour du téléphone**, comme celui de l'en-tête, quitte la zone. Avec un déplacement en cours, il demande d'abord : « Quitter la zone ? Le déplacement en cours sera annulé. »
 - **L'écran ne défile que s'il le faut** : quand la tuile passerait sous la barre ou au-dessus du haut, juste assez pour la garder visible avec une ligne de marge. Un espace est ajouté sous le contenu pour qu'une tuile tout en bas puisse se tenir au-dessus de la barre.
 
 ## Les zones sur l'accueil
