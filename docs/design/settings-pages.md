@@ -13,8 +13,8 @@ Conçu le 2026-10-01. Aujourd'hui, `SettingsForm` dessine l'arbre des réglages 
 
 ## La ligne de résumé
 
-- **Le résumé déclaré, complété par le formulaire** : les réglages que nomme `summary` (exigé aujourd'hui pour une liste de groupes, permis aussi pour un groupe), puis, de lui-même, le nombre d'éléments de chaque liste qu'il contient (« 2 filtres »), et la phrase de chaque sélecteur qu'il contient. Une colonne : « kcal — lit Repas › kcal, somme · 2 filtres ».
-- **Chaque sélecteur de brique donne sa phrase** : ce qu'il désigne, et ce qui le restreint (`PointerDescription` le dit déjà pour une sélection).
+- **Le résumé déclaré, complété par le formulaire** : pour un élément de liste, les réglages que nomme `summary` ; pour un groupe, son titre ; puis, de lui-même, la phrase de chaque sélecteur qu'il contient, et le nombre d'éléments de chaque liste. Une colonne : « kcal », puis « Valeur : Repas › Kcal · Somme · Filtres : 2 ».
+- **Chaque sélecteur de brique donne sa phrase** : un terme et une sélection d'entrées le font ; une condition, pas encore.
 - Deux lignes au plus, coupées sur « … ».
 
 ## Le brouillon et l'enregistrement
