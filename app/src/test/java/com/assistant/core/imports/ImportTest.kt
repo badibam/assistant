@@ -76,12 +76,15 @@ class ImportTest {
     }
 
     @Test
-    fun `a tool that requires a name refuses a declaration with no column for it`() {
+    fun `a tool that requires a name refuses a declaration with no column for it, saying how to give it`() {
         val table = ImportTable(listOf("a"), emptyList())
         val ignored = listOf(ColumnDeclaration("a", ColumnTarget.IGNORE))
-        assertTrue(ImportPlanner.missing(table, ignored, emptyMap(), uniqueName = true, nameRequired = true) { it }.contains("import_missing_name"))
-        assertFalse(ImportPlanner.missing(table, listOf(ColumnDeclaration("a", ColumnTarget.KEY)), emptyMap(), uniqueName = true, nameRequired = true) { it }.contains("import_missing_name"))
-        assertFalse(ImportPlanner.missing(table, ignored, emptyMap(), uniqueName = true, nameRequired = false) { it }.contains("import_missing_name"))
+        fun missing(declarations: List<ColumnDeclaration>, uniqueName: Boolean, nameRequired: Boolean) =
+            ImportPlanner.missing(table, declarations, emptyMap(), uniqueName, nameRequired) { it }
+        assertTrue(missing(ignored, uniqueName = true, nameRequired = true).contains("import_missing_name_key"))
+        assertTrue(missing(ignored, uniqueName = false, nameRequired = true).contains("import_missing_name_field"))
+        assertFalse(missing(listOf(ColumnDeclaration("a", ColumnTarget.KEY)), uniqueName = true, nameRequired = true).any { it.startsWith("import_missing_name") })
+        assertFalse(missing(ignored, uniqueName = true, nameRequired = false).any { it.startsWith("import_missing_name") })
     }
 
     @Test

@@ -180,7 +180,8 @@ object ImportPlanner {
         if (declarations.count { it.target == ColumnTarget.KEY } > 1) add(text("import_missing_one_key"))
         // Every line would be refused for its name: said once here, before any is written
         if (nameRequired && declarations.none { it.target == ColumnTarget.KEY || (it.target == ColumnTarget.FIELD && it.field == "name") }) {
-            add(text("import_missing_name"))
+            // The way a column gives the name depends on the tool: its key, or its field "name"
+            add(text(if (uniqueName) "import_missing_name_key" else "import_missing_name_field"))
         }
     }
 

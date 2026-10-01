@@ -1233,7 +1233,8 @@
     <string name="import_missing_writing">colonne « %1$s » : une écriture de %2$s, parmi %3$s</string>
     <string name="import_missing_new_field">colonne « %1$s » : la définition du nouveau champ</string>
     <string name="import_missing_one_key">une seule colonne clé au plus</string>
-    <string name="import_missing_name">aucune colonne ne donne le nom, obligatoire dans cet outil : en déclarer une comme clé, ou comme champ « name » là où les noms ne sont pas uniques</string>
+    <string name="import_missing_name_key">aucune colonne ne donne le nom, obligatoire dans cet outil : déclarer comme clé la colonne qui le porte</string>
+    <string name="import_missing_name_field">aucune colonne ne donne le nom, obligatoire dans cet outil : déclarer comme champ name la colonne qui le porte</string>
     <string name="batch_refused_all">Les %1$s entrées refusées : %2$s</string>
     <string name="batch_refusal_reason">%1$s (%2$s, entrées %3$s)</string>
     <string name="batch_refusal_more"> ; et %1$s autres raisons</string>

@@ -1233,7 +1233,8 @@
     <string name="import_missing_writing">column "%1$s": a writing of %2$s, among %3$s</string>
     <string name="import_missing_new_field">column "%1$s": the new field\'s definition</string>
     <string name="import_missing_one_key">one key column at most</string>
-    <string name="import_missing_name">no column gives the name, which this tool requires: declare one as the key, or as the field "name" where names are not unique</string>
+    <string name="import_missing_name_key">no column gives the name, which this tool requires: declare the column that holds it as the key</string>
+    <string name="import_missing_name_field">no column gives the name, which this tool requires: declare the column that holds it as the field name</string>
     <string name="batch_refused_all">All %1$s entries refused: %2$s</string>
     <string name="batch_refusal_reason">%1$s (%2$s, entries %3$s)</string>
     <string name="batch_refusal_more">; and %1$s other reasons</string>
