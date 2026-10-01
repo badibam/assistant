@@ -155,6 +155,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Objectif
 
 - Notifications : toucher celle d'une tentative à valider, d'une invitation à remplir ou d'un message ouvre l'app sur la zone puis l'outil, à sa plus ancienne entrée qui attend ; un outil supprimé depuis ouvre l'app telle quelle.
+- Icône des notifications : dans la barre d'état et le volet, celle de l'outil qui envoie (un message, un élément de liste à échéance, une tentative à valider, un questionnaire à remplir), en silhouette nette, avec le thème par défaut comme avec le rétro.
 - Toucher la tuile d'un Questionnaire marqué d'un point ouvre le formulaire de l'invitation à remplir la plus ancienne.
 - Attente : un Questionnaire avec une invitation à remplir montre un point à côté de son nom, et sa zone aussi à l'accueil ; la remplir fait disparaître le point sans quitter l'écran.
 - Critères : un critère lu « Repas › kcal, somme ≤ 2100 » se juge sur la journée de la tentative sans toucher à la période (« Aucune choisie : celle de la tentative ») ; « ≤ » une variable à droite se juge aussi ; un critère saisi (Durée « ≥ 7 h », Choix « = bonne ») se remplit dans la tentative et se juge ; retirer la valeur saisie (bouton du groupe) ramène un critère lu. La ligne d'un critère dit sa valeur face à ce qu'elle compare, avec une jauge pour un nombre ou une durée.
