@@ -212,7 +212,7 @@ object RetroTheme : ThemeContract {
         val enabled = state == ComponentState.NORMAL || state == ComponentState.SUCCESS
         Pressable(onClick = onClick, enabled = enabled) { pressed ->
             TouchRoom {
-                Framed(compact = true, pressed = pressed) {
+                Framed(compact = true, minRows = WORD_ROWS, pressed = pressed) {
                     CompositionLocalProvider(LocalRetroInk provides buttonInk(type, enabled)) { content() }
                 }
             }
@@ -243,7 +243,7 @@ object RetroTheme : ThemeContract {
                 }
             } else {
                 TouchRoom {
-                    Framed(compact = true, pressed = down) { Line(label, retroGrid().text, ink) }
+                    Framed(compact = true, minRows = WORD_ROWS, pressed = down) { Line(label, retroGrid().text, ink) }
                 }
             }
         }
@@ -839,9 +839,9 @@ object RetroTheme : ThemeContract {
                 Pressable(onClick = { onSelect(index) }) { pressed ->
                     TouchRoom {
                         if (index == selected) {
-                            Framed(compact = true, pressed = pressed) { Line(label, grid.text, retroColors.panel.strong.srgb) }
+                            Framed(compact = true, minRows = WORD_ROWS, pressed = pressed) { Line(label, grid.text, retroColors.panel.strong.srgb) }
                         } else {
-                            Box(modifier = Modifier.height(grid.cells(2)).padding(horizontal = grid.cells(1)), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.height(grid.cells(WORD_ROWS)).padding(horizontal = grid.cells(1)), contentAlignment = Alignment.Center) {
                                 Line(label, grid.thin, s.dim.srgb)
                             }
                         }
@@ -1050,6 +1050,12 @@ object RetroTheme : ThemeContract {
         }
     }
 
+    /**
+     * A button's word in three frame rows: four pixels of border, then five and six of air around its
+     * fourteen rows, where two left it touching the border.
+     */
+    private val WORD_ROWS = 3
+
     /** A target a finger can take: at least four cells tall, the frame centred in the empty ones. */
     @Composable
     private fun TouchRoom(content: @Composable () -> Unit) {
@@ -1067,7 +1073,7 @@ object RetroTheme : ThemeContract {
             else -> panel.ink
         }.srgb
         Pressable(onClick = onClick, enabled = enabled) { pressed ->
-            TouchRoom { Framed(compact = true, pressed = pressed) { Line(text, retroGrid().text, ink) } }
+            TouchRoom { Framed(compact = true, minRows = WORD_ROWS, pressed = pressed) { Line(text, retroGrid().text, ink) } }
         }
     }
 

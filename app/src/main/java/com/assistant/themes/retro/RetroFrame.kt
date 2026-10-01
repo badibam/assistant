@@ -47,7 +47,8 @@ internal fun dividerRow(columns: Int, dark: Boolean): String = piece(Piece.TOP, 
  * Its size falls on whole cells both ways. A size the caller imposes is rounded down to whole
  * cells, the frame centred in it; otherwise the content decides. Across, the content is inset by a whole cell each side;
  * down, it is centred in what the frame leaves, the frame keeping [air] around it: the border
- * alone for a [compact] frame (a button, one line in two rows), a whole cell otherwise.
+ * alone for a [compact] frame (a field, one line in two rows), a whole cell otherwise. A frame
+ * takes at least [minRows] rows: a button's word keeps air above and below it in three.
  *
  * [pressed] swaps the border's two tones while a finger is down: no ripple in this register. A
  * frame inside an item being lifted (LocalRetroLifted) swaps them too.
@@ -60,6 +61,7 @@ internal fun Framed(
     modifier: Modifier = Modifier,
     input: Boolean = false,
     compact: Boolean = false,
+    minRows: Int = 2,
     pressed: Boolean = false,
     fillContent: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
@@ -132,7 +134,7 @@ internal fun Framed(
             )
         )
         val columns = givenColumns ?: (cells(placeable.width, tile) + 2).coerceAtLeast(2)
-        val rows = givenRows ?: cells(placeable.height + 2 * air, tile).coerceAtLeast(2)
+        val rows = givenRows ?: cells(placeable.height + 2 * air, tile).coerceAtLeast(minRows)
         val width = columns * tile
         val height = rows * tile
         // An imposed size keeps its place, the frame centred in it (drawWithCache does the same)
