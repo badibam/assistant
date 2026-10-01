@@ -181,10 +181,11 @@ enum class ButtonDisplay {
 
 
 /**
- * Text types with hierarchy
+ * Text types with hierarchy. STRONG is body text that must stand out among its neighbors (an
+ * unread message among read ones): bold where the theme's font has a bold, its own way otherwise.
  */
 enum class TextType {
-    TITLE, SUBTITLE, BODY, CAPTION, LABEL, ERROR, WARNING
+    TITLE, SUBTITLE, BODY, STRONG, CAPTION, LABEL, ERROR, WARNING
 }
 
 /**

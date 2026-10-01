@@ -99,7 +99,7 @@ fun rememberMessagesTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolT
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
-                            UI.Text(message.displayTitle, if (message.read) TextType.CAPTION else TextType.LABEL, maxLines = 1)
+                            UI.Text(message.displayTitle, if (message.read) TextType.CAPTION else TextType.STRONG, maxLines = 1)
                         }
                         UI.Text(FormatUtils.formatRelativeTimePast(message.dueAt, context), TextType.CAPTION, maxLines = 1)
                     }

@@ -593,6 +593,7 @@ object DefaultTheme : ThemeContract {
             TextType.TITLE -> MaterialTheme.typography.headlineMedium
             TextType.SUBTITLE -> MaterialTheme.typography.headlineSmall
             TextType.BODY -> MaterialTheme.typography.bodyMedium
+            TextType.STRONG -> MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             TextType.CAPTION -> MaterialTheme.typography.bodySmall
             TextType.LABEL -> MaterialTheme.typography.labelMedium
             TextType.ERROR -> MaterialTheme.typography.bodyMedium

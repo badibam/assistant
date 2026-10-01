@@ -56,7 +56,7 @@ UI.PageHeader supporte titre, sous-titre optionnel, icône, boutons gauche/droit
 ## Système de Texte Simplifié
 
 ### UI.Text - 4 paramètres maximum
-Accepte text, type (TITLE, SUBTITLE, BODY, LABEL, SMALL), fillMaxWidth et textAlign optionnel.
+Accepte text, type (TITLE, SUBTITLE, BODY, STRONG, CAPTION, LABEL, ERROR, WARNING), fillMaxWidth et textAlign optionnel. STRONG est un texte courant qui doit ressortir de ses voisins (un message non lu) : en gras dans le thème par défaut.
 
 ### Séparation Layout/Contenu
 **Principe** : UI.Text pour le rendu, Box+Modifier pour layout et interactions.
