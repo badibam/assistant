@@ -131,16 +131,44 @@ def test_tally(not_before):
 
 
 def attached_devices():
-    """Return [(serial, state)] as adb reports them."""
+    """Return [(serial, state, model)] as adb reports them; model is empty when adb gives none."""
     probe = subprocess.run(
-        ["adb", "devices"], capture_output=True, text=True, check=False
+        ["adb", "devices", "-l"], capture_output=True, text=True, check=False
     )
     rows = []
     for line in probe.stdout.splitlines()[1:]:
         fields = line.split()
         if len(fields) >= 2:
-            rows.append((fields[0], fields[1]))
+            model = next((f.split(":", 1)[1] for f in fields[2:] if f.startswith("model:")), "")
+            rows.append((fields[0], fields[1], model))
     return rows
+
+
+def pick_device(ready):
+    """Ask which of the [(serial, model)] ready devices to use; None when cancelled.
+
+    The choice is put in ANDROID_SERIAL for the rest of the task, which gradle and adb both read.
+    """
+    labels = [f"{serial} — {model}" if model else serial for serial, model in ready]
+    try:
+        import questionary
+        answer = questionary.select("Several devices are ready:", choices=labels).ask()
+    except ImportError:
+        print("Several devices are ready:")
+        for i, label in enumerate(labels, 1):
+            print(f"  {i}. {label}")
+        try:
+            typed = input("Number: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return None
+        answer = labels[int(typed) - 1] if typed.isdigit() and 1 <= int(typed) <= len(labels) else None
+    if answer is None:
+        return None
+    serial = ready[labels.index(answer)][0]
+    os.environ["ANDROID_SERIAL"] = serial
+    print(f"Using {serial}; to keep it: export ANDROID_SERIAL={serial}")
+    return serial
 
 
 def ready_device():
@@ -155,13 +183,19 @@ def ready_device():
         return None
 
     devices = attached_devices()
-    ready = [serial for serial, state in devices if state == "device"]
+    ready = [(serial, model) for serial, state, model in devices if state == "device"]
+    chosen = os.environ.get("ANDROID_SERIAL")
+    if chosen and any(serial == chosen for serial, _ in ready):
+        return chosen
     if len(ready) == 1:
-        return ready[0]
+        return ready[0][0]
     if len(ready) > 1:
+        # A person at a terminal chooses; a script is told how to
+        if sys.stdin.isatty():
+            return pick_device(ready)
         print("Several devices are ready:", file=sys.stderr)
-        for serial in ready:
-            print(f"  {serial}", file=sys.stderr)
+        for serial, model in ready:
+            print(f"  {serial}  {model}", file=sys.stderr)
         print("Pick one with: export ANDROID_SERIAL=<serial>", file=sys.stderr)
         return None
 
@@ -173,7 +207,7 @@ def ready_device():
         )
         return None
 
-    for serial, state in devices:
+    for serial, state, _ in devices:
         if state == "unauthorized":
             print(
                 f"{serial} has not authorised this computer.\n"
