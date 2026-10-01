@@ -1,12 +1,2061 @@
 {
   "zone_group": "@zone_group",
   "zones": [
-    {"id": "demo-course", "name": "@course_name", "description": "@course_description", "icon_name": "footprints", "display_mode": "CONDENSED", "group": "@zone_group", "tool_groups": ["@course_group_training", "@course_group_body", "@course_group_analysis"], "grid_x": 0, "grid_y": 0},
-    {"id": "demo-work", "name": "@work_name", "description": "@work_description", "icon_name": "briefcase", "display_mode": "CONDENSED", "group": "@zone_group", "tool_groups": [], "grid_x": 2, "grid_y": 0},
-    {"id": "demo-kitchen", "name": "@kitchen_name", "description": "@kitchen_description", "icon_name": "chef-hat", "display_mode": "LINE", "group": "@zone_group", "tool_groups": ["@kitchen_group_meals", "@kitchen_group_pantry"], "grid_x": 0, "grid_y": 2},
-    {"id": "demo-balcony", "name": "@balcony_name", "description": "@balcony_description", "icon_name": "sprout", "display_mode": "MINIMAL", "group": "@zone_group", "tool_groups": [], "grid_x": 0, "grid_y": 3},
-    {"id": "demo-italian", "name": "@italian_name", "description": "@italian_description", "icon_name": "languages", "display_mode": "ICON", "group": "@zone_group", "tool_groups": [], "grid_x": 2, "grid_y": 3}
+    {
+      "id": "demo-course",
+      "name": "@course_name",
+      "description": "@course_description",
+      "icon_name": "footprints",
+      "display_mode": "CONDENSED",
+      "group": "@zone_group",
+      "tool_groups": [
+        "@course_group_training",
+        "@course_group_body",
+        "@course_group_analysis"
+      ],
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-work",
+      "name": "@work_name",
+      "description": "@work_description",
+      "icon_name": "briefcase",
+      "display_mode": "CONDENSED",
+      "group": "@zone_group",
+      "tool_groups": [],
+      "grid_x": 2,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-kitchen",
+      "name": "@kitchen_name",
+      "description": "@kitchen_description",
+      "icon_name": "chef-hat",
+      "display_mode": "LINE",
+      "group": "@zone_group",
+      "tool_groups": [
+        "@kitchen_group_meals",
+        "@kitchen_group_pantry"
+      ],
+      "grid_x": 0,
+      "grid_y": 2
+    },
+    {
+      "id": "demo-balcony",
+      "name": "@balcony_name",
+      "description": "@balcony_description",
+      "icon_name": "sprout",
+      "display_mode": "MINIMAL",
+      "group": "@zone_group",
+      "tool_groups": [],
+      "grid_x": 0,
+      "grid_y": 3
+    },
+    {
+      "id": "demo-italian",
+      "name": "@italian_name",
+      "description": "@italian_description",
+      "icon_name": "languages",
+      "display_mode": "ICON",
+      "group": "@zone_group",
+      "tool_groups": [],
+      "grid_x": 2,
+      "grid_y": 3
+    }
   ],
-  "tools": [],
-  "variables": []
+  "tools": [
+    {
+      "id": "demo-course-runs",
+      "zone_id": "demo-course",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@runs_name",
+        "description": "@runs_description",
+        "icon_name": "footprints",
+        "display_mode": "EXTENDED",
+        "group": "@course_group_training",
+        "type": "numeric",
+        "value": {
+          "decimals": 1
+        },
+        "units": [
+          "km"
+        ],
+        "items": [
+          {
+            "name": "@runs_item_footing",
+            "value": 8,
+            "unit": "km"
+          },
+          {
+            "name": "@runs_item_intervals",
+            "value": 6,
+            "unit": "km"
+          }
+        ],
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "duration",
+            "display_name": "@runs_field_duration",
+            "type": "DURATION",
+            "always_visible": false,
+            "config": {
+              "precision": "MINUTE",
+              "form": "COMPOSED"
+            }
+          },
+          {
+            "name": "kind",
+            "display_name": "@runs_field_kind",
+            "type": "CHOICE",
+            "always_visible": false,
+            "config": {
+              "options": [
+                {
+                  "value": "footing",
+                  "label": "@runs_kind_footing",
+                  "color": "GREEN"
+                },
+                {
+                  "value": "intervals",
+                  "label": "@runs_kind_intervals",
+                  "color": "RED"
+                },
+                {
+                  "value": "long_run",
+                  "label": "@runs_kind_long_run",
+                  "color": "BLUE"
+                },
+                {
+                  "value": "hills",
+                  "label": "@runs_kind_hills",
+                  "color": "ORANGE"
+                }
+              ]
+            }
+          },
+          {
+            "name": "feeling",
+            "display_name": "@runs_field_feeling",
+            "type": "SCALE",
+            "always_visible": false,
+            "config": {
+              "min": 1,
+              "max": 5,
+              "min_label": "@runs_feeling_min",
+              "max_label": "@runs_feeling_max"
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-course-strength",
+      "zone_id": "demo-course",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@strength_name",
+        "description": "@strength_description",
+        "icon_name": "dumbbell",
+        "display_mode": "MINIMAL",
+        "group": "@course_group_training",
+        "type": "occurrence",
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "exercises",
+            "display_name": "@strength_field_exercises",
+            "type": "TEXT",
+            "always_visible": false,
+            "config": {
+              "length": "LONG"
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 2
+    },
+    {
+      "id": "demo-course-stretching",
+      "zone_id": "demo-course",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@stretching_name",
+        "description": "@stretching_description",
+        "icon_name": "activity",
+        "display_mode": "MINIMAL",
+        "group": "@course_group_training",
+        "type": "boolean",
+        "value": {
+          "true_label": "@stretching_true",
+          "false_label": "@stretching_false"
+        }
+      },
+      "grid_x": 2,
+      "grid_y": 2
+    },
+    {
+      "id": "demo-course-weight",
+      "zone_id": "demo-course",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@weight_name",
+        "description": "@weight_description",
+        "icon_name": "scale",
+        "display_mode": "LINE",
+        "group": "@course_group_body",
+        "type": "numeric",
+        "value": {
+          "decimals": 1
+        },
+        "units": [
+          "kg"
+        ],
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "weighed_at",
+            "display_name": "@weight_field_weighed_at",
+            "type": "TIME",
+            "always_visible": false,
+            "config": {}
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-course-sleep",
+      "zone_id": "demo-course",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@sleep_name",
+        "description": "@sleep_description",
+        "icon_name": "moon",
+        "display_mode": "CONDENSED",
+        "group": "@course_group_body",
+        "type": "timer",
+        "value": {
+          "precision": "MINUTE"
+        },
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "quality",
+            "display_name": "@sleep_field_quality",
+            "type": "SCALE",
+            "always_visible": false,
+            "config": {
+              "min": 1,
+              "max": 5,
+              "min_label": "@sleep_quality_min",
+              "max_label": "@sleep_quality_max"
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 1
+    },
+    {
+      "id": "demo-course-mood",
+      "zone_id": "demo-course",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@mood_name",
+        "description": "@mood_description",
+        "icon_name": "face-grinning",
+        "display_mode": "ICON",
+        "type": "scale",
+        "value": {
+          "min": 1,
+          "max": 5,
+          "min_label": "@mood_min",
+          "max_label": "@mood_max"
+        }
+      },
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-course-goal",
+      "zone_id": "demo-course",
+      "tooltype": "goal",
+      "config": {
+        "name": "@course_goal_name",
+        "description": "@course_goal_description",
+        "icon_name": "target",
+        "display_mode": "SQUARE",
+        "group": "@course_group_analysis",
+        "enabled": true,
+        "notify": true,
+        "duration": 604800000,
+        "schedule": {
+          "pattern": {
+            "type": "WeeklySimple",
+            "days_of_week": [
+              1
+            ],
+            "time": "00:00"
+          }
+        },
+        "criteria": [
+          {
+            "key": "c_runs",
+            "name": "@course_goal_runs",
+            "condition": {
+              "left": {
+                "reading": {
+                  "selection": {
+                    "target": {
+                      "kind": "TOOL_INSTANCE",
+                      "id": "demo-course-runs"
+                    }
+                  },
+                  "reduction": "COUNT"
+                }
+              },
+              "op": ">=",
+              "right": {
+                "constant": 3
+              }
+            }
+          },
+          {
+            "key": "c_km",
+            "name": "@course_goal_km",
+            "condition": {
+              "left": {
+                "reading": {
+                  "selection": {
+                    "target": {
+                      "kind": "TOOL_INSTANCE",
+                      "id": "demo-course-runs"
+                    }
+                  },
+                  "reduction": "SUM",
+                  "field": "data.value"
+                }
+              },
+              "op": ">=",
+              "right": {
+                "variable": "demo-var-km-target"
+              }
+            }
+          },
+          {
+            "key": "c_sleep",
+            "name": "@course_goal_sleep",
+            "condition": {
+              "left": {
+                "reading": {
+                  "selection": {
+                    "target": {
+                      "kind": "TOOL_INSTANCE",
+                      "id": "demo-course-sleep"
+                    }
+                  },
+                  "reduction": "AVERAGE",
+                  "field": "data.value"
+                }
+              },
+              "op": ">=",
+              "right": {
+                "constant": 25200000
+              }
+            }
+          },
+          {
+            "key": "c_no_pain",
+            "name": "@course_goal_no_pain",
+            "field": {
+              "type": "BOOLEAN",
+              "config": {
+                "true_label": "@course_goal_no_pain_true",
+                "false_label": "@course_goal_no_pain_false"
+              }
+            },
+            "instructions": "@course_goal_no_pain_instructions",
+            "condition": {
+              "left": {
+                "field": "data.c_no_pain"
+              },
+              "op": "=",
+              "right": {
+                "constant": true
+              }
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-course-chart-km",
+      "zone_id": "demo-course",
+      "tooltype": "chart",
+      "config": {
+        "name": "@chart_km_name",
+        "description": "@chart_km_description",
+        "icon_name": "chart-column",
+        "display_mode": "FULL",
+        "group": "@course_group_analysis",
+        "period": {
+          "start": {
+            "relative": {
+              "unit": "WEEK",
+              "offset": -11,
+              "edge": "START"
+            }
+          },
+          "end": {
+            "relative": "NOW"
+          }
+        },
+        "composition": "layer",
+        "layer": [
+          {
+            "description": "@chart_km_layer",
+            "mark": {
+              "type": "bar"
+            },
+            "encoding": {
+              "x": {
+                "field": "timestamp",
+                "type": "temporal"
+              },
+              "y": {
+                "field": "km",
+                "type": "quantitative"
+              }
+            },
+            "source": "grid",
+            "step": "week",
+            "columns": [
+              {
+                "name": "km",
+                "term": {
+                  "reading": {
+                    "selection": {
+                      "target": {
+                        "kind": "TOOL_INSTANCE",
+                        "id": "demo-course-runs"
+                      }
+                    },
+                    "reduction": "SUM",
+                    "field": "data.value"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 4
+    },
+    {
+      "id": "demo-course-chart-weight",
+      "zone_id": "demo-course",
+      "tooltype": "chart",
+      "config": {
+        "name": "@chart_weight_name",
+        "description": "@chart_weight_description",
+        "icon_name": "chart-line",
+        "display_mode": "EXTENDED",
+        "group": "@course_group_analysis",
+        "period": {
+          "start": {
+            "relative": {
+              "unit": "DAY",
+              "offset": -41,
+              "edge": "START"
+            }
+          },
+          "end": {
+            "relative": "NOW"
+          }
+        },
+        "composition": "layer",
+        "layer": [
+          {
+            "description": "@chart_weight_points",
+            "mark": {
+              "type": "point",
+              "size": 40,
+              "filled": true
+            },
+            "encoding": {
+              "x": {
+                "field": "timestamp",
+                "type": "temporal"
+              },
+              "y": {
+                "field": "data.value",
+                "type": "quantitative",
+                "scale": {
+                  "zero": false
+                }
+              }
+            },
+            "source": "entries",
+            "selection": {
+              "target": {
+                "kind": "TOOL_INSTANCE",
+                "id": "demo-course-weight"
+              },
+              "fields": [
+                "data.value"
+              ]
+            }
+          },
+          {
+            "description": "@chart_weight_average",
+            "mark": {
+              "type": "line",
+              "interpolate": "monotone"
+            },
+            "encoding": {
+              "x": {
+                "field": "timestamp",
+                "type": "temporal"
+              },
+              "y": {
+                "field": "average",
+                "type": "quantitative",
+                "scale": {
+                  "zero": false
+                }
+              }
+            },
+            "source": "grid",
+            "step": "day",
+            "columns": [
+              {
+                "name": "average",
+                "term": {
+                  "variable": "demo-var-weight-7d"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 5
+    },
+    {
+      "id": "demo-course-chart-sleep-mood",
+      "zone_id": "demo-course",
+      "tooltype": "chart",
+      "config": {
+        "name": "@chart_sleep_mood_name",
+        "description": "@chart_sleep_mood_description",
+        "icon_name": "chart-spline",
+        "display_mode": "LINE",
+        "group": "@course_group_analysis",
+        "period": {
+          "start": {
+            "relative": {
+              "unit": "DAY",
+              "offset": -27,
+              "edge": "START"
+            }
+          },
+          "end": {
+            "relative": "NOW"
+          }
+        },
+        "composition": "vconcat",
+        "vconcat": [
+          {
+            "title": "@chart_sleep_mood_sleep",
+            "layer": [
+              {
+                "description": "@chart_sleep_mood_sleep_layer",
+                "mark": {
+                  "type": "area"
+                },
+                "encoding": {
+                  "x": {
+                    "field": "timestamp",
+                    "type": "temporal"
+                  },
+                  "y": {
+                    "field": "data.value",
+                    "type": "quantitative"
+                  }
+                },
+                "source": "entries",
+                "selection": {
+                  "target": {
+                    "kind": "TOOL_INSTANCE",
+                    "id": "demo-course-sleep"
+                  },
+                  "fields": [
+                    "data.value"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "title": "@chart_sleep_mood_mood",
+            "layer": [
+              {
+                "description": "@chart_sleep_mood_mood_layer",
+                "mark": {
+                  "type": "line",
+                  "interpolate": "monotone",
+                  "point": true
+                },
+                "encoding": {
+                  "x": {
+                    "field": "timestamp",
+                    "type": "temporal"
+                  },
+                  "y": {
+                    "field": "data.value",
+                    "type": "quantitative"
+                  }
+                },
+                "source": "entries",
+                "selection": {
+                  "target": {
+                    "kind": "TOOL_INSTANCE",
+                    "id": "demo-course-mood"
+                  },
+                  "fields": [
+                    "data.value"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 7
+    },
+    {
+      "id": "demo-course-chart-mood-calendar",
+      "zone_id": "demo-course",
+      "tooltype": "chart",
+      "config": {
+        "name": "@chart_mood_calendar_name",
+        "description": "@chart_mood_calendar_description",
+        "icon_name": "calendar",
+        "display_mode": "CONDENSED",
+        "group": "@course_group_analysis",
+        "period": {
+          "start": {
+            "relative": {
+              "unit": "DAY",
+              "offset": -27,
+              "edge": "START"
+            }
+          },
+          "end": {
+            "relative": "NOW"
+          }
+        },
+        "composition": "layer",
+        "layer": [
+          {
+            "description": "@chart_mood_calendar_layer",
+            "mark": {
+              "type": "rect"
+            },
+            "encoding": {
+              "x": {
+                "field": "week",
+                "type": "ordinal"
+              },
+              "y": {
+                "field": "weekday",
+                "type": "ordinal"
+              },
+              "color": {
+                "field": "mood",
+                "type": "quantitative",
+                "scale": {
+                  "range": [
+                    "RED",
+                    "GREEN"
+                  ]
+                }
+              }
+            },
+            "source": "grid",
+            "step": "day",
+            "columns": [
+              {
+                "name": "mood",
+                "term": {
+                  "reading": {
+                    "selection": {
+                      "target": {
+                        "kind": "TOOL_INSTANCE",
+                        "id": "demo-course-mood"
+                      }
+                    },
+                    "reduction": "AVERAGE",
+                    "field": "data.value"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 8
+    },
+    {
+      "id": "demo-course-notebook",
+      "zone_id": "demo-course",
+      "tooltype": "journal",
+      "config": {
+        "name": "@course_notebook_name",
+        "description": "@course_notebook_description",
+        "icon_name": "notebook-pen",
+        "display_mode": "CONDENSED",
+        "group": "@course_group_analysis",
+        "sort_order": "descending"
+      },
+      "grid_x": 2,
+      "grid_y": 8
+    },
+    {
+      "id": "demo-kitchen-foods",
+      "zone_id": "demo-kitchen",
+      "tooltype": "structured",
+      "config": {
+        "name": "@foods_name",
+        "description": "@foods_description",
+        "icon_name": "apple",
+        "display_mode": "LINE",
+        "group": "@kitchen_group_pantry",
+        "table_columns": 2,
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "kcal_100g",
+            "display_name": "@foods_field_kcal",
+            "type": "NUMERIC",
+            "always_visible": false,
+            "config": {
+              "unit": "kcal",
+              "decimals": 0
+            }
+          },
+          {
+            "name": "protein_100g",
+            "display_name": "@foods_field_protein",
+            "type": "NUMERIC",
+            "always_visible": false,
+            "config": {
+              "unit": "g",
+              "decimals": 1
+            }
+          },
+          {
+            "name": "carbs_100g",
+            "display_name": "@foods_field_carbs",
+            "type": "NUMERIC",
+            "always_visible": false,
+            "config": {
+              "unit": "g",
+              "decimals": 1
+            }
+          },
+          {
+            "name": "category",
+            "display_name": "@foods_field_category",
+            "type": "CHOICE",
+            "always_visible": false,
+            "config": {
+              "options": [
+                {
+                  "value": "cereal",
+                  "label": "@foods_category_cereal",
+                  "color": "YELLOW"
+                },
+                {
+                  "value": "fruit",
+                  "label": "@foods_category_fruit",
+                  "color": "ORANGE"
+                },
+                {
+                  "value": "vegetable",
+                  "label": "@foods_category_vegetable",
+                  "color": "GREEN"
+                },
+                {
+                  "value": "protein",
+                  "label": "@foods_category_protein",
+                  "color": "RED"
+                },
+                {
+                  "value": "dairy",
+                  "label": "@foods_category_dairy",
+                  "color": "BLUE"
+                },
+                {
+                  "value": "other",
+                  "label": "@foods_category_other"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-kitchen-meals",
+      "zone_id": "demo-kitchen",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@meals_name",
+        "description": "@meals_description",
+        "icon_name": "utensils",
+        "display_mode": "SQUARE",
+        "group": "@kitchen_group_meals",
+        "type": "choice",
+        "value": {
+          "options": [
+            {
+              "value": "breakfast",
+              "label": "@meals_moment_breakfast",
+              "color": "YELLOW"
+            },
+            {
+              "value": "lunch",
+              "label": "@meals_moment_lunch",
+              "color": "GREEN"
+            },
+            {
+              "value": "dinner",
+              "label": "@meals_moment_dinner",
+              "color": "BLUE"
+            },
+            {
+              "value": "snack",
+              "label": "@meals_moment_snack",
+              "color": "PINK"
+            }
+          ]
+        },
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "food",
+            "display_name": "@meals_field_food",
+            "type": "REFERENCE",
+            "always_visible": false,
+            "config": {
+              "target": {
+                "kinds": [
+                  "ENTRY"
+                ],
+                "tool_instances": [
+                  {
+                    "kind": "TOOL_INSTANCE",
+                    "id": "demo-kitchen-foods"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "quantity",
+            "display_name": "@meals_field_quantity",
+            "type": "NUMERIC",
+            "always_visible": false,
+            "config": {
+              "unit": "g",
+              "decimals": 0
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-kitchen-water",
+      "zone_id": "demo-kitchen",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@water_name",
+        "description": "@water_description",
+        "icon_name": "droplet",
+        "display_mode": "MINIMAL",
+        "group": "@kitchen_group_meals",
+        "type": "counter",
+        "value": {
+          "unit": "@water_unit",
+          "decimals": 0
+        },
+        "allow_decrement": true
+      },
+      "grid_x": 0,
+      "grid_y": 4
+    },
+    {
+      "id": "demo-kitchen-chart-kcal",
+      "zone_id": "demo-kitchen",
+      "tooltype": "chart",
+      "config": {
+        "name": "@chart_kcal_name",
+        "description": "@chart_kcal_description",
+        "icon_name": "flame",
+        "display_mode": "EXTENDED",
+        "group": "@kitchen_group_meals",
+        "period": {
+          "start": {
+            "relative": {
+              "unit": "DAY",
+              "offset": -20,
+              "edge": "START"
+            }
+          },
+          "end": {
+            "relative": "NOW"
+          }
+        },
+        "composition": "layer",
+        "layer": [
+          {
+            "description": "@chart_kcal_bars",
+            "mark": {
+              "type": "bar"
+            },
+            "encoding": {
+              "x": {
+                "field": "timestamp",
+                "type": "temporal"
+              },
+              "y": {
+                "field": "kcal",
+                "type": "quantitative"
+              },
+              "color": {
+                "value": "BLUE",
+                "condition": {
+                  "test": {
+                    "left": {
+                      "field": "kcal"
+                    },
+                    "op": ">",
+                    "right": {
+                      "field": "target"
+                    }
+                  },
+                  "value": "RED"
+                }
+              }
+            },
+            "source": "grid",
+            "step": "day",
+            "columns": [
+              {
+                "name": "kcal",
+                "term": {
+                  "variable": "demo-var-kcal-day"
+                }
+              },
+              {
+                "name": "target",
+                "term": {
+                  "variable": "demo-var-kcal-target"
+                }
+              }
+            ]
+          },
+          {
+            "description": "@chart_kcal_target",
+            "mark": {
+              "type": "line",
+              "interpolate": "step-after",
+              "strokeDash": [
+                4,
+                4
+              ]
+            },
+            "encoding": {
+              "x": {
+                "field": "timestamp",
+                "type": "temporal"
+              },
+              "y": {
+                "field": "target",
+                "type": "quantitative"
+              }
+            },
+            "source": "grid",
+            "step": "day",
+            "columns": [
+              {
+                "name": "target",
+                "term": {
+                  "variable": "demo-var-kcal-target"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 5
+    },
+    {
+      "id": "demo-kitchen-shopping",
+      "zone_id": "demo-kitchen",
+      "tooltype": "list",
+      "config": {
+        "name": "@shopping_name",
+        "description": "@shopping_description",
+        "icon_name": "shopping-cart",
+        "display_mode": "EXTENDED",
+        "group": "@kitchen_group_pantry",
+        "remove_when_checked": false,
+        "due_dates": false
+      },
+      "grid_x": 0,
+      "grid_y": 1
+    },
+    {
+      "id": "demo-kitchen-recipes",
+      "zone_id": "demo-kitchen",
+      "tooltype": "notes",
+      "config": {
+        "name": "@recipes_name",
+        "description": "@recipes_description",
+        "icon_name": "book-open",
+        "display_mode": "CONDENSED",
+        "group": "@kitchen_group_pantry"
+      },
+      "grid_x": 0,
+      "grid_y": 3
+    },
+    {
+      "id": "demo-work-hours",
+      "zone_id": "demo-work",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@hours_name",
+        "description": "@hours_description",
+        "icon_name": "timer",
+        "display_mode": "EXTENDED",
+        "type": "timer",
+        "value": {
+          "precision": "MINUTE"
+        },
+        "items": [
+          {
+            "name": "Studio Brume"
+          },
+          {
+            "name": "Librairie Le Rameau"
+          },
+          {
+            "name": "Mairie de Villeurbanne"
+          }
+        ],
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "project",
+            "display_name": "@hours_field_project",
+            "type": "CHOICE",
+            "always_visible": false,
+            "config": {
+              "options": [
+                {
+                  "value": "identity",
+                  "label": "@hours_project_identity",
+                  "color": "BLUE"
+                },
+                {
+                  "value": "website",
+                  "label": "@hours_project_website",
+                  "color": "GREEN"
+                },
+                {
+                  "value": "poster",
+                  "label": "@hours_project_poster",
+                  "color": "ORANGE"
+                },
+                {
+                  "value": "admin",
+                  "label": "@hours_project_admin"
+                }
+              ]
+            }
+          },
+          {
+            "name": "billable",
+            "display_name": "@hours_field_billable",
+            "type": "BOOLEAN",
+            "always_visible": false,
+            "config": {
+              "true_label": "@hours_billable_true",
+              "false_label": "@hours_billable_false"
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-work-tasks",
+      "zone_id": "demo-work",
+      "tooltype": "list",
+      "config": {
+        "name": "@tasks_name",
+        "description": "@tasks_description",
+        "icon_name": "list-checks",
+        "display_mode": "EXTENDED",
+        "remove_when_checked": false,
+        "due_dates": true
+      },
+      "grid_x": 0,
+      "grid_y": 2
+    },
+    {
+      "id": "demo-work-invoicing",
+      "zone_id": "demo-work",
+      "tooltype": "messages",
+      "config": {
+        "name": "@invoicing_name",
+        "description": "@invoicing_description",
+        "icon_name": "receipt",
+        "display_mode": "LINE",
+        "common_title": "@invoicing_title",
+        "common_content": "@invoicing_content",
+        "enabled": true,
+        "priority": "default",
+        "external_notifications": true,
+        "schedule": {
+          "pattern": {
+            "type": "WeeklySimple",
+            "days_of_week": [
+              1
+            ],
+            "time": "09:00"
+          }
+        }
+      },
+      "grid_x": 0,
+      "grid_y": 4
+    },
+    {
+      "id": "demo-work-notebook",
+      "zone_id": "demo-work",
+      "tooltype": "journal",
+      "config": {
+        "name": "@work_notebook_name",
+        "description": "@work_notebook_description",
+        "icon_name": "notebook",
+        "display_mode": "CONDENSED",
+        "sort_order": "descending"
+      },
+      "grid_x": 0,
+      "grid_y": 5
+    },
+    {
+      "id": "demo-work-chart-hours",
+      "zone_id": "demo-work",
+      "tooltype": "chart",
+      "config": {
+        "name": "@chart_hours_name",
+        "description": "@chart_hours_description",
+        "icon_name": "chart-column-stacked",
+        "display_mode": "CONDENSED",
+        "period": {
+          "start": {
+            "relative": {
+              "unit": "WEEK",
+              "offset": -7,
+              "edge": "START"
+            }
+          },
+          "end": {
+            "relative": "NOW"
+          }
+        },
+        "composition": "layer",
+        "layer": [
+          {
+            "description": "@chart_hours_layer",
+            "transform": [
+              {
+                "fold": [
+                  "brume",
+                  "rameau",
+                  "villeurbanne"
+                ],
+                "as": [
+                  "client",
+                  "hours"
+                ]
+              }
+            ],
+            "mark": {
+              "type": "bar"
+            },
+            "encoding": {
+              "x": {
+                "field": "timestamp",
+                "type": "temporal"
+              },
+              "y": {
+                "field": "hours",
+                "type": "quantitative",
+                "stack": "zero"
+              },
+              "color": {
+                "field": "client",
+                "type": "nominal"
+              }
+            },
+            "source": "grid",
+            "step": "week",
+            "columns": [
+              {
+                "name": "brume",
+                "term": {
+                  "reading": {
+                    "selection": {
+                      "target": {
+                        "kind": "TOOL_INSTANCE",
+                        "id": "demo-work-hours"
+                      },
+                      "filters": [
+                        {
+                          "left": {
+                            "field": "name"
+                          },
+                          "op": "=",
+                          "right": {
+                            "constant": "Studio Brume"
+                          }
+                        }
+                      ]
+                    },
+                    "reduction": "SUM",
+                    "field": "data.value"
+                  }
+                }
+              },
+              {
+                "name": "rameau",
+                "term": {
+                  "reading": {
+                    "selection": {
+                      "target": {
+                        "kind": "TOOL_INSTANCE",
+                        "id": "demo-work-hours"
+                      },
+                      "filters": [
+                        {
+                          "left": {
+                            "field": "name"
+                          },
+                          "op": "=",
+                          "right": {
+                            "constant": "Librairie Le Rameau"
+                          }
+                        }
+                      ]
+                    },
+                    "reduction": "SUM",
+                    "field": "data.value"
+                  }
+                }
+              },
+              {
+                "name": "villeurbanne",
+                "term": {
+                  "reading": {
+                    "selection": {
+                      "target": {
+                        "kind": "TOOL_INSTANCE",
+                        "id": "demo-work-hours"
+                      },
+                      "filters": [
+                        {
+                          "left": {
+                            "field": "name"
+                          },
+                          "op": "=",
+                          "right": {
+                            "constant": "Mairie de Villeurbanne"
+                          }
+                        }
+                      ]
+                    },
+                    "reduction": "SUM",
+                    "field": "data.value"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grid_x": 2,
+      "grid_y": 5
+    },
+    {
+      "id": "demo-balcony-plants",
+      "zone_id": "demo-balcony",
+      "tooltype": "structured",
+      "config": {
+        "name": "@plants_name",
+        "description": "@plants_description",
+        "icon_name": "leaf",
+        "display_mode": "LINE",
+        "table_columns": 2,
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "sown_on",
+            "display_name": "@plants_field_sown",
+            "type": "DATE",
+            "always_visible": false,
+            "config": {}
+          },
+          {
+            "name": "exposure",
+            "display_name": "@plants_field_exposure",
+            "type": "CHOICE",
+            "always_visible": false,
+            "config": {
+              "options": [
+                {
+                  "value": "sun",
+                  "label": "@plants_exposure_sun",
+                  "color": "YELLOW"
+                },
+                {
+                  "value": "part_shade",
+                  "label": "@plants_exposure_part_shade",
+                  "color": "GREEN"
+                },
+                {
+                  "value": "shade",
+                  "label": "@plants_exposure_shade",
+                  "color": "BLUE"
+                }
+              ]
+            }
+          },
+          {
+            "name": "watering",
+            "display_name": "@plants_field_watering",
+            "type": "TEXT",
+            "always_visible": false,
+            "config": {
+              "length": "SHORT"
+            }
+          },
+          {
+            "name": "ideal_temp",
+            "display_name": "@plants_field_temp",
+            "type": "RANGE",
+            "always_visible": false,
+            "config": {
+              "unit": "°C",
+              "decimals": 0
+            }
+          },
+          {
+            "name": "repotted_at",
+            "display_name": "@plants_field_repotted",
+            "type": "DATETIME",
+            "always_visible": false,
+            "config": {}
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-balcony-harvests",
+      "zone_id": "demo-balcony",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@harvests_name",
+        "description": "@harvests_description",
+        "icon_name": "cherry",
+        "display_mode": "LINE",
+        "type": "numeric",
+        "value": {
+          "decimals": 0
+        },
+        "units": [
+          "g"
+        ],
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "plant",
+            "display_name": "@harvests_field_plant",
+            "type": "REFERENCE",
+            "always_visible": false,
+            "config": {
+              "target": {
+                "kinds": [
+                  "ENTRY"
+                ],
+                "tool_instances": [
+                  {
+                    "kind": "TOOL_INSTANCE",
+                    "id": "demo-balcony-plants"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 1
+    },
+    {
+      "id": "demo-balcony-observations",
+      "zone_id": "demo-balcony",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@observations_name",
+        "description": "@observations_description",
+        "icon_name": "eye",
+        "display_mode": "MINIMAL",
+        "type": "text",
+        "value": {
+          "length": "SHORT"
+        }
+      },
+      "grid_x": 0,
+      "grid_y": 2
+    },
+    {
+      "id": "demo-balcony-fed",
+      "zone_id": "demo-balcony",
+      "tooltype": "tracking",
+      "config": {
+        "name": "@fed_name",
+        "description": "@fed_description",
+        "icon_name": "flask-conical",
+        "display_mode": "MINIMAL",
+        "type": "occurrence"
+      },
+      "grid_x": 2,
+      "grid_y": 2
+    },
+    {
+      "id": "demo-balcony-watering",
+      "zone_id": "demo-balcony",
+      "tooltype": "messages",
+      "config": {
+        "name": "@watering_name",
+        "description": "@watering_description",
+        "icon_name": "droplets",
+        "display_mode": "LINE",
+        "common_title": "@watering_title",
+        "common_content": "@watering_content",
+        "enabled": true,
+        "priority": "default",
+        "external_notifications": true,
+        "schedule": {
+          "pattern": {
+            "type": "WeeklySimple",
+            "days_of_week": [
+              1,
+              3,
+              5,
+              7
+            ],
+            "time": "19:00"
+          }
+        }
+      },
+      "grid_x": 0,
+      "grid_y": 3
+    },
+    {
+      "id": "demo-balcony-feeding",
+      "zone_id": "demo-balcony",
+      "tooltype": "messages",
+      "config": {
+        "name": "@feeding_name",
+        "description": "@feeding_description",
+        "icon_name": "calendar-clock",
+        "display_mode": "LINE",
+        "common_title": "@feeding_title",
+        "common_content": "@feeding_content",
+        "enabled": true,
+        "priority": "default",
+        "external_notifications": true,
+        "schedule": {
+          "pattern": {
+            "type": "MonthlyRecurrent",
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "day_of_month": 1,
+            "time": "10:00"
+          }
+        }
+      },
+      "grid_x": 0,
+      "grid_y": 4
+    },
+    {
+      "id": "demo-balcony-todo",
+      "zone_id": "demo-balcony",
+      "tooltype": "list",
+      "config": {
+        "name": "@balcony_todo_name",
+        "description": "@balcony_todo_description",
+        "icon_name": "clipboard-list",
+        "display_mode": "CONDENSED",
+        "remove_when_checked": false,
+        "due_dates": true
+      },
+      "grid_x": 0,
+      "grid_y": 5
+    },
+    {
+      "id": "demo-balcony-notebook",
+      "zone_id": "demo-balcony",
+      "tooltype": "journal",
+      "config": {
+        "name": "@balcony_notebook_name",
+        "description": "@balcony_notebook_description",
+        "icon_name": "book-heart",
+        "display_mode": "CONDENSED",
+        "sort_order": "descending"
+      },
+      "grid_x": 2,
+      "grid_y": 5
+    },
+    {
+      "id": "demo-balcony-chart",
+      "zone_id": "demo-balcony",
+      "tooltype": "chart",
+      "config": {
+        "name": "@chart_harvests_name",
+        "description": "@chart_harvests_description",
+        "icon_name": "chart-column",
+        "display_mode": "FULL",
+        "period": {
+          "start": {
+            "relative": {
+              "unit": "WEEK",
+              "offset": -7,
+              "edge": "START"
+            }
+          },
+          "end": {
+            "relative": "NOW"
+          }
+        },
+        "composition": "layer",
+        "layer": [
+          {
+            "description": "@chart_harvests_layer",
+            "mark": {
+              "type": "bar"
+            },
+            "encoding": {
+              "x": {
+                "field": "timestamp",
+                "type": "temporal"
+              },
+              "y": {
+                "field": "grams",
+                "type": "quantitative"
+              }
+            },
+            "source": "grid",
+            "step": "week",
+            "columns": [
+              {
+                "name": "grams",
+                "term": {
+                  "reading": {
+                    "selection": {
+                      "target": {
+                        "kind": "TOOL_INSTANCE",
+                        "id": "demo-balcony-harvests"
+                      }
+                    },
+                    "reduction": "SUM",
+                    "field": "data.value"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 7
+    },
+    {
+      "id": "demo-italian-evening",
+      "zone_id": "demo-italian",
+      "tooltype": "questionnaire",
+      "config": {
+        "name": "@evening_name",
+        "description": "@evening_description",
+        "icon_name": "languages",
+        "display_mode": "LINE",
+        "enabled": true,
+        "schedule": {
+          "pattern": {
+            "type": "DailyMultiple",
+            "times": [
+              "20:00"
+            ]
+          }
+        },
+        "show_field_labels": true,
+        "extra_fields": [
+          {
+            "name": "words",
+            "display_name": "@evening_field_words",
+            "type": "NUMERIC",
+            "always_visible": false,
+            "config": {
+              "decimals": 0,
+              "min": 0
+            }
+          },
+          {
+            "name": "difficulty",
+            "display_name": "@evening_field_difficulty",
+            "type": "SCALE",
+            "always_visible": false,
+            "config": {
+              "min": 1,
+              "max": 5,
+              "min_label": "@evening_difficulty_min",
+              "max_label": "@evening_difficulty_max"
+            }
+          },
+          {
+            "name": "phrase",
+            "display_name": "@evening_field_phrase",
+            "type": "TEXT",
+            "always_visible": false,
+            "config": {
+              "length": "MEDIUM"
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 0
+    },
+    {
+      "id": "demo-italian-goal",
+      "zone_id": "demo-italian",
+      "tooltype": "goal",
+      "config": {
+        "name": "@italian_goal_name",
+        "description": "@italian_goal_description",
+        "icon_name": "trophy",
+        "display_mode": "CONDENSED",
+        "enabled": true,
+        "notify": true,
+        "duration": 604800000,
+        "schedule": {
+          "pattern": {
+            "type": "WeeklySimple",
+            "days_of_week": [
+              1
+            ],
+            "time": "00:00"
+          }
+        },
+        "criteria": [
+          {
+            "key": "c_evenings",
+            "name": "@italian_goal_evenings",
+            "condition": {
+              "left": {
+                "reading": {
+                  "selection": {
+                    "target": {
+                      "kind": "TOOL_INSTANCE",
+                      "id": "demo-italian-evening"
+                    },
+                    "filters": [
+                      {
+                        "left": {
+                          "field": "state.status"
+                        },
+                        "op": "in",
+                        "right": {
+                          "constant": [
+                            "filled"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "reduction": "COUNT"
+                }
+              },
+              "op": ">=",
+              "right": {
+                "constant": 5
+              }
+            }
+          },
+          {
+            "key": "c_words",
+            "name": "@italian_goal_words",
+            "condition": {
+              "left": {
+                "reading": {
+                  "selection": {
+                    "target": {
+                      "kind": "TOOL_INSTANCE",
+                      "id": "demo-italian-evening"
+                    }
+                  },
+                  "reduction": "SUM",
+                  "field": "extra.words"
+                }
+              },
+              "op": ">=",
+              "right": {
+                "constant": 40
+              }
+            }
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 1
+    },
+    {
+      "id": "demo-italian-phrases",
+      "zone_id": "demo-italian",
+      "tooltype": "notes",
+      "config": {
+        "name": "@phrases_name",
+        "description": "@phrases_description",
+        "icon_name": "message-square-quote",
+        "display_mode": "CONDENSED"
+      },
+      "grid_x": 2,
+      "grid_y": 1
+    },
+    {
+      "id": "demo-italian-suitcase",
+      "zone_id": "demo-italian",
+      "tooltype": "list",
+      "config": {
+        "name": "@suitcase_name",
+        "description": "@suitcase_description",
+        "icon_name": "luggage",
+        "display_mode": "EXTENDED",
+        "remove_when_checked": false,
+        "due_dates": false
+      },
+      "grid_x": 0,
+      "grid_y": 3
+    },
+    {
+      "id": "demo-italian-chart",
+      "zone_id": "demo-italian",
+      "tooltype": "chart",
+      "config": {
+        "name": "@chart_words_name",
+        "description": "@chart_words_description",
+        "icon_name": "chart-column",
+        "display_mode": "EXTENDED",
+        "period": {
+          "start": {
+            "relative": {
+              "unit": "WEEK",
+              "offset": -11,
+              "edge": "START"
+            }
+          },
+          "end": {
+            "relative": "NOW"
+          }
+        },
+        "composition": "layer",
+        "layer": [
+          {
+            "description": "@chart_words_layer",
+            "mark": {
+              "type": "bar"
+            },
+            "encoding": {
+              "x": {
+                "field": "timestamp",
+                "type": "temporal"
+              },
+              "y": {
+                "field": "words",
+                "type": "quantitative"
+              }
+            },
+            "source": "grid",
+            "step": "week",
+            "columns": [
+              {
+                "name": "words",
+                "term": {
+                  "reading": {
+                    "selection": {
+                      "target": {
+                        "kind": "TOOL_INSTANCE",
+                        "id": "demo-italian-evening"
+                      }
+                    },
+                    "reduction": "SUM",
+                    "field": "extra.words"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "grid_x": 0,
+      "grid_y": 5
+    }
+  ],
+  "variables": [
+    {
+      "id": "demo-var-km-target",
+      "zone_id": "demo-course",
+      "group": "@course_group_analysis",
+      "name": "objectif_km_demo",
+      "definition": {
+        "kind": "CONSTANT",
+        "value": 20,
+        "field": {
+          "type": "NUMERIC",
+          "config": {
+            "decimals": 0,
+            "unit": "km"
+          }
+        }
+      }
+    },
+    {
+      "id": "demo-var-km-week",
+      "zone_id": "demo-course",
+      "group": "@course_group_analysis",
+      "name": "km_semaine_demo",
+      "definition": {
+        "kind": "FORMULA",
+        "formula": "km",
+        "terms": {
+          "km": {
+            "reading": {
+              "selection": {
+                "target": {
+                  "kind": "TOOL_INSTANCE",
+                  "id": "demo-course-runs"
+                },
+                "period": {
+                  "start": {
+                    "relative": {
+                      "unit": "WEEK",
+                      "offset": 0,
+                      "edge": "START"
+                    }
+                  },
+                  "end": {
+                    "relative": "NOW"
+                  }
+                }
+              },
+              "reduction": "SUM",
+              "field": "data.value"
+            }
+          }
+        },
+        "field": {
+          "type": "NUMERIC",
+          "config": {
+            "decimals": 1,
+            "unit": "km"
+          }
+        }
+      }
+    },
+    {
+      "id": "demo-var-weight-7d",
+      "zone_id": "demo-course",
+      "group": "@course_group_body",
+      "name": "poids_moyen_7j_demo",
+      "definition": {
+        "kind": "FORMULA",
+        "formula": "average",
+        "terms": {
+          "average": {
+            "reading": {
+              "selection": {
+                "target": {
+                  "kind": "TOOL_INSTANCE",
+                  "id": "demo-course-weight"
+                },
+                "period": {
+                  "start": {
+                    "relative": {
+                      "unit": "DAY",
+                      "offset": -6,
+                      "edge": "START"
+                    }
+                  },
+                  "end": {
+                    "relative": "NOW"
+                  }
+                }
+              },
+              "reduction": "AVERAGE",
+              "field": "data.value"
+            }
+          }
+        },
+        "field": {
+          "type": "NUMERIC",
+          "config": {
+            "decimals": 1,
+            "unit": "kg"
+          }
+        }
+      }
+    },
+    {
+      "id": "demo-var-kcal-target",
+      "zone_id": "demo-kitchen",
+      "group": "@kitchen_group_meals",
+      "name": "objectif_calorique_demo",
+      "definition": {
+        "kind": "CONSTANT",
+        "value": 2300,
+        "field": {
+          "type": "NUMERIC",
+          "config": {
+            "decimals": 0,
+            "unit": "kcal"
+          }
+        }
+      }
+    },
+    {
+      "id": "demo-var-kcal-day",
+      "zone_id": "demo-kitchen",
+      "group": "@kitchen_group_meals",
+      "name": "kcal_jour_demo",
+      "definition": {
+        "kind": "FORMULA",
+        "formula": "eaten",
+        "terms": {
+          "eaten": {
+            "reading": {
+              "selection": {
+                "target": {
+                  "kind": "TOOL_INSTANCE",
+                  "id": "demo-kitchen-meals"
+                },
+                "period": {
+                  "start": {
+                    "relative": {
+                      "unit": "DAY",
+                      "offset": 0,
+                      "edge": "START"
+                    }
+                  },
+                  "end": {
+                    "relative": "NOW"
+                  }
+                }
+              },
+              "per_entry": "quantity × food.kcal_100g ÷ 100",
+              "reduction": "SUM"
+            }
+          }
+        },
+        "field": {
+          "type": "NUMERIC",
+          "config": {
+            "decimals": 0,
+            "unit": "kcal"
+          }
+        }
+      }
+    },
+    {
+      "id": "demo-var-hours-week",
+      "zone_id": "demo-work",
+      "name": "heures_semaine_demo",
+      "definition": {
+        "kind": "FORMULA",
+        "formula": "hours",
+        "terms": {
+          "hours": {
+            "reading": {
+              "selection": {
+                "target": {
+                  "kind": "TOOL_INSTANCE",
+                  "id": "demo-work-hours"
+                },
+                "period": {
+                  "start": {
+                    "relative": {
+                      "unit": "WEEK",
+                      "offset": 0,
+                      "edge": "START"
+                    }
+                  },
+                  "end": {
+                    "relative": "NOW"
+                  }
+                }
+              },
+              "reduction": "SUM",
+              "field": "data.value"
+            }
+          }
+        }
+      }
+    }
+  ]
 }

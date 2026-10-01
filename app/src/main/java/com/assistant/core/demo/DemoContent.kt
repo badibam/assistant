@@ -72,6 +72,15 @@ class DemoContent(
             else -> value
         }
 
+        /** Whether the tool [item] reads a variable anywhere in its config: a term `{"variable": …}`. */
+        fun readsVariable(item: JSONObject): Boolean = hasVariable(item.getJSONObject("config"))
+
+        private fun hasVariable(value: Any?): Boolean = when (value) {
+            is JSONObject -> value.has("variable") || value.keys().asSequence().any { hasVariable(value.get(it)) }
+            is JSONArray -> (0 until value.length()).any { hasVariable(value.get(it)) }
+            else -> false
+        }
+
         /** [item] without its place: the parameters of its create. */
         fun paramsOf(item: JSONObject): JSONObject =
             JSONObject(item.toString()).apply { PLACE.forEach { remove(it) } }

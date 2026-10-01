@@ -83,6 +83,41 @@ class DemoContentTest {
     }
 
     @Test
+    fun `every id a config names exists, and a tool another one reads is created before it`() {
+        val content = read()
+        val tools = content.tools.map { it.getString("id") }
+        val variables = content.variables.map { it.getString("id") }
+        val created = mutableSetOf<String>()
+        // As the service creates them: the tools reading no variable, the variables, the others
+        val (readingVariables, others) = content.tools.partition { DemoContent.readsVariable(it) }
+        val order = others.map { it.getString("id") to it.getJSONObject("config") } +
+            content.variables.map { it.getString("id") to it.getJSONObject("definition") } +
+            readingVariables.map { it.getString("id") to it.getJSONObject("config") }
+        for ((id, body) in order) {
+            Regex("\"(demo-[a-z0-9-]+)\"").findAll(body.toString()).map { it.groupValues[1] }.forEach { named ->
+                assertTrue("$id names $named, which the demo does not create", named in tools || named in variables)
+                assertTrue("$id names $named, not created before it", named in created)
+            }
+            created.add(id)
+        }
+    }
+
+    @Test
+    fun `the demo shows every tool type, tracking type and tile mode, and every field type among the user's fields`() {
+        val content = read()
+        assertEquals(setOf("tracking", "goal", "chart", "journal", "list", "messages", "notes", "questionnaire", "structured"),
+            content.tools.map { it.getString("tooltype") }.toSet())
+        assertEquals(setOf("numeric", "counter", "scale", "choice", "boolean", "text", "timer", "occurrence"),
+            content.tools.filter { it.getString("tooltype") == "tracking" }.map { it.getJSONObject("config").getString("type") }.toSet())
+        assertEquals(DisplayMode.entries.map { it.name }.toSet(),
+            content.tools.map { it.getJSONObject("config").getString("display_mode") }.toSet())
+        val fieldTypes = content.tools.flatMap { tool ->
+            tool.getJSONObject("config").optJSONArray("extra_fields")?.let { f -> (0 until f.length()).map { f.getJSONObject(it).getString("type") } } ?: emptyList()
+        }.toSet()
+        assertEquals(com.assistant.core.fields.FieldType.entries.map { it.name }.toSet(), fieldTypes)
+    }
+
+    @Test
     fun `an id is given by the app alone, with the demo's prefix`() {
         assertTrue(GivenId.isAccepted("demo-course", Source.SYSTEM))
         assertFalse(GivenId.isAccepted("demo-course", Source.AI))

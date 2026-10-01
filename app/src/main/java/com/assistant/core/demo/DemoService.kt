@@ -69,12 +69,17 @@ class DemoService(private val context: Context) : ExecutableService {
         }
     }
 
-    /** The zones, placed; the variables; the tools, placed section by section. */
+    /**
+     * The zones, placed; the tools that read no variable; the variables, which read those tools;
+     * the tools that read a variable (a goal, a chart); then every tool placed, section by section.
+     */
     private suspend fun build(content: DemoContent) {
         content.zones.forEach { run("zones.create", DemoContent.paramsOf(it)) }
         placeZones(content)
+        val (readingVariables, others) = content.tools.partition { DemoContent.readsVariable(it) }
+        others.forEach { run("tools.create", DemoContent.paramsOf(it)) }
         content.variables.forEach { run("variables.create", it) }
-        content.tools.forEach { run("tools.create", DemoContent.paramsOf(it)) }
+        readingVariables.forEach { run("tools.create", DemoContent.paramsOf(it)) }
         content.tools.groupBy { it.getString("zone_id") to it.getJSONObject("config").optString("group").takeIf { g -> g.isNotEmpty() } }
             .forEach { (section, tools) ->
                 run("tools.place", JSONObject()

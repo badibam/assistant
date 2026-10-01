@@ -23,8 +23,7 @@ Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles
 - Entraînement
   - Sorties : suivi numérique (km), EXTENDED. Champs : Durée (durée), Type (choix : footing, fractionné, sortie longue, côtes), Ressenti (échelle 1–5). ≈ 3 par semaine, sortie longue de 8 à 16 km, semaine creuse au rush. Raccourcis « Footing 8 km », « Fractionné ».
   - Renfo : suivi occurrence, MINIMAL, champ Exercices (texte long). 1 à 2 par semaine.
-  - Étirements : suivi oui/non, LINE, presque chaque jour, avec des trous.
-  - Programme 10 km : suivi numérique terminé avant l'historique, `enabled: false` — un outil en sommeil qui garde ses données.
+  - Étirements : suivi oui/non, MINIMAL, presque chaque jour, avec des trous.
 - Corps
   - Poids : suivi numérique (kg), LINE, 2 à 3 pesées par semaine, de 71,8 à 69,9 avec du bruit. Champ Pesé à (heure).
   - Sommeil : suivi durée, CONDENSED, une nuit par jour, 5 h 40 à 8 h 30, champ Qualité (échelle).
@@ -70,7 +69,7 @@ Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles
 - Engrais tomates : Messages, le 1er du mois à 10 h, avec son historique ; sa description renvoie à « Engrais mis ».
 - Engrais mis : suivi occurrence, une entrée par mois — ce qui a été fait, à côté du rappel qui le demande.
 - Carnet du balcon : journal, 10 entrées.
-- Récoltes par plante : graphique, barres cumulées, FULL.
+- Récoltes par semaine : graphique, barres par semaine, FULL.
 
 ### Italien (tuile ICON) — sans groupes
 
@@ -122,6 +121,6 @@ Elles restent actives dans les outils de la démo : la démo les montre. Une dan
 ## Les garanties, en tests
 
 - Chaque config et chaque entrée de la démo passe la validation du schéma de son type d'outil.
-- Couverture : les 9 types d'outils, les 8 types de suivi, les 7 modes de tuile d'outil et les 4 de zone, chaque type de champ parmi les champs à soi, un groupe d'outils, un outil hors groupe, une automation rangée dans un groupe, un outil désactivé, un chronomètre en cours, un message non lu, un élément de liste en retard, une échéance dans la minute, un objectif en cours, une semaine d'objectif manquée.
+- Couverture : les 9 types d'outils, les 8 types de suivi, les 7 modes de tuile d'outil et les 4 de zone, chaque type de champ parmi les champs à soi, un groupe d'outils, un outil hors groupe, une automation rangée dans un groupe, un chronomètre en cours, un message non lu, un élément de liste en retard, une échéance dans la minute, un objectif en cours, une semaine d'objectif manquée.
 - Les deux fichiers de textes ont exactement les mêmes clés, et chaque clé que la structure demande existe.
 - Réinstaller ne touche à rien de ce qui n'est pas de la démo, et supprime tout ce qui l'est.
