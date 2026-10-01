@@ -296,17 +296,22 @@ private fun PageHeader(labels: List<String>, context: Context, onGo: (Int) -> Un
 }
 
 /**
- * The line of a page in its parent's: its [title], [summary] under it, and the counts of what it
- * holds; touched, it opens the page. [trailing] keeps its own gestures.
+ * The line of a page in its parent's: its [title], [summary] under it, then what the page holds
+ * where [nodes] describe [config] — the phrase of each brick, the count of each list; touched, it
+ * opens the page. [trailing] keeps its own gestures.
  */
 @Composable
 private fun PageLine(
     title: (@Composable () -> Unit)?,
     summary: @Composable () -> Unit,
-    counts: List<String>,
+    nodes: List<SettingNode>,
+    config: JSONObject,
+    context: Context,
     onOpen: () -> Unit,
     trailing: @Composable () -> Unit
 ) {
+    val counts = counts(nodes, config, context)
+    val phrases = brickPhrases(nodes, config, context)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Row(
             modifier = Modifier
@@ -318,11 +323,76 @@ private fun PageLine(
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
                 title?.invoke()
                 summary()
-                if (counts.isNotEmpty()) UI.Text(counts.joinToString("  ·  "), TextType.CAPTION, maxLines = 2)
+                phrases.forEach { UI.Text(it, TextType.CAPTION, maxLines = 2) }
+                if (counts.isNotEmpty()) UI.Text(counts.joinToString(" ${Strings.`for`(context = context).shared("list_item_summary_separator")} "), TextType.CAPTION, maxLines = 2)
             }
             UI.Icon("chevron-right", size = 20.dp)
         }
         trailing()
+    }
+}
+
+/**
+ * What each term and selection of entries [config] holds where [nodes] describe it says, in one
+ * line: "Meals › Kcal · Sum · Filters: 2", a variable's name, a constant. The names are read, so
+ * the lines come once read; a read that fails says so in its line.
+ */
+@Composable
+private fun brickPhrases(nodes: List<SettingNode>, config: JSONObject, context: Context): List<String> {
+    val bricks = nodes.shown(config).mapNotNull { node ->
+        when (node) {
+            is SettingNode.Term -> config.optJSONObject(node.name)?.let { node.label to it }
+            is SettingNode.Selection -> config.optJSONObject(node.name)?.let { node.label to JSONObject().put("selection", it) }
+            else -> null
+        }
+    }
+    val key = bricks.joinToString { it.second.toString() }
+    val phrases by androidx.compose.runtime.produceState(emptyList<String>(), key) {
+        val s = Strings.`for`(context = context)
+        value = bricks.map { (label, brick) ->
+            s.shared("settings_count").format(label, try { brickPhrase(brick, context) } catch (e: IllegalStateException) { e.message ?: "" })
+        }
+    }
+    return phrases
+}
+
+/**
+ * The phrase of one brick as stored: `{"constant"}`, `{"variable"}`, `{"reading"}`, or a selection
+ * wrapped as `{"selection"}`.
+ *
+ * @throws IllegalStateException when a name cannot be read
+ */
+private suspend fun brickPhrase(brick: JSONObject, context: Context): String {
+    val s = Strings.`for`(context = context)
+    val separator = " ${s.shared("list_item_summary_separator")} "
+    suspend fun name(kind: com.assistant.core.selection.ReferenceKind, id: String): String =
+        when (val named = com.assistant.core.fields.loadReferenceNames(listOf(com.assistant.core.selection.Reference(kind, id)), context).values.firstOrNull()) {
+            is com.assistant.core.fields.ReferenceName.Named -> named.name
+            else -> s.shared("pointer_target_deleted")
+        }
+    // The tool a selection reads, its field by its label, and the number of its filters
+    suspend fun selection(selection: JSONObject, field: String?): List<String> {
+        val target = com.assistant.core.fields.ReferenceTarget.referenceOf(selection.opt("target")) ?: return emptyList()
+        val toolId = target.id ?: return emptyList()
+        val tool = name(target.kind, toolId)
+        val fieldLabel = field?.let { path -> com.assistant.core.fields.ToolFields.filterable(toolId, context, s)[path]?.displayName ?: path }
+        val filters = selection.optJSONArray("filters")?.length() ?: 0
+        return listOfNotNull(
+            listOfNotNull(tool, fieldLabel).joinToString(" ${s.shared("settings_path_separator")} "),
+            s.shared("settings_phrase_filters").format(filters).takeIf { filters > 0 }
+        )
+    }
+    return when {
+        brick.has("constant") -> JsonUtils.toValue(brick.opt("constant").takeIf { it != JSONObject.NULL })?.toString() ?: ""
+        brick.has("variable") -> brick.optString("variable").takeIf { it.isNotEmpty() }
+            ?.let { name(com.assistant.core.selection.ReferenceKind.VARIABLE, it) } ?: ""
+        brick.has("reading") -> {
+            val reading = brick.getJSONObject("reading")
+            val parts = selection(reading.optJSONObject("selection") ?: JSONObject(), reading.optString("field").takeIf { it.isNotEmpty() }).toMutableList()
+            reading.optString("reduction").takeIf { it.isNotEmpty() }?.let { parts.add(minOf(1, parts.size), s.shared("reduction_${it.lowercase()}")) }
+            parts.joinToString(separator)
+        }
+        else -> selection(brick.getJSONObject("selection"), null).joinToString(separator)
     }
 }
 
@@ -429,7 +499,9 @@ private fun NodeForm(
                 PageLine(
                     title = { UI.Text(node.label, TextType.SUBTITLE) },
                     summary = {},
-                    counts = counts(node.nodes, config.optJSONObject(node.name) ?: JSONObject(), context),
+                    nodes = node.nodes,
+                    config = config.optJSONObject(node.name) ?: JSONObject(),
+                    context = context,
                     onOpen = { pages.open(Step.Group(node.name)) }
                 ) { onRemove?.let { UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = it) } }
             }
@@ -596,7 +668,9 @@ private fun ListForm(
                     PageLine(
                         title = null,
                         summary = { Summary(list.summary, shape.nodes, element, context) },
-                        counts = counts(shape.nodes, element, context),
+                        nodes = shape.nodes,
+                        config = element,
+                        context = context,
                         onOpen = { pages.open(Step.Element(list.name, index)) }
                     ) {
                         DragHandle()
