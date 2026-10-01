@@ -161,7 +161,6 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Grille
 
-- Suivi de type choix (« Repas », Panorama) : l'écran montre chaque option, sa pastille de couleur, ⊕ qui l'enregistre aussitôt (nommée par son libellé) et ✎ qui ouvre la fenêtre préremplie de l'option ; le choix d'une date personnalisée vaut pour elles. En EXTENDED, SQUARE et FULL, la tuile montre les options avec ⊕.
 - Les modes d'un Suivi (ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE), un Suivi de type choix compris : rien ne déborde de sa tuile ni ne défile dedans, le résumé tient sur deux lignes, le corps sur ses rangées ; un texte trop long s'arrête sur « … ».
 - Un déplacement en cours, bouton retour du téléphone : « Quitter la zone ? » ; confirmer ramène à l'accueil sans rien enregistrer.
 - Déplacer une tuile tout en bas : l'écran défile juste assez pour la garder visible au-dessus de la barre.
