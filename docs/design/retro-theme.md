@@ -23,3 +23,5 @@ Conçu à partir du 2026-09-29. Un second thème, à côté du thème par défau
 - Les nombres des palettes, au banc.
 - Des icônes au trait de 4 pixels, la graisse normale de Saylune : une autre conversion, à essayer sur la même planche.
 - Le Graphique dans ce registre : sa scène dessinée en pixels et en trames (`missing-tools.md`), avec lui.
+- Le choix du thème, de la palette et du cran de taille : aujourd'hui gardés en mémoire seulement (`CurrentTheme`), jamais enregistrés, sans écran pour les choisir. Ils entrent dans la catégorie de réglages `ui`, à côté des sons.
+- Le mode d'édition de la grille atténue les autres tuiles par transparence (`FADED` dans `GridLayout`), ce que `pixel-ui` interdit : le dire par le thème.
