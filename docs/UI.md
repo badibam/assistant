@@ -187,9 +187,9 @@ UI.Card avec type CardType.DEFAULT, contenu en Column avec padding interne 16dp.
 - **Titre principal** : UI.Text avec TextType.TITLE, fillMaxWidth et textAlign Center
 - **Titre section** : UI.Text avec TextType.SUBTITLE dans Box avec padding horizontal
 
-## Changements d'Orientation
+## Recréation de l'activité
 
-Une rotation recrée l'activité : tout `remember` repart de zéro et tout `LaunchedEffect` se rejoue. Trois règles, chacune avec l'outil qui l'applique.
+L'app est en portrait seul, mais l'activité se recrée encore (thème sombre basculé, langue changée, activité non conservée par le système) : tout `remember` repart de zéro et tout `LaunchedEffect` se rejoue. Trois règles, chacune avec l'outil qui l'applique.
 
 ### 1. rememberSaveable pour ce que l'utilisateur a produit
 
@@ -197,11 +197,11 @@ Une rotation recrée l'activité : tout `remember` repart de zéro et tout `Laun
 
 **remember** : données rechargées (`entries`, `toolInstance`), indicateurs de chargement et d'envoi (`isSaving`), messages temporaires (`errorMessage`), menus déroulants.
 
-Un type que le Bundle ne sait pas porter passe par un saver de `core/ui/StateSavers.kt` (`JsonObjectSaver`, `FieldDefinitionsSaver`, `FieldValuesSaver`, `NullablePeriodSaver`, `MessageSegmentsSaver`, `serializableSaver(serializer)` pour tout type `@Serializable`…) : `rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(...) }`. Un objet chargé qu'on édite (entité, occurrence) se garde par son id et se retrouve dans la liste chargée. C'est cet id qu'on transmet à l'écran enfant et qui décide mise à jour ou création, jamais l'objet retrouvé : la liste se recharge après la rotation, et l'objet vaut `null` en attendant. Un type non couvert → ajouter un saver dans ce fichier, pas au site d'appel.
+Un type que le Bundle ne sait pas porter passe par un saver de `core/ui/StateSavers.kt` (`JsonObjectSaver`, `FieldDefinitionsSaver`, `FieldValuesSaver`, `NullablePeriodSaver`, `MessageSegmentsSaver`, `serializableSaver(serializer)` pour tout type `@Serializable`…) : `rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(...) }`. Un objet chargé qu'on édite (entité, occurrence) se garde par son id et se retrouve dans la liste chargée. C'est cet id qu'on transmet à l'écran enfant et qui décide mise à jour ou création, jamais l'objet retrouvé : la liste se recharge après la recréation, et l'objet vaut `null` en attendant. Un type non couvert → ajouter un saver dans ce fichier, pas au site d'appel.
 
 ### 2. Charger le contenu stocké une fois par écran : rememberLoadOnce
 
-Un `LaunchedEffect` qui remplit le formulaire se rejoue après la rotation et écrase la saisie restaurée. `rememberLoadOnce(keys) { ...; true }` (`core/ui/LoadState.kt`) ne charge qu'une fois par écran — à nouveau si les clés changent — et rend un `LoadState` :
+Un `LaunchedEffect` qui remplit le formulaire se rejoue après la recréation et écrase la saisie restaurée. `rememberLoadOnce(keys) { ...; true }` (`core/ui/LoadState.kt`) ne charge qu'une fois par écran — à nouveau si les clés changent — et rend un `LoadState` :
 
 ```kotlin
 val configLoad = rememberLoadOnce(existingToolId) {
@@ -220,7 +220,7 @@ UI.ToolConfigActions(..., saveEnabled = !isSaving && configLoad == LoadState.LOA
 
 Avant un chargement ou après son échec, l'écran montre des valeurs par défaut : enregistrées, elles écraseraient le contenu stocké, sans erreur. Enregistrer (et toute action qui lit la donnée chargée) est donc désactivé hors de `LoadState.LOADED`, ou caché tant que l'écran charge.
 
-Pour revenir à la première page quand un filtre change, `OnChangedEffect("$filtre|$periode") { currentPage = 1 }` : un `LaunchedEffect` sur les filtres se déclencherait aussi à la rotation et perdrait la page restaurée.
+Pour revenir à la première page quand un filtre change, `OnChangedEffect("$filtre|$periode") { currentPage = 1 }` : un `LaunchedEffect` sur les filtres se déclencherait aussi à la recréation et perdrait la page restaurée.
 
 ## Tableaux et Listes
 
@@ -307,7 +307,7 @@ data class RelativePeriod(val offset: Int, val type: PeriodType) // Période rel
 - **Box wrappers** pour layout et interactions UI.Text
 - **Validation centralisée** via SchemaValidator
 - **isLoading pattern** pour tous états async
-- **rememberSaveable** pour états métier et navigation (rotation safe)
+- **rememberSaveable** pour états métier et navigation (survit à la recréation)
 - **remember** pour états temporaires rechargés (isLoading, données)
 
 ### À Éviter

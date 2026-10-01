@@ -271,6 +271,9 @@ Architecture centralisée pour tous les logs du projet avec tags structurés et 
 ### API Standardisée
 LogManager.schema(), .coordination(), .tracking(), .database() etc. avec niveau DEBUG par défaut, niveaux INFO/WARN/ERROR et throwable optionnel.
 
+### Écriture en base
+Une ligne va à la console tout de suite, et en base par une seule file bornée (2 000 lignes) qu'une seule tâche vide. Quand une longue transaction tient la base (un import), les lignes au-delà de la file ne vont qu'à la console ; leur nombre est écrit une fois la base libre. Une validation de schéma n'écrit que ses refus : une trace par écriture validée a saturé la mémoire d'un import de 64 000 lignes.
+
 ### Gestion d'Erreurs Robuste
 - try/catch automatique avec fallback println() pour tests unitaires
 - Throwable optionnel avec stack trace
