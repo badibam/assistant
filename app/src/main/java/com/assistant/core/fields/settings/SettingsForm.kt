@@ -218,6 +218,10 @@ private fun replaced(container: Any, keys: List<Any>, value: Any): Any {
  *   the declaration only: a name inside a group or a list element may mean something else there
  * @param rows The fields of the rows [config] describes, for the settings that choose among them;
  *   given where [config] is the whole config, never inside it
+ * @param scroll The scrolling of the screen around the form, brought back to its top when
+ *   another page opens
+ * @param root What its owner shows with the settings of the root page and no other, above them:
+ *   what is not a setting of [config] (a tool's zone)
  */
 @Composable
 fun SettingsForm(
@@ -226,7 +230,9 @@ fun SettingsForm(
     onChange: (JSONObject) -> Unit,
     context: Context,
     editors: Map<String, SettingEditor> = emptyMap(),
-    rows: RowFields? = null
+    rows: RowFields? = null,
+    scroll: androidx.compose.foundation.ScrollState? = null,
+    root: (@Composable () -> Unit)? = null
 ) {
     var trail by rememberSaveable(stateSaver = TrailSaver) { mutableStateOf(emptyList<Step>()) }
     val pages = pagesOf(nodes, config, trail)
@@ -236,35 +242,55 @@ fun SettingsForm(
     val shown = trail.take(pages.size)
     androidx.activity.compose.BackHandler(enabled = shown.isNotEmpty()) { trail = shown.dropLast(1) }
 
+    // A page opened, or left for another, shows from the top of the screen; not when it opens
+    var drawn by remember { mutableStateOf<List<Step>?>(null) }
+    androidx.compose.runtime.LaunchedEffect(shown) {
+        if (drawn != null && drawn != shown) scroll?.scrollTo(0)
+        drawn = shown
+    }
+
     val keys = shown.flatMap { it.keys }
     val page = pages.lastOrNull()
     androidx.compose.runtime.CompositionLocalProvider(
         LocalPages provides Pages(shown) { trail = it },
         LocalPlace provides rows?.let { Place(config, keys, it) }
     ) {
-        if (page == null) NodesForm(nodes, nodes, config, onChange, context, editors)
-        else Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
-            PagePath(pages.map { it.label }, context) { depth -> trail = shown.take(depth) }
-            // Owners attach editors at the top level only
-            NodesForm(page.nodes, page.nodes, page.config, { changed -> onChange(replaced(config, keys, changed) as JSONObject) }, context, emptyMap())
+        Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
+            if (page == null) {
+                root?.invoke()
+                NodesForm(nodes, nodes, config, onChange, context, editors)
+            } else {
+                PageHeader(pages.map { it.label }, context) { depth -> trail = shown.take(depth) }
+                // Owners attach editors at the top level only
+                NodesForm(page.nodes, page.nodes, page.config, { changed -> onChange(replaced(config, keys, changed) as JSONObject) }, context, emptyMap())
+            }
         }
     }
 }
 
 /**
- * The path from the root to the page open, each step going back to its page; the last, the page
- * itself, goes nowhere.
+ * The head of a page under the root: a button up one page, the page's name, and under it the
+ * path it was reached by, each step going back to its page.
+ *
+ * @param labels The pages from the root's first to the one open
+ * @param onGo The number of pages to keep open, 0 for the root
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PagePath(labels: List<String>, context: Context, onGo: (Int) -> Unit) {
+private fun PageHeader(labels: List<String>, context: Context, onGo: (Int) -> Unit) {
     val s = remember { Strings.`for`(context = context) }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(UI.Space.S), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
-        Box(modifier = Modifier.clickable { onGo(0) }) { UI.Text(s.shared("settings_path_root"), TextType.CAPTION) }
-        labels.forEachIndexed { i, label ->
-            UI.Text(s.shared("settings_path_separator"), TextType.CAPTION)
-            if (i == labels.lastIndex) UI.Text(label, TextType.SUBTITLE)
-            else Box(modifier = Modifier.clickable { onGo(i + 1) }) { UI.Text(label, TextType.CAPTION) }
+    UI.Card(type = CardType.DEFAULT, highlight = true) {
+        Row(modifier = Modifier.padding(UI.Space.S), verticalAlignment = Alignment.CenterVertically) {
+            UI.ActionButton(action = ButtonAction.BACK, display = ButtonDisplay.ICON, size = Size.M, onClick = { onGo(labels.size - 1) })
+            Column(modifier = Modifier.weight(1f).padding(start = UI.Space.S), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
+                UI.Text(labels.last(), TextType.SUBTITLE)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(UI.Space.S), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
+                    (listOf(s.shared("settings_path_root")) + labels.dropLast(1)).forEachIndexed { depth, label ->
+                        if (depth > 0) UI.Text(s.shared("settings_path_separator"), TextType.CAPTION)
+                        Box(modifier = Modifier.clickable { onGo(depth) }) { UI.Text(label, TextType.CAPTION) }
+                    }
+                }
+            }
         }
     }
 }

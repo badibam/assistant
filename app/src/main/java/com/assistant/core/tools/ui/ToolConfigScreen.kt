@@ -79,6 +79,9 @@ fun ToolConfigScreen(
     // once the service refused it for that; and the values the user gives them
     var pendingFill by rememberSaveable { mutableStateOf<Map<String, Int>?>(null) }
     var fill by rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject()) }
+    // The config as it was before any change, and whether leaving with changes is being asked
+    var asLoaded by rememberSaveable { mutableStateOf<String?>(null) }
+    var leaving by rememberSaveable { mutableStateOf(false) }
 
     val configLoad = rememberLoadOnce(existingToolId) {
         if (existingToolId == null) return@rememberLoadOnce true
@@ -140,6 +143,15 @@ fun ToolConfigScreen(
         }
     }
 
+    LaunchedEffect(configLoad) {
+        if (configLoad == LoadState.LOADED && asLoaded == null) asLoaded = config.toString()
+    }
+    // Compared as values: an object rebuilt by the form may hold its keys in another order
+    val changed = asLoaded?.let { JsonUtils.toMap(config) != JsonUtils.toMap(JSONObject(it)) || currentZoneId != zoneId } == true
+    fun leave() = if (changed) leaving = true else onCancel()
+    // Before the form's own, which goes up its pages first
+    androidx.activity.compose.BackHandler(enabled = changed) { leaving = true }
+
     if (configLoad == LoadState.LOADING) {
         UI.Text(s.shared("tools_loading_config"), TextType.BODY)
         return
@@ -150,38 +162,40 @@ fun ToolConfigScreen(
         "group" to groupEditor(groups, s.shared("label_group"))
     )
 
+    val scroll = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(UI.Space.L)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(scroll),
         verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.PageHeader(
             title = if (isEditing) s.shared("action_configure") else s.shared("action_create"),
             subtitle = toolType.getDisplayName(context),
             leftButton = ButtonAction.BACK,
-            onLeftClick = onCancel
+            onLeftClick = { leave() }
         )
 
-        // The zone is the tool's place, not a setting of its config: offered once the tool exists
-        if (isEditing && zones.isNotEmpty()) {
-            UI.FormSelection(
-                required = false,
-                label = s.shared("label_zone"),
-                options = zones.map { it.second },
-                selected = zones.find { it.first == currentZoneId }?.second ?: "",
-                onSelect = { name -> zones.find { it.second == name }?.let { currentZoneId = it.first } }
-            )
-        }
-
         // Values given for a former version of the change answer nothing about this one
-        SettingsForm(nodes, config, { config = it; fill = JSONObject() }, context, editors, rows = toolType.getRowFields())
+        SettingsForm(nodes, config, { config = it; fill = JSONObject() }, context, editors, rows = toolType.getRowFields(), scroll = scroll) {
+            // The zone is the tool's place, not a setting of its config: offered once the tool
+            // exists, on the root page alone
+            if (isEditing && zones.isNotEmpty()) {
+                UI.FormSelection(
+                    required = false,
+                    label = s.shared("label_zone"),
+                    options = zones.map { it.second },
+                    selected = zones.find { it.first == currentZoneId }?.second ?: "",
+                    onSelect = { name -> zones.find { it.second == name }?.let { currentZoneId = it.first } }
+                )
+            }
+        }
 
         UI.ToolConfigActions(
             isEditing = isEditing,
             onSave = { save(confirmed = false) },
-            onCancel = onCancel,
+            onCancel = { leave() },
             // The button asks for confirmation itself
             onDelete = existingToolId?.let { toolId ->
                 {
@@ -194,6 +208,14 @@ fun ToolConfigScreen(
             },
             saveEnabled = !isSaving && configLoad == LoadState.LOADED
         )
+    }
+
+    if (leaving) UI.Dialog(
+        type = com.assistant.core.ui.DialogType.CONFIRM,
+        onConfirm = { leaving = false; onCancel() },
+        onCancel = { leaving = false }
+    ) {
+        UI.Text(s.shared("settings_leave_unsaved"), TextType.BODY)
     }
 
     pendingFill?.let { missing ->
