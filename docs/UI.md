@@ -257,11 +257,8 @@ UI.Toast avec context, message et Duration (SHORT/LONG) pour messages temporaire
 
 ## Thèmes et Personnalisation
 
-### Palette Personnalisée
-Système de thème avec palette personnalisée branchée sur Material Design.
-- **Formes** : Définies au niveau thème pour boutons et cards
-- **Couleurs** : Palette Material adaptée
-- **Typography** : Cohérente via TextType enum
+### Thèmes
+Deux thèmes, inscrits dans `ThemeScanner` : le défaut (Material) et le rétro (pixel art, `docs/design/retro-theme.md`), qui dessine tout lui-même. Chacun implémente `ThemeContract` et nomme lui-même ce qui lui appartient, son nom et ses palettes, dans ses propres textes (`themes/<id>/strings.xml`, lus par `s.theme()`) : le cœur n'en connaît aucun. L'utilisateur choisit l'apparence (une palette d'un thème) et le cran de taille (−1 à +2, qu'un thème au pixel applique à son facteur entier) dans Réglages › Interface ; `AppConfigManager` les applique à `CurrentTheme` à chaque lecture des réglages. La grille des tuiles prend du thème la taille d'une case (`gridCellPx`) et l'écart entre deux cases (`gridGapPx`, nul dans le thème par défaut, qui garde l'écart dans ses tuiles).
 
 ### Espacement Standard
 - **Entre sections** : spacedBy(UI.Space.L)
