@@ -23,6 +23,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:screenOrientation="portrait"
             android:label="@string/shared_app_name"
             android:theme="@style/Theme.AssistantPersonnel">
             <intent-filter>

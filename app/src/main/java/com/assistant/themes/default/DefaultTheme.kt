@@ -1323,20 +1323,10 @@ object DefaultTheme : ThemeContract {
         val offsetMs = timezone.rules.getOffset(java.time.Instant.ofEpochMilli(selectedDateMs)).totalSeconds * 1000L
         val utcDate = selectedDateMs + offsetMs
         
-        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-        val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        
-        // Use key() to recreate state on orientation change
-        val datePickerState = key(isLandscape) {
-            rememberDatePickerState(
-                initialSelectedDateMillis = utcDate,
-                initialDisplayMode = if (isLandscape) {
-                    androidx.compose.material3.DisplayMode.Input // Mode saisie plus compact
-                } else {
-                    androidx.compose.material3.DisplayMode.Picker // Mode roue normal
-                }
-            )
-        }
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = utcDate,
+            initialDisplayMode = androidx.compose.material3.DisplayMode.Picker
+        )
         
         DatePickerDialog(
             onDismissRequest = onDismiss,
@@ -1375,22 +1365,16 @@ object DefaultTheme : ThemeContract {
         onTimeSelected: (String) -> Unit,
         onDismiss: () -> Unit
     ) {
-        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-        val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        
         // Same contract for the time: "" means nothing chosen, and the picker opens on now.
         val (hour, minute) = DateUtils.parseTime(selectedTime)
             ?: java.time.ZonedDateTime.now(AppConfigManager.getDateTimeConfig().getZoneId())
                 .let { Pair(it.hour, it.minute) }
         
-        // Use key() to recreate state on orientation change
-        val timePickerState = key(isLandscape) {
-            rememberTimePickerState(
-                initialHour = hour,
-                initialMinute = minute,
-                is24Hour = true // Format 24h plus compact
-            )
-        }
+        val timePickerState = rememberTimePickerState(
+            initialHour = hour,
+            initialMinute = minute,
+            is24Hour = true
+        )
         
         AlertDialog(
             onDismissRequest = onDismiss,
@@ -1414,15 +1398,7 @@ object DefaultTheme : ThemeContract {
                     androidx.compose.material3.Text(com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current).shared("action_cancel"))
                 }
             },
-            text = {
-                if (isLandscape) {
-                    // Landscape: the compact TimePicker layout
-                    TimeInput(state = timePickerState)
-                } else {
-                    // Portrait: the standard wheel TimePicker
-                    TimePicker(state = timePickerState)
-                }
-            }
+            text = { TimePicker(state = timePickerState) }
         )
     }
     

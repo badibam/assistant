@@ -7,7 +7,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,7 +53,6 @@ fun NotesScreen(
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     val s = remember { Strings.`for`(tool = "notes", context = context) }
-    val configuration = LocalConfiguration.current
     val coroutineScope = rememberCoroutineScope()
 
     // State
@@ -191,9 +189,6 @@ fun NotesScreen(
             errorMessage = null
         }
     }
-
-    // Determine grid columns based on orientation
-    val columns = if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) 2 else 1
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Scrollable content (header + cards)
