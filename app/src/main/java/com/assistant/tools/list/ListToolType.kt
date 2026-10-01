@@ -25,7 +25,7 @@ import org.json.JSONObject
  * manual order, kept by the service (ManualOrder), and when it was checked. Checked is having a
  * date; unchecking removes it.
  *
- * With due dates on (docs/design/list-due-dates.md), an item may also carry a due date in its
+ * With due dates on, an item may also carry a due date in its
  * data; the scheduler notifies it once when it comes and marks it in the state, and an item so
  * marked and still unchecked waits for the user.
  */

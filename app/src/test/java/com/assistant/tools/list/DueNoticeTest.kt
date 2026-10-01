@@ -10,9 +10,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Covers the due dates of a list (docs/design/list-due-dates.md): which items the scheduler
- * notifies, the mark of a notification cleared when the due date it names is no longer the
- * item's, and nothing waiting in a list without due dates.
+ * Covers the due dates of a list: which items the scheduler notifies, the mark of a notification
+ * cleared when the due date it names is no longer the item's, and a list without due dates, a
+ * stored one without the setting included, declaring none and leaving nothing waiting.
  */
 class DueNoticeTest {
 
@@ -78,6 +78,13 @@ class DueNoticeTest {
         assertFalse(state.has(ListToolType.DUE_NOTIFIED))
         assertEquals(1, state.getInt(ManualOrder.POSITION))
         assertEquals(0, JSONObject(settled.getValue("b").state!!).getInt(ManualOrder.POSITION))
+    }
+
+    @Test
+    fun `a list has due dates only once turned on, a list stored without the setting having none`() {
+        assertFalse(ListToolType.hasDueDates(JSONObject()))
+        assertFalse(ListToolType.hasDueDates(JSONObject().put(ListToolType.DUE_DATES, false)))
+        assertTrue(ListToolType.hasDueDates(JSONObject().put(ListToolType.DUE_DATES, true)))
     }
 
     @Test

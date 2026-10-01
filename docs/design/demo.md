@@ -52,7 +52,7 @@ Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles
 ### Travail (tuile CONDENSED) — sans groupes
 
 - Heures : suivi durée par chronomètre, EXTENDED. L'entrée porte le client (Studio Brume, Librairie Le Rameau, Mairie de Villeurbanne). Champs : Projet (choix), Facturable (oui/non). 2 à 4 sessions par jour ouvré, la semaine de rush à 50 h. Un chronomètre tourne, lancé 40 min avant l'installation, sur Studio Brume. Un raccourci par client.
-- Tâches : liste avec échéances (`docs/design/list-due-dates.md`), 11 tâches dont 3 cochées. « Relancer la Librairie », échue ce matin, en retard → en attente ; « Rappeler Studio Brume », à l'installation + 1 min — la notification de la première minute ; d'autres avec une échéance à venir ou sans.
+- Tâches : liste avec échéances, 11 tâches dont 3 cochées. « Relancer la Librairie », échue ce matin, en retard → en attente ; « Rappeler Studio Brume », à l'installation + 1 min — la notification de la première minute ; d'autres avec une échéance à venir ou sans.
 - Carnet de projet : journal, ≈ 20 entrées dans la voix de Camille.
 - Point facturation : Messages (un outil = un flux et son planning), chaque lundi à 9 h, avec son historique d'envois.
 - Heures par client : graphique, barres empilées par semaine, CONDENSED.
