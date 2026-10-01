@@ -10,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
@@ -304,8 +303,8 @@ fun ZoneScreen(
             .weight(1f)
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         // Header with back button, zone title and configure zone button
         UI.PageHeader(
@@ -504,7 +503,7 @@ fun ZoneScreen(
             onConfirm = { confirmLeave = false; gridEditor.cancel(); onBack() },
             onCancel = { confirmLeave = false }
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                 UI.Text(s.shared("grid_leave_title"), TextType.SUBTITLE)
                 UI.Text(s.shared("grid_leave_message"), TextType.BODY)
             }
@@ -686,7 +685,7 @@ private fun GroupSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(UI.Space.M),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -703,8 +702,8 @@ private fun GroupSection(
     if (showAvailableToolsForGroup == groupName && !editor.anyEditing) {
         UI.Card(type = CardType.DEFAULT) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 UI.Text(
                     text = s.shared("message_available_tool_types"),
@@ -827,7 +826,7 @@ private fun GroupSection(
     }
 
     // Spacer after each group
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(UI.Space.XL))
 }
 
 /**
@@ -872,7 +871,7 @@ private fun UngroupedSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(UI.Space.M),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -889,8 +888,8 @@ private fun UngroupedSection(
     if (showAvailableToolsForGroup == "" && !editor.anyEditing) {
         UI.Card(type = CardType.DEFAULT) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 UI.Text(
                     text = s.shared("message_available_tool_types"),

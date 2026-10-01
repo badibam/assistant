@@ -54,6 +54,14 @@ TIMEZONE_CHECK = ROOT / "scripts" / "check_timezone.py"
 # screen, and nothing else fails.
 STRING_KEYS_CHECK = ROOT / "scripts" / "check_string_keys.py"
 
+# And on the pixel font: the app's copy of Cartouche against the font project it comes from,
+# where a glyph drawn after the copy would otherwise never reach the app.
+FONT_COPY_CHECK = ROOT / "scripts" / "check_font_copy.py"
+
+# And on spaces: a space a screen writes in dp looks right in the default theme and falls
+# between two cells in the retro one, so every space is named (UI.Space) and the theme sizes it.
+SPACING_CHECK = ROOT / "scripts" / "check_spacing.py"
+
 
 def gradle(*args):
     """Delegate to the wrapper, never to a system-wide gradle."""
@@ -309,6 +317,24 @@ def string_keys_check():
     return process.returncode
 
 
+def font_copy_check():
+    """Report any Cartouche file the app carries that differs from the font project's.
+
+    Returns the script's exit code, 0 when the copy is byte for byte the latest.
+    """
+    process = subprocess.run([sys.executable, str(FONT_COPY_CHECK)], cwd=ROOT)
+    return process.returncode
+
+
+def spacing_check():
+    """Report any space a screen writes in dp rather than naming it with UI.Space.
+
+    Returns the script's exit code, 0 when every space is named.
+    """
+    process = subprocess.run([sys.executable, str(SPACING_CHECK)], cwd=ROOT)
+    return process.returncode
+
+
 def task_test():
     """Run the unit tests and say how many ran, after checking the naming rule.
 
@@ -318,7 +344,7 @@ def task_test():
     each case here is a check that would otherwise mean installing the build on a phone
     and reproducing the situation by hand.
 
-    The key-case, prompt, locale, timezone and string-key checks come first and cost a fraction of a second. They
+    The key-case, prompt, locale, timezone, string-key, font-copy and spacing checks come first and cost a fraction of a second. They
     are not tests -- they read the sources rather than running them -- but they answer the
     same question: is this tree fit to commit.
     """
@@ -327,6 +353,8 @@ def task_test():
     locales = locale_check()
     timezones = timezone_check()
     string_keys = string_keys_check()
+    font_copy = font_copy_check()
+    spacing = spacing_check()
     # Noted before the run, so that results left by the run before cannot be read as this
     # one's. A filesystem timestamp can lag by a second, hence the margin.
     started = time.time() - 1
@@ -337,7 +365,7 @@ def task_test():
     # gradle skipped the task because nothing had changed. Otherwise there is no answer.
     if tally is None or (not tally[3] and code != 0):
         print("no results from this run -- it did not get as far as the tests")
-        return code or key_case or prompt or locales or timezones or string_keys or 1
+        return code or key_case or prompt or locales or timezones or string_keys or font_copy or spacing or 1
 
     tests, failures, errors, fresh = tally
     bad = failures + errors
@@ -347,10 +375,10 @@ def task_test():
         print(f"report: {TEST_REPORT}")
     # The checks print first, and a green test count below them reads as a verdict. Say
     # again, last, that the tree is not fit to commit.
-    failed_checks = sum(1 for c in (key_case, prompt, locales, timezones, string_keys) if c)
+    failed_checks = sum(1 for c in (key_case, prompt, locales, timezones, string_keys, font_copy, spacing) if c)
     if failed_checks:
         print(f"{failed_checks} source check(s) failed -- see above")
-    return code or key_case or prompt or locales or timezones or string_keys
+    return code or key_case or prompt or locales or timezones or string_keys or font_copy or spacing
 
 
 def task_strings():

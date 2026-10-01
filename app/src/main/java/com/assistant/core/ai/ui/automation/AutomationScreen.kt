@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.ai.domain.Phase
 import com.assistant.core.ai.orchestration.AIOrchestrator
@@ -264,8 +263,8 @@ fun AutomationScreen(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         // Header
         UI.PageHeader(
@@ -280,8 +279,8 @@ fun AutomationScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                        .padding(UI.Space.M),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
                 ) {
                     UI.Text(
                         text = s.shared("automation_next_execution_title"),
@@ -297,9 +296,9 @@ fun AutomationScreen(
 
         // Filters row
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.L),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = UI.Space.L)
         ) {
             // Period filter dropdown
             Box(modifier = Modifier.weight(1f)) {
@@ -393,7 +392,7 @@ fun AutomationScreen(
         // Loading state
         if (isLoading && sessions.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(UI.Space.L),
                 contentAlignment = Alignment.Center
             ) {
                 UI.CenteredText(s.shared("tools_loading"), TextType.BODY)
@@ -403,7 +402,7 @@ fun AutomationScreen(
         // Empty state
         if (!isLoading && sessions.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(UI.Space.L),
                 contentAlignment = Alignment.Center
             ) {
                 UI.CenteredText(s.shared("automation_no_executions"), TextType.BODY)
@@ -413,8 +412,8 @@ fun AutomationScreen(
         // Execution list
         if (sessions.isNotEmpty()) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.M)
             ) {
                 sessions.forEach { session ->
                     // Check if this session is currently active

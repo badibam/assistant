@@ -39,9 +39,34 @@ interface ThemeContract {
     /** Who draws this theme's icons: Lucide, or the theme itself, all of them. */
     val iconSource: com.assistant.core.icons.IconSource
 
-    /** How wide a zone's tool grid grows at most; a wider screen centers it (ToolGrid). */
-    val gridMaxWidth: Dp
-    
+    /**
+     * The side of a cell of the tile grid (GridLayout), in pixels, given the width there is for
+     * its four columns, in pixels; the grid is centered in what it leaves. Composable, as a size
+     * in whole cells of the font depends on the screen's density.
+     */
+    @Composable
+    fun gridCellPx(availableWidthPx: Int): Int
+
+    /**
+     * The raw resource of the sound that answers [signal] in this theme, or null for silence
+     * (UISounds plays it).
+     */
+    fun sound(signal: com.assistant.core.ui.sound.UISignal): Int?
+
+    /**
+     * How far a tool's tile frame (ToolCardContainer) keeps its content from the edge of its
+     * cells, on each side, in [displayMode]: the space between tiles and the frame's own margin.
+     */
+    @Composable
+    fun tileFrame(displayMode: DisplayMode): Dp
+
+    /**
+     * The size of a named space (UI.Space). Composable, as a size in whole cells depends on the
+     * screen's density.
+     */
+    @Composable
+    fun spacing(spacing: com.assistant.core.ui.Spacing): Dp
+
     // =====================================
     // LAYOUTS: USE COMPOSE DIRECTLY
     // =====================================
@@ -102,6 +127,10 @@ interface ThemeContract {
         color: androidx.compose.ui.graphics.Color,
         size: Dp
     )
+
+    /** The color of a state (UI.StatusIndicator, a warning's icon), in the current palette. */
+    @Composable
+    fun statusColor(status: com.assistant.core.ui.StatusColor): androidx.compose.ui.graphics.Color
 
     /**
      * A short colored label: an option of a CHOICE field whose config gives it a color.
@@ -231,6 +260,17 @@ interface ThemeContract {
     // SPECIALIZED CONTAINERS (appearance only)
     // =====================================
     
+    /** A view over the whole screen (the app's root, FullScreenDialog), on the theme's background. */
+    @Composable
+    fun FullScreen(content: @Composable () -> Unit)
+
+    /**
+     * The band across the top of a full-screen view, holding what its caller puts in a row: a
+     * title, a state, buttons.
+     */
+    @Composable
+    fun HeaderBar(content: @Composable RowScope.() -> Unit)
+
     /** A zone's tile, filling the cells the home screen's grid gives it, as a tool's does. */
     @Composable
     fun ZoneCardContainer(
@@ -324,6 +364,25 @@ interface ThemeContract {
         checked: Boolean,
         onCheckedChange: (Boolean) -> Unit,
         label: String?
+    )
+
+    /**
+     * An on/off setting that takes effect as it is switched (a session's validation), [label]
+     * across the width at the start and the switch at the end.
+     */
+    @Composable
+    fun Switch(
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        label: String
+    )
+
+    /** A row of tabs across the width, one per label, [selected] the index of the one shown. */
+    @Composable
+    fun Tabs(
+        labels: List<String>,
+        selected: Int,
+        onSelect: (Int) -> Unit
     )
     
     /**

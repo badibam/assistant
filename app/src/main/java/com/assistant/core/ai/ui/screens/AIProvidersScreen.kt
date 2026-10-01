@@ -11,7 +11,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
 import com.assistant.core.coordinator.Coordinator
@@ -219,8 +218,8 @@ fun AIProvidersScreen(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         // Header
         UI.PageHeader(
@@ -261,8 +260,8 @@ fun AIProvidersScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                .padding(UI.Space.L),
+                            horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                         ) {
                             // Main content (clickable)
@@ -297,11 +296,11 @@ fun AIProvidersScreen(
                                     )
                             ) {
                                 Column(
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                                 ) {
                                     // Provider name
                                     Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                                     ) {
                                         // Active indicator
@@ -316,7 +315,7 @@ fun AIProvidersScreen(
                                     // Status row
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(UI.Space.L)
                                     ) {
                                         // Configuration status
                                         val configStatus = if (provider.isConfigured) {

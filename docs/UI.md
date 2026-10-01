@@ -9,7 +9,13 @@ Guide des patterns et composants UI pour maintenir cohérence et simplicité.
 **Métier** : Composants spécialisés (ZoneCard, ToolCard)
 
 ### Layout Standard
-Column avec fillMaxWidth, padding vertical 16dp et espacement automatique entre éléments.
+Column avec fillMaxWidth, padding vertical `UI.Space.L` et espacement automatique entre éléments.
+
+### Espacements
+Un écran n'écrit jamais un espacement en dp : il le nomme, `UI.Space.XS`, `S`, `M`, `L` ou `XL`, et le thème en donne la taille (`ThemeContract.spacing`) — 4, 8, 12, 16 et 24 dp pour le thème par défaut, des cellules entières pour le thème rétro. Sont des espacements les arguments de `padding()`, `Arrangement.spacedBy()` et `PaddingValues()`, la hauteur ou la largeur d'un `Spacer`, et un argument `spacing =` ; `scripts/check_spacing.py` refuse un dp à ces endroits, hors du code des thèmes. Une taille (d'icône, de bloc) n'est pas un espacement.
+
+### Sons de l'interface
+Un composant `UI.*` envoie un signal de la liste fermée `UISignal` (confirmer, entrer, revenir, ouvrir, fermer, cocher, cran, bout de liste, refus) ; le thème dit quel son y répond (`ThemeContract.sound`, null pour le silence) et `UISounds` le joue sur une seule piste, si le réglage « Sons de l'interface » (catégorie `ui`) est activé. Un écran ne joue jamais de son lui-même. Un élément désactivé reçoit encore le toucher, pour le seul son de refus. Le bout d'une liste s'entend à la racine de chaque fenêtre (`Modifier.scrollEndSound()`), jamais liste par liste : une nouvelle fenêtre de dialogue faite à la main le pose à sa racine.
 
 ### Scroll Obligatoire pour Tous les Conteneurs
 **Règle** : Tous les conteneurs de contenu (écrans, dialogues, formulaires) DOIVENT avoir un scroll vertical sur leur Column principale.
@@ -22,8 +28,8 @@ Column(
     modifier = Modifier
         .fillMaxWidth()
         .verticalScroll(rememberScrollState())
-        .padding(vertical = 16.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp)
+        .padding(vertical = UI.Space.L),
+    verticalArrangement = Arrangement.spacedBy(UI.Space.L)
 ) {
     // Contenu scrollable
 }
@@ -53,7 +59,7 @@ UI.PageHeader supporte titre, sous-titre optionnel, icône, boutons gauche/droit
 ## Système de Texte Simplifié
 
 ### UI.Text - 4 paramètres maximum
-Accepte text, type (TITLE, SUBTITLE, BODY, LABEL, SMALL), fillMaxWidth et textAlign optionnel.
+Accepte text, type (TITLE, SUBTITLE, BODY, STRONG, CAPTION, LABEL, ERROR, WARNING), fillMaxWidth et textAlign optionnel. STRONG est un texte courant qui doit ressortir de ses voisins (un message non lu) : en gras dans le thème par défaut.
 
 ### Séparation Layout/Contenu
 **Principe** : UI.Text pour le rendu, Box+Modifier pour layout et interactions.
@@ -62,7 +68,7 @@ Accepte text, type (TITLE, SUBTITLE, BODY, LABEL, SMALL), fillMaxWidth et textAl
 - Pattern clickable avec Box pour interactions
 
 ### Pattern Row Standardisé
-Row avec fillMaxWidth, padding vertical 4dp, espacement 8dp entre colonnes.
+Row avec fillMaxWidth, padding vertical `UI.Space.XS`, espacement `UI.Space.S` entre colonnes.
 - Colonnes avec weight + Box pour alignement précis
 - **Usage** : Tableaux, listes avec actions, formulaires multi-colonnes
 
@@ -181,7 +187,7 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 ## Cards et Conteneurs
 
 ### Cards Pleine Largeur
-UI.Card avec type CardType.DEFAULT, contenu en Column avec padding interne 16dp.
+UI.Card avec type CardType.DEFAULT, contenu en Column avec padding interne `UI.Space.L`.
 
 ### Titres et Sections
 - **Titre principal** : UI.Text avec TextType.TITLE, fillMaxWidth et textAlign Center
@@ -252,10 +258,10 @@ Système de thème avec palette personnalisée branchée sur Material Design.
 - **Typography** : Cohérente via TextType enum
 
 ### Espacement Standard
-- **Entre sections** : spacedBy(16.dp)
-- **Vertical screens** : padding(vertical = 16.dp)
-- **Cards internes** : padding(16.dp)
-- **Sections hors cards** : padding(horizontal = 16.dp)
+- **Entre sections** : spacedBy(UI.Space.L)
+- **Vertical screens** : padding(vertical = UI.Space.L)
+- **Cards internes** : padding(UI.Space.L)
+- **Sections hors cards** : padding(horizontal = UI.Space.L)
 
 ## Pattern Loading/Error Standard
 

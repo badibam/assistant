@@ -1,4 +1,8 @@
 package com.assistant.core.ui
+
+import com.assistant.core.ui.sound.UISignal
+import com.assistant.core.ui.sound.rememberUISound
+import com.assistant.core.ui.sound.signal
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
@@ -6,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.TextRange
@@ -37,7 +42,19 @@ object UI {
     // =====================================
     // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
     // NO wrappers - direct access for maximum flexibility
-    
+
+    /**
+     * The spaces a screen puts between and around its elements, sized by the theme: never a dp
+     * written in a screen, which a retro theme could not turn into whole cells.
+     */
+    object Space {
+        val XS: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.XS)
+        val S: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.S)
+        val M: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.M)
+        val L: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.L)
+        val XL: Dp @Composable get() = CurrentTheme.current.spacing(Spacing.XL)
+    }
+
     // =====================================
     // INTERACTIVE
     // =====================================
@@ -49,7 +66,12 @@ object UI {
         state: ComponentState = ComponentState.NORMAL,
         onClick: () -> Unit,
         content: @Composable () -> Unit
-    ) = CurrentTheme.current.Button(type, size, state, onClick, content)
+    ) {
+        val sound = rememberUISound()
+        RefusedWhenDisabled(state != ComponentState.DISABLED) {
+            CurrentTheme.current.Button(type, size, state, { sound(UISignal.CONFIRM); onClick() }, content)
+        }
+    }
     
     @Composable
     fun ActionButton(
@@ -62,7 +84,29 @@ object UI {
         confirmMessage: String? = null,        // Custom message (null = default message)
         active: Boolean = false,               // Switched on while what it opens lasts
         onClick: () -> Unit
-    ) = CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, active, onClick)
+    ) {
+        val sound = rememberUISound()
+        RefusedWhenDisabled(enabled) {
+            CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, active,
+                { sound(action.signal()); onClick() })
+        }
+    }
+
+    /**
+     * What a disabled element is wrapped in: a touch on it is heard, and answered by the refusal
+     * sound, in every theme (a touch with no answer reads as a screen that saw nothing). The
+     * wrapper is there enabled too, so that an element enabled and disabled in turn stays the same.
+     */
+    @Composable
+    private fun RefusedWhenDisabled(enabled: Boolean, content: @Composable () -> Unit) {
+        val sound = rememberUISound()
+        Box(modifier = Modifier.clickable(
+            enabled = !enabled,
+            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+            indication = null,
+            onClick = { sound(UISignal.REFUSE) }
+        )) { content() }
+    }
     
     // =====================================
     // DISPLAY
@@ -103,14 +147,26 @@ object UI {
      * StatusIndicator - Colored circular indicator for status display
      * Used to show status (success/warning/error) with themed colors
      *
-     * @param color The color of the indicator (from MaterialTheme.colorScheme)
+     * @param status The state it shows, which the theme colors
      * @param size The diameter of the circular indicator (default 8dp)
      */
     @Composable
     fun StatusIndicator(
-        color: androidx.compose.ui.graphics.Color,
+        status: StatusColor,
         size: Dp = 8.dp
-    ) = CurrentTheme.current.StatusIndicator(color, size)
+    ) = CurrentTheme.current.StatusIndicator(CurrentTheme.current.statusColor(status), size)
+
+    /** The color of a state in the current theme, for what is not a StatusIndicator (an icon's tint). */
+    @Composable
+    fun statusColor(status: StatusColor): androidx.compose.ui.graphics.Color = CurrentTheme.current.statusColor(status)
+
+    /** A view over the whole screen, on the theme's background (FullScreenDialog opens one). */
+    @Composable
+    fun FullScreen(content: @Composable () -> Unit) = CurrentTheme.current.FullScreen(content)
+
+    /** The band across the top of a full-screen view: a title, a state, buttons, in a row. */
+    @Composable
+    fun HeaderBar(content: @Composable RowScope.() -> Unit) = CurrentTheme.current.HeaderBar(content)
 
     /**
      * A short colored label, such as an option of a colored CHOICE field.
@@ -197,7 +253,12 @@ object UI {
         cancelText: String? = null,
         onConfirm: () -> Unit,
         onDismiss: () -> Unit
-    ) = CurrentTheme.current.ConfirmDialog(title, message, confirmText, cancelText, onConfirm, onDismiss)
+    ) {
+        val sound = rememberUISound()
+        LaunchedEffect(Unit) { sound(UISignal.OPEN) }
+        CurrentTheme.current.ConfirmDialog(title, message, confirmText, cancelText,
+            { sound(UISignal.CONFIRM); onConfirm() }, { sound(UISignal.CLOSE); onDismiss() })
+    }
 
     // =====================================
     // SYSTEM
@@ -242,21 +303,33 @@ object UI {
         onCancel: () -> Unit = { },
         confirmEnabled: Boolean = true,
         content: @Composable () -> Unit
-    ) = CurrentTheme.current.Dialog(type, onConfirm, onCancel, confirmEnabled, content)
+    ) {
+        val sound = rememberUISound()
+        LaunchedEffect(Unit) { sound(UISignal.OPEN) }
+        CurrentTheme.current.Dialog(type, { sound(UISignal.CONFIRM); onConfirm() }, { sound(UISignal.CLOSE); onCancel() }, confirmEnabled, content)
+    }
     
     @Composable
     fun DatePicker(
         selectedDate: String,
         onDateSelected: (String) -> Unit,
         onDismiss: () -> Unit
-    ) = CurrentTheme.current.DatePicker(selectedDate, onDateSelected, onDismiss)
+    ) {
+        val sound = rememberUISound()
+        LaunchedEffect(Unit) { sound(UISignal.OPEN) }
+        CurrentTheme.current.DatePicker(selectedDate, { sound(UISignal.CONFIRM); onDateSelected(it) }, { sound(UISignal.CLOSE); onDismiss() })
+    }
     
     @Composable
     fun TimePicker(
         selectedTime: String,
         onTimeSelected: (String) -> Unit,
         onDismiss: () -> Unit
-    ) = CurrentTheme.current.TimePicker(selectedTime, onTimeSelected, onDismiss)
+    ) {
+        val sound = rememberUISound()
+        LaunchedEffect(Unit) { sound(UISignal.OPEN) }
+        CurrentTheme.current.TimePicker(selectedTime, { sound(UISignal.CONFIRM); onTimeSelected(it) }, { sound(UISignal.CLOSE); onDismiss() })
+    }
     
     // =====================================
     // UNIFIED FORMS
@@ -360,7 +433,32 @@ object UI {
         checked: Boolean,
         onCheckedChange: (Boolean) -> Unit,
         label: String? = null
-    ) = CurrentTheme.current.Checkbox(checked, onCheckedChange, label)
+    ) {
+        val sound = rememberUISound()
+        CurrentTheme.current.Checkbox(checked, { sound(UISignal.TOGGLE); onCheckedChange(it) }, label)
+    }
+
+    /** An on/off setting that takes effect as it is switched, its label at the start. */
+    @Composable
+    fun Switch(
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        label: String
+    ) {
+        val sound = rememberUISound()
+        CurrentTheme.current.Switch(checked, { sound(UISignal.TOGGLE); onCheckedChange(it) }, label)
+    }
+
+    /** A row of tabs, one per label; [selected] is the index of the one shown. */
+    @Composable
+    fun Tabs(
+        labels: List<String>,
+        selected: Int,
+        onSelect: (Int) -> Unit
+    ) {
+        val sound = rememberUISound()
+        CurrentTheme.current.Tabs(labels, selected, { if (it != selected) sound(UISignal.TOGGLE); onSelect(it) })
+    }
     
     /**
      * A yes/no answer, [value] null while there is none: touching the chosen answer again
@@ -376,7 +474,8 @@ object UI {
         falseLabel: String? = null
     ) {
         val s = com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current)
-        CurrentTheme.current.BooleanField(label, value, onValueChange, trueLabel ?: s.shared("label_yes"), falseLabel ?: s.shared("label_no"),
+        val sound = rememberUISound()
+        CurrentTheme.current.BooleanField(label, value, { sound(UISignal.TOGGLE); onValueChange(it) }, trueLabel ?: s.shared("label_yes"), falseLabel ?: s.shared("label_no"),
             required, emptiable = !required, compact = false)
     }
 
@@ -394,7 +493,9 @@ object UI {
         falseLabel: String? = null
     ) {
         val s = com.assistant.core.strings.Strings.`for`(context = androidx.compose.ui.platform.LocalContext.current)
-        CurrentTheme.current.BooleanField(label, value, { it?.let(onValueChange) }, trueLabel ?: s.shared("label_on"), falseLabel ?: s.shared("label_off"),
+        val sound = rememberUISound()
+        CurrentTheme.current.BooleanField(label, value, { it?.let { v -> if (v != value) sound(UISignal.TOGGLE); onValueChange(v) } },
+            trueLabel ?: s.shared("label_on"), falseLabel ?: s.shared("label_off"),
             required = false, emptiable = false, compact = trueLabel == null && falseLabel == null)
     }
 
@@ -413,7 +514,10 @@ object UI {
         required: Boolean,
         minLabel: String = "",
         maxLabel: String = ""
-    ) = CurrentTheme.current.SliderField(label, value, onValueChange, min, max, step, minLabel, maxLabel, required)
+    ) {
+        val sound = rememberUISound()
+        CurrentTheme.current.SliderField(label, value, { if (it != value) sound(UISignal.STEP); onValueChange(it) }, min, max, step, minLabel, maxLabel, required)
+    }
     
     // =====================================
     // BUTTONS WITH AUTOMATIC ICONS
@@ -447,21 +551,17 @@ object UI {
 
     /**
      * The header of a tile, filling the space it is given: its icon ([TileIcon]) at the start,
-     * its name centered in the width left, as far from the icon as the tile's margin keeps the
-     * icon from its edge.
+     * its name centered in the width left.
      */
     @Composable
     fun TileHeader(iconName: String?, name: String, waiting: Boolean, running: Boolean, textType: TextType) {
         Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             TileIcon(iconName, waiting, running)
-            Box(modifier = Modifier.weight(1f).padding(start = TILE_MARGIN), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.weight(1f).padding(start = Space.M), contentAlignment = Alignment.Center) {
                 Text(name, textType, maxLines = 2, fillMaxWidth = true, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
     }
-
-    /** The margin inside a tile, between its frame and its content (DefaultTheme's containers). */
-    private val TILE_MARGIN = 12.dp
 
     /**
      * A tool's or a zone's icon with its two marks, each in its corner: something waiting at the
@@ -494,7 +594,8 @@ object UI {
         fun Header() = TileHeader(zone.icon_name, zone.name, waiting, running, TextType.SUBTITLE)
         @Composable
         fun Description() = zone.description?.let { Text(it, TextType.BODY, maxLines = 2) }
-        CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
+        val sound = rememberUISound()
+        CurrentTheme.current.ZoneCardContainer(onClick = { sound(UISignal.ENTER); onClick() }, onLongClick = onLongClick) {
             when (mode) {
                 DisplayMode.ICON -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     TileIcon(zone.icon_name, waiting, running)
@@ -527,7 +628,8 @@ object UI {
         // display is composed, so its header is the one that answers, and the key walks back
         // up the same way the button does -- tool, zone, home.
         if (leftButton == ButtonAction.BACK && onLeftClick != null) {
-            BackHandler(onBack = onLeftClick)
+            val sound = rememberUISound()
+            BackHandler(onBack = { sound(UISignal.BACK); onLeftClick() })
         }
         CurrentTheme.current.PageHeader(title, subtitle, icon, leftButton, rightButton, onLeftClick, onRightClick)
     }
@@ -564,9 +666,10 @@ object UI {
         val running = LocalRunning.current.tool(tool.id)
         val toolType = requireNotNull(ToolTypeManager.getToolType(tool.tooltype)) { "No tool type '${tool.tooltype}' for tool ${tool.id}" }
         val tile = toolType.rememberTile(tool, onOpenEntry)
+        val sound = rememberUISound()
         CurrentTheme.current.ToolCardContainer(
             displayMode = displayMode,
-            onClick = onClick,
+            onClick = { sound(UISignal.ENTER); onClick() },
             onLongClick = onLongClick
         ) {
             // The header and the summary side by side, each on half the width
@@ -622,10 +725,9 @@ object UI {
                 }
                 DisplayMode.FULL -> {
                     // As tall as the body needs; the grid rounds its row up to whole cells. The header
-                    // and the summary as tall as in EXTENDED: a cell less the default theme's
-                    // margins, 4 outside the frame and 12 inside
+                    // and the summary as tall as in EXTENDED: a cell less the tile's frame
                     Column(modifier = Modifier.fillMaxSize()) {
-                        HeaderAndSummary(Modifier.fillMaxWidth().height(com.assistant.core.ui.components.LocalGridCell.current - 16.dp))
+                        HeaderAndSummary(Modifier.fillMaxWidth().height(com.assistant.core.ui.components.LocalGridCell.current - CurrentTheme.current.tileFrame(DisplayMode.FULL)))
                         tile.Body(null)
                     }
                 }

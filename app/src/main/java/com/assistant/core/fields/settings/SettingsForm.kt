@@ -129,7 +129,7 @@ private fun NodesForm(
     context: Context,
     editors: Map<String, SettingEditor>
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
         nodes.forEach { node -> NodeForm(node, level, config, onChange, context, editors) }
     }
 }
@@ -265,7 +265,7 @@ private fun NodeForm(
 
         is SettingNode.Term -> {
             val s = Strings.`for`(context = context)
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                 UI.Text(text = node.label, type = TextType.SUBTITLE)
                 com.assistant.core.ui.selectors.TermPicker(
                     term = config.optJSONObject(node.name) ?: JSONObject(),
@@ -290,7 +290,7 @@ private fun NodeForm(
             val s = Strings.`for`(context = context)
             val period = config.optJSONObject(node.name)?.let { com.assistant.core.selection.EntryPeriod.fromJson(it) { key -> s.shared(key) } }
                 ?: com.assistant.core.selection.EntryPeriod()
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                 UI.FieldLabel(node.label, node.required)
                 com.assistant.core.ui.components.PeriodPicker(period, { set(node.name, it.toJson()) },
                     com.assistant.core.fields.FieldType.DATETIME, node.reference)
@@ -341,7 +341,7 @@ private fun ListForm(
             open = order.indices.filter { order[it] in open }.toIntArray()
             publish(order.map { values[it] })
         },
-        spacing = 8.dp
+        spacing = UI.Space.S
     ) { _, (index, item) ->
         fun remove() {
             open = open.filter { it != index }.map { if (it > index) it - 1 else it }.toIntArray()
@@ -371,7 +371,7 @@ private fun ListForm(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { open = if (isOpen) open.filter { it != index }.toIntArray() else open + index }
-                                .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
+                                .padding(start = UI.Space.M, top = UI.Space.S, bottom = UI.Space.S),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(modifier = Modifier.weight(1f)) { Summary(list.summary, shape.nodes, element, context) }
@@ -381,7 +381,7 @@ private fun ListForm(
                         UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = { remove() })
                     }
                     if (isOpen) {
-                        Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
+                        Column(modifier = Modifier.padding(start = UI.Space.M, end = UI.Space.M, bottom = UI.Space.M)) {
                             Into(index) {
                                 SettingsForm(shape.nodes, element, { changed ->
                                     publish(values.toMutableList().also { it[index] = changed })
@@ -423,8 +423,8 @@ private fun Summary(summary: List<String>, nodes: List<SettingNode>, element: JS
         return
     }
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
     ) {
         shown.forEachIndexed { i, (definition, value, isList) ->
             // Values side by side would read as one phrase ("Weighed on Date and time")
@@ -439,7 +439,7 @@ private fun Summary(summary: List<String>, nodes: List<SettingNode>, element: JS
 @Composable
 private fun Titled(label: String, onRemove: (() -> Unit)? = null, content: @Composable () -> Unit) {
     UI.Card(type = CardType.DEFAULT) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(UI.Space.L), verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.weight(1f)) { UI.Text(label, TextType.SUBTITLE) }
                 onRemove?.let { UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = it) }

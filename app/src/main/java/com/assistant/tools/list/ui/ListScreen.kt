@@ -22,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.commands.CommandResult
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -142,8 +141,8 @@ fun ListScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.PageHeader(
             title = settings.string("name")!!,
@@ -163,7 +162,7 @@ fun ListScreen(
         UI.ReorderableColumn(
             items = left,
             key = { it.id },
-            spacing = 4.dp,
+            spacing = UI.Space.XS,
             onMove = { from, to ->
                 write({ ListItems.move(coordinator, left[from], ListItems.positionForMove(left, from, to)) })
             }
@@ -177,7 +176,7 @@ fun ListScreen(
         // not reordered
         if (checked.isNotEmpty()) {
             if (left.isNotEmpty()) UI.Divider()
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
                 checked.forEach { item ->
                     ItemRow(item, loadedConfig, now, onCheck = { write({ ListItems.setChecked(coordinator, item.id, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id })
                 }
@@ -269,7 +268,7 @@ private fun ItemRow(
             modifier = Modifier
                 .weight(1f)
                 .clickable(onClick = onOpen)
-                .padding(vertical = 8.dp)
+                .padding(vertical = UI.Space.S)
         ) {
             UI.Text(item.name, TextType.SUBTITLE)
             DueAtLine(item, now)

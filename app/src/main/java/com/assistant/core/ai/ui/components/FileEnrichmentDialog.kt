@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.enrichments.FileEnrichment
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -114,7 +113,7 @@ fun FileEnrichmentDialog(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.M)
         ) {
             UI.Text(text = s.shared("file_dialog_title"), type = TextType.TITLE, fillMaxWidth = true)
             error?.let { UI.Text(text = it, type = TextType.ERROR) }

@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.executeWithLoading
@@ -196,7 +195,7 @@ fun NotesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(vertical = 16.dp)
+                .padding(vertical = UI.Space.L)
         ) {
             if (isLoading) {
                 Box(
@@ -212,7 +211,7 @@ fun NotesScreen(
                 val toolDescription = settings.string("description").orEmpty()
 
                 Column(
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = UI.Space.L)
                 ) {
                     UI.PageHeader(
                         title = toolName,
@@ -225,7 +224,7 @@ fun NotesScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(UI.Space.L))
 
                 // Notes section
                 if (notes.isEmpty()) {
@@ -233,7 +232,7 @@ fun NotesScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
+                            .padding(horizontal = UI.Space.L),
                         contentAlignment = Alignment.Center
                     ) {
                         NoteCard(
@@ -253,8 +252,8 @@ fun NotesScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(horizontal = UI.Space.L),
+                        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
                     ) {
                         // All existing notes. The service keeps the order: a note written at the
                         // position of another goes before it, so a note moved up takes the position
@@ -263,7 +262,7 @@ fun NotesScreen(
                         UI.ReorderableColumn(
                             items = notes,
                             key = { it.id },
-                            spacing = 16.dp,
+                            spacing = UI.Space.L,
                             onMove = { from, to ->
                                 val note = notes[from]
                                 val position = if (to < from) notes[to].position else notes[to].position + 1

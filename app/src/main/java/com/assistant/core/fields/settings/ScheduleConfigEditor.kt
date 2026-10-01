@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.ScheduleConfig
@@ -158,9 +157,9 @@ fun ScheduleConfigEditor(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(UI.Space.L)
                 .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.L)
         ) {
             // Title
             UI.Text(
@@ -183,7 +182,7 @@ fun ScheduleConfigEditor(
             when (selectedPatternType) {
                 "None" -> {
                     UI.Card(type = CardType.DEFAULT) {
-                        Box(modifier = Modifier.padding(16.dp)) {
+                        Box(modifier = Modifier.padding(UI.Space.L)) {
                             UI.Text(
                                 text = s.shared("schedule_no_schedule_message"),
                                 type = TextType.BODY
@@ -240,7 +239,7 @@ fun ScheduleConfigEditor(
                 )
 
                 UI.Card(type = CardType.DEFAULT) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(modifier = Modifier.padding(UI.Space.M)) {
                         UI.Text(
                             text = s.shared("schedule_preview_label"),
                             type = TextType.LABEL
@@ -268,7 +267,7 @@ private fun DailyMultipleEditor(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text(
             text = s.shared("schedule_daily_times_label"),
             type = TextType.SUBTITLE
@@ -277,7 +276,7 @@ private fun DailyMultipleEditor(
         times.forEachIndexed { index, time ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.weight(1f)) {
@@ -328,7 +327,7 @@ private fun WeeklySimpleEditor(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text(
             text = s.shared("schedule_weekly_days_label"),
             type = TextType.SUBTITLE
@@ -337,13 +336,13 @@ private fun WeeklySimpleEditor(
         // Day checkboxes (1=Monday to 7=Sunday)
         val dayNames = (1..7).map { s.shared("day_of_week_$it") }
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
             dayNames.forEachIndexed { index, dayName ->
                 val dayNumber = index + 1
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     UI.Checkbox(
                         label = dayName,
@@ -387,7 +386,7 @@ private fun MonthlyRecurrentEditor(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text(
             text = s.shared("schedule_monthly_config_label"),
             type = TextType.SUBTITLE
@@ -396,7 +395,7 @@ private fun MonthlyRecurrentEditor(
         // Month checkboxes
         val monthNames = (1..12).map { s.shared("month_$it") }
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
             monthNames.forEachIndexed { index, monthName ->
                 val monthNumber = index + 1
                 Row(
@@ -454,7 +453,7 @@ private fun WeeklyCustomEditor(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text(
             text = s.shared("schedule_weekly_custom_label"),
             type = TextType.SUBTITLE
@@ -463,8 +462,8 @@ private fun WeeklyCustomEditor(
         moments.forEachIndexed { index, moment ->
             UI.Card(type = CardType.DEFAULT) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(UI.Space.M),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     // Day selector
                     val dayNames = (1..7).map { s.shared("day_of_week_$it") }
@@ -486,7 +485,7 @@ private fun WeeklyCustomEditor(
                     // Time
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
@@ -541,7 +540,7 @@ private fun YearlyRecurrentEditor(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text(
             text = s.shared("schedule_yearly_recurrent_label"),
             type = TextType.SUBTITLE
@@ -550,8 +549,8 @@ private fun YearlyRecurrentEditor(
         dates.forEachIndexed { index, date ->
             UI.Card(type = CardType.DEFAULT) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(UI.Space.M),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     // Month selector
                     val monthNames = (1..12).map { s.shared("month_$it") }
@@ -592,7 +591,7 @@ private fun YearlyRecurrentEditor(
                     // Time + Delete button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
@@ -647,7 +646,7 @@ private fun SpecificDatesEditor(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text(
             text = s.shared("schedule_specific_dates_label"),
             type = TextType.SUBTITLE
@@ -656,7 +655,7 @@ private fun SpecificDatesEditor(
         timestamps.forEachIndexed { index, timestamp ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.weight(1f)) {

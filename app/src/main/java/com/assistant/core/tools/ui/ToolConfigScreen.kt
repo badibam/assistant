@@ -16,7 +16,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.coordinator.mapSingleData
@@ -154,9 +153,9 @@ fun ToolConfigScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(UI.Space.L)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.PageHeader(
             title = if (isEditing) s.shared("action_configure") else s.shared("action_create"),
@@ -215,7 +214,7 @@ fun ToolConfigScreen(
             onCancel = { pendingFill = null },
             confirmEnabled = missing.keys.all { fill.has(it) }
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
                 UI.Text(s.shared("migration_fill_title"), TextType.SUBTITLE)
                 missing.forEach { (name, count) ->
                     val field = fields[name]?.definition ?: return@forEach

@@ -162,7 +162,7 @@ fun rememberGoalTile(tool: ToolInstance): ToolTile {
                 TileGrid(rows, lines(bySubGoal = rows == null), columns = 1) { line ->
                     when (line) {
                         is GoalLine.SubGoal -> UI.Text(line.name, TextType.LABEL, maxLines = 1)
-                        is GoalLine.Criterion -> Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        is GoalLine.Criterion -> Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UI.Space.S), verticalAlignment = Alignment.CenterVertically) {
                             Box(modifier = Modifier.weight(1f)) { UI.Text(line.name, TextType.BODY, maxLines = 1) }
                             UI.Text(line.value + (line.condition?.let { " / $it" } ?: ""), TextType.CAPTION, maxLines = 1)
                             UI.Icon(iconName = when (line.met) { Met.YES -> "check"; Met.NO -> "x"; Met.UNKNOWN -> "circle-dashed" }, size = 16.dp,

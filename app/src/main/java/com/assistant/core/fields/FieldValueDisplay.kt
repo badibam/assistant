@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.assistant.core.strings.Strings
 import com.assistant.core.themes.TagColor
 import com.assistant.core.ui.TextType
@@ -58,7 +57,7 @@ fun FieldValue(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
             ) {
                 UI.Text(text = shown(number), type = TextType.BODY)
                 UI.Gauge(fraction = ((number - min) / (max - min)).toFloat())
@@ -84,7 +83,7 @@ fun FieldValue(
                          else listOf(value.toString())
 
             when {
-                settings.shape == ChoiceShape.ORDERED -> Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                settings.shape == ChoiceShape.ORDERED -> Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
                     chosen.forEachIndexed { index, option ->
                         UI.Text(
                             text = s.shared("field_choice_rank").format((index + 1).toString(), settings.labelOf(option)),
@@ -96,8 +95,8 @@ fun FieldValue(
                 // A choice with colors shows every value as a tag; one added by an open
                 // vocabulary, which has no color yet, shows in grey.
                 settings.colors.isNotEmpty() -> FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
                 ) {
                     chosen.forEach { option ->
                         UI.Tag(text = settings.labelOf(option), color = settings.colors[option] ?: TagColor.GREY)

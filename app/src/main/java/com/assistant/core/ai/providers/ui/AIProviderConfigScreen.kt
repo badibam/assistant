@@ -17,7 +17,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.providers.AIProvider
 import com.assistant.core.ai.providers.ProviderModel
 import com.assistant.core.fields.settings.SettingEditor
@@ -100,7 +99,7 @@ fun AIProviderConfigScreen(
             val label = s.shared("ai_provider_model")
             when {
                 isFetching -> UI.Text(s.shared("ai_provider_fetching_models"), TextType.CAPTION)
-                models.isEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                models.isEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                     UI.Text(label, TextType.LABEL)
                     UI.Text((value as? String) ?: s.shared("ai_provider_no_models"), TextType.CAPTION)
                     UI.Button(
@@ -124,9 +123,9 @@ fun AIProviderConfigScreen(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp)
+            .padding(vertical = UI.Space.L)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.PageHeader(
             title = provider.getDisplayName(),
@@ -134,7 +133,7 @@ fun AIProviderConfigScreen(
         )
 
         UI.Card(type = CardType.DEFAULT, size = Size.M) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(UI.Space.L), verticalArrangement = Arrangement.spacedBy(UI.Space.L)) {
                 // A new key or address lists other models: the ones listed before no longer hold
                 SettingsForm(nodes, settings, { next ->
                     if (listingSettings.any { next.optString(it) != settings.optString(it) }) models = emptyList()

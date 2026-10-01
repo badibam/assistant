@@ -9,17 +9,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.LogEntry
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.launch
-import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.Text
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 
 /**
  * Time range enum for log filtering
@@ -139,7 +134,7 @@ fun LogsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 16.dp)
+            .padding(vertical = UI.Space.L)
     ) {
         // Header with back button (not scrollable)
         UI.PageHeader(
@@ -152,7 +147,7 @@ fun LogsScreen(
             onRightClick = null
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(UI.Space.L))
 
         // Filters section (scrollable with content)
         Column(
@@ -169,8 +164,8 @@ fun LogsScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.M)
                 ) {
                     // Time range filter
                     val timeRangeOptions = LogTimeRange.entries.map { range ->
@@ -231,7 +226,7 @@ fun LogsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(UI.Space.L))
 
             // Logs list
             when {
@@ -253,7 +248,7 @@ fun LogsScreen(
                     // Display logs (newest first already from query ORDER BY timestamp DESC)
                     logs.forEach { log ->
                         LogEntryCard(log = log, s = s)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(UI.Space.S))
                     }
                 }
             }
@@ -274,30 +269,22 @@ private fun LogEntryCard(log: LogEntry, s: com.assistant.core.strings.StringsCon
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(UI.Space.M),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             // Header row: timestamp + level + tag
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
-                // Level badge (color-coded) - Use native Compose Text for color support
-                val levelColor = when (log.level) {
-                    "VERBOSE" -> Color(0xFF9E9E9E)  // Light gray
-                    "DEBUG" -> Color(0xFF757575)     // Gray
-                    "INFO" -> Color(0xFF2196F3)      // Blue
-                    "WARN" -> Color(0xFFFFA500)      // Orange
-                    "ERROR" -> Color(0xFFF44336)     // Red
-                    else -> Color.Black
+                // The level: a mark in the state it says, then its name
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    UI.StatusIndicator(status = levelStatus(log.level))
+                    UI.Text(text = log.level, type = TextType.LABEL)
                 }
-
-                Text(
-                    text = log.level,
-                    color = levelColor,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
-                )
 
                 UI.Text(
                     text = "[${log.tag}]",
@@ -329,4 +316,12 @@ private fun LogEntryCard(log: LogEntry, s: com.assistant.core.strings.StringsCon
             }
         }
     }
+}
+
+/** The state a log level shows as: an error, a warning, information, or detail to look past. */
+private fun levelStatus(level: String): StatusColor = when (level) {
+    "ERROR" -> StatusColor.ERROR
+    "WARN" -> StatusColor.WARNING
+    "INFO" -> StatusColor.INFO
+    else -> StatusColor.MUTED
 }

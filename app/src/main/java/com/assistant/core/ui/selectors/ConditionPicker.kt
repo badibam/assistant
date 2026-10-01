@@ -12,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.conditions.Conditions
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -152,9 +151,9 @@ private fun PresentValues(toolInstanceId: String, path: String, onPick: (String)
     }
     when {
         failed -> UI.Text(text = s.shared("error_loading_options"), type = TextType.CAPTION)
-        !values.isNullOrEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        !values.isNullOrEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
             UI.Text(text = s.shared("pointer_filter_present_values"), type = TextType.CAPTION)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(UI.Space.XS), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
                 values!!.forEach { value ->
                     UI.Button(type = ButtonType.DEFAULT, size = Size.S, onClick = { onPick(value) }) {
                         UI.Text(text = value, type = TextType.CAPTION)

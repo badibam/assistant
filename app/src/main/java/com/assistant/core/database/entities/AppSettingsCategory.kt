@@ -24,8 +24,8 @@ object AppSettingCategories {
     const val VALIDATION_CONFIG = "validation_config"
     const val MAIN_SCREEN = "main_screen"
     const val DEMO = "demo"
+    const val UI = "ui"
 
     // Future categories:
-    // const val UI = "ui"
     // const val DATA = "data"
 }

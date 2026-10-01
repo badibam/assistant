@@ -1,0 +1,41 @@
+package com.assistant.core.ui.components
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import com.assistant.core.ui.UI
+import com.assistant.core.ui.hideNavigationBar
+import com.assistant.core.ui.sound.UISignal
+import com.assistant.core.ui.sound.rememberUISound
+import com.assistant.core.ui.sound.scrollEndSound
+
+/**
+ * A window over the whole screen (the floating chat), on the theme's background (UI.FullScreen).
+ * Its own window, with the navigation bar hidden in it as in the activity's: otherwise it keeps
+ * the bar's place, and stops short of the bottom of the screen. Back closes it; a touch cannot
+ * fall outside it.
+ */
+@Composable
+fun FullScreenDialog(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    val sound = rememberUISound()
+    LaunchedEffect(Unit) { sound(UISignal.OPEN) }
+    Dialog(
+        onDismissRequest = { sound(UISignal.CLOSE); onDismiss() },
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
+        )
+    ) {
+        val window = (LocalView.current.parent as DialogWindowProvider).window
+        SideEffect { hideNavigationBar(window) }
+        UI.FullScreen { Box(modifier = Modifier.fillMaxSize().scrollEndSound()) { content() } }
+    }
+}

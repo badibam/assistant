@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.tools.chart.Hit
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.strings.Strings
@@ -67,8 +66,8 @@ fun ChartScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureC
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxSize().padding(UI.Space.L).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         val loaded = config
         val settings = loaded?.let { ToolConfigSettings.read(ChartToolType, it, context) }

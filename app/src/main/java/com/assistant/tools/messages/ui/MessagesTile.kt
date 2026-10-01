@@ -17,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.strings.Strings
@@ -96,11 +95,11 @@ fun rememberMessagesTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolT
                 TileGrid(rows, shown, columns = 1) { message ->
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { open(EntryToOpen.Existing(message.id)) },
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
-                            UI.Text(message.displayTitle, if (message.read) TextType.CAPTION else TextType.LABEL, maxLines = 1)
+                            UI.Text(message.displayTitle, if (message.read) TextType.CAPTION else TextType.STRONG, maxLines = 1)
                         }
                         UI.Text(FormatUtils.formatRelativeTimePast(message.dueAt, context), TextType.CAPTION, maxLines = 1)
                     }

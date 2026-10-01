@@ -9,7 +9,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.EntryFilters
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.strings.Strings
@@ -77,7 +76,7 @@ fun PointerFiltersDialog(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.L)
         ) {
             UI.Text(text = s.shared(if (offerFields) "pointer_filters_title" else "selection_filters_title"), type = TextType.TITLE, fillMaxWidth = true)
 

@@ -11,7 +11,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -258,7 +257,7 @@ fun JournalEntryScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(UI.Space.L)
         ) {
             UI.Text(s.tool("loading_entry"), TextType.BODY)
         }
@@ -270,8 +269,8 @@ fun JournalEntryScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         // Header (no right button - EDIT moved to bottom actions)
         UI.PageHeader(
@@ -294,8 +293,8 @@ fun JournalEntryScreen(
             // Date/time field
             UI.Card(type = CardType.DEFAULT) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     UI.Text(
                         text = s.tool("label_date_time"),
@@ -323,8 +322,8 @@ fun JournalEntryScreen(
             // Title field
             UI.Card(type = CardType.DEFAULT) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     UI.FormField(
                         label = s.tool("label_title"),
@@ -339,8 +338,8 @@ fun JournalEntryScreen(
             // Content field
             UI.Card(type = CardType.DEFAULT) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     UI.FormField(
                         label = s.tool("label_content"),
@@ -356,8 +355,8 @@ fun JournalEntryScreen(
             // Custom fields (definitions loaded automatically from toolInstanceId)
             UI.Card(type = CardType.DEFAULT) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     CustomFieldsInput(
                         toolInstanceId = toolInstanceId,
@@ -375,7 +374,7 @@ fun JournalEntryScreen(
             // Form actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 UI.ActionButton(
                     action = ButtonAction.CANCEL,
@@ -394,8 +393,8 @@ fun JournalEntryScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     // Date/time
                     val formattedDate = remember(timestamp) {
@@ -420,7 +419,7 @@ fun JournalEntryScreen(
 
                     // Custom fields display (if any)
                     // Custom fields display (definitions loaded automatically from toolInstanceId)
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(UI.Space.L))
                     toolConfig?.let { config ->
                         CustomFieldsDisplay(
                             toolType = com.assistant.tools.journal.JournalToolType,
@@ -445,7 +444,7 @@ fun JournalEntryScreen(
                     onClick = { isEditing = true }
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(UI.Space.S))
 
                 UI.ActionButton(
                     action = ButtonAction.DELETE,

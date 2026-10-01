@@ -200,7 +200,7 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
 ## Display Modes pour Tool Cards
 
-Les outils d'une section de groupe sont posés sur une grille de quatre colonnes à cases carrées (`ToolGrid`), large au plus du `gridMaxWidth` du thème. Chaque outil y tient à `grid_x`/`grid_y` (`tool_instances`), placé par `ToolPositions` et `Grid` ; sa taille en cases vient de son `display_mode`, que sa config porte toujours :
+Les outils d'une section de groupe sont posés sur une grille de quatre colonnes à cases carrées (`ToolGrid`), dont le thème donne le côté selon la largeur disponible (`gridCellPx` : un quart, la grille large au plus de 480 dp, dans le thème par défaut). Chaque outil y tient à `grid_x`/`grid_y` (`tool_instances`), placé par `ToolPositions` et `Grid` ; sa taille en cases vient de son `display_mode`, que sa config porte toujours :
 
 - **ICON** (1×1) : l'icône seule
 - **MINIMAL** (2×1) : l'en-tête, icône et nom

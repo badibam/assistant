@@ -12,7 +12,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.LongOperation
 import com.assistant.core.ui.Size
 import com.assistant.core.ui.TextType
@@ -36,7 +35,7 @@ fun DemoInstalling() {
 @Composable
 fun LongOperationProgress() {
     val running by LongOperation.running.collectAsState()
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(UI.Space.L)) {
         UI.LoadingIndicator()
         running?.let { current ->
             UI.Text(current.label, TextType.SUBTITLE)
@@ -51,8 +50,8 @@ fun LongOperationBar() {
     val running by LongOperation.running.collectAsState()
     val current = running ?: return
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = UI.Space.L, vertical = UI.Space.XS),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
         verticalAlignment = Alignment.CenterVertically
     ) {
         UI.LoadingIndicator(Size.XS)

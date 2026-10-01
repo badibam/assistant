@@ -6,7 +6,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.FieldType
 import com.assistant.core.selection.Edge
 import com.assistant.core.selection.EntryPeriod
@@ -91,7 +90,7 @@ fun InstantPicker(
         if (allowNone) add(InstantMode.NONE to s.shared("instant_mode_none"))
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.FormSelection(
             label = label,
             options = modes.map { it.second },
@@ -140,7 +139,7 @@ fun PeriodPicker(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
         reference?.let { UI.Text(text = s.shared("instant_reference").format(it), type = TextType.CAPTION) }
         InstantPicker(
             label = s.shared("period_from"),
@@ -200,7 +199,7 @@ private fun RelativeDate(
         }
         UI.ActionButton(action = ButtonAction.RIGHT, display = ButtonDisplay.ICON, size = Size.M, onClick = { onOffset(offset + 1) })
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         fun unitLabel(u: PeriodType) = s.shared("period_type_${u.name.lowercase()}")
         Box(modifier = Modifier.weight(1f)) {
             UI.FormSelection(label = s.shared("instant_unit"), options = units.map(::unitLabel), selected = unitLabel(unit),
@@ -232,7 +231,7 @@ private fun CustomDate(fixed: TimePoint.Fixed?, precision: FieldType, clearable:
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(modifier = Modifier.weight(1f)) {

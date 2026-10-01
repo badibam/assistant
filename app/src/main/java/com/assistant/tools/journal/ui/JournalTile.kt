@@ -17,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.entities.ToolInstance
@@ -92,7 +91,7 @@ fun rememberJournalTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolTi
                 TileGrid(rows, loaded, columns = 1) { entry ->
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { open(EntryToOpen.Existing(entry.id)) },
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(modifier = Modifier.weight(1f)) { UI.Text(entry.title, TextType.BODY, maxLines = 1) }

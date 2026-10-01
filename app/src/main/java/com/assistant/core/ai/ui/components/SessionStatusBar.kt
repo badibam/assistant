@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -43,11 +42,11 @@ fun SessionStatusBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 8.dp),
+            .padding(vertical = UI.Space.S, horizontal = UI.Space.S),
         contentAlignment = Alignment.Center
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // The countdown before closing shows a timer beside its text

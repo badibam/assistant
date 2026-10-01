@@ -23,7 +23,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.tools.chart.Cell
 import com.assistant.tools.chart.ChartDetail
@@ -127,15 +126,15 @@ fun ChartDetails(hit: Hit) {
     val s = remember { Strings.`for`(tool = "chart", context = context) }
     val scope = rememberCoroutineScope()
     UI.Card(type = CardType.DEFAULT) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
             hit.columns.forEach { (name, field) ->
                 val cell = hit.row.cells[name] ?: return@forEach
-                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                     androidx.compose.foundation.layout.Box(modifier = Modifier.weight(0.4f)) { UI.Text(field.displayName, TextType.LABEL) }
                     androidx.compose.foundation.layout.Box(modifier = Modifier.weight(0.6f)) {
                         when (cell) {
                             is Cell.Value -> FieldValue(field, cell.value, context)
-                            is Cell.Failed -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            is Cell.Failed -> Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
                                 UI.Text(cell.message, TextType.ERROR)
                                 FailedEntries(cell.entries)
                             }

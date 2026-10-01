@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.domain.AIState
 import com.assistant.core.ai.domain.Phase
 import com.assistant.core.ai.data.MessageSender
@@ -60,8 +59,8 @@ fun ExecutionDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         // Header
         UI.PageHeader(
@@ -74,8 +73,8 @@ fun ExecutionDetailScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = UI.Space.L),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.M)
         ) {
             itemsIndexed(messages) { index, message ->
                 // Determine if this is the last AI message (for styling)

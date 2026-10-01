@@ -7,7 +7,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.dp
 import com.assistant.core.strings.StringsContext
 import com.assistant.core.ui.ButtonType
 import com.assistant.core.ui.Size
@@ -33,7 +32,7 @@ class ScheduleSettingEditor(private val label: String, private val s: StringsCon
         var editing by rememberSaveable { mutableStateOf(false) }
         val stored = StoredSchedule.of(JSONObject().apply { (value as? JSONObject)?.let { put(ScheduleSettings.NAME, it) } })
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
             UI.Text(label, TextType.LABEL)
             when (stored) {
                 is StoredSchedule.Unreadable -> UI.Text(s.shared("schedule_unreadable").format(stored.cause), TextType.ERROR)

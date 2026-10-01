@@ -17,7 +17,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.selection.Reference
@@ -77,7 +76,7 @@ fun ReferenceInput(fieldDef: FieldDefinition, value: Any?, onChange: (Any?) -> U
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(modifier = Modifier.weight(1f)) {
@@ -140,7 +139,7 @@ private fun ReferencePicker(target: ReferenceTarget, onDismiss: () -> Unit, onPi
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.M)
         ) {
             UI.Text(text = s.shared("field_reference_pick"), type = TextType.TITLE, fillMaxWidth = true)
             if (current == null) UI.LoadingIndicator()

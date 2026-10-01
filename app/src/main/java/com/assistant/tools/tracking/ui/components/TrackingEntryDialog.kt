@@ -12,7 +12,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.CoreFields
 import com.assistant.core.fields.CustomFieldsInput
 import com.assistant.core.fields.FieldInput
@@ -104,7 +103,7 @@ fun TrackingEntryDialog(
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.M)
         ) {
             UI.Text(title, TextType.SUBTITLE)
 

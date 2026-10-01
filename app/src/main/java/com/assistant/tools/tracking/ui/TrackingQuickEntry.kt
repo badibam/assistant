@@ -15,7 +15,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.CoreFields
 import com.assistant.core.fields.FieldInput
 import com.assistant.core.strings.Strings
@@ -66,7 +65,7 @@ fun TrackingQuickEntry(
         actions.loadRunning()?.let { running = it }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         // The date of the next entries: now, or one chosen. A stopwatch starts now, so the
         // choice is off while one runs.
         val options = actions.choice?.options.orEmpty()
@@ -110,7 +109,7 @@ fun TrackingQuickEntry(
         // A choice's options, named by their label
         options.forEach { option ->
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -139,7 +138,7 @@ fun TrackingQuickEntry(
 @Composable
 private fun ShortcutRow(label: String, actions: @Composable () -> Unit) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
     ) {

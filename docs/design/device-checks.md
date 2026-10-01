@@ -16,6 +16,8 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Chat IA
 
+- Réglages d'une session de chat : l'interrupteur de validation, à droite de son libellé, bascule et la validation suit.
+- Le chat ouvert, sans session puis dans une session : il couvre l'écran jusqu'en bas, la barre de navigation masquée comme ailleurs, revenant un instant au glissé du bord ; la touche Retour le ferme ; les bandeaux du haut ont leur couleur d'avant.
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
 - « Importe ce fichier dans une nouvelle table » avec un CSV joint : l'IA crée la table, puis au tour suivant `IMPORT_PLAN` et `IMPORT_DATA` ; la carte de validation nomme le fichier, ses lignes et la table ; la table a ses colonnes et ses lignes.
 - Le message de départ d'une automation ne propose pas le trombone.
@@ -76,6 +78,8 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Journal, « Annuler » en modification : l'écran revient au texte stocké, et une entrée créée, rouverte puis annulée reste en place.
 - Messages : créer puis modifier une récurrence, voir les messages partir ; mettre l'outil en pause, voir les envois s'arrêter.
 - Messages, listes « à venir » et « reçus » : un indicateur pendant le chargement, jamais « rien de prévu » avant d'avoir lu.
+- Messages, onglets « reçus » et « à venir » : ils basculent comme avant, l'onglet choisi souligné.
+- Tuile Messages : un message non lu en gras, à la taille du texte courant, au-dessus des lus en petit.
 - Messages, « Notif du matin » : après la mise à jour, les deux messages prévus en double ne le sont plus (un par jour). Changer plusieurs fois la récurrence de suite : jamais plus d'un message prévu par heure de la récurrence, et l'app ne rame pas.
 - Lectures filtrées par les écrans : l'historique d'un suivi par période (jour, semaine, mois) montre les mêmes entrées qu'avant, et l'écran Messages range chaque message selon son état.
 - Messages, récurrence illisible (écrire en base un `schedule` portant `"enabled": true`) : avertissement sur l'écran de l'outil, occurrences déjà prévues gardées et envoyées, erreur dans la config, enregistrement refusé sans rien écraser.
@@ -106,6 +110,11 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Fournisseurs d'IA, écran généré, pour Claude, OpenAI et DeepSeek : la clé s'affiche masquée et l'œil la montre ; les modèles se listent à l'ouverture pour une clé enregistrée, et après saisie d'une nouvelle clé ; effort obligatoire pour DeepSeek ; enregistrer, rouvrir, retrouver les valeurs ; une session de chat part avec le modèle choisi.
 - Fuseau de l'app différent de celui du téléphone : l'historique range chaque entrée dans le jour affiché sur elle, le sélecteur de période et l'éditeur de planning montrent l'heure de l'app, « aujourd'hui » et « hier » du journal suivent. Un début de semaine changé est suivi par l'historique et les sélecteurs de période.
 - Icônes : couleur du thème partout, et le sélecteur s'ouvre, cherche et parcourt une catégorie sans lenteur.
+- Couleurs d'état données par le thème : l'écran des journaux montre chaque niveau en pastille puis en libellé (erreur en rouge, avertissement en orange, info en mauve, verbose et debug en gris) ; la pastille d'une carte d'exécution (terminée, interrompue, en erreur) garde sa couleur, le triangle d'une validation sensible prend l'orange doux de la palette.
+- Copier un outil ou une automation : le sélecteur s'ouvre en carte, la zone puis l'élément choisis ressortent mis en avant, le chargement tourne au milieu.
+- Réglages, « Interface utilisateur » : un écran de réglages avec « Sons de l'interface », activé ; le désactiver, enregistrer, rouvrir le retrouve désactivé. Le thème par défaut reste muet dans les deux cas.
+- Boutons désactivés (enregistrer un formulaire incomplet, un bouton d'action grisé) : toujours sans effet au toucher ; le bouton actif, lui, répond comme avant.
+- Espacements nommés, thème par défaut : rien ne bouge, sauf des écarts de 2 à 8 dp, à juger acceptables, là où une valeur rare a été arrondie : les lignes d'une validation et l'avertissement en retrait, les valeurs d'un champ affichées (choix ordonné, tags), les blocs d'une note sur sa tuile, les puces d'une condition et des variables, la carte des variables, le Graphique, une feuille des données structurées, une carte d'exécution, le chat flottant vide.
 - Touche Retour : outil → zone → accueil → confirmation avant de fermer ; annule sur la création de zone, les réglages Claude/OpenAI et une entrée de journal en modification ; ferme les fenêtres sans effet de bord.
 
 ## Champs RÉFÉRENCE

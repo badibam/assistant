@@ -34,6 +34,23 @@ enum class Size {
     XS, S, M, L, XL, XXL
 }
 
+/**
+ * The spaces of a screen, from the smallest to the largest: the gaps between elements, the
+ * margins inside a container, the blanks. Screens name one (UI.Space) and the theme gives its
+ * size, so that a retro theme can make each a whole number of cells.
+ */
+enum class Spacing {
+    XS, S, M, L, XL
+}
+
+/**
+ * What a colored mark says about the state of something (an execution, a log line, an action
+ * to validate). A screen names the state; the theme gives its color, which must be seen.
+ */
+enum class StatusColor {
+    SUCCESS, WARNING, ERROR, INFO, MUTED
+}
+
 // =====================================
 // INTEGRATED VALIDATION
 // =====================================
@@ -164,10 +181,11 @@ enum class ButtonDisplay {
 
 
 /**
- * Text types with hierarchy
+ * Text types with hierarchy. STRONG is body text that must stand out among its neighbors (an
+ * unread message among read ones): bold where the theme's font has a bold, its own way otherwise.
  */
 enum class TextType {
-    TITLE, SUBTITLE, BODY, CAPTION, LABEL, ERROR, WARNING
+    TITLE, SUBTITLE, BODY, STRONG, CAPTION, LABEL, ERROR, WARNING
 }
 
 /**

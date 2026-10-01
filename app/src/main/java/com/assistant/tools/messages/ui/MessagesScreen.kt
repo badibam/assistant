@@ -4,14 +4,11 @@ import com.assistant.core.utils.StoredSchedule
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.coordinator.executeWithLoading
@@ -140,7 +137,7 @@ fun MessagesScreen(
 
     val settings = com.assistant.core.tools.ToolConfigSettings.read(com.assistant.tools.messages.MessageToolType, config, context)
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(UI.Space.L)) {
             UI.PageHeader(
                 title = settings.string("name")!!,
                 subtitle = settings.string("description")?.takeIf { it.isNotBlank() },
@@ -154,27 +151,20 @@ fun MessagesScreen(
             // A recurrence the scheduler cannot read creates nothing: said here, where the
             // missing messages would otherwise just be missing
             (StoredSchedule.of(config) as? StoredSchedule.Unreadable)?.let { unreadable ->
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(UI.Space.S))
                 UI.Card(type = CardType.DEFAULT) {
-                    Box(modifier = Modifier.padding(12.dp)) {
+                    Box(modifier = Modifier.padding(UI.Space.M)) {
                         UI.Text(s.tool("schedule_unreadable_warning").format(unreadable.cause), TextType.ERROR)
                     }
                 }
             }
         }
 
-        TabRow(selectedTabIndex = selectedTab) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = { UI.Text(s.tool("tab_received_messages"), TextType.BODY) }
-            )
-            Tab(
-                selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                text = { UI.Text(s.tool("tab_upcoming"), TextType.BODY) }
-            )
-        }
+        UI.Tabs(
+            labels = listOf(s.tool("tab_received_messages"), s.tool("tab_upcoming")),
+            selected = selectedTab,
+            onSelect = { selectedTab = it }
+        )
 
         when (selectedTab) {
             0 -> ReceivedTab(
@@ -258,8 +248,8 @@ private fun ReceivedTab(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.FormSelection(
             required = false,
@@ -333,8 +323,8 @@ private fun ReceivedCard(
 ) {
     UI.Card(type = CardType.DEFAULT) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(UI.Space.L),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             UI.Text(formatMoment(occurrence.dueAt), TextType.CAPTION)
             UI.Text(occurrence.displayTitle, TextType.SUBTITLE)
@@ -357,7 +347,7 @@ private fun ReceivedCard(
 
             // Only something that actually went out can be read or filed away
             if (occurrence.status == "sent") {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                     UI.Button(type = ButtonType.DEFAULT, size = Size.S, onClick = onToggleRead) {
                         UI.Text(
                             if (occurrence.read) s.tool("action_mark_unread") else s.tool("action_mark_read"),
@@ -409,8 +399,8 @@ private fun UpcomingTab(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         val shown = occurrences
         if (failed) {
@@ -422,8 +412,8 @@ private fun UpcomingTab(
         } else shown.forEach { occurrence ->
             UI.Card(type = CardType.DEFAULT) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     UI.Text(s.tool("occurrence_due_at").format(formatMoment(occurrence.dueAt)), TextType.CAPTION)
 
@@ -438,7 +428,7 @@ private fun UpcomingTab(
                         occurrence.ownContent?.let { UI.Text(it, TextType.BODY) }
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                         UI.ActionButton(
                             action = ButtonAction.EDIT,
                             display = ButtonDisplay.ICON,

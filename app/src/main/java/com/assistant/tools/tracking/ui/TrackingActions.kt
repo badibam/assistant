@@ -14,7 +14,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.coordinator.mapSingleData
@@ -276,7 +275,7 @@ fun ShortcutButtons(actions: TrackingActions, shortcut: TrackingShortcut, runnin
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
     val enabled = !actions.isSaving
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.XS), verticalAlignment = Alignment.CenterVertically) {
         when (actions.kind) {
             TrackingKind.NUMERIC -> QuickButton(ButtonAction.ADD, enabled) {
                 if (shortcut.value != null) actions.quickSave(shortcut.name, shortcut.value, shortcut.unit, timestamp)

@@ -14,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldDefinition
@@ -80,11 +79,11 @@ fun VariablesCard(variables: List<VariableRow>, onOpen: (String) -> Unit) {
     }
 
     UI.Card(type = CardType.DEFAULT) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
             variables.forEach { variable ->
                 Row(
                     modifier = Modifier.fillMaxWidth().clickable { onOpen(variable.id) },
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     UI.Text(text = variable.name, type = TextType.LABEL)
                     UI.Text(text = "·", type = TextType.CAPTION)

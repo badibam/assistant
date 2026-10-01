@@ -240,7 +240,7 @@ fun UI.RichComposer(
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
 
         // Controls row: Status (if provided) + Send button
@@ -289,7 +289,7 @@ fun UI.RichComposer(
                 .fillMaxWidth()
                 .heightIn(max = maxBlocksHeight)
                 .verticalScroll(blocksScrollState),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.L)
         ) {
             blocks.forEach { block ->
                 TextBlockCard(
@@ -350,7 +350,7 @@ fun UI.RichComposer(
         // Controls row: Enrichment buttons + Add Text
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Enrichment buttons (if enabled)
@@ -477,8 +477,8 @@ private fun TextBlockCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(UI.Space.M),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.M)
             ) {
 
                 // Text field (delete button is positioned absolute)
@@ -504,7 +504,7 @@ private fun TextBlockCard(
                 if (block.enrichments.isNotEmpty()) {
                     LogManager.aiEnrichment("Rendering ${block.enrichments.size} enrichments for block ${block.id}")
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                     ) {
                         UI.Text(
                             text = s.shared("ai_composer_enrichments_label"),
@@ -527,7 +527,7 @@ private fun TextBlockCard(
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(8.dp)
+                .padding(UI.Space.S)
         ) {
             UI.ActionButton(
                 action = ButtonAction.DELETE,
@@ -553,14 +553,14 @@ private fun EnrichmentBlockPreview(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(UI.Space.M),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Text section with icon - compressible to make room for buttons
             Row(
                 modifier = Modifier.weight(1f, fill = false),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 UI.Icon(iconName = block.type.iconName, size = 20.dp)
@@ -572,7 +572,7 @@ private fun EnrichmentBlockPreview(
 
             // Buttons section - fixed size, always visible
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.XS)
             ) {
                 UI.ActionButton(
                     action = ButtonAction.EDIT,
@@ -685,8 +685,8 @@ private fun PlaceholderEnrichmentDialog(
         onCancel = onDismiss
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.padding(UI.Space.L),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.L)
         ) {
             UI.Text(
                 text = s.shared("ai_enrichment_config"),

@@ -47,8 +47,12 @@ object AppSettings {
         AppSettingCategories.AI_LIMITS,
         AppSettingCategories.VALIDATION_CONFIG,
         AppSettingCategories.MAIN_SCREEN,
-        AppSettingCategories.DEMO
+        AppSettingCategories.DEMO,
+        AppSettingCategories.UI
     )
+
+    /** The setting under which the theme's interface sounds play. */
+    const val UI_SOUNDS = "sounds"
 
     fun nodes(category: String, context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
@@ -101,6 +105,9 @@ object AppSettings {
                 field(com.assistant.core.demo.DemoStartup.INSTALL_ON_UPDATE, text("settings_demo_install_on_update"),
                     text("settings_demo_install_on_update_help"), FieldType.BOOLEAN, required = true)
             )
+            AppSettingCategories.UI -> listOf(
+                field(UI_SOUNDS, text("settings_ui_sounds"), text("settings_ui_sounds_help"), FieldType.BOOLEAN, required = true)
+            )
             else -> throw IllegalArgumentException("No declaration for settings category '$category'")
         }
     }
@@ -126,6 +133,7 @@ object AppSettings {
             AppSettingCategories.VALIDATION_CONFIG -> s.shared("settings_validation")
             AppSettingCategories.MAIN_SCREEN -> s.shared("label_main_screen_config")
             AppSettingCategories.DEMO -> s.shared("settings_demo")
+            AppSettingCategories.UI -> s.shared("settings_ui")
             else -> throw IllegalArgumentException("No declaration for settings category '$category'")
         }
     }

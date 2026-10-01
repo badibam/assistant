@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.entities.ToolInstance
@@ -153,7 +152,7 @@ fun rememberTrackingTile(tool: ToolInstance): ToolTile {
 /** One line of the summary: its parts side by side, centered on the line. */
 @Composable
 private fun Line(content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) =
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically, content = content)
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UI.Space.XS), verticalAlignment = Alignment.CenterVertically, content = content)
 
 /** The same entry as [last], now: a timer starts again, a counter adds its step again. */
 private fun again(actions: TrackingActions, last: LastEntry) = when (actions.kind) {

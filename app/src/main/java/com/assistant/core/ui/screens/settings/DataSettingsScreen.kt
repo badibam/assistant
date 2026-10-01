@@ -13,7 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.coordinator.Coordinator
@@ -126,8 +125,8 @@ fun DataSettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(vertical = UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         // Header
         UI.PageHeader(
@@ -145,7 +144,7 @@ fun DataSettingsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(UI.Space.L)
             ) {
                 UI.Text(
                     text = s.shared("message_loading"),
@@ -159,8 +158,8 @@ fun DataSettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 UI.Text(
                     text = s.shared("backup_export"),
@@ -189,8 +188,8 @@ fun DataSettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 UI.Text(
                     text = s.shared("backup_import"),
@@ -217,8 +216,8 @@ fun DataSettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 UI.Text(
                     text = s.shared("backup_reset"),

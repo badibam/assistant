@@ -7,7 +7,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.strings.Strings
@@ -285,8 +284,8 @@ fun CreateAutomationDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(UI.Space.L),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.L)
         ) {
             // Title (changes based on mode)
             UI.Text(

@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.entities.ToolInstance
@@ -134,7 +133,7 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
                 // The late ones first, each part keeping the list's order: a stable sort
                 val left = ListItems.shown(loaded).filterNot { it.isChecked }.sortedBy { if (DueNotice.isLate(it, now)) 0 else 1 }
                 TileGrid(rows, left, columns = 2) { item ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
                         UI.Checkbox(checked = item.isChecked, onCheckedChange = { checked -> check(item, checked) })
                         UI.Text(item.name, TextType.BODY, maxLines = 1)
                     }

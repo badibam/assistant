@@ -20,7 +20,8 @@ object AppSettingsDefaults {
         AppSettingCategories.AI_LIMITS,
         AppSettingCategories.VALIDATION_CONFIG,
         AppSettingCategories.MAIN_SCREEN,
-        AppSettingCategories.DEMO
+        AppSettingCategories.DEMO,
+        AppSettingCategories.UI
     )
 
     /** The default settings JSON of [category]; format takes the phone's 24h and date habits */
@@ -30,6 +31,7 @@ object AppSettingsDefaults {
         AppSettingCategories.VALIDATION_CONFIG -> ValidationConfig().toSettingsJson()
         AppSettingCategories.MAIN_SCREEN -> JSONObject().put("zone_groups", JSONArray()).toString()
         AppSettingCategories.DEMO -> JSONObject().put(com.assistant.core.demo.DemoStartup.INSTALL_ON_UPDATE, true).toString()
+        AppSettingCategories.UI -> JSONObject().put(AppSettings.UI_SOUNDS, true).toString()
         else -> throw IllegalArgumentException("No defaults for settings category '$category'")
     }
 }

@@ -26,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.commands.CommandResult
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -204,8 +203,8 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
     // A lazy list: only the rows on screen are composed, whatever the size of the table
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.M)
     ) {
         item { UI.PageHeader(
             title = if (openId == null) settings.string("name")!! else if (openId == "") s.tool("new_sheet") else openSheet?.name ?: "",
@@ -226,7 +225,7 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
                 if (position != null) s.tool("position").format(position + 1, shown.size) else s.tool("count").format(shown.size)
             ).joinToString(" · ")
             UI.Card(type = CardType.SECTION_HEADER) {
-                Column(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                     Box(modifier = Modifier.fillMaxWidth().clickable { headerOpen = !headerOpen }) {
                         UI.Text(summary, TextType.CAPTION)
                     }
@@ -256,17 +255,17 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
             sheetsTable(shown, columns, sortKey, ascending, empty, s, context,
                 onSort = { key -> if (key == sortKey) ascending = !ascending else { sortKey = key; ascending = true } },
                 onOpen = { open(it) })
-            item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            item { Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M), verticalAlignment = Alignment.CenterVertically) {
                 UI.ActionButton(action = ButtonAction.ADD, onClick = { open(null) })
                 // Always there; put forward while the table is empty, a new table being most often filled from a file
                 UI.Button(type = if (empty) ButtonType.PRIMARY else ButtonType.SECONDARY, onClick = { pickFile.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel")) }) {
                     UI.Text(s.shared("import_action"), TextType.LABEL)
                 }
             } }
-        } else if (editing) { item { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        } else if (editing) { item { Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             UI.FormField(label = s.shared("label_name"), value = draftName, onChange = { draftName = it }, fieldType = FieldType.TEXT, required = true)
             CustomFieldsInput(customFieldsMetadata = fields, values = draftExtra, onValuesChange = { draftExtra = it }, context = context, newEntry = openId == "")
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
                 UI.Button(type = ButtonType.PRIMARY, state = if (draftName.isNotBlank()) com.assistant.core.ui.ComponentState.NORMAL else com.assistant.core.ui.ComponentState.DISABLED, onClick = {
                     val extra = draftExtra.filterValues { it != null }
                     val params = mutableMapOf<String, Any>("tool_instance_id" to toolInstanceId, "name" to draftName.trim(), "data" to emptyMap<String, Any>())
@@ -291,11 +290,11 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
                 }) { UI.Text(s.shared("action_save"), TextType.LABEL) }
                 UI.Button(type = ButtonType.SECONDARY, onClick = { if (openId == "") close() else editing = false }) { UI.Text(s.shared("action_cancel"), TextType.LABEL) }
             }
-        } } } else if (openSheet != null && position != null) { item { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        } } } else if (openSheet != null && position != null) { item { Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             SheetView(openSheet, loadedConfig, context,
                 onPrevious = if (position > 0) ({ open(shown[position - 1]) }) else null,
                 onNext = if (position < shown.size - 1) ({ open(shown[position + 1]) }) else null)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M), verticalAlignment = Alignment.CenterVertically) {
                 UI.Button(type = ButtonType.PRIMARY, onClick = { open(openSheet); editing = true }) { UI.Text(s.tool("action_edit"), TextType.LABEL) }
                 UI.ActionButton(action = ButtonAction.DELETE, onClick = { confirmDelete = true })
             }
@@ -361,7 +360,7 @@ private fun LazyListScope.sheetsTable(
     }
     val keys = listOf(BY_NAME to s.shared("label_name")) + columns.map { it.name to it.displayName }
     item {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
             keys.forEach { (key, label) ->
                 Box(modifier = Modifier.weight(1f).clickable { onSort(key) }) {
                     UI.Text(label + if (key == sortKey) (if (ascending) " ↑" else " ↓") else "", TextType.LABEL)
@@ -371,7 +370,7 @@ private fun LazyListScope.sheetsTable(
     }
     item { UI.Divider() }
     items(sheets, key = { it.id }) { sheet ->
-        Row(modifier = Modifier.fillMaxWidth().clickable { onOpen(sheet) }.padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().clickable { onOpen(sheet) }.padding(vertical = UI.Space.XS), horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
             Box(modifier = Modifier.weight(1f)) { UI.Text(sheet.name, TextType.BODY) }
             columns.forEach { field ->
                 Box(modifier = Modifier.weight(1f)) {
@@ -400,7 +399,7 @@ private fun SheetView(sheet: Sheet, config: JSONObject, context: android.content
                 onHorizontalDrag = { _, amount -> dragged += amount }
             )
         },
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.M)
     ) {
         CustomFieldsDisplay(StructuredToolType, config, sheet.extra, FieldsLayout.EXPANDED, context)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

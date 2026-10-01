@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Switch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,6 +15,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.strings.Strings
+import com.assistant.core.ui.sound.scrollEndSound
 import com.assistant.core.utils.LogManager
 import com.assistant.core.ui.*
 import kotlinx.coroutines.launch
@@ -86,7 +86,7 @@ fun ChatMessageBubble(
         Box(modifier = Modifier.clickable { onMessageClick() }) {
             UI.MessageBubble(sender = message.sender) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
                 ) {
                     // Sender indicator
                     UI.Text(
@@ -118,7 +118,7 @@ fun ChatMessageBubble(
                             if (isCommunicationResponse && answered != null) {
                                 // The answer by the fields it answers, under the question the
                                 // AI's preText asked
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                                     UI.Text(
                                         text = previousAIMessage.aiMessage.preText,
                                         type = TextType.CAPTION
@@ -149,7 +149,7 @@ fun ChatMessageBubble(
                                     aiState.waitingContext is com.assistant.core.ai.domain.WaitingContext.Communication
 
                                 if (shouldShow) {
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(UI.Space.S))
                                     com.assistant.core.ai.ui.components.CommunicationModuleCard(
                                         module = module,
                                         onResponse = { response, note ->
@@ -167,7 +167,7 @@ fun ChatMessageBubble(
                             // Validation UI (inline, only on last AI message)
                             if (isLastAIMessage && aiState.waitingContext is com.assistant.core.ai.domain.WaitingContext.Validation) {
                                 val validationCtx = aiState.waitingContext as com.assistant.core.ai.domain.WaitingContext.Validation
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(UI.Space.S))
                                 com.assistant.core.ai.ui.ValidationUI(
                                     context = validationCtx.validationContext,
                                     onValidate = {
@@ -181,7 +181,7 @@ fun ChatMessageBubble(
                         }
                         message.systemMessage != null -> {
                             // System message: show summary + command details
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                                 // Summary
                                 UI.Text(
                                     text = message.systemMessage.summary,
@@ -201,7 +201,7 @@ fun ChatMessageBubble(
 
                                 // Command results details (if present)
                                 if (message.systemMessage.commandResults.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(UI.Space.XS))
 
                                     // The AI's commands these results answer, one per action result, in
                                     // order: an action that wrote entries shows them by their fields
@@ -218,12 +218,12 @@ fun ChatMessageBubble(
                                     results.forEach { commandResult ->
                                         UI.Card(type = CardType.DEFAULT) {
                                             Column(
-                                                modifier = Modifier.padding(8.dp),
-                                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                                modifier = Modifier.padding(UI.Space.S),
+                                                verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
                                             ) {
                                                 // Status icon + details
                                                 Row(
-                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                                                     verticalAlignment = Alignment.Top
                                                 ) {
                                                     UI.Icon(
@@ -360,8 +360,9 @@ fun SettingsMenuDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .scrollEndSound()
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.M)
             ) {
                 // Header
                 UI.Text(
@@ -418,8 +419,9 @@ fun SessionSettingsDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .scrollEndSound()
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
                 // Header
                 Row(
@@ -439,21 +441,11 @@ fun SessionSettingsDialog(
                     )
                 }
 
-                // Validation toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    UI.Text(
-                        text = s.shared("label_validation"),
-                        type = TextType.BODY
-                    )
-                    Switch(
-                        checked = session.requireValidation,
-                        onCheckedChange = onToggleValidation
-                    )
-                }
+                UI.Switch(
+                    checked = session.requireValidation,
+                    onCheckedChange = onToggleValidation,
+                    label = s.shared("label_validation")
+                )
             }
         }
     }
@@ -479,8 +471,9 @@ fun SessionStatsDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .scrollEndSound()
+                    .padding(UI.Space.L),
+                verticalArrangement = Arrangement.spacedBy(UI.Space.L)
             ) {
                 // Header
                 Row(
@@ -520,15 +513,15 @@ private fun DataConfirmationCard(
 
     UI.Card(type = CardType.DEFAULT) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(UI.Space.M),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             UI.Text(text = s.shared("ai_data_confirmation_title"), type = TextType.SUBTITLE)
             UI.Text(
                 text = s.shared("ai_data_confirmation_text").format(dataChars, maxDataChars),
                 type = TextType.BODY
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                 UI.Button(type = ButtonType.PRIMARY, size = Size.M, onClick = onSend) {
                     UI.Text(text = s.shared("ai_data_confirmation_send"), type = TextType.BODY)
                 }
@@ -563,7 +556,7 @@ private fun WrittenEntries(action: com.assistant.core.ai.data.DataCommand) {
         UI.Text(text = s.shared("ai_written_entries_unreadable"), type = TextType.CAPTION)
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
         entries?.forEach { entry -> com.assistant.core.ai.ui.ProposedEntryItem(entry) }
     }
 }

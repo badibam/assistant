@@ -10,14 +10,10 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import com.assistant.core.coordinator.isSuccess
 import androidx.compose.runtime.setValue
@@ -25,6 +21,7 @@ import com.assistant.core.ui.screens.MainScreen
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
+import com.assistant.core.ui.sound.scrollEndSound
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.ai.orchestration.AIOrchestrator
@@ -62,19 +59,7 @@ class MainActivity : ComponentActivity() {
     // shows the bar again on its own then
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideTheNavigationBar()
-    }
-
-    /**
-     * The navigation bar hidden, the status bar kept. A swipe from the edge brings it back for a
-     * moment, over the screen; with gesture navigation there is only its handle to hide, and the
-     * gestures still answer.
-     */
-    private fun hideTheNavigationBar() {
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            hide(WindowInsetsCompat.Type.navigationBars())
-        }
+        if (hasFocus) hideNavigationBar(window)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -126,9 +111,7 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(
                 colorScheme = CurrentTheme.getCurrentColorScheme()
             ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize()
-                ) {
+                UI.FullScreen {
                     // The demo first, installed afresh after an update, before the home screen
                     // reads the zones; once per activity, a recreation finding it done
                     var demoReady by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
@@ -146,6 +129,8 @@ class MainActivity : ComponentActivity() {
                             com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
                             com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
                         ) {
+                            // The theme's sounds loaded
+                            com.assistant.core.ui.sound.UISoundsLoader()
                             // A long operation running shows over every screen; one whose caller
                             // left (its screen closed) says once here how it ended
                             androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -156,9 +141,10 @@ class MainActivity : ComponentActivity() {
                                     com.assistant.core.ui.UI.Toast(this@MainActivity, message, com.assistant.core.ui.Duration.LONG)
                                 }
                             }
-                            androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+                            // The end of any list of the screens heard
+                            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().scrollEndSound()) {
                                 com.assistant.core.ui.components.LongOperationBar()
-                                androidx.compose.foundation.layout.Box(Modifier.weight(1f)) {
+                                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.weight(1f)) {
                                     MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
                                 }
                             }

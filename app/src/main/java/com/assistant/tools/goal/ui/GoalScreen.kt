@@ -20,7 +20,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.FieldDefinition
@@ -110,8 +109,8 @@ fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureCl
     val history = loaded.filter { it.status in GoalToolType.Status.LOCKED }.sortedByDescending { it.start }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.PageHeader(
             title = settings.string("name")!!,
@@ -155,7 +154,7 @@ private fun dot(status: String): String = when (status) {
 
 @Composable
 private fun AttemptLine(attempt: AttemptRow, s: StringsContext, onOpen: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(vertical = UI.Space.XS), horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
         UI.Text("${dot(attempt.status)} ${DateUtils.formatFullDateTime(attempt.start)}", TextType.BODY)
         UI.Text(s.tool("status_${attempt.status}"), TextType.CAPTION)
     }
@@ -191,7 +190,7 @@ private fun AttemptCard(
     val loaded = judgement
 
     UI.Card(type = CardType.DEFAULT) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
             UI.Text(DateUtils.formatFullDateTime(attempt.start) + (attempt.periodEnd?.let { " → " + DateUtils.formatFullDateTime(it) } ?: ""), TextType.CAPTION)
             UI.Text(s.tool("status_${attempt.status}") + (attempt.validatedBy?.let { " · " + s.tool("validated_by_$it") } ?: ""), TextType.LABEL)
             if (loaded == null) { UI.LoadingIndicator(); return@Column }
@@ -232,7 +231,7 @@ private fun AttemptCard(
             (loaded["sub_goals"] as? Map<*, *>)?.forEach { (name, subMet) ->
                 UI.Text("$name · " + s.tool("met_${(subMet as String).lowercase()}"), TextType.CAPTION)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
                 if (!locked) UI.Button(type = ButtonType.PRIMARY, onClick = onValidate) { UI.Text(s.tool("action_validate"), TextType.LABEL) }
                 else UI.Button(type = ButtonType.SECONDARY, onClick = onReopen) { UI.Text(s.tool("action_reopen"), TextType.LABEL) }
             }

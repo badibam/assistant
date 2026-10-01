@@ -938,12 +938,13 @@
 
     <string name="settings_ui">User interface</string>
     <string name="settings_ui_description">Configure the look and the behaviour of the interface</string>
+    <string name="settings_ui_sounds">Interface sounds</string>
+    <string name="settings_ui_sounds_help">The sounds the theme plays when you touch the screen. The default theme has none.</string>
 
     <string name="settings_data">Data management</string>
     <string name="settings_data_description">Configure the backup, the export and the import of the data</string>
 
     <!-- SETTINGS - Stub placeholders -->
-    <string name="settings_stub_coming_soon">This feature will be available soon</string>
 
     <!-- BACKUP SYSTEM - Backup and restore operations -->
     <string name="settings_backup">Backup &amp; reset</string>

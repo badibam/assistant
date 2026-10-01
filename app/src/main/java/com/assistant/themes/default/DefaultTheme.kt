@@ -1,5 +1,7 @@
 package com.assistant.themes.default
 
+import com.assistant.core.ui.sound.scrollEndSound
+
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import com.assistant.core.validation.FieldLimits
@@ -78,8 +80,33 @@ object DefaultTheme : ThemeContract {
 
     override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
 
-    override val gridMaxWidth = 480.dp
-    
+    /** A quarter of the width, the grid growing no wider than 480 dp. */
+    @Composable
+    override fun gridCellPx(availableWidthPx: Int): Int =
+        minOf(availableWidthPx, with(androidx.compose.ui.platform.LocalDensity.current) { 480.dp.roundToPx() }) / 4
+
+    /** Silent: the default theme has no sounds. */
+    override fun sound(signal: com.assistant.core.ui.sound.UISignal): Int? = null
+
+    /** 4 outside the card, between tiles, and the card's padding inside (ToolCardContainer). */
+    @Composable
+    override fun tileFrame(displayMode: DisplayMode): Dp = 4.dp + tilePadding(displayMode)
+
+    private fun tilePadding(displayMode: DisplayMode): Dp = when (displayMode) {
+        DisplayMode.ICON -> 4.dp
+        DisplayMode.MINIMAL -> 8.dp
+        else -> 12.dp
+    }
+
+    @Composable
+    override fun spacing(spacing: com.assistant.core.ui.Spacing): Dp = when (spacing) {
+        com.assistant.core.ui.Spacing.XS -> 4.dp
+        com.assistant.core.ui.Spacing.S -> 8.dp
+        com.assistant.core.ui.Spacing.M -> 12.dp
+        com.assistant.core.ui.Spacing.L -> 16.dp
+        com.assistant.core.ui.Spacing.XL -> 24.dp
+    }
+
 
     // =====================================
     // PALETTE SYSTEM IMPLEMENTATION
@@ -584,6 +611,7 @@ object DefaultTheme : ThemeContract {
             TextType.TITLE -> MaterialTheme.typography.headlineMedium
             TextType.SUBTITLE -> MaterialTheme.typography.headlineSmall
             TextType.BODY -> MaterialTheme.typography.bodyMedium
+            TextType.STRONG -> MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             TextType.CAPTION -> MaterialTheme.typography.bodySmall
             TextType.LABEL -> MaterialTheme.typography.labelMedium
             TextType.ERROR -> MaterialTheme.typography.bodyMedium
@@ -658,6 +686,39 @@ object DefaultTheme : ThemeContract {
             modifier = Modifier
                 .size(size)
                 .background(color = color, shape = CircleShape)
+        )
+    }
+
+    @Composable
+    override fun statusColor(status: com.assistant.core.ui.StatusColor): Color {
+        val scheme = CurrentTheme.getCurrentColorScheme()
+        return when (status) {
+            com.assistant.core.ui.StatusColor.SUCCESS -> scheme.primary
+            com.assistant.core.ui.StatusColor.WARNING -> scheme.tertiary
+            com.assistant.core.ui.StatusColor.ERROR -> scheme.error
+            com.assistant.core.ui.StatusColor.INFO -> scheme.secondary
+            com.assistant.core.ui.StatusColor.MUTED -> scheme.outline
+        }
+    }
+
+    /** A Material surface: the background, and the content color Material's components inside read. */
+    @Composable
+    override fun FullScreen(content: @Composable () -> Unit) {
+        androidx.compose.material3.Surface(modifier = Modifier.fillMaxSize(), color = CurrentTheme.getCurrentColorScheme().surface) {
+            content()
+        }
+    }
+
+    @Composable
+    override fun HeaderBar(content: @Composable RowScope.() -> Unit) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(CurrentTheme.getCurrentColorScheme().surfaceVariant)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content
         )
     }
 
@@ -924,7 +985,7 @@ object DefaultTheme : ThemeContract {
         
         AlertDialog(
             onDismissRequest = onCancel,
-            text = { content() },
+            text = { Box(modifier = Modifier.scrollEndSound()) { content() } },
             confirmButton = if (confirmText != null) {
                 {
                     androidx.compose.material3.Button(
@@ -1024,11 +1085,7 @@ object DefaultTheme : ThemeContract {
         // The grid gives the tile its cells; the space between tiles is taken inside them
         val cardModifier = Modifier.fillMaxSize().padding(4.dp)
 
-        val cardPadding = when (displayMode) {
-            DisplayMode.ICON -> 4.dp
-            DisplayMode.MINIMAL -> 8.dp
-            else -> 12.dp
-        }
+        val cardPadding = tilePadding(displayMode)
         
         androidx.compose.material3.Card(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -1186,6 +1243,39 @@ object DefaultTheme : ThemeContract {
         }
     }
     
+    @Composable
+    override fun Switch(
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        label: String
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, TextType.BODY, false, null)
+            androidx.compose.material3.Switch(checked = checked, onCheckedChange = onCheckedChange)
+        }
+    }
+
+    @Composable
+    override fun Tabs(
+        labels: List<String>,
+        selected: Int,
+        onSelect: (Int) -> Unit
+    ) {
+        androidx.compose.material3.TabRow(selectedTabIndex = selected) {
+            labels.forEachIndexed { index, label ->
+                androidx.compose.material3.Tab(
+                    selected = index == selected,
+                    onClick = { onSelect(index) },
+                    text = { Text(label, TextType.BODY, false, null) }
+                )
+            }
+        }
+    }
+
     /** Two segmented buttons side by side; neither is chosen while there is no answer. */
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable

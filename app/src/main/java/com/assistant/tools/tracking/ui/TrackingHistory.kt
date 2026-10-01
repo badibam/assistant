@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.tools.tracking.ui.components.TrackingEntryDialog
@@ -269,11 +268,11 @@ fun TrackingHistory(
     
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         // Level 1: Global filters
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.L),
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -377,26 +376,26 @@ fun TrackingHistory(
         // Table header
         if (trackingData.isNotEmpty()) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Date header (weight=3f)
                 Box(
-                    modifier = Modifier.weight(3f).padding(8.dp)
+                    modifier = Modifier.weight(3f).padding(UI.Space.S)
                 ) {
                     UI.Text(s.shared("label_date"), TextType.CAPTION)
                 }
                 
                 // Name header (weight=3f)
                 Box(
-                    modifier = Modifier.weight(3f).padding(8.dp)
+                    modifier = Modifier.weight(3f).padding(UI.Space.S)
                 ) {
                     UI.Text(s.shared("label_name"), TextType.CAPTION)
                 }
                 
                 // Value header (weight=3f)
                 Box(
-                    modifier = Modifier.weight(3f).padding(8.dp)
+                    modifier = Modifier.weight(3f).padding(UI.Space.S)
                 ) {
                     UI.Text(s.tool("usage_label_value"), TextType.CAPTION)
                 }
@@ -413,7 +412,7 @@ fun TrackingHistory(
         
         // Data table - limit items and make it non-scrollable (parent page is scrollable)
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
         ) {
             trackingData.forEach { entry ->
                 TrackingHistoryRow(
@@ -429,7 +428,7 @@ fun TrackingHistory(
             
             // Pagination controls
             if (trackingData.isNotEmpty() && totalPages > 1) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(UI.Space.S))
                 UI.Pagination(
                     currentPage = currentPage,
                     totalPages = totalPages,
@@ -484,22 +483,22 @@ private fun TrackingHistoryRow(
     val context = LocalContext.current
     val data = remember(entry.data) { JSONObject(entry.data) }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = UI.Space.XS),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(modifier = Modifier.weight(3f).padding(8.dp)) {
+        Box(modifier = Modifier.weight(3f).padding(UI.Space.S)) {
             UI.Text(
                 text = com.assistant.core.utils.DateTimeFormatter.formatForDisplay(entry.timestamp ?: entry.createdAt, context),
                 type = TextType.BODY
             )
         }
 
-        Box(modifier = Modifier.weight(3f).padding(8.dp)) {
+        Box(modifier = Modifier.weight(3f).padding(UI.Space.S)) {
             UI.Text(text = entry.name ?: "", type = TextType.BODY)
         }
 
-        Column(modifier = Modifier.weight(3f).padding(8.dp)) {
+        Column(modifier = Modifier.weight(3f).padding(UI.Space.S)) {
             if (valueField != null) {
                 val state = entry.state?.let { JSONObject(it) }
                 val stored = data.opt("value")?.let { if (it is org.json.JSONArray) JsonUtils.toList(it) else it }

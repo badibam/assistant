@@ -1,7 +1,6 @@
 package com.assistant.core.ai.ui.automation
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -12,7 +11,7 @@ import com.assistant.core.ai.utils.AIFormatUtils
 import com.assistant.core.ai.utils.PhaseUtils
 import com.assistant.core.ai.utils.toDisplayString
 import com.assistant.core.ai.utils.toEndReasonDisplayString
-import com.assistant.core.ai.utils.toEndReasonColor
+import com.assistant.core.ai.utils.toEndReasonStatus
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
@@ -53,13 +52,11 @@ fun ExecutionCard(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    val colorScheme = MaterialTheme.colorScheme
-
     // Use live phase if provided, otherwise use stored phase
     val displayPhase = livePhase ?: phase
 
-    // Get status color for end reason (or phase if still running)
-    val statusColor = endReason.toEndReasonColor(colorScheme)
+    // The state shown for the end reason (a warning while still running)
+    val status = endReason.toEndReasonStatus()
 
     UI.Card(
         type = CardType.DEFAULT
@@ -67,13 +64,13 @@ fun ExecutionCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(UI.Space.M),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             // Row 1: Scheduled time | Status (EndReason if exists, else Phase)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left column: Scheduled execution time
@@ -90,10 +87,10 @@ fun ExecutionCard(
 
                 // Right column: EndReason if exists, else Phase (both with status indicator)
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    UI.StatusIndicator(color = statusColor, size = 8.dp)
+                    UI.StatusIndicator(status = status, size = 8.dp)
                     UI.Text(
                         text = if (endReason != null) {
                             endReason.toEndReasonDisplayString(context)
@@ -108,7 +105,7 @@ fun ExecutionCard(
             // Row 2: Started time
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left column: Started time
@@ -125,7 +122,7 @@ fun ExecutionCard(
             // Row 3: Duration | Roundtrips
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left column: Duration
@@ -148,7 +145,7 @@ fun ExecutionCard(
             // Row 4: Tokens | Cost
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Left column: Tokens

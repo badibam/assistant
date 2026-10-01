@@ -1,10 +1,9 @@
 package com.assistant.core.ai.utils
 
 import android.content.Context
-import androidx.compose.material3.ColorScheme
-import androidx.compose.ui.graphics.Color
 import com.assistant.core.ai.domain.Phase
 import com.assistant.core.strings.Strings
+import com.assistant.core.ui.StatusColor
 
 /**
  * Utility functions and extensions for AI Phase and SessionEndReason
@@ -66,24 +65,15 @@ object PhaseUtils {
     }
 
     /**
-     * Get semantic color for SessionEndReason
-     * Used for status display in AutomationScreen ExecutionCard
-     *
-     * Color mapping:
-     * - primary (blue): COMPLETED
-     * - tertiary (orange/warning): LIMIT_REACHED, NETWORK_ERROR, SUSPENDED, null (interrupted)
-     * - error (red): ERROR, CANCELLED, TIMEOUT
-     *
-     * @param endReason SessionEndReason string (nullable)
-     * @param colorScheme Material theme color scheme
-     * @return Color for the end reason
+     * The state a SessionEndReason shows as, for the status mark of an execution (ExecutionCard):
+     * success when completed, an error when it failed or was stopped, a warning when it was cut
+     * short (a limit, the network, a suspension, or no reason: still running or interrupted).
      */
-    fun endReasonToColor(endReason: String?, colorScheme: ColorScheme): Color {
+    fun endReasonToStatus(endReason: String?): StatusColor {
         return when (endReason?.uppercase()) {
-            "COMPLETED" -> colorScheme.primary
-            "LIMIT_REACHED", "NETWORK_ERROR", "SUSPENDED", null -> colorScheme.tertiary
-            "ERROR", "CANCELLED", "TIMEOUT" -> colorScheme.error
-            else -> colorScheme.tertiary  // Default to warning
+            "COMPLETED" -> StatusColor.SUCCESS
+            "ERROR", "CANCELLED", "TIMEOUT" -> StatusColor.ERROR
+            else -> StatusColor.WARNING
         }
     }
 }
@@ -103,8 +93,8 @@ fun String?.toEndReasonDisplayString(context: Context): String {
 }
 
 /**
- * Extension function: Get color for SessionEndReason string
+ * Extension function: the state a SessionEndReason string shows as
  */
-fun String?.toEndReasonColor(colorScheme: ColorScheme): Color {
-    return PhaseUtils.endReasonToColor(this, colorScheme)
+fun String?.toEndReasonStatus(): StatusColor {
+    return PhaseUtils.endReasonToStatus(this)
 }

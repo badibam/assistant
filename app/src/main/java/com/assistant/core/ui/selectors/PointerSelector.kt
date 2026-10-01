@@ -15,7 +15,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.assistant.core.fields.ReferenceTarget
 import com.assistant.core.selection.ReferenceKind
 import com.assistant.core.strings.Strings
@@ -59,14 +58,14 @@ fun PointerSelector(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(UI.Space.L)
         ) {
             UI.Text(text = s.shared("pointer_enrichment_selector_title"), type = TextType.TITLE, fillMaxWidth = true)
 
             SelectionPicker(selection.draft, { selection = selection.copy(draft = it) }, POINTED, fields, reference, offerFields = true)
 
             if (selection.complete) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.L)) {
                     UI.Checkbox(checked = selection.config, onCheckedChange = { selection = selection.copy(config = it) }, label = s.shared("pointer_attach_config"))
                     UI.Checkbox(checked = selection.entries, onCheckedChange = { selection = selection.copy(entries = it) }, label = s.shared("pointer_attach_entries"))
                 }
