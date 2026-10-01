@@ -151,28 +151,27 @@ object DefaultTheme : ThemeContract {
      */
     override fun getColorScheme(paletteId: String): ColorScheme {
         return when (paletteId) {
-            // One cool family, as the dark palette is: white tiles on a pale lavender ground,
-            // set apart by their colour (1.12, the dark one's step), never tinted by elevation;
-            // the main colours dark enough for white on them, and for an icon alone on a tile
-            // (4.5 and over)
+            // One hue, the main blue's (about 222°): every grey a blue grey, white tiles on a pale
+            // blue ground, set apart by their colour (1.1), never tinted by elevation; the main
+            // colours dark enough for white on them, and for an icon alone on a tile (4.5 and over)
             "default_light" -> lightColorScheme(
                 primary = Color(0xFF4A68AE),        // Deep periwinkle (5.4 on white)
                 onPrimary = Color(0xFFFFFFFF),      // White
-                secondary = Color(0xFF7E5F8F),      // Deep mauve (decorative accent)
+                secondary = Color(0xFF5C6E91),      // Slate blue (5.1 on white)
                 onSecondary = Color(0xFFFFFFFF),    // White
                 tertiary = Color(0xFFF5A47A),       // Soft orange (warning)
                 onTertiary = Color(0xFF4A2E1A),     // Dark brown
                 surface = Color(0xFFFFFFFF),        // White: the tiles
-                onSurface = Color(0xFF2E2C3A),      // Dark grey towards violet
-                surfaceVariant = Color(0xFFE6E2EE), // Pale lavender
-                onSurfaceVariant = Color(0xFF524E5F), // Mid violet grey
+                onSurface = Color(0xFF2B303B),      // Dark blue grey
+                surfaceVariant = Color(0xFFE2E8F2), // Pale blue grey
+                onSurfaceVariant = Color(0xFF4C5466), // Mid blue grey
                 surfaceTint = Color(0xFFFFFFFF),    // No elevation tint: a tile stays white
-                background = Color(0xFFF3F1F7),     // Very pale lavender: the ground
-                onBackground = Color(0xFF2E2C3A),   // Dark grey
+                background = Color(0xFFF1F4F9),     // Very pale blue: the ground
+                onBackground = Color(0xFF2B303B),   // Dark blue grey
                 error = Color(0xFFB04545),          // Deep red (5.6 on white)
                 onError = Color(0xFFFFFFFF),        // White
-                outline = Color(0xFFB5AEC4),        // Mauve grey
-                outlineVariant = Color(0xFFDAD5E4)  // Light lavender
+                outline = Color(0xFFA8B2C5),        // Blue grey
+                outlineVariant = Color(0xFFD4DBE7)  // Light blue grey
             )
             "default_dark" -> darkColorScheme(
                 primary = Color(0xFF9BB8E8),        // Bleu ciel doux mais vif
