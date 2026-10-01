@@ -7,16 +7,6 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Importer une sauvegarde faite avant la mise à jour (base 52 ou plus ancienne) : chaque zone montre ses outils dans le même ordre, l'accueil ses zones de même ; les récurrences et les pointeurs se relisent. Juste après, l'écran des journaux filtré sur « Error » ne montre aucune ligne `MIGRATION`.
 - Un pointeur qui filtrait un instant par « = » (avant la migration 52) est refusé en le disant : rien ne part en silence.
 
-## Démo
-
-- Après l'installation de l'APK, un écran d'attente, puis l'accueil avec le groupe « Démo » (« Demo » sur un téléphone en anglais) et ses cinq zones : Course et Travail côte à côte en grand, Cuisine en ligne, Balcon et Italien dessous ; chaque zone ouverte montre sa description et ses groupes d'outils.
-- Relancer l'app sans réinstaller : pas d'écran d'attente, rien ne bouge. Réinstaller l'APK : la démo est réinstallée.
-- Une zone à soi rangée dans « Démo » survit à une réinstallation de la démo ; un outil ajouté dans une zone de démo disparaît.
-- La démo à flot : le chronomètre d'Heures tourne depuis 40 minutes sur Studio Brume ; une notification « Rappeler Studio Brume » dans la première minute ; « Relancer la Librairie » en retard avec le point sur Tâches et sur la zone Travail ; le dernier « Point facturation » non lu ; « Semaine d'entraînement » et « Semaine d'italien » avec la semaine en cours ouverte, la précédente à valider, et dix semaines validées dont celle du rush manquée ; l'historique des tentatives se relit, les critères de chacune lus dans sa copie.
-- Les graphiques de la démo s'affichent tous, la semaine de rush visible dans Km par semaine, Sommeil et humeur, Heures par client.
-- Réglages › Démo : désactiver « Installer la démo à chaque mise à jour » et enregistrer supprime la démo, le groupe « Démo » reste ; le réactiver la réinstalle ; « Réinstaller maintenant » la remet à neuf.
-- Réglages › Démo : enregistrer sans rien changer ne lance ni installation ni suppression ; « Supprimer la démo » demande confirmation, supprime la démo, et laisse le réglage tel qu'il était (activé, la mise à jour suivante la réinstalle).
-
 ## Chat IA
 
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
