@@ -838,15 +838,16 @@ class AIEventProcessor(
             // Log raw response (VERBOSE)
             LogManager.aiSession("AI RAW RESPONSE: $aiMessageJson", "VERBOSE")
 
-            // Clean markdown markers from response (LLMs often wrap JSON in ```json...```)
-            // This ensures consistent format for parsing
-            val cleanedJson = aiMessageJson.trim().let { content ->
-                val withoutOpening = content.removePrefix("```json").removePrefix("```").trimStart()
-                withoutOpening.removeSuffix("```").trimEnd()
-            }
+            // The response's one JSON object, out of the code block or the sentence around it
+            val envelope = ResponseEnvelope.split(aiMessageJson)
+            val cleanedJson = envelope?.json ?: aiMessageJson.trim()
 
             // Parse JSON → AIMessage
             val parsedAIMessage = AIMessage.fromJson(cleanedJson)
+
+            if (parsedAIMessage != null && envelope != null && envelope.outside.isNotEmpty()) {
+                setTextOutsideJsonApart(sessionId, lastAIMessage, envelope)
+            }
 
             if (parsedAIMessage != null) {
                 // Clean postText if no actionCommands (silently fix, not an error)
@@ -931,7 +932,7 @@ class AIEventProcessor(
                 )
 
                 // Update message in DB with parsed AIMessage (follows pattern of enrichments/actions storage)
-                val updatedMessage = lastAIMessage.copy(aiMessage = cleanedAIMessage)
+                val updatedMessage = lastAIMessage.copy(aiMessage = cleanedAIMessage, aiMessageJson = cleanedJson)
                 messageRepository.updateMessage(sessionId, updatedMessage)
 
                 // Writes on tools whose schema the AI lacks go no further, not even to validation
@@ -1025,6 +1026,33 @@ class AIEventProcessor(
 
             emit(AIEvent.ParseErrorOccurred(e.message ?: "Unknown parsing error"))
         }
+    }
+
+    /**
+     * Text the AI wrote around its JSON, set apart: its message keeps the JSON alone, which is what
+     * its history replays, and a system message quotes the text to the user while the AI reads
+     * only that it was set aside (PromptManager).
+     */
+    private suspend fun setTextOutsideJsonApart(sessionId: String, aiMessage: SessionMessage, envelope: ResponseEnvelope.Split) {
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+        LogManager.aiSession("parseAIResponse: text outside the JSON set apart (${envelope.outside.length} chars)", "INFO")
+        messageRepository.updateMessage(sessionId, aiMessage.copy(aiMessageJson = envelope.json))
+        messageRepository.storeMessage(sessionId, SessionMessage(
+            id = java.util.UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            sender = MessageSender.SYSTEM,
+            richContent = null,
+            textContent = null,
+            aiMessage = null,
+            aiMessageJson = null,
+            systemMessage = com.assistant.core.ai.data.SystemMessage(
+                type = SystemMessageType.TEXT_OUTSIDE_JSON,
+                commandResults = emptyList(),
+                summary = s.shared("ai_text_outside_json_set_apart").format(envelope.outside),
+                formattedData = s.shared("ai_text_outside_json_notice")
+            ),
+            executionMetadata = null
+        ))
     }
 
     /**

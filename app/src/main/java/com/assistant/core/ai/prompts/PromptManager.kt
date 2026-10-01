@@ -131,7 +131,13 @@ object PromptManager {
         val enrichmentText = com.assistant.core.ai.enrichments.EnrichmentText.load(context,
             com.assistant.core.ai.enrichments.EnrichmentText.blocksOf(sessionMessages.mapNotNull { it.richContent }))
         val promptMessages = sessionMessages.map { message ->
-            message.richContent?.let { rich -> message.copy(richContent = null, textContent = enrichmentText.prompt(rich)) } ?: message
+            message.richContent?.let { rich -> message.copy(richContent = null, textContent = enrichmentText.prompt(rich)) }
+                // Text the AI wrote around its JSON reaches it only as the notice that it was set
+                // aside: quoted back, it would read as part of what it said
+                ?: message.systemMessage?.takeIf { it.type == SystemMessageType.TEXT_OUTSIDE_JSON }?.let { system ->
+                    message.copy(systemMessage = system.copy(summary = system.formattedData ?: "", formattedData = null))
+                }
+                ?: message
         }
 
         LogManager.aiPrompt("Prompt data built: L1=${estimateTokens(level1Content)} tokens, L2=${estimateTokens(level2Content)} tokens, L3=${estimateTokens(level3Content)} tokens, ${sessionMessages.size} messages", "INFO")
