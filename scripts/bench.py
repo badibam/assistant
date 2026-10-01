@@ -38,7 +38,8 @@ BASE_URL = "https://openrouter.ai/api/v1"
 FORCING = "schema"
 # The campaign's levels: forcing helps one model and breaks another, so each plays both
 CAMPAIGN_FORCINGS = ("none", "schema")
-TIMEOUT_MINUTES = 10
+# A whole scenario: a normal call answers within a minute, so a stalled provider costs this at most
+TIMEOUT_MINUTES = 6
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from bench_scenarios import SCENARIOS  # noqa: E402
@@ -147,6 +148,16 @@ def cost(folder, price):
     return uncached * price[0] + cached * price[1] + output * price[2]
 
 
+def mute(outcome, folder):
+    """Whether the play timed out without one answer of the AI: the provider, not the model."""
+    import sqlite3
+    if outcome.get("status") != "timeout" or not (folder / "after.db").is_file():
+        return False
+    answers = sqlite3.connect(folder / "after.db").execute(
+        "SELECT COUNT(*) FROM session_messages WHERE sender = 'AI' AND session_id NOT LIKE 'demo-%'").fetchone()[0]
+    return answers == 0
+
+
 def campaign(models, forcings, names, key):
     """Plays [names] on each model and level, judged as it goes; writes summary.json and summary.md."""
     folder = OUT / time.strftime("%Y-%m-%d_%H%M")
@@ -160,6 +171,11 @@ def campaign(models, forcings, names, key):
             for name in names:
                 into = folder / model_dir(model) / forcing / name
                 outcome = play(model, name, key, into, forcing)
+                # A provider that never answered says nothing of the model: played once more
+                if mute(outcome, into):
+                    outcome = play(model, name, key, into, forcing)
+                if mute(outcome, into):
+                    outcome["status"] = "mute"
                 try:
                     passed, details = check(name, into) if outcome.get("status") != "error" else (False, [outcome.get("detail")])
                 except Exception as e:  # a copy the check cannot read is a failed play, said as such
@@ -175,6 +191,11 @@ def campaign(models, forcings, names, key):
     print(f"\nTable: {folder / 'summary.md'}")
 
 
+def mark(result):
+    """✓ passed, ✗ failed, — the provider never answered (the model not judged)."""
+    return "✓" if result["passed"] else "—" if result["status"] == "mute" else "✗"
+
+
 def write_table(folder, results, models, forcings, names):
     """Scenario by model and level, the total per column, and what each column cost."""
     columns = [(m, f) for m in models for f in forcings]
@@ -183,7 +204,7 @@ def write_table(folder, results, models, forcings, names):
              "|---|" + "---|" * len(columns)]
     for name in names:
         lines.append(f"| {name} | " + " | ".join(
-            ("✓" if by[(m, f, name)]["passed"] else "✗") if (m, f, name) in by else "" for m, f in columns) + " |")
+            mark(by[(m, f, name)]) if (m, f, name) in by else "" for m, f in columns) + " |")
     lines.append("| **réussis** | " + " | ".join(
         f"{sum(by[(m, f, n)]['passed'] for n in names if (m, f, n) in by)}/{len(names)}" for m, f in columns) + " |")
     lines.append("| **coût** | " + " | ".join(

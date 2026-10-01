@@ -127,8 +127,11 @@ def norm(text):
 
 
 def numbers_in(text):
-    """Every number written in [text], a decimal comma read as a point; "6 h 50" also read as 6.83."""
-    found = [float(n.replace(",", ".")) for n in re.findall(r"\d+(?:[.,]\d+)?", text)]
+    """Every number written in [text], a decimal comma read as a point, a space between thousands
+    ("1 274", also a no-break space) read as one number; "6 h 50" also read as 6.83."""
+    grouped = re.findall(r"\d{1,3}(?:[   ]\d{3})+(?:[.,]\d+)?", text)
+    found = [float(re.sub(r"[   ]", "", n).replace(",", ".")) for n in grouped]
+    found += [float(n.replace(",", ".")) for n in re.findall(r"\d+(?:[.,]\d+)?", text)]
     found += [int(h) + int(m) / 60 for h, m in re.findall(r"(\d+)\s*h\s*(\d{1,2})", text)]
     return found
 
