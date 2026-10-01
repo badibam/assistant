@@ -107,6 +107,12 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (zoneId.isBlank() || toolType.isBlank()) {
             return OperationResult.error(s.shared("service_error_zone_id_tool_type_required"))
         }
+        // The app's own demo gives its ids; every other caller gets one made here
+        val toolId = when (val given = com.assistant.core.coordinator.GivenId.read(params)) {
+            com.assistant.core.coordinator.GivenId.Read.None -> java.util.UUID.randomUUID().toString()
+            is com.assistant.core.coordinator.GivenId.Read.Accepted -> given.id
+            is com.assistant.core.coordinator.GivenId.Read.Refused -> return OperationResult.error(s.shared("service_error_id_not_given").format(given.id))
+        }
 
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -136,7 +142,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val newToolInstance = database.withTransaction {
-            arrive(ToolInstance(zone_id = zoneId, tooltype = toolType, config_json = storedConfigJson, grid_x = 0, grid_y = 0), zone.tool_groups)
+            arrive(ToolInstance(id = toolId, zone_id = zoneId, tooltype = toolType, config_json = storedConfigJson, grid_x = 0, grid_y = 0), zone.tool_groups)
                 .also { toolInstanceDao.insertToolInstance(it) }
         }
 

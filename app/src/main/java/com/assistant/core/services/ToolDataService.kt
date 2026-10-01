@@ -93,6 +93,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (toolInstanceId.isEmpty()) {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("tool_instance_id"))
         }
+        // The app's own demo gives its ids; every other caller gets one made here
+        val entryId = when (val given = com.assistant.core.coordinator.GivenId.read(params)) {
+            com.assistant.core.coordinator.GivenId.Read.None -> UUID.randomUUID().toString()
+            is com.assistant.core.coordinator.GivenId.Read.Accepted -> given.id
+            is com.assistant.core.coordinator.GivenId.Read.Refused -> return OperationResult.error(s.shared("service_error_id_not_given").format(given.id))
+        }
 
         val target = when (val loaded = loadWriteTarget(toolInstanceId)) {
             is WriteTarget.Refused -> return OperationResult.error(loaded.error)
@@ -136,7 +142,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val now = System.currentTimeMillis()
         val entity = ToolDataEntity(
-            id = UUID.randomUUID().toString(),
+            id = entryId,
             toolInstanceId = toolInstanceId,
             tooltype = tooltype,
             timestamp = timestamp,

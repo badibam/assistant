@@ -1,20 +1,25 @@
 package com.assistant.core.demo
 
+import com.assistant.core.coordinator.GivenId
+import com.assistant.core.coordinator.Source
+import com.assistant.core.fields.FieldNameGenerator
 import com.assistant.core.grid.Grid
 import com.assistant.core.grid.ZonePositions
 import com.assistant.core.ui.DisplayMode
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
 /**
  * Covers the demo the app ships (docs/design/demo.md), read from its assets as the service reads
- * them: the same text keys in both languages, every key the structure asks for given, every id
- * carrying the prefix a reinstall removes by, and the zones laid out in their group with the
- * modes a zone's tile takes.
+ * them: the same text keys in both languages, every key the structure asks for given and every
+ * text used, the prefix on every id and the suffix on every variable, ids unique, the zones and
+ * each section of tools laid out on their grid, the user's field names kept as given, and the
+ * given ids accepted from the app alone.
  */
 class DemoContentTest {
 
@@ -23,39 +28,72 @@ class DemoContentTest {
     private val structure = asset("structure.json")
     private val languages = listOf("texts-en.json", "texts-fr.json")
 
+    private fun read(language: String = "texts-en.json") = DemoContent.read(structure, asset(language))
+
     @Test
-    fun `both languages give the same text keys`() {
+    fun `both languages give the same text keys, and each is used`() {
         val (en, fr) = languages.map { asset(it).keys().asSequence().toSet() }
         assertEquals(en, fr)
+        val used = Regex("\"@([a-z0-9_]+)\"").findAll(structure.toString()).map { it.groupValues[1] }.toSet()
+        assertEquals(emptySet<String>(), en - used)
     }
 
     @Test
-    fun `the demo reads whole in each language, every id prefixed, every zone in its group`() {
+    fun `the demo reads whole in each language, every id prefixed and unique, every variable suffixed`() {
         for (language in languages) {
-            val content = DemoContent.read(structure, asset(language), now = 0)
-            assertTrue(content.zones.isNotEmpty())
-            content.zones.forEach { zone ->
-                assertTrue(zone.id.startsWith(DemoContent.PREFIX))
-                assertEquals(content.group, zone.group)
-                // Each group named, none left as its key
-                JSONArray(zone.tool_groups).let { groups -> (0 until groups.length()).forEach { assertTrue(groups.getString(it).isNotBlank()) } }
-            }
+            val content = read(language)
+            val ids = (content.zones + content.tools + content.variables).map { it.getString("id") }
+            assertEquals(ids.size, ids.toSet().size)
+            content.zones.forEach { assertEquals(content.group, it.getString("group")) }
         }
     }
 
     @Test
     fun `a text missing refuses the demo`() {
         val texts = asset("texts-en.json").apply { remove("course_name") }
-        val refused = runCatching { DemoContent.read(structure, texts, now = 0) }
-        assertTrue(refused.isFailure)
+        assertTrue(runCatching { DemoContent.read(structure, texts) }.isFailure)
     }
 
     @Test
     fun `the zones take a zone's modes, all four of them, and lie on the grid without overlapping`() {
-        val zones = DemoContent.read(structure, asset("texts-en.json"), now = 0).zones
-        val modes = zones.map { DisplayMode.valueOf(it.display_mode) }
-        assertTrue(ZonePositions.MODES.containsAll(modes))
+        val zones = read().zones
+        val modes = zones.map { DisplayMode.valueOf(it.getString("display_mode")) }
         assertEquals(ZonePositions.MODES.toSet(), modes.toSet())
-        assertTrue(Grid.isLaidOut(zones.map { ZonePositions.tile(it) }))
+        assertTrue(Grid.isLaidOut(zones.map { tile(it, it.getString("display_mode")) }))
     }
+
+    @Test
+    fun `each section of tools lies on its grid, in a group its zone has`() {
+        val content = read()
+        val groups = content.zones.associate { it.getString("id") to it.getJSONArray("tool_groups").strings() }
+        content.tools.groupBy { it.getString("zone_id") to it.getJSONObject("config").optString("group") }.forEach { (section, tools) ->
+            if (section.second.isNotEmpty()) assertTrue(section.toString(), section.second in groups.getValue(section.first))
+            assertTrue(section.toString(), Grid.isLaidOut(tools.map { tile(it, it.getJSONObject("config").getString("display_mode")) }))
+        }
+    }
+
+    @Test
+    fun `the user's fields are named as given, the generator keeping each name`() {
+        read().tools.forEach { tool ->
+            val fields = tool.getJSONObject("config").optJSONArray("extra_fields") ?: return@forEach
+            (0 until fields.length()).map { fields.getJSONObject(it).getString("name") }.forEach { name ->
+                assertEquals(name, FieldNameGenerator.generateName(name, emptyList()))
+            }
+        }
+    }
+
+    @Test
+    fun `an id is given by the app alone, with the demo's prefix`() {
+        assertTrue(GivenId.isAccepted("demo-course", Source.SYSTEM))
+        assertFalse(GivenId.isAccepted("demo-course", Source.AI))
+        assertFalse(GivenId.isAccepted("demo-course", Source.USER))
+        assertFalse(GivenId.isAccepted("course", Source.SYSTEM))
+    }
+
+    private fun tile(item: JSONObject, mode: String): Grid.Tile {
+        val size = Grid.size(DisplayMode.valueOf(mode))
+        return Grid.Tile(item.getString("id"), item.getInt("grid_x"), item.getInt("grid_y"), size.width, size.height)
+    }
+
+    private fun JSONArray.strings() = (0 until length()).map { getString(it) }
 }

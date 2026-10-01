@@ -1763,6 +1763,8 @@
     <string name="verbalize_unknown_operation">Unknown operation: %1$s</string>
     <string name="tools_config_error_zone_update">Unable to move the tool to that zone</string>
     <!-- Demo -->
+    <string name="demo_error_refused">The demo could not be built: %1$s</string>
+    <string name="service_error_id_not_given">An id is made by the app, it cannot be given: %1$s</string>
     <string name="demo_texts_file">texts-en.json</string>
     <string name="demo_error_unreadable">The demo could not be read: %1$s</string>
     <string name="demo_installed">Demo installed</string>

@@ -76,7 +76,12 @@ class VariableService(private val context: Context) : ExecutableService {
     private suspend fun create(params: JSONObject): OperationResult {
         val zoneId = params.optString("zone_id").takeIf { it.isNotEmpty() } ?: throw Refused(s.shared("variable_error_param").format("zone_id"))
         if (AppDatabase.getDatabase(context).zoneDao().getZoneById(zoneId) == null) throw Refused(s.shared("service_error_zone_not_found"))
-        val id = UUID.randomUUID().toString()
+        // The app's own demo gives its ids; every other caller gets one made here
+        val id = when (val given = com.assistant.core.coordinator.GivenId.read(params)) {
+            com.assistant.core.coordinator.GivenId.Read.None -> UUID.randomUUID().toString()
+            is com.assistant.core.coordinator.GivenId.Read.Accepted -> given.id
+            is com.assistant.core.coordinator.GivenId.Read.Refused -> throw Refused(s.shared("service_error_id_not_given").format(given.id))
+        }
         val name = checkName(params.optString("name"), id)
         val definition = checkDefinition(params.optJSONObject("definition") ?: throw Refused(s.shared("variable_error_param").format("definition")), name, id)
         val now = System.currentTimeMillis()

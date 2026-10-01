@@ -60,6 +60,12 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         val name = params.givenText("name")
             ?: return OperationResult.error(s.shared("service_error_zone_name_required"))
+        // The app's own demo gives its ids; every other caller gets one made here
+        val zoneId = when (val given = com.assistant.core.coordinator.GivenId.read(params)) {
+            com.assistant.core.coordinator.GivenId.Read.None -> java.util.UUID.randomUUID().toString()
+            is com.assistant.core.coordinator.GivenId.Read.Accepted -> given.id
+            is com.assistant.core.coordinator.GivenId.Read.Refused -> return OperationResult.error(s.shared("service_error_id_not_given").format(given.id))
+        }
 
         val description = params.givenText("description")
 
@@ -82,6 +88,7 @@ class ZoneService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val placing = Zone(
+            id = zoneId,
             name = name,
             description = description,
             icon_name = icon.name,
