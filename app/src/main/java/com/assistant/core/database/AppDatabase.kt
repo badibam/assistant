@@ -40,6 +40,7 @@ import com.assistant.core.versioning.ScheduleDatesAtV51
 import com.assistant.core.versioning.ConditionsAtV52
 import com.assistant.core.versioning.GridAtV53
 import com.assistant.core.versioning.ZoneGridAtV54
+import com.assistant.core.versioning.UiAppearanceAtV55
 import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
@@ -89,7 +90,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 54
+        const val VERSION = 55
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1560,6 +1561,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** The interface settings gain the appearance and the size step: see UiAppearanceAtV55. */
+        private val MIGRATION_54_55 = object : Migration(54, 55) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.query("SELECT category, settings FROM app_settings_categories").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val category = cursor.getString(0)
+                        // A row that cannot be read stays as it was and is logged
+                        try {
+                            val settings = UiAppearanceAtV55.settings(category, org.json.JSONObject(cursor.getString(1)))
+                            database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), category))
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 54->55: settings of $category left as they were: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 54->55: interface appearance and size step added", "INFO")
+            }
+        }
+
         /** The AI's changes to variables get their own validation switch: see VariableValidationAtV49. */
         private val MIGRATION_48_49 = object : Migration(48, 49) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2187,7 +2207,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_50_51,
                     MIGRATION_51_52,
                     MIGRATION_52_53,
-                    MIGRATION_53_54
+                    MIGRATION_53_54,
+                    MIGRATION_54_55
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

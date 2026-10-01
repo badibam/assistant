@@ -78,6 +78,12 @@ class AppConfigService(private val context: Context) : ExecutableService {
     suspend fun getUISounds(): Boolean =
         readSettings(AppSettingCategories.UI).getBoolean(com.assistant.core.config.AppSettings.UI_SOUNDS)
 
+    /** The interface's appearance (a theme's palette id) and its size step. */
+    suspend fun getUIAppearance(): Pair<String, Int> {
+        val ui = readSettings(AppSettingCategories.UI)
+        return ui.getString(com.assistant.core.config.AppSettings.UI_APPEARANCE) to ui.getInt(com.assistant.core.config.AppSettings.UI_SIZE_STEP)
+    }
+
     /**
      * Get structured validation configuration
      * Hierarchy: app > tool > session > AI request (OR logic)

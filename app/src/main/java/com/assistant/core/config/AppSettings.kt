@@ -54,6 +54,15 @@ object AppSettings {
     /** The setting under which the theme's interface sounds play. */
     const val UI_SOUNDS = "sounds"
 
+    /** The interface's look: a theme's palette, by its id (default_dark, retro_light...). */
+    const val UI_APPEARANCE = "appearance"
+
+    /** How many whole steps the interface's size is moved by. */
+    const val UI_SIZE_STEP = "size_step"
+
+    /** The size steps: one smaller, the theme's own, two larger. */
+    val SIZE_STEP_RANGE = -1..2
+
     fun nodes(category: String, context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
         val text = s::shared
@@ -105,9 +114,20 @@ object AppSettings {
                 field(com.assistant.core.demo.DemoStartup.INSTALL_ON_UPDATE, text("settings_demo_install_on_update"),
                     text("settings_demo_install_on_update_help"), FieldType.BOOLEAN, required = true)
             )
-            AppSettingCategories.UI -> listOf(
-                field(UI_SOUNDS, text("settings_ui_sounds"), text("settings_ui_sounds_help"), FieldType.BOOLEAN, required = true)
-            )
+            AppSettingCategories.UI -> {
+                // Every palette of every theme, named "Theme · palette"
+                val appearances = com.assistant.core.themes.CurrentTheme.getAvailableThemes().values.flatMap { theme ->
+                    theme.getAllPalettes().map { palette ->
+                        palette.id to "${theme.name(context)} · ${theme.paletteName(palette.id, context)}"
+                    }
+                }
+                listOf(
+                    choice(UI_APPEARANCE, text("settings_ui_appearance"), text("settings_ui_appearance_help"),
+                        appearances.map { it.first }, labels = appearances.toMap(), required = true),
+                    scale(UI_SIZE_STEP, text("settings_ui_size_step"), text("settings_ui_size_step_help"), SIZE_STEP_RANGE),
+                    field(UI_SOUNDS, text("settings_ui_sounds"), text("settings_ui_sounds_help"), FieldType.BOOLEAN, required = true)
+                )
+            }
             else -> throw IllegalArgumentException("No declaration for settings category '$category'")
         }
     }

@@ -46,6 +46,9 @@ object AppConfigManager {
                 cachedDateTimeConfig = service.getDateTimeConfig()
                 cachedAILimits = service.getAILimits()
                 cachedUISounds = service.getUISounds()
+                // The look is applied rather than cached: CurrentTheme holds it for every screen
+                val (appearance, sizeStep) = service.getUIAppearance()
+                com.assistant.core.themes.CurrentTheme.applyAppearance(appearance, sizeStep)
             }
             isInitialized = true
             LogManager.service("AppConfigManager initialized: dayStartHour=$cachedDayStartHour, weekStartDay=$cachedWeekStartDay, dateTimeConfig=$cachedDateTimeConfig, aiLimits=$cachedAILimits")

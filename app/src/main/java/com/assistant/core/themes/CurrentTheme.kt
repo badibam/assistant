@@ -40,6 +40,19 @@ object CurrentTheme {
         private set
 
     /**
+     * Shows the app in [paletteId], in the theme it belongs to, at [step]: the interface settings
+     * as AppConfigManager reads them. A palette no theme has is a bug, the settings' schema
+     * offering only the palettes the themes declare.
+     */
+    fun applyAppearance(paletteId: String, step: Int) {
+        val theme = ThemeScanner.scanForThemes().values.firstOrNull { theme -> theme.getAllPalettes().any { it.id == paletteId } }
+            ?: error("No theme has the palette '$paletteId'")
+        current = theme
+        currentPaletteId = paletteId
+        sizeStep = step
+    }
+
+    /**
      * Changes current theme by ID
      * All UI components will be automatically re-rendered
      * 
