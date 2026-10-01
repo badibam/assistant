@@ -15,7 +15,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Les conditions typées à l'écriture, conçues dans `docs/design/typed-conditions.md` : le type de chaque côté d'une condition connu sans lire de données, les constantes de l'IA traduites à l'entrée, la vérification au service, et le refus d'un changement dont dépend une condition ailleurs.
 - Le formulaire du Graphique : chaque niveau d'emboîtement retire de la largeur des deux côtés, au fond tout tient dans une colonne étroite, et le filtre d'une colonne de grille est enfoui six niveaux plus bas (couche › colonnes › colonne › lu › Filtres) sans signe en surface — à concevoir.
 - Le graphique Calories de Panorama met 3,3 à 3,8 s à se lire (grille par jour sur 30 jours, en arrière-plan) — comprendre où va le temps.
-- Les clés de texte `chart_schema_value_*` (x, y, x2, y2, strokeDash, detail, order, text, theta, radius) manquent : construites par assemblage, `check_string_keys.py` ne les voit pas.
 - Le formulaire du Graphique montre « Empilement : Aucun » sur le canal horizontal d'une couche dont le vertical est en `normalize` : vérifier qu'il lit l'empilement du bon canal.
 
 ## En attente d'un déclencheur
@@ -47,6 +46,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Streaming des réponses IA (Claude et OpenAI), avec le TCP keep-alive — quand des messages « requête envoyée, réponse perdue » s'accumulent dans les sessions : le réseau coupe les connexions restées silencieuses pendant la génération.
 - Le journal de l'app ne garde que ses ~12 000 dernières lignes, 24 minutes d'usage le 2026-10-01 (VERBOSE 7 562 dont 3 782 « Service result » du coordinateur, DEBUG 2 439) : les lignes utiles, migrations comprises, en sortent avant d'être lues. Réduire ce que VERBOSE et DEBUG écrivent, ou ne garder qu'eux en rotation courte.
 - La mémoire d'un import grandit avec son fichier : le texte entier, toutes ses cellules (`CsvReader.read`), le plan de toutes les lignes et les fiches du lot sont tenus ensemble ; 64 659 lignes (5 Mo) ont atteint 276 Mo de tas Java pour une limite de 256 Mo le 2026-10-01, en 3 min 19 s. À lire au fil de l'eau et écrire par tranches dans la même transaction (le contrôle des doublons sur les seules clés), puis l'écran d'une table qui charge toutes ses fiches — au premier import qui plante, ou à une limite de mémoire plus basse.
+- Le réglage « réservé à l'utilisateur » (`unified-fields.md`, Ouvert) couvre deux cas à séparer : une valeur saisie (champ de l'utilisateur, champ saisi d'un critère d'Objectif), écrite par `tool_data`, prend un réglage de champ `user_only` que le service vérifie par l'origine (`currentOrigin()`) et que le schéma de l'IA marque non modifiable ; le verdict d'un Objectif, calculé par `goal.validate`, n'est pas un champ et se réserve par un réglage de l'Objectif vérifié dans `goal.validate` et `goal.reopen` — la phrase de `missing-tools.md` qui l'envoie au réglage de champ est à corriger. Laissé de côté le 2026-10-01.
 
 ## Recette sur l'appareil
 
