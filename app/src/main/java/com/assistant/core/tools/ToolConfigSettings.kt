@@ -74,8 +74,14 @@ object ToolConfigSettings {
      * entries only.
      */
     fun nodes(toolType: ToolTypeContract, context: Context): List<SettingNode> =
-        generalNodes(toolType, context) + toolType.getConfigSettings(context) +
-            (if (toolType.keepsEntries()) extraFieldsNodes(toolType, context) else emptyList())
+        // Built once per tool type and language: it depends on nothing else, and a tile reads
+        // its name and icon through it on every drawing (a chart's takes some 150 ms to build)
+        declarations.getOrPut(toolType to context.resources.configuration.locales[0]) {
+            generalNodes(toolType, context) + toolType.getConfigSettings(context) +
+                (if (toolType.keepsEntries()) extraFieldsNodes(toolType, context) else emptyList())
+        }
+
+    private val declarations = java.util.concurrent.ConcurrentHashMap<Pair<ToolTypeContract, java.util.Locale>, List<SettingNode>>()
 
     /** What a new tool of [toolType] starts from: its declared defaults (SettingDefaults). */
     fun defaults(toolType: ToolTypeContract, context: Context): org.json.JSONObject =

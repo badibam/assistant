@@ -18,11 +18,14 @@ sealed interface ChartReading {
     data class Problem(val message: String) : ChartReading
 
     companion object {
-        /** The chart [config] describes, read now: what its screen and its tile draw alike. */
-        suspend fun of(config: JSONObject, context: Context): ChartReading {
+        /**
+         * The chart [config] describes, read now: what its screen and its tile draw alike. Read
+         * away from the screen's thread, which its tables would hold up to seconds.
+         */
+        suspend fun of(config: JSONObject, context: Context): ChartReading = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             val s = Strings.`for`(tool = "chart", context = context)
             val now = System.currentTimeMillis()
-            return try {
+            try {
                 val spec = ChartSpec.of(config, { s.shared(it) }, { s.tool(it) })
                 Drawn(spec, ChartSources(context).tables(spec, now), spec.period.instants(TimeResolver.at(now)), now)
             } catch (e: IllegalArgumentException) {
