@@ -155,10 +155,10 @@ object ImportPlanner {
 
     /**
      * What is missing from [declarations] to import [table], in words ([text], the shared strings):
-     * a column not declared, a field or a writing not said, a key where names do not find entries.
-     * Empty when complete.
+     * a column not declared, a field or a writing not said, a key where names do not find entries,
+     * no column for the name where the tool requires one ([nameRequired]). Empty when complete.
      */
-    fun missing(table: ImportTable, declarations: List<ColumnDeclaration>, fields: Map<String, FieldDefinition>, uniqueName: Boolean, text: (String) -> String): List<String> = buildList {
+    fun missing(table: ImportTable, declarations: List<ColumnDeclaration>, fields: Map<String, FieldDefinition>, uniqueName: Boolean, nameRequired: Boolean, text: (String) -> String): List<String> = buildList {
         val declared = declarations.associateBy { it.column }
         table.columns.filter { it !in declared }.forEach { add(text("import_missing_column").format(it)) }
         declarations.filter { it.column !in table.columns }.forEach { add(text("import_missing_in_file").format(it.column)) }
@@ -178,6 +178,10 @@ object ImportPlanner {
             }
         }
         if (declarations.count { it.target == ColumnTarget.KEY } > 1) add(text("import_missing_one_key"))
+        // Every line would be refused for its name: said once here, before any is written
+        if (nameRequired && declarations.none { it.target == ColumnTarget.KEY || (it.target == ColumnTarget.FIELD && it.field == "name") }) {
+            add(text("import_missing_name"))
+        }
     }
 
     /** The keys the file holds twice or more, the case and the spaces around not counted. */

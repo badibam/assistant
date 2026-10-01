@@ -1218,6 +1218,7 @@
     <string name="import_missing_writing">colonne « %1$s » : une écriture de %2$s, parmi %3$s</string>
     <string name="import_missing_new_field">colonne « %1$s » : la définition du nouveau champ</string>
     <string name="import_missing_one_key">une seule colonne clé au plus</string>
+    <string name="import_missing_name">aucune colonne ne donne le nom, obligatoire dans cet outil : en déclarer une comme clé, ou comme champ « name » là où les noms ne sont pas uniques</string>
     <string name="import_error_duplicate_keys">Ces noms figurent deux fois dans le fichier, où les noms sont uniques : %1$s</string>
     <string name="import_refused_cell">« %1$s » ne se lit pas en %2$s</string>
     <string name="action_verbalize_imports_detect">Lecture d\'un fichier à importer</string>

@@ -3,6 +3,7 @@ package com.assistant.core.imports
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -69,9 +70,18 @@ class ImportTest {
     @Test
     fun `a declaration misses nothing, or says what it misses`() {
         val table = ImportTable(listOf("a", "b"), emptyList())
-        val missing = ImportPlanner.missing(table, listOf(ColumnDeclaration("a", ColumnTarget.KEY)), emptyMap(), uniqueName = false) { "$it %1\$s" }
+        val missing = ImportPlanner.missing(table, listOf(ColumnDeclaration("a", ColumnTarget.KEY)), emptyMap(), uniqueName = false, nameRequired = false) { "$it %1\$s" }
         assertTrue(missing.contains("import_missing_column b"))
         assertTrue(missing.contains("import_missing_key a"))
+    }
+
+    @Test
+    fun `a tool that requires a name refuses a declaration with no column for it`() {
+        val table = ImportTable(listOf("a"), emptyList())
+        val ignored = listOf(ColumnDeclaration("a", ColumnTarget.IGNORE))
+        assertTrue(ImportPlanner.missing(table, ignored, emptyMap(), uniqueName = true, nameRequired = true) { it }.contains("import_missing_name"))
+        assertFalse(ImportPlanner.missing(table, listOf(ColumnDeclaration("a", ColumnTarget.KEY)), emptyMap(), uniqueName = true, nameRequired = true) { it }.contains("import_missing_name"))
+        assertFalse(ImportPlanner.missing(table, ignored, emptyMap(), uniqueName = true, nameRequired = false) { it }.contains("import_missing_name"))
     }
 
     @Test

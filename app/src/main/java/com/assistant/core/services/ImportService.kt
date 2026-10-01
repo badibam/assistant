@@ -7,6 +7,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.AppDatabase
 import androidx.room.withTransaction
+import com.assistant.core.fields.CoreFieldUsage
 import com.assistant.core.fields.CoreFields
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.ToolFields
@@ -61,7 +62,8 @@ class ImportService(private val context: Context) : ExecutableService {
         val config = JsonUtils.toJSONObject(toolInstance["config"] as Map<String, Any?>)
         val toolType = ToolTypeManager.getToolType(toolInstance["tooltype"] as String)
             ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
-        val uniqueName = toolType.getEntryFields(config, context).nameUnique
+        val entryFields = toolType.getEntryFields(config, context)
+        val uniqueName = entryFields.nameUnique
         // What a column may fill: the name, the date, the tool type's fields and the user's
         val fields = ToolFields.filterable(toolInstanceId, context, s).filterKeys { !it.startsWith("state.") && it != "created_at" && it != "updated_at" }
         val zone = AppConfigManager.getDateTimeConfig().getZoneId()
@@ -77,7 +79,7 @@ class ImportService(private val context: Context) : ExecutableService {
                 },
                 "lines" to table.rows.size
             ))
-            "apply" -> apply(toolInstanceId, config, table, params.optJSONArray("columns") ?: JSONArray(), fields, uniqueName, zone)
+            "apply" -> apply(toolInstanceId, config, table, params.optJSONArray("columns") ?: JSONArray(), fields, uniqueName, entryFields.name == CoreFieldUsage.REQUIRED, zone)
             else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
         }
     }
@@ -89,6 +91,7 @@ class ImportService(private val context: Context) : ExecutableService {
         columns: JSONArray,
         fields: Map<String, FieldDefinition>,
         uniqueName: Boolean,
+        nameRequired: Boolean,
         zone: java.time.ZoneId
     ): OperationResult {
         val declarations = try {
@@ -96,7 +99,7 @@ class ImportService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             return OperationResult.error(s.shared("import_error_declaration").format(e.message ?: ""))
         }
-        ImportPlanner.missing(table, declarations, fields, uniqueName) { s.shared(it) }.takeIf { it.isNotEmpty() }
+        ImportPlanner.missing(table, declarations, fields, uniqueName, nameRequired) { s.shared(it) }.takeIf { it.isNotEmpty() }
             ?.let { return OperationResult.error(s.shared("import_error_declaration").format(it.joinToString("; "))) }
         ImportPlanner.duplicateKeys(table, declarations).takeIf { it.isNotEmpty() }
             ?.let { return OperationResult.error(s.shared("import_error_duplicate_keys").format(it.joinToString(", "))) }
