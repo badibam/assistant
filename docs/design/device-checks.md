@@ -16,10 +16,14 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Chat IA
 
+- Actions coupées : pendant un import long lancé par l'IA, « Stop » arrête tout de suite, aucune fiche n'est écrite, un message dit que l'action en cours a été abandonnée, et une nouvelle session s'ouvre.
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
 - « Importe ce fichier dans une nouvelle table » avec un CSV joint : l'IA crée la table, puis au tour suivant `IMPORT_PLAN` et `IMPORT_DATA` ; la carte de validation nomme le fichier, ses lignes et la table ; la table a ses colonnes et ses lignes.
 - Le message de départ d'une automation ne propose pas le trombone.
-- DeepSeek, sur une dizaine de réponses : aucune ne commence par du texte ou `<thinking>` ; si l'une le fait, le message `FORMAT_ERROR` cite ce texte et la réponse suivante commence par `{`.
+- DeepSeek, sur une dizaine de réponses : une réponse dont le JSON est entouré de texte ou d'un bloc de code est exécutée sans `FORMAT_ERROR` ; un message système cite le texte écarté, et la réponse suivante ne le reprend pas.
+- Session CHAT avec OpenAI : la première réponse passe (le mode JSON, `text.format`, est accepté par l'API Responses).
+- « Coche Lait dans Courses » : l'IA appelle l'opération `check` et l'élément est coché ; dans une liste qui retire ce qui est coché, il disparaît.
+- L'IA crée un Questionnaire sans `ai_message` : la création passe, avec le message par défaut.
 - Après la mise à jour : une ancienne session affiche ses tokens et un coût en « ≥ » ; une nouvelle, un coût exact, le même dans la fiche de coût et sur la carte d'historique d'automation.
 - Démarrer l'app en mode avion après l'avoir déjà utilisée en ligne : une session affiche quand même son coût (prix gardés sur le téléphone).
 - Importer une sauvegarde faite avant la mise à jour : les conversations reviennent, leur coût en « ≥ ».

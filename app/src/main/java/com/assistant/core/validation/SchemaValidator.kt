@@ -35,8 +35,8 @@ object SchemaValidator {
         context: Context,
         partialValidation: Boolean = false
     ): ValidationResult {
-        LogManager.schema("Schema validation start for schema: ${schema.id}, partialValidation=$partialValidation")
-
+        // Only a refusal is logged: every write is validated, and a trace per validation (the
+        // schema and the data written out) made an import of 64 000 lines run out of memory
         return try {
             val cleanData = filterEmptyValues(convertJsonObjectsToMaps(data))
 
@@ -48,26 +48,13 @@ object SchemaValidator {
                 schema.content
             }
 
-            LogManager.schema("=== Schema being validated ===")
-            LogManager.schema("Schema ID: ${schema.id}")
-            LogManager.schema("Schema content (partial=$partialValidation): $schemaContent")
-            LogManager.schema("=== End schema ===")
-
             val jsonSchema = getOrCompileSchema(schemaContent)
             val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
             val dataNode = objectMapper.valueToTree<com.fasterxml.jackson.databind.JsonNode>(cleanData)
 
-            LogManager.schema("Data map: $cleanData")
-            LogManager.schema("NetworkNT datanode: $dataNode")
-
             val errors = jsonSchema.validate(dataNode)
-            LogManager.schema("NetworkNT errors count: ${errors.size}")
-            errors.forEach { error ->
-                LogManager.schema("Error Path='${error.path}' Message='${error.message}' SchemaPath='${error.schemaPath}'")
-            }
 
             val result = if (errors.isEmpty()) {
-                LogManager.schema("Validation success")
                 ValidationResult.success()
             } else {
                 // A variant's refusal names nothing to fix: it is replaced by the errors of the
@@ -77,10 +64,9 @@ object SchemaValidator {
                     ValidationErrorProcessor.filterErrors(others.toSet(), schema.content, context).takeIf { it.isNotEmpty() }
                 ) + explained).joinToString("\n")
                 if (errorMessage.isEmpty()) {
-                    LogManager.schema("Validation success (errors filtered out)")
                     ValidationResult.success()
                 } else {
-                    LogManager.schema("Validation failed: $errorMessage", "ERROR")
+                    LogManager.schema("Validation failed for ${schema.id}: $errorMessage", "ERROR")
                     ValidationResult.error(errorMessage)
                 }
             }

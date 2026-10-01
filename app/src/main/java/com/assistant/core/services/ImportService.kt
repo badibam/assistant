@@ -32,7 +32,9 @@ import org.json.JSONObject
  * (the files service), which the AI imports from without reading its lines.
  *
  * - detect: `tool_instance_id`, `csv` or `file`: a declaration to confirm, column by column (target, type,
- *   writing, an example read), with the ambiguities to settle and the lines that would be refused
+ *   writing, an example read), with the ambiguities to settle and the lines that would be refused;
+ *   `missing`, what apply would refuse in it as it stands (no column for a required name...), and
+ *   how the tool takes a name (`unique_name`, `name_required`)
  * - apply: `tool_instance_id`, `csv` or `file`, `columns` (a complete declaration): the new fields created
  *   in the order of the columns, then each line written — an entry found by its key updated, the
  *   others created; a cell that does not read, or a line the service refuses, refuses that line
@@ -64,22 +66,31 @@ class ImportService(private val context: Context) : ExecutableService {
             ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
         val entryFields = toolType.getEntryFields(config, context)
         val uniqueName = entryFields.nameUnique
+        val nameRequired = entryFields.name == CoreFieldUsage.REQUIRED
         // What a column may fill: the name, the date, the tool type's fields and the user's
         val fields = ToolFields.filterable(toolInstanceId, context, s).filterKeys { !it.startsWith("state.") && it != "created_at" && it != "updated_at" }
         val zone = AppConfigManager.getDateTimeConfig().getZoneId()
 
         return when (operation) {
-            "detect" -> OperationResult.success(mapOf(
-                "columns" to ImportPlanner.detect(table, fields, uniqueName, zone).map { proposal ->
-                    JsonUtils.toMap(proposal.declaration.toJson()) + mapOf(
-                        "ambiguous" to proposal.ambiguous.map { it.name },
-                        "example" to proposal.example?.let { (cell, read) -> mapOf("cell" to cell, "read" to read) },
-                        "unreadable_lines" to proposal.unreadable
-                    )
-                },
-                "lines" to table.rows.size
-            ))
-            "apply" -> apply(toolInstanceId, config, table, params.optJSONArray("columns") ?: JSONArray(), fields, uniqueName, entryFields.name == CoreFieldUsage.REQUIRED, zone)
+            "detect" -> {
+                val proposals = ImportPlanner.detect(table, fields, uniqueName, zone)
+                OperationResult.success(mapOf(
+                    "columns" to proposals.map { proposal ->
+                        JsonUtils.toMap(proposal.declaration.toJson()) + mapOf(
+                            "ambiguous" to proposal.ambiguous.map { it.name },
+                            "example" to proposal.example?.let { (cell, read) -> mapOf("cell" to cell, "read" to read) },
+                            "unreadable_lines" to proposal.unreadable
+                        )
+                    },
+                    "lines" to table.rows.size,
+                    // What the proposal still lacks, said as apply would refuse it, before anyone declares
+                    "missing" to ImportPlanner.missing(table, proposals.map { it.declaration }, fields, uniqueName, nameRequired) { s.shared(it) },
+                    // How the tool takes a name, for a screen that checks its declaration as it changes
+                    "unique_name" to uniqueName,
+                    "name_required" to nameRequired
+                ))
+            }
+            "apply" -> apply(toolInstanceId, config, table, params.optJSONArray("columns") ?: JSONArray(), fields, uniqueName, nameRequired, zone)
             else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
         }
     }

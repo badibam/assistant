@@ -24,6 +24,8 @@ import com.assistant.core.fields.ToolFields
 import com.assistant.core.ui.selectors.FieldPick
 import com.assistant.core.ui.selectors.FieldPicker
 import com.assistant.core.imports.CellRead
+import com.assistant.core.imports.ImportPlanner
+import com.assistant.core.imports.ImportTable
 import com.assistant.core.imports.Writing
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.CardType
@@ -58,6 +60,9 @@ fun ImportDialog(toolInstanceId: String, csv: String, onDismiss: () -> Unit) {
     var report by rememberSaveable { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var fields by remember { mutableStateOf<Map<String, com.assistant.core.fields.FieldDefinition>>(emptyMap()) }
+    // How the tool takes a name, from the detection, to check the declaration as it changes
+    var uniqueName by rememberSaveable { mutableStateOf(false) }
+    var nameRequired by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(toolInstanceId) {
         fields = try {
@@ -68,20 +73,36 @@ fun ImportDialog(toolInstanceId: String, csv: String, onDismiss: () -> Unit) {
         if (result.isSuccess) {
             columns = JSONArray(JsonUtils.toList(result.data?.get("columns") as List<*>)).toString()
             lines = (result.data?.get("lines") as? Number)?.toInt() ?: 0
+            uniqueName = result.data?.get("unique_name") == true
+            nameRequired = result.data?.get("name_required") == true
         } else error = result.error
     }
+
+    /** The declaration as the service takes it, the detection's notes taken off. */
+    fun declaration(): JSONArray {
+        val declared = JSONArray(columns!!)
+        return JSONArray((0 until declared.length()).map { i ->
+            JSONObject(declared.getJSONObject(i).toString()).apply { remove("ambiguous"); remove("example"); remove("unreadable_lines") }
+        })
+    }
+
+    // What the declaration lacks as it stands, checked as the service checks it: the import waits for none
+    val missing = columns?.takeIf { report == null }?.let {
+        val clean = declaration()
+        val table = ImportTable((0 until clean.length()).map { clean.getJSONObject(it).getString("column") }, emptyList())
+        try {
+            ImportPlanner.missing(table, ImportPlanner.declarationsOf(clean), fields, uniqueName, nameRequired) { s.shared(it) }
+        } catch (e: Exception) { listOf(e.message ?: "") }
+    } ?: emptyList()
 
     val done = report
     UI.Dialog(
         type = if (done != null) DialogType.INFO else DialogType.CONFIRM,
         onCancel = onDismiss,
-        confirmEnabled = columns != null,
+        confirmEnabled = columns != null && (done != null || missing.isEmpty()),
         onConfirm = {
             if (done != null) { onDismiss(); return@Dialog }
-            val declared = JSONArray(columns!!)
-            val clean = JSONArray((0 until declared.length()).map { i ->
-                JSONObject(declared.getJSONObject(i).toString()).apply { remove("ambiguous"); remove("example"); remove("unreadable_lines") }
-            })
+            val clean = declaration()
             scope.launch {
                 val result = coordinator.processUserAction("imports.apply", mapOf("tool_instance_id" to toolInstanceId, "csv" to csv, "columns" to JsonUtils.toList(clean)))
                 if (!result.isSuccess) { error = result.error; return@launch }
@@ -99,6 +120,7 @@ fun ImportDialog(toolInstanceId: String, csv: String, onDismiss: () -> Unit) {
                 columns == null -> if (error == null) UI.LoadingIndicator()
                 else -> {
                     UI.Text(s.shared("import_lines").format(lines), TextType.CAPTION)
+                    missing.forEach { UI.Text(it, TextType.WARNING) }
                     val array = JSONArray(columns!!)
                     for (i in 0 until array.length()) {
                         ColumnEditor(array.getJSONObject(i), fields, zone, s) { changed ->

@@ -18,7 +18,7 @@ La dette du `manifest.md` (adresse OpenAI en dur, prix d'un serveur inconnu) se 
 ## Le banc
 
 - **L'app joue les scénarios elle-même** : la vraie session, le vrai pipeline, autant de tours qu'il en faut.
-- **Lancement** : des tests d'instrumentation (`androidTest/`), un par scénario, le modèle et le niveau de forçage en arguments, lancés par `./run bench`, qui rassemble les résultats dans le terminal et un fichier. Rien dans l'app livrée. **Sur l'émulateur seulement** : ces tests écrivent dans la base de l'app.
+- **Lancement** : des tests d'instrumentation (`androidTest/`), un par scénario, le modèle en argument, lancés par `./run bench`, qui rassemble les résultats dans le terminal et un fichier. Rien dans l'app livrée. **Sur l'émulateur seulement** : ces tests écrivent dans la base de l'app.
 - **Base de départ : la démo** (`docs/design/demo.md`). Avant chaque scénario : base vidée, fournisseur reconfiguré depuis les arguments, démo installée (`demo.install`). Le modèle cherche le bon outil parmi une vingtaine, comme en vrai, et les scénarios s'écrivent contre des données connues. Le banc se construit après la démo. Aucun résultat n'est figé ni simulé : seul l'app sait ce que répond une requête, et deux requêtes justes écrites par un modèle ne sont presque jamais identiques.
 - **Deux adresses** :
   - OpenRouter, pour cartographier les capacités par taille de modèle : une clé, des centaines de modèles libres, un filtre sur l'hébergeur (forçage par schéma accepté) et sur la compression du modèle (pour tester un modèle compressé comme il le serait sur la machine visée).
@@ -67,9 +67,29 @@ En français, l'émulateur réglé en français : la démo prend la langue du t�
 - « lait » parmi les articles non cochés de Courses (saisie 5).
 - Un journal « Carnet d'entraînement » dans Course, groupe Analyse : l'entrée qu'écrit le Bilan de la semaine (automation 3), dont la description de `demo.md` ne nomme pas la cible.
 
+## Le lancement
+
+`./run bench` : un menu pour choisir les modèles (liste versionnée, rangée par classe de machine). Avant de lancer : le nombre d'appels et le coût estimé, puis confirmation. Chaque résultat s'affiche au fil de l'eau ; à la fin, un tableau scénario × modèle avec le coût réel, qu'OpenRouter rend à chaque appel (`usage.cost`).
+
 ## Campagne 1
 
-Le prompt actuel (degrés 1 et 2), avec et sans forçage de la sortie par le schéma de la réponse de l'IA (que l'app génère déjà), sur toute l'échelle des tailles. Deux variables seulement. Elle dit à quelle taille le prompt casse, et si c'est la forme (JSON invalide) ou le fond (mauvaise commande, mauvais paramètre) qui cède. L'app lit un objet JSON unique entouré de texte en écartant le texte (`ResponseEnvelope.split`, message système `TEXT_OUTSIDE_JSON`) : le banc compte ces réponses à part, sans quoi la forme paraîtrait tenir quand elle cède.
+**Modèles** : un par classe de machine, élargie ensuite là où ça se joue. Les classes sont des ordres de grandeur pour un modèle compressé en 4 bits, non mesurés.
+
+| Classe | Modèle (OpenRouter) | Entrée, $/M tokens (catalogue du 2026-10-01) |
+|---|---|---|
+| Téléphone, 1-4B | `mistralai/ministral-3b-2512` | 0,10 |
+| Portable 32 Go | `qwen/qwen3.6-35b-a3b` | 0,15 |
+| GPU 24 Go | `google/gemma-4-31b-it` | 0,09 |
+| Serveur 64-128 Go | `openai/gpt-oss-120b` | 0,037 |
+| Hébergé seulement | `deepseek/deepseek-v4-flash` | 0,042 |
+
+**Coût** : un appel mesuré le 2026-10-01 sur le téléphone (vraies données, pas la démo) envoie 28 682 tokens. Estimé, non mesuré : 3 appels par scénario, soit ≈ 1,7 M tokens par modèle pour 19 scénarios ; de 0,10 à 0,30 $ par modèle, ≈ 1 $ en tout. Sans modèle de référence, un scénario qu'aucun modèle ne réussit se relit à la main : le scénario lui-même peut être en cause. Un modèle qui raisonne écrit plus que prévu. Le premier modèle passé recale l'estimation.
+
+Le téléphone : le banc dit si un 3B comprend un prompt de ≈ 29k tokens, pas s'il tourne sur l'appareil avec ce contexte.
+
+### Ce qu'elle mesure
+
+Le prompt actuel (degrés 1 et 2), sur toute l'échelle des tailles, chaque modèle libre avec la sortie forcée au schéma exact : la configuration où on l'utiliserait. Le format ne peut plus céder, un échec dit donc le fond (mauvaise commande, mauvais paramètre). Un modèle qui échoue est repassé à la main sans forçage : le forçage peut gêner le raisonnement de certains modèles. Les niveaux « aucun » et « JSON valide » du fournisseur servent à ce diagnostic. L'app lit un objet JSON unique entouré de texte en écartant le texte (`ResponseEnvelope.split`, message système `TEXT_OUTSIDE_JSON`) : le banc compte ces réponses à part, sans quoi la forme paraîtrait tenir quand elle cède.
 
 ## Hypothèses de niveaux de prompt
 

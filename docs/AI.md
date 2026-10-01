@@ -157,7 +157,8 @@ enum class SystemMessageType {
     SCHEMA_REQUIRED, // Schémas des entrées qu'une requête ou une écriture attend → envoyé au prompt, commandes non exécutées
     NETWORK_ERROR, // Erreurs réseau/HTTP → filtré du prompt, visible UI (audit + transparence)
     PROVIDER_ERROR, // Provider non configuré/invalide → filtré du prompt, visible UI (audit + transparence)
-    SESSION_TIMEOUT // Timeout watchdog session → filtré du prompt, visible UI (audit + transparence)
+    SESSION_TIMEOUT, // Timeout watchdog session → filtré du prompt, visible UI (audit + transparence)
+    TEXT_OUTSIDE_JSON // Texte écrit autour du JSON de la réponse, écarté → cité à l'utilisateur (summary), l'IA n'en reçoit que la mention (formattedData)
 }
 ```
 
@@ -342,11 +343,13 @@ La recherche de la prochaine occurrence démarre au plus tôt à `maintenant −
 
 ### Reprise sessions
 Détection automatique sessions orphelines par AutomationScheduler :
-- **endReason null** : Crash/interruption → reprise transparente
+- **endReason null** : Crash/interruption → reprise transparente, sauf pendant des actions (ci-dessous)
 - **NETWORK_ERROR** : Échec réseau → reprise avec retry
 - **SUSPENDED** : Éviction système → reprise quand slot libre
 
 **Transparence** : Pas de message système, IA ne sait pas qu'elle reprend (continue naturellement).
+
+**Actions coupées par la fermeture de l'app** : une session restaurée en `EXECUTING_ACTIONS` ne rejoue jamais ses actions, qu'une reprise ferait deux fois (une création, un import). Un message, envoyé aussi à l'IA, dit que celles terminées avant ont eu lieu et les autres non ; un CHAT revient à `IDLE` par `INTERRUPTED`, une AUTOMATION se ferme en `INTERRUPTED`, que l'AutomationScheduler ne reprend pas. Les lectures et l'appel IA se reprennent comme avant.
 
 ### SessionEndReason
 Raison d'arrêt session (audit + logique reprise) :
@@ -456,6 +459,8 @@ Event NetworkErrorOccurred:
 **Timeout HTTP** (providers) : connexion 15 s, lecture 10 min, écriture 2 min. Sans streaming, rien n'arrive avant la fin de la génération : le délai de lecture couvre une réponse longue entière.
 
 **Appel en cours** : `callAI` tourne dans sa propre tâche, hors de la boucle qui traite les changements d'état. `SessionCompleted` (dont STOP) et `AIRoundInterrupted` (Interrompre, CHAT) l'annulent avant la transition, ce qui ferme la connexion HTTP (`OkHttpClient.awaitReply()`) : rien n'est gardé de la réponse. Interrompre passe par `INTERRUPTED`, le temps d'écrire le message d'interruption, puis revient à `IDLE`.
+
+**Actions en cours** : `executeActions` tourne aussi dans sa propre tâche ; Stop et Interrompre l'annulent, l'opération en cours est abandonnée (une écriture en une transaction n'écrit rien) et un message, envoyé à l'IA, dit que les actions terminées avant ont eu lieu et les autres non.
 
 **Appel parti sans réponse** : coupé après l'envoi de la requête (Stop, Interrompre) ou perdu (`LOST`), l'appel a peut-être été facturé et son usage est inconnu. Son message système le dit et porte `usage_unknown`. Un appel coupé avant l'envoi n'a rien coûté et n'est pas marqué ; `RequestSent`, posé dans le contexte de la coroutine autour de l'appel, fait la différence.
 
@@ -683,6 +688,7 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
 **AI actions** : Générés après exécution actionCommands IA, stockés après réponse AI, type ACTIONS_EXECUTED sans formattedData.
 **Limites** : Générés quand limite atteinte, type LIMIT_REACHED avec summary, pas de renvoie auto (attend message user).
 **Format errors** : Générés quand la réponse de l'IA ne se lit pas ou enfreint une règle du format (module de communication compris), type FORMAT_ERROR avec détails erreurs, renvoie auto à l'IA pour correction.
+**Texte autour du JSON** : une réponse qui contient exactement un objet JSON entouré de texte ou d'un bloc ```json est lue par cet objet (`ResponseEnvelope`) ; aucun objet ou plusieurs restent un FORMAT_ERROR. Le message de l'IA ne garde que le JSON, que son historique rejoue ; un message TEXT_OUTSIDE_JSON cite le texte écarté à l'utilisateur, et `PromptManager` n'en transmet à l'IA que la mention qu'il a été ignoré, jamais le texte.
 **Erreurs système** : Générés pour erreurs réseau (NETWORK_ERROR), provider (PROVIDER_ERROR) et timeout watchdog (SESSION_TIMEOUT). **TOUJOURS visibles dans l'UI** pour transparence utilisateur. Filtrés du prompt IA (excludeFromPrompt=true, audit uniquement).
 
 ### Format dans prompts
