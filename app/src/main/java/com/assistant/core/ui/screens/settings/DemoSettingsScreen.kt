@@ -20,8 +20,9 @@ import kotlinx.coroutines.launch
 
 /**
  * The demo's settings (docs/design/demo.md): whether it is installed at each update, applied as
- * soon as it is saved — off removes the demo there is, on installs it now — and a button that
- * installs it afresh, afloat at this moment.
+ * soon as it is saved — off removes the demo there is, on installs it now —, a button that
+ * installs it afresh, afloat at this moment, and one that removes it, once confirmed. Removing
+ * leaves the setting as the user set it: on, the next update brings the demo back.
  */
 @Composable
 fun DemoSettingsScreen(onBack: () -> Unit) {
@@ -29,7 +30,29 @@ fun DemoSettingsScreen(onBack: () -> Unit) {
     val s = remember { Strings.`for`(context = context) }
     val coordinator = remember { Coordinator(context) }
     val scope = rememberCoroutineScope()
-    var installing by remember { mutableStateOf(false) }
+    var working by remember { mutableStateOf(false) }
+    var confirmingRemoval by remember { mutableStateOf(false) }
+
+    /** Runs [operation] on the demo, then says how it went, [done] on success. */
+    fun runDemo(operation: String, done: String) {
+        if (working) return
+        working = true
+        scope.launch {
+            val result = coordinator.processUserAction(operation, emptyMap())
+            working = false
+            UI.Toast(context, if (result.isSuccess) done else result.error ?: s.shared("error_operation_failed"), Duration.LONG)
+        }
+    }
+
+    if (confirmingRemoval) {
+        UI.Dialog(
+            type = com.assistant.core.ui.DialogType.DANGER,
+            onConfirm = { confirmingRemoval = false; runDemo("demo.remove", s.shared("demo_removed")) },
+            onCancel = { confirmingRemoval = false }
+        ) {
+            UI.Text(s.shared("demo_remove_confirm"), TextType.BODY)
+        }
+    }
 
     AppSettingsScreen(
         category = AppSettingCategories.DEMO,
@@ -39,20 +62,12 @@ fun DemoSettingsScreen(onBack: () -> Unit) {
             coordinator.processUserAction(operation, emptyMap()).let { if (it.isSuccess) null else it.error ?: s.shared("error_operation_failed") }
         },
         below = {
-            UI.Button(
-                type = ButtonType.DEFAULT,
-                state = if (installing) com.assistant.core.ui.ComponentState.LOADING else com.assistant.core.ui.ComponentState.NORMAL,
-                onClick = {
-                    if (installing) return@Button
-                    installing = true
-                    scope.launch {
-                        val result = coordinator.processUserAction("demo.install", emptyMap())
-                        installing = false
-                        UI.Toast(context, if (result.isSuccess) s.shared("demo_installed") else result.error ?: s.shared("error_operation_failed"), Duration.LONG)
-                    }
-                }
-            ) {
+            val state = if (working) com.assistant.core.ui.ComponentState.LOADING else com.assistant.core.ui.ComponentState.NORMAL
+            UI.Button(type = ButtonType.DEFAULT, state = state, onClick = { runDemo("demo.install", s.shared("demo_installed")) }) {
                 UI.Text(s.shared("demo_reinstall_now"), TextType.LABEL)
+            }
+            UI.Button(type = ButtonType.DEFAULT, state = state, onClick = { if (!working) confirmingRemoval = true }) {
+                UI.Text(s.shared("demo_remove_now"), TextType.LABEL)
             }
         }
     )

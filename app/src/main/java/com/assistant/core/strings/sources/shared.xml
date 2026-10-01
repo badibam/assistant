@@ -1763,6 +1763,9 @@
     <string name="verbalize_unknown_operation">Unknown operation: %1$s</string>
     <string name="tools_config_error_zone_update">Unable to move the tool to that zone</string>
     <!-- Demo -->
+    <string name="demo_remove_now">Remove the demo</string>
+    <string name="demo_remove_confirm">Remove the demo zones and everything in them, what you added included? The setting above stays as it is: on, the next update installs the demo again.</string>
+    <string name="demo_removed">Demo removed</string>
     <string name="demo_installing">Installing the demo</string>
     <string name="demo_phase_zones">Zones</string>
     <string name="demo_phase_tools">Tools: %1$s / %2$s</string>
