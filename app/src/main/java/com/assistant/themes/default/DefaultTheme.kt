@@ -671,6 +671,26 @@ object DefaultTheme : ThemeContract {
     }
 
     @Composable
+    override fun FullScreen(content: @Composable () -> Unit) {
+        Box(modifier = Modifier.fillMaxSize().background(CurrentTheme.getCurrentColorScheme().surface)) {
+            content()
+        }
+    }
+
+    @Composable
+    override fun HeaderBar(content: @Composable RowScope.() -> Unit) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(CurrentTheme.getCurrentColorScheme().surfaceVariant)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content
+        )
+    }
+
+    @Composable
     override fun Tag(
         text: String,
         color: com.assistant.core.themes.TagColor

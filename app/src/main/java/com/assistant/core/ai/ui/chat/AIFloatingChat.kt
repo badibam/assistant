@@ -1,22 +1,18 @@
 package com.assistant.core.ai.ui.chat
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.domain.Phase
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.ai.ui.screens.AIScreen
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
+import com.assistant.core.ui.components.FullScreenDialog
 import kotlinx.coroutines.launch
 
 /**
@@ -49,49 +45,29 @@ fun AIFloatingChat(
     // State for errors
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnBackPress = true,
-            dismissOnClickOutside = false
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.1f))
-        ) {
-            // Determine state and render appropriate UI
-            when {
-                // CHAT or AUTOMATION: Session active → Use AIScreen
-                aiState.sessionId != null -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface)
-                    ) {
-                        AIScreen(
-                            sessionId = aiState.sessionId!!,
-                            onClose = onDismiss
-                        )
-                    }
-                }
-                // IDLE: No active session
-                else -> {
-                    NoActiveSessionView(
-                        onStartChat = {
-                            scope.launch {
-                                try {
-                                    AIOrchestrator.requestChatSession()
-                                } catch (e: Exception) {
-                                    errorMessage = e.message
-                                }
+    FullScreenDialog(onDismiss = onDismiss) {
+        when {
+            // CHAT or AUTOMATION: Session active → Use AIScreen
+            aiState.sessionId != null -> {
+                AIScreen(
+                    sessionId = aiState.sessionId!!,
+                    onClose = onDismiss
+                )
+            }
+            // IDLE: No active session
+            else -> {
+                NoActiveSessionView(
+                    onStartChat = {
+                        scope.launch {
+                            try {
+                                AIOrchestrator.requestChatSession()
+                            } catch (e: Exception) {
+                                errorMessage = e.message
                             }
-                        },
-                        onClose = onDismiss
-                    )
-                }
+                        }
+                    },
+                    onClose = onDismiss
+                )
             }
         }
     }
@@ -122,20 +98,8 @@ private fun NoActiveSessionView(
     val s = remember { Strings.`for`(context = context) }
     var isCreatingSession by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = UI.Space.M, vertical = UI.Space.S),
-            horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        UI.HeaderBar {
             Box(modifier = Modifier.weight(1f)) {
                 UI.Text(
                     text = s.shared("ai_chat_new"),

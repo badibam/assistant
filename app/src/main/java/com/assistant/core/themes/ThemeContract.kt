@@ -238,6 +238,17 @@ interface ThemeContract {
     // SPECIALIZED CONTAINERS (appearance only)
     // =====================================
     
+    /** A view over the whole screen (FullScreenDialog), on the theme's background. */
+    @Composable
+    fun FullScreen(content: @Composable () -> Unit)
+
+    /**
+     * The band across the top of a full-screen view, holding what its caller puts in a row: a
+     * title, a state, buttons.
+     */
+    @Composable
+    fun HeaderBar(content: @Composable RowScope.() -> Unit)
+
     /** A zone's tile, filling the cells the home screen's grid gives it, as a tool's does. */
     @Composable
     fun ZoneCardContainer(

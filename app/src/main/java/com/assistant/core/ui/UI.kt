@@ -124,6 +124,14 @@ object UI {
         size: Dp = 8.dp
     ) = CurrentTheme.current.StatusIndicator(color, size)
 
+    /** A view over the whole screen, on the theme's background (FullScreenDialog opens one). */
+    @Composable
+    fun FullScreen(content: @Composable () -> Unit) = CurrentTheme.current.FullScreen(content)
+
+    /** The band across the top of a full-screen view: a title, a state, buttons, in a row. */
+    @Composable
+    fun HeaderBar(content: @Composable RowScope.() -> Unit) = CurrentTheme.current.HeaderBar(content)
+
     /**
      * A short colored label, such as an option of a colored CHOICE field.
      *

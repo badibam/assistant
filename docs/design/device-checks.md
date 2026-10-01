@@ -18,6 +18,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Chat IA
 
+- Le chat ouvert, sans session puis dans une session : il couvre l'écran jusqu'en bas, la barre de navigation masquée comme ailleurs, revenant un instant au glissé du bord ; la touche Retour le ferme ; les bandeaux du haut ont leur couleur d'avant.
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
 - « Importe ce fichier dans une nouvelle table » avec un CSV joint : l'IA crée la table, puis au tour suivant `IMPORT_PLAN` et `IMPORT_DATA` ; la carte de validation nomme le fichier, ses lignes et la table ; la table a ses colonnes et ses lignes.
 - Le message de départ d'une automation ne propose pas le trombone.

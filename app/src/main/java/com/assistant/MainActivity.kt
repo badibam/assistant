@@ -12,8 +12,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -61,19 +59,7 @@ class MainActivity : ComponentActivity() {
     // shows the bar again on its own then
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideTheNavigationBar()
-    }
-
-    /**
-     * The navigation bar hidden, the status bar kept. A swipe from the edge brings it back for a
-     * moment, over the screen; with gesture navigation there is only its handle to hide, and the
-     * gestures still answer.
-     */
-    private fun hideTheNavigationBar() {
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            hide(WindowInsetsCompat.Type.navigationBars())
-        }
+        if (hasFocus) hideNavigationBar(window)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

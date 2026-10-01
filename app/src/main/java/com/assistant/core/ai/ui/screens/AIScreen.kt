@@ -2,13 +2,11 @@ package com.assistant.core.ai.ui.screens
 
 import com.assistant.core.ui.MessageSegmentsSaver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1116,14 +1114,7 @@ private fun ChatHeader(
     }
 
     // Header row
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = UI.Space.M, vertical = UI.Space.S),
-        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    UI.HeaderBar {
         // Title with phase status
         Column(modifier = Modifier.weight(1f)) {
             UI.Text(
@@ -1172,14 +1163,7 @@ private fun SeedHeader(
     onConfigureAutomation: () -> Unit,
     onDeleteAutomation: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = UI.Space.M, vertical = UI.Space.S),
-        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    UI.HeaderBar {
         // Title
         Box(modifier = Modifier.weight(1f)) {
             UI.Text(
@@ -1229,14 +1213,7 @@ private fun AutomationHeader(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = UI.Space.M, vertical = UI.Space.S),
-        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    UI.HeaderBar {
         // Title
         Column(modifier = Modifier.weight(1f)) {
             UI.Text(
