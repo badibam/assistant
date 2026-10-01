@@ -115,6 +115,21 @@ class DemoContentTest {
     }
 
     @Test
+    fun `the automations are off, each with its instruction, a catch-up with a schedule only, in a group its zone has`() {
+        for (language in languages) {
+            val content = read(language)
+            assertEquals(3, content.automations.size)
+            val groups = content.zones.associate { it.getString("id") to it.getJSONArray("tool_groups").strings() }
+            content.automations.forEach { automation ->
+                assertFalse(automation.getBoolean("is_enabled"))
+                assertTrue(automation.getString("seed").isNotBlank())
+                assertEquals(automation.has("schedule"), automation.has("catch_up"))
+                automation.optString("group").takeIf { it.isNotEmpty() }?.let { assertTrue(it in groups.getValue(automation.getString("zone_id"))) }
+            }
+        }
+    }
+
+    @Test
     fun `an id is given by the app alone, with the demo's prefix`() {
         assertTrue(GivenId.isAccepted("demo-course", Source.SYSTEM))
         assertFalse(GivenId.isAccepted("demo-course", Source.AI))

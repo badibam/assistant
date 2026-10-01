@@ -97,8 +97,12 @@ class AISessionService(private val context: Context) : ExecutableService {
 
         LogManager.aiSession("Creating AI session: name=$name, type=$type, providerId=$providerId", "DEBUG")
 
-        // Create new session entity
-        val sessionId = UUID.randomUUID().toString()
+        // The app's own demo gives its ids; every other caller gets one made here
+        val sessionId = when (val given = com.assistant.core.coordinator.GivenId.read(params)) {
+            com.assistant.core.coordinator.GivenId.Read.None -> UUID.randomUUID().toString()
+            is com.assistant.core.coordinator.GivenId.Read.Accepted -> given.id
+            is com.assistant.core.coordinator.GivenId.Read.Refused -> return OperationResult.error(s.shared("service_error_id_not_given").format(given.id))
+        }
         val now = System.currentTimeMillis()
 
         val sessionEntity = AISessionEntity(

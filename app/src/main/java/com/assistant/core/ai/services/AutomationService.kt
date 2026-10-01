@@ -110,7 +110,12 @@ class AutomationService(private val context: Context) : ExecutableService {
         val triggerIdsArray = params.optJSONArray("trigger_ids") ?: JSONArray()
         val triggerIds = (0 until triggerIdsArray.length()).map { triggerIdsArray.getString(it) }
 
-        val automationId = UUID.randomUUID().toString()
+        // The app's own demo gives its ids; every other caller gets one made here
+        val automationId = when (val given = com.assistant.core.coordinator.GivenId.read(params)) {
+            com.assistant.core.coordinator.GivenId.Read.None -> UUID.randomUUID().toString()
+            is com.assistant.core.coordinator.GivenId.Read.Accepted -> given.id
+            is com.assistant.core.coordinator.GivenId.Read.Refused -> return OperationResult.error(s.shared("service_error_id_not_given").format(given.id))
+        }
         val now = System.currentTimeMillis()
 
         val entity = withSettings(AutomationEntity(

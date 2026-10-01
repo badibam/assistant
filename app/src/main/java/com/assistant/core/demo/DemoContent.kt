@@ -19,12 +19,15 @@ import org.json.JSONObject
  *           are created: a tool another one names comes before it
  * @property variables The `variables.create` parameters of each variable, in the order they are
  *           created: a variable another one names comes before it
+ * @property automations The `automations.create` parameters of each automation, with `seed`, the
+ *           text of its seed session's message, beside them
  */
 class DemoContent(
     val group: String,
     val zones: List<JSONObject>,
     val tools: List<JSONObject>,
-    val variables: List<JSONObject>
+    val variables: List<JSONObject>,
+    val automations: List<JSONObject>
 ) {
 
     companion object {
@@ -50,15 +53,15 @@ class DemoContent(
             val zones = list("zones")
             val tools = list("tools")
             val variables = list("variables")
-            (zones + tools + variables).forEach { item ->
-                val id = item.getString("id")
+            val automations = list("automations")
+            ((zones + tools + variables + automations).map { it.getString("id") } + automations.map { it.getString("seed_session_id") }).forEach { id ->
                 check(id.startsWith(PREFIX)) { "Demo id '$id' lacks the prefix $PREFIX" }
             }
             variables.forEach { variable ->
                 val name = variable.getString("name")
                 check(name.endsWith(VARIABLE_SUFFIX)) { "Demo variable '$name' lacks the suffix $VARIABLE_SUFFIX" }
             }
-            return DemoContent(resolved.getString("zone_group"), zones, tools, variables)
+            return DemoContent(resolved.getString("zone_group"), zones, tools, variables, automations)
         }
 
         /**

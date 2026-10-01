@@ -83,17 +83,15 @@ Les modes de tuile qui ne sont pas fixés ci-dessus se répartissent pour que le
 
 ## L'IA
 
-Les automations s'installent désactivées : active, une automation appelle l'IA aux frais de l'utilisateur. Leur passé est écrit.
+Les automations s'installent désactivées : active, une automation appelle l'IA aux frais de l'utilisateur. Chacune a sa session de départ, dont le message est la consigne ; aucune n'a de passé.
 
 - Bilan de la semaine (Course, groupe Analyse) : lundi 7 h, rattrapage limité à 12 h. Lit sorties, sommeil, objectif ; écrit une entrée au Carnet d'entraînement, avec les km de la semaine passée.
 - Menu de la semaine (Cuisine, hors groupe) : dimanche 18 h. Lit Repas et Aliments ; ajoute des articles à Courses.
 - Point du matin (Travail) : sans planning, lancée à la main. Lit les tâches et le chronomètre ; répond par un module de communication.
 
-Chacune a 3 à 4 exécutions passées, de vraies sessions d'automation (message de départ, réponses, commandes et leurs résultats) : réussies, une rattrapée, une en échec avec son message d'erreur. Les entrées qu'elles ont écrites existent dans les outils.
+Ni exécutions passées ni session de chat : les services n'écrivent une session et ses messages qu'au présent, et le format d'un message de l'IA ne se vérifie que sur un appareil. Les bilans du Carnet d'entraînement sont là sans la session qui les aurait écrits.
 
-Une session de chat « Préparer le semi » : des pointeurs vers Sorties et vers la zone Course, un module de communication répondu, une action de l'IA dans le fil.
-
-Fournisseur des automations et des sessions : le premier fournisseur configuré ; s'il n'y en a aucun, l'identifiant du fournisseur par défaut, et activer ou exécuter échoue avec le message actuel du fournisseur non configuré.
+Fournisseur des automations : le premier fournisseur configuré ; s'il n'y en a aucun, le premier de la liste, et activer ou exécuter échoue avec le message actuel du fournisseur non configuré.
 
 ## Notifications
 

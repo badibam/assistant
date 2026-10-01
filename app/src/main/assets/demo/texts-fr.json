@@ -344,5 +344,11 @@
   "evening_phrase_8": "Posso pagare con la carta?",
   "evening_phrase_9": "Sono stanca ma contenta.",
   "evening_phrase_10": "Domani piove.",
-  "evening_phrase_11": "Ci vediamo a Roma!"
+  "evening_phrase_11": "Ci vediamo a Roma!",
+  "auto_review_name": "Bilan de la semaine",
+  "auto_review_seed": "Fais le bilan de la semaine d'entraînement qui vient de finir. Lis les Sorties (nombre, km, types), le Sommeil (moyenne), l'Humeur et la tentative de la semaine passée de « Semaine d'entraînement ». Écris une entrée dans le « Carnet d'entraînement », titrée « Semaine du » suivi de la date du lundi : les km de la semaine, le nombre de sorties, le sommeil moyen, et une phrase de conseil pour la semaine qui vient, en tenant compte du semi-marathon dans quelques semaines. Ne modifie rien d'autre.",
+  "auto_menu_name": "Menu de la semaine",
+  "auto_menu_seed": "Propose les repas de la semaine qui vient, adaptés à l'entraînement : plus de féculents la veille de la sortie longue du dimanche, des protéines après le fractionné. Pars des fiches d'Aliments et des Repas des deux dernières semaines. Ajoute à « Courses » ce qui manque pour ces repas, sans doublon d'un article déjà présent et non coché. Termine par le menu en quelques lignes.",
+  "auto_morning_name": "Point du matin",
+  "auto_morning_seed": "Fais le point de la journée de travail : les Tâches en retard et celles qui arrivent à échéance aujourd'hui, et les Heures de la semaine par client, le chronomètre en cours compris. Ne modifie rien. Réponds en quelques lignes, puis demande-moi par un module de communication par quoi je commence, en proposant les deux tâches les plus urgentes."
 }

@@ -67,6 +67,7 @@ class DemoService(private val context: Context) : ExecutableService {
             addZoneGroup(content.group)
             build(content)
             fill(texts)
+            automate(content)
             LogManager.service("Demo installed: ${content.zones.size} zones, ${content.tools.size} tools, ${content.variables.size} variables", "INFO")
             OperationResult.success(mapOf("zones" to content.zones.size, "tools" to content.tools.size, "variables" to content.variables.size))
         } catch (e: Refused) {
@@ -95,6 +96,28 @@ class DemoService(private val context: Context) : ExecutableService {
                     .apply { section.second?.let { put("group", it) } }
                     .put("places", places(tools)))
             }
+    }
+
+    /**
+     * The automations, off: each one's seed session, its message the instruction, then the
+     * automation on it. Their provider is the first one configured, or the first there is when
+     * none is: switching one on then says the provider is not configured.
+     */
+    private suspend fun automate(content: DemoContent) {
+        if (content.automations.isEmpty()) return
+        @Suppress("UNCHECKED_CAST")
+        val providers = run("ai_provider_config.list", JSONObject())["providers"] as List<Map<String, Any?>>
+        val provider = (providers.firstOrNull { it["is_configured"] == true } ?: providers.first())["id"] as String
+        for (automation in content.automations) {
+            val seed = automation.getString("seed_session_id")
+            run("ai_sessions.create_session", JSONObject().put("id", seed).put("name", automation.getString("name")).put("type", "SEED").put("provider_id", provider))
+            @Suppress("UNCHECKED_CAST")
+            val message = (run("ai_sessions.list_messages", JSONObject().put("session_id", seed))["messages"] as List<Map<String, Any?>>).single()
+            run("ai_sessions.update_message", JSONObject()
+                .put("message_id", message["id"])
+                .put("rich_content_json", com.assistant.core.ai.data.RichMessage(listOf(com.assistant.core.ai.data.MessageSegment.Text(automation.getString("seed")))).toJson()))
+            run("automations.create", JSONObject(automation.toString()).apply { remove("seed") }.put("provider_id", provider))
+        }
     }
 
     /**

@@ -2057,5 +2057,60 @@
         }
       }
     }
+  ],
+  "automations": [
+    {
+      "id": "demo-auto-weekly-review",
+      "seed_session_id": "demo-seed-weekly-review",
+      "zone_id": "demo-course",
+      "group": "@course_group_analysis",
+      "name": "@auto_review_name",
+      "schedule": {
+        "pattern": {
+          "type": "WeeklySimple",
+          "days_of_week": [
+            1
+          ],
+          "time": "07:00"
+        }
+      },
+      "catch_up": {
+        "limit": "limited",
+        "window": 43200000,
+        "dismiss_older_instances": true
+      },
+      "is_enabled": false,
+      "seed": "@auto_review_seed"
+    },
+    {
+      "id": "demo-auto-weekly-menu",
+      "seed_session_id": "demo-seed-weekly-menu",
+      "zone_id": "demo-kitchen",
+      "name": "@auto_menu_name",
+      "schedule": {
+        "pattern": {
+          "type": "WeeklySimple",
+          "days_of_week": [
+            7
+          ],
+          "time": "18:00"
+        }
+      },
+      "catch_up": {
+        "limit": "limited",
+        "window": 43200000,
+        "dismiss_older_instances": true
+      },
+      "is_enabled": false,
+      "seed": "@auto_menu_seed"
+    },
+    {
+      "id": "demo-auto-morning",
+      "seed_session_id": "demo-seed-morning",
+      "zone_id": "demo-work",
+      "name": "@auto_morning_name",
+      "is_enabled": false,
+      "seed": "@auto_morning_seed"
+    }
   ]
 }
