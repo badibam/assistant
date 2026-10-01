@@ -32,13 +32,26 @@ data class AttachedFileEntity(
     @ColumnInfo(name = "created_at") val createdAt: Long
 )
 
+/**
+ * The files joined to messages. A file's content is read in parts: Android reads a row of the
+ * database in one window of 2 MB at most, and a file can be bigger (getById, getForSession).
+ */
 @Dao
 interface AttachedFileDao {
-    @Query("SELECT * FROM attached_files WHERE id = :id")
-    suspend fun getById(id: String): AttachedFileEntity?
+    /** The file without its content, which stays empty. */
+    @Query("SELECT id, session_id, name, mime_type, size_bytes, line_count, '' AS content, created_at FROM attached_files WHERE id = :id")
+    suspend fun getInfo(id: String): AttachedFileEntity?
 
-    @Query("SELECT * FROM attached_files WHERE session_id = :sessionId")
-    suspend fun getForSession(sessionId: String): List<AttachedFileEntity>
+    @Query("SELECT id FROM attached_files WHERE session_id = :sessionId")
+    suspend fun idsForSession(sessionId: String): List<String>
+
+    /** [length] characters of the file's content from character [start], counted from 1. */
+    @Query("SELECT substr(content, :start, :length) FROM attached_files WHERE id = :id")
+    suspend fun contentPart(id: String, start: Int, length: Int): String?
+
+    /** The length of the file's content, in characters. */
+    @Query("SELECT length(content) FROM attached_files WHERE id = :id")
+    suspend fun contentLength(id: String): Int?
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(file: AttachedFileEntity)
@@ -46,3 +59,23 @@ interface AttachedFileDao {
     @Query("DELETE FROM attached_files WHERE id = :id")
     suspend fun delete(id: String)
 }
+
+// A part of 250 000 characters is 1 MB at most in UTF-8, well under the window
+private const val CONTENT_PART = 250_000
+
+/** The file whole, its content read part by part. */
+suspend fun AttachedFileDao.getById(id: String): AttachedFileEntity? {
+    val info = getInfo(id) ?: return null
+    val length = contentLength(id) ?: return null
+    val content = StringBuilder(length)
+    var start = 1
+    while (start <= length) {
+        content.append(contentPart(id, start, CONTENT_PART) ?: return null)
+        start += CONTENT_PART
+    }
+    return info.copy(content = content.toString())
+}
+
+/** The files of session [sessionId], whole. */
+suspend fun AttachedFileDao.getForSession(sessionId: String): List<AttachedFileEntity> =
+    idsForSession(sessionId).mapNotNull { getById(it) }

@@ -1,6 +1,7 @@
 package com.assistant.core.services
 
 import android.content.Context
+import com.assistant.core.ai.database.getById
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -175,7 +176,7 @@ class ImportService(private val context: Context) : ExecutableService {
         val s = Strings.`for`(context = context)
         if (operation == "detect") return s.shared("action_verbalize_imports_detect")
         // A joined file is named, with its lines and the tool it goes into, for the validation card
-        val file = params.optString("file").takeIf { it.isNotEmpty() }?.let { AppDatabase.getDatabase(context).attachedFileDao().getById(it) }
+        val file = params.optString("file").takeIf { it.isNotEmpty() }?.let { AppDatabase.getDatabase(context).attachedFileDao().getInfo(it) }
             ?: return s.shared("action_verbalize_imports_apply")
         val tool = Coordinator(context).processUserAction("tools.get", mapOf("tool_instance_id" to params.optString("tool_instance_id")))
         @Suppress("UNCHECKED_CAST")

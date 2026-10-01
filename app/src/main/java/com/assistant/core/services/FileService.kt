@@ -2,6 +2,7 @@ package com.assistant.core.services
 
 import android.content.Context
 import com.assistant.core.ai.database.AttachedFileEntity
+import com.assistant.core.ai.database.getById
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.strings.Strings
