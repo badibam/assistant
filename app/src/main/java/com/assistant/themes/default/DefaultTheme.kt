@@ -362,19 +362,17 @@ object DefaultTheme : ThemeContract {
         // Determine state based on enabled
         val state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED
         
-        // Use unified Button for all cases
-        Button(
-            type = buttonType,
-            size = size,
-            state = state,
-            onClick = {
-                if (requireConfirmation) {
-                    showConfirmDialog = true
-                } else {
-                    onClick()
-                }
+        val press = {
+            if (requireConfirmation) {
+                showConfirmDialog = true
+            } else {
+                onClick()
             }
-        ) {
+        }
+        // An icon alone has no fill: its colour says its kind, and the screen's content keeps the
+        // eye. Switched on, it is filled, the main colour saying so.
+        val bare = display == ButtonDisplay.ICON && !active
+        val buttonContent: @Composable () -> Unit = {
             if (display == ButtonDisplay.ICON) {
                 // Every action's icon is in the index (ButtonAction's test), so a missing
                 // drawable is a broken build, not a case to draw around.
@@ -394,6 +392,8 @@ object DefaultTheme : ThemeContract {
                 )
             }
         }
+        if (bare) BareButton(buttonType, size, enabled, press, buttonContent)
+        else Button(type = buttonType, size = size, state = state, onClick = press, content = buttonContent)
         
         // Dialogue de confirmation automatique
         if (showConfirmDialog && requireConfirmation) {
@@ -423,6 +423,31 @@ object DefaultTheme : ThemeContract {
     }
     
     /** The size of an action's icon in a button of [size]. */
+    /**
+     * A button without a fill, at [size]'s button size: its content in the colour [type] would
+     * fill it with (the error colour for a danger), dimmed when disabled.
+     */
+    @Composable
+    private fun BareButton(type: ButtonType, size: Size, enabled: Boolean, onClick: () -> Unit, content: @Composable () -> Unit) {
+        val config = getButtonConfig(size, type)
+        val scheme = CurrentTheme.getCurrentColorScheme()
+        val ink = when (type) {
+            ButtonType.DANGER -> scheme.error
+            ButtonType.DEFAULT -> scheme.onSurfaceVariant
+            else -> config.containerColor
+        }
+        Surface(
+            color = Color.Transparent,
+            contentColor = if (enabled) ink else scheme.onSurface.copy(alpha = 0.38f),
+            shape = config.shape,
+            modifier = Modifier
+                .defaultMinSize(minWidth = config.minWidth, minHeight = config.minHeight)
+                .clickable(enabled = enabled) { onClick() }
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(config.padding)) { content() }
+        }
+    }
+
     private fun getButtonIconSize(size: Size): Dp = when (size) {
         Size.XS -> 16.dp
         Size.S, Size.M -> 20.dp
