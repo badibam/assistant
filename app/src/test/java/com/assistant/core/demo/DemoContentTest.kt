@@ -130,6 +130,24 @@ class DemoContentTest {
     }
 
     @Test
+    fun `names and descriptions keep within their lengths, in each language`() {
+        val short = com.assistant.core.validation.FieldLimits.SHORT_LENGTH
+        val medium = com.assistant.core.validation.FieldLimits.MEDIUM_LENGTH
+        for (language in languages) {
+            val content = read(language)
+            fun check(what: String, text: String, limit: Int) = assertTrue("$language $what: ${text.length} > $limit", text.length <= limit)
+            content.zones.forEach { check(it.getString("id"), it.getString("name"), short); check(it.getString("id"), it.getString("description"), medium) }
+            content.tools.forEach { tool ->
+                val config = tool.getJSONObject("config")
+                check(tool.getString("id"), config.getString("name"), short)
+                check(tool.getString("id"), config.getString("description"), medium)
+                config.optJSONArray("extra_fields")?.let { f -> (0 until f.length()).forEach { check(tool.getString("id"), f.getJSONObject(it).getString("display_name"), short) } }
+            }
+            content.automations.forEach { check(it.getString("id"), it.getString("name"), short) }
+        }
+    }
+
+    @Test
     fun `an id is given by the app alone, with the demo's prefix`() {
         assertTrue(GivenId.isAccepted("demo-course", Source.SYSTEM))
         assertFalse(GivenId.isAccepted("demo-course", Source.AI))
