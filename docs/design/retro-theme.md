@@ -28,6 +28,6 @@ Conçu à partir du 2026-09-29. Un second thème, à côté du thème par défau
 - Les icônes : les retouches au fil de l'usage, d'abord celles que l'utilisateur choisit (deux à ce jour, `refresh-cw` et `rotate-ccw`, la pointe collée au bout de l'arc). Puis des icônes au trait de 4 pixels, la graisse normale de Saylune, sur la même planche.
 - Le Graphique dans ce registre : sa scène dessinée en pixels et en trames (`missing-tools.md`). D'ici là le thème passe par le dessin du thème par défaut (`DefaultDrawing`), dans sa police et ses couleurs.
 - Le mode d'édition de la grille atténue les autres tuiles par transparence (`FADED` dans `GridLayout`), ce que `pixel-ui` interdit : le dire par le thème.
-- La grille, avec l'écart d'une cellule, est centrée sur ses cases et non sur ce qu'elle montre : une demi-cellule de trop à gauche. Et au cran +2, sur un écran de 1080, une case fait quatre cellules : une tuile ICON n'a plus qu'une cellule dedans, moins que son icône.
+- Au cran +2, sur un écran de 1080, une case fait quatre cellules : une tuile ICON n'a plus qu'une cellule dedans, moins que son icône.
 - Le thème par défaut ne suit pas encore le cran de taille ; l'aide du réglage le dit.
 - Cartouche : la table de sa zone privée (`cartouche-font/docs/reference.md`) ne nomme que Saylune pour les symboles `U+E010`–`U+E028`, que le thème emploie aussi (jauge, flèches, coche, points, triangle).

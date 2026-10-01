@@ -569,14 +569,14 @@ object RetroTheme : ThemeContract {
 
     /**
      * A cell of the grid in edit mode: a dotted outline, one pixel lit in two, inside the cell the
-     * tile would take (the gap kept on the right and at the bottom).
+     * tile would take (tileGap).
      */
     @Composable
     override fun GridCell() {
         val grid = retroGrid()
         val dots = retroColors.screen.borderInner.srgb
         Box(
-            modifier = Modifier.fillMaxSize().padding(end = grid.cells(1), bottom = grid.cells(1)).drawBehind {
+            modifier = Modifier.fillMaxSize().tileGap().drawBehind {
                 val p = grid.scale.toFloat()
                 val w = (size.width / p).toInt()
                 val h = (size.height / p).toInt()
@@ -593,6 +593,18 @@ object RetroTheme : ThemeContract {
         )
     }
 
+    /**
+     * The gap between two tiles, a cell, taken inside each tile's cells: across, five drawing
+     * pixels on the left and six on the right, so that the grid shows centred on its cells; down,
+     * the whole cell under it.
+     */
+    @Composable
+    private fun Modifier.tileGap(): Modifier {
+        val grid = retroGrid()
+        val left = RetroGrid.CELL / 2
+        return padding(start = grid.dp(left), end = grid.dp(RetroGrid.CELL - left), bottom = grid.cells(1))
+    }
+
     /** The font's triangle in the warning colour: something is running. */
     @Composable
     override fun RunningMark() {
@@ -604,13 +616,12 @@ object RetroTheme : ThemeContract {
         Tile(onClick, onLongClick, content)
 
     /**
-     * A tile: a frame filling the cells the grid gives it but the last column and row, the gap
-     * between two tiles; its content a cell in from the frame's edge.
+     * A tile: a frame filling the cells the grid gives it but a cell across and a row down, the
+     * gap between two tiles; its content a cell in from the frame's edge.
      */
     @Composable
     private fun Tile(onClick: () -> Unit, onLongClick: () -> Unit, content: @Composable () -> Unit) {
-        val grid = retroGrid()
-        Box(modifier = Modifier.fillMaxSize().padding(end = grid.cells(1), bottom = grid.cells(1))) {
+        Box(modifier = Modifier.fillMaxSize().tileGap()) {
             Pressable(onClick = onClick, onLongClick = onLongClick, modifier = Modifier.fillMaxSize()) { pressed ->
                 Framed(modifier = Modifier.fillMaxSize(), pressed = pressed, fillContent = true) { content() }
             }

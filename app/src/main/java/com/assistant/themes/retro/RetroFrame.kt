@@ -45,7 +45,7 @@ internal fun dividerRow(columns: Int, dark: Boolean): String = piece(Piece.TOP, 
  * it, its fill that surface's ground.
  *
  * Its size falls on whole cells both ways. A size the caller imposes is rounded down to whole
- * cells; otherwise the content decides. Across, the content is inset by a whole cell each side;
+ * cells, the frame centred in it; otherwise the content decides. Across, the content is inset by a whole cell each side;
  * down, it is centred in what the frame leaves, the frame keeping [air] around it: the border
  * alone for a [compact] frame (a button, one line in two rows), a whole cell otherwise.
  *
@@ -79,17 +79,20 @@ internal fun Framed(
     val drawn = modifier.drawWithCache {
         val columns = (size.width / tile).toInt()
         val rows = (size.height / tile).toInt()
+        // What is left past the whole cells, shared on both sides in whole drawing pixels
+        val origin = Offset(centring(size.width.toInt(), columns * tile, grid.scale).toFloat(),
+            centring(size.height.toInt(), rows * tile, grid.scale).toFloat())
         val layers = (0 until rows).map { row ->
             listOf(false, true).map { dark ->
                 measurer.measure(frameRow(columns, row, rows, dark), style.copy(color = if (dark) inner else outer), softWrap = false)
             }
         }
         onDrawBehind {
-            drawRect(fill, topLeft = Offset(border.toFloat(), border.toFloat()),
-                size = Size(size.width - 2 * border, size.height - 2 * border))
+            drawRect(fill, topLeft = origin + Offset(border.toFloat(), border.toFloat()),
+                size = Size(columns * tile - 2f * border, rows * tile - 2f * border))
             layers.forEachIndexed { row, both ->
                 // A piece fills the eleven rows above its baseline: the row's cell ends there.
-                for (layout in both) drawText(layout, topLeft = Offset(0f, (row + 1) * tile - layout.firstBaseline))
+                for (layout in both) drawText(layout, topLeft = origin + Offset(0f, (row + 1) * tile - layout.firstBaseline))
             }
         }
     }
@@ -112,7 +115,10 @@ internal fun Framed(
         if (fillContent && givenColumns != null && givenRows != null) {
             val inside = Constraints.fixed(room, ((givenRows - 2) * tile).coerceAtLeast(0))
             val placeable = measurables.single().measure(inside)
-            return@Layout layout(givenColumns * tile, givenRows * tile) { placeable.place(tile, tile) }
+            return@Layout layout(constraints.maxWidth, constraints.maxHeight) {
+                placeable.place(centring(constraints.maxWidth, givenColumns * tile, grid.scale) + tile,
+                    centring(constraints.maxHeight, givenRows * tile, grid.scale) + tile)
+            }
         }
         val placeable = measurables.single().measure(
             Constraints(
@@ -129,13 +135,21 @@ internal fun Framed(
         val rows = givenRows ?: cells(placeable.height + 2 * air, tile).coerceAtLeast(2)
         val width = columns * tile
         val height = rows * tile
-        layout(width, height) {
+        // An imposed size keeps its place, the frame centred in it (drawWithCache does the same)
+        val outerWidth = if (givenColumns != null) constraints.maxWidth else width
+        val outerHeight = if (givenRows != null) constraints.maxHeight else height
+        layout(outerWidth, outerHeight) {
+            val left = centring(outerWidth, width, grid.scale)
+            val top = centring(outerHeight, height, grid.scale)
             // Centred down in whole drawing pixels: the vertical is free, as long as it is whole.
             val slack = (height - placeable.height) / 2 / grid.scale * grid.scale
-            placeable.place(tile, slack)
+            placeable.place(left + tile, top + slack)
         }
     }
 }
+
+/** Where a frame [inner] wide starts in a place [outer] wide: centred, in whole drawing pixels of [scale]. */
+private fun centring(outer: Int, inner: Int, scale: Int): Int = (outer - inner) / 2 / scale * scale
 
 /** How many whole cells [span] pixels take. */
 private fun cells(span: Int, tile: Int): Int = (span + tile - 1) / tile
