@@ -60,8 +60,8 @@ object AppSettings {
     /** How many whole steps the interface's size is moved by. */
     const val UI_SIZE_STEP = "size_step"
 
-    /** The size steps: one smaller, the theme's own, two larger. */
-    val SIZE_STEP_RANGE = -1..2
+    /** The size steps: the theme's own, then three larger. */
+    val SIZE_STEP_RANGE = 0..3
 
     fun nodes(category: String, context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)

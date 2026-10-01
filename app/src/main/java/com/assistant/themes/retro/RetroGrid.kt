@@ -91,15 +91,16 @@ class RetroGrid(
 }
 
 /**
- * The grid of this screen: the density rounded, which puts a capital nearest 10 dp, moved by the
- * size steps the user chose. At least one pixel per drawing pixel.
+ * The grid of this screen: one less than the density rounded, which puts a capital near 8.5 dp
+ * (30 screen pixels at a density of 3.5), moved up by the size steps the user chose. At least
+ * one pixel per drawing pixel.
  */
 @Composable
 fun retroGrid(): RetroGrid {
     val density = LocalDensity.current
     val step = CurrentTheme.sizeStep
     return remember(density, step) {
-        RetroGrid((density.density.roundToInt() + step).coerceAtLeast(1), density)
+        RetroGrid((density.density.roundToInt() - 1 + step).coerceAtLeast(1), density)
     }
 }
 
