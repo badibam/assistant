@@ -157,7 +157,8 @@ enum class SystemMessageType {
     SCHEMA_REQUIRED, // Schémas des entrées qu'une requête ou une écriture attend → envoyé au prompt, commandes non exécutées
     NETWORK_ERROR, // Erreurs réseau/HTTP → filtré du prompt, visible UI (audit + transparence)
     PROVIDER_ERROR, // Provider non configuré/invalide → filtré du prompt, visible UI (audit + transparence)
-    SESSION_TIMEOUT // Timeout watchdog session → filtré du prompt, visible UI (audit + transparence)
+    SESSION_TIMEOUT, // Timeout watchdog session → filtré du prompt, visible UI (audit + transparence)
+    TEXT_OUTSIDE_JSON // Texte écrit autour du JSON de la réponse, écarté → cité à l'utilisateur (summary), l'IA n'en reçoit que la mention (formattedData)
 }
 ```
 
@@ -687,6 +688,7 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
 **AI actions** : Générés après exécution actionCommands IA, stockés après réponse AI, type ACTIONS_EXECUTED sans formattedData.
 **Limites** : Générés quand limite atteinte, type LIMIT_REACHED avec summary, pas de renvoie auto (attend message user).
 **Format errors** : Générés quand la réponse de l'IA ne se lit pas ou enfreint une règle du format (module de communication compris), type FORMAT_ERROR avec détails erreurs, renvoie auto à l'IA pour correction.
+**Texte autour du JSON** : une réponse qui contient exactement un objet JSON entouré de texte ou d'un bloc ```json est lue par cet objet (`ResponseEnvelope`) ; aucun objet ou plusieurs restent un FORMAT_ERROR. Le message de l'IA ne garde que le JSON, que son historique rejoue ; un message TEXT_OUTSIDE_JSON cite le texte écarté à l'utilisateur, et `PromptManager` n'en transmet à l'IA que la mention qu'il a été ignoré, jamais le texte.
 **Erreurs système** : Générés pour erreurs réseau (NETWORK_ERROR), provider (PROVIDER_ERROR) et timeout watchdog (SESSION_TIMEOUT). **TOUJOURS visibles dans l'UI** pour transparence utilisateur. Filtrés du prompt IA (excludeFromPrompt=true, audit uniquement).
 
 ### Format dans prompts

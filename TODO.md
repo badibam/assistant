@@ -13,9 +13,14 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Modèles libres (`docs/design/local-models.md`) : après la démo, sur laquelle il joue, monter le banc (tests d'instrumentation sur l'émulateur, `./run bench`) qui fait jouer à l'app une vingtaine de scénarios, et lancer la campagne 1 (prompt actuel, avec et sans forçage par schéma, sur toute l'échelle de tailles via OpenRouter). Les niveaux de prompt se décident sur son résultat.
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 - Les conditions typées à l'écriture, conçues dans `docs/design/typed-conditions.md` : le type de chaque côté d'une condition connu sans lire de données, les constantes de l'IA traduites à l'entrée, la vérification au service, et le refus d'un changement dont dépend une condition ailleurs.
+- Le formulaire du Graphique : chaque niveau d'emboîtement retire de la largeur des deux côtés, au fond tout tient dans une colonne étroite, et le filtre d'une colonne de grille est enfoui six niveaux plus bas (couche › colonnes › colonne › lu › Filtres) sans signe en surface — à concevoir.
+- Le graphique Calories de Panorama met 3,3 à 3,8 s à se lire (grille par jour sur 30 jours, en arrière-plan) — comprendre où va le temps.
+- Les clés de texte `chart_schema_value_*` (x, y, x2, y2, strokeDash, detail, order, text, theta, radius) manquent : construites par assemblage, `check_string_keys.py` ne les voit pas.
+- Le formulaire du Graphique montre « Empilement : Aucun » sur le canal horizontal d'une couche dont le vertical est en `normalize` : vérifier qu'il lit l'empilement du bon canal.
 
 ## En attente d'un déclencheur
 
+- L'ouverture d'une zone bloque encore l'écran ~1 s la première fois après le démarrage (version debug, 2026-10-01 : 6 graphiques, 18 tuiles) — à décomposer si ça gêne.
 - Choisir une entrée précise comme cible du pointeur dans son sélecteur (conçu dans `docs/design/pointer.md` : étiquette par type d'outil, liste, relecture de l'entrée) — si le besoin apparaît : un pointeur peut désigner une entrée (le Questionnaire en pose un), mais seule l'app le fait. La cible APP attend que l'IA sache lire les réglages de l'app.
 - Les exécutions d'une automation décrites comme des entrées (champs déclarés, schéma généré, dates en ISO par ce schéma) — le jour où l'IA les lit ; ce ne sont pas des réglages.
 - Une sauvegarde emporte-t-elle la clé d'API d'un fournisseur (réglage secret) ? — à trancher avant d'ouvrir l'export à un usage partagé.
