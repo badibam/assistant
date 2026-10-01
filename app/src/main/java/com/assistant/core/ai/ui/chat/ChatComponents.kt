@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Switch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -439,21 +438,11 @@ fun SessionSettingsDialog(
                     )
                 }
 
-                // Validation toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    UI.Text(
-                        text = s.shared("label_validation"),
-                        type = TextType.BODY
-                    )
-                    Switch(
-                        checked = session.requireValidation,
-                        onCheckedChange = onToggleValidation
-                    )
-                }
+                UI.Switch(
+                    checked = session.requireValidation,
+                    onCheckedChange = onToggleValidation,
+                    label = s.shared("label_validation")
+                )
             }
         }
     }

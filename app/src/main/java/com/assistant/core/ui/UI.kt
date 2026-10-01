@@ -385,6 +385,22 @@ object UI {
         onCheckedChange: (Boolean) -> Unit,
         label: String? = null
     ) = CurrentTheme.current.Checkbox(checked, onCheckedChange, label)
+
+    /** An on/off setting that takes effect as it is switched, its label at the start. */
+    @Composable
+    fun Switch(
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        label: String
+    ) = CurrentTheme.current.Switch(checked, onCheckedChange, label)
+
+    /** A row of tabs, one per label; [selected] is the index of the one shown. */
+    @Composable
+    fun Tabs(
+        labels: List<String>,
+        selected: Int,
+        onSelect: (Int) -> Unit
+    ) = CurrentTheme.current.Tabs(labels, selected, onSelect)
     
     /**
      * A yes/no answer, [value] null while there is none: touching the chosen answer again

@@ -18,6 +18,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Chat IA
 
+- Réglages d'une session de chat : l'interrupteur de validation, à droite de son libellé, bascule et la validation suit.
 - Le chat ouvert, sans session puis dans une session : il couvre l'écran jusqu'en bas, la barre de navigation masquée comme ailleurs, revenant un instant au glissé du bord ; la touche Retour le ferme ; les bandeaux du haut ont leur couleur d'avant.
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
 - « Importe ce fichier dans une nouvelle table » avec un CSV joint : l'IA crée la table, puis au tour suivant `IMPORT_PLAN` et `IMPORT_DATA` ; la carte de validation nomme le fichier, ses lignes et la table ; la table a ses colonnes et ses lignes.
@@ -79,6 +80,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Journal, « Annuler » en modification : l'écran revient au texte stocké, et une entrée créée, rouverte puis annulée reste en place.
 - Messages : créer puis modifier une récurrence, voir les messages partir ; mettre l'outil en pause, voir les envois s'arrêter.
 - Messages, listes « à venir » et « reçus » : un indicateur pendant le chargement, jamais « rien de prévu » avant d'avoir lu.
+- Messages, onglets « reçus » et « à venir » : ils basculent comme avant, l'onglet choisi souligné.
 - Tuile Messages : un message non lu en gras, à la taille du texte courant, au-dessus des lus en petit.
 - Messages, « Notif du matin » : après la mise à jour, les deux messages prévus en double ne le sont plus (un par jour). Changer plusieurs fois la récurrence de suite : jamais plus d'un message prévu par heure de la récurrence, et l'app ne rame pas.
 - Lectures filtrées par les écrans : l'historique d'un suivi par période (jour, semaine, mois) montre les mêmes entrées qu'avant, et l'écran Messages range chaque message selon son état.

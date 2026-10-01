@@ -12,10 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.assistant.core.ui.screens.MainScreen
@@ -111,9 +108,7 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(
                 colorScheme = CurrentTheme.getCurrentColorScheme()
             ) {
-                Surface(
-                    modifier = Modifier.fillMaxSize()
-                ) {
+                UI.FullScreen {
                     // The demo first, installed afresh after an update, before the home screen
                     // reads the zones; once per activity, a recreation finding it done
                     var demoReady by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }

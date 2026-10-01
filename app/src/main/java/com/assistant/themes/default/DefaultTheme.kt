@@ -683,9 +683,10 @@ object DefaultTheme : ThemeContract {
         }
     }
 
+    /** A Material surface: the background, and the content color Material's components inside read. */
     @Composable
     override fun FullScreen(content: @Composable () -> Unit) {
-        Box(modifier = Modifier.fillMaxSize().background(CurrentTheme.getCurrentColorScheme().surface)) {
+        androidx.compose.material3.Surface(modifier = Modifier.fillMaxSize(), color = CurrentTheme.getCurrentColorScheme().surface) {
             content()
         }
     }
@@ -1228,6 +1229,39 @@ object DefaultTheme : ThemeContract {
         }
     }
     
+    @Composable
+    override fun Switch(
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        label: String
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, TextType.BODY, false, null)
+            androidx.compose.material3.Switch(checked = checked, onCheckedChange = onCheckedChange)
+        }
+    }
+
+    @Composable
+    override fun Tabs(
+        labels: List<String>,
+        selected: Int,
+        onSelect: (Int) -> Unit
+    ) {
+        androidx.compose.material3.TabRow(selectedTabIndex = selected) {
+            labels.forEachIndexed { index, label ->
+                androidx.compose.material3.Tab(
+                    selected = index == selected,
+                    onClick = { onSelect(index) },
+                    text = { Text(label, TextType.BODY, false, null) }
+                )
+            }
+        }
+    }
+
     /** Two segmented buttons side by side; neither is chosen while there is no answer. */
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable

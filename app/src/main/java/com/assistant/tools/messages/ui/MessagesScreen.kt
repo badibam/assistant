@@ -4,8 +4,6 @@ import com.assistant.core.utils.StoredSchedule
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -162,18 +160,11 @@ fun MessagesScreen(
             }
         }
 
-        TabRow(selectedTabIndex = selectedTab) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = { UI.Text(s.tool("tab_received_messages"), TextType.BODY) }
-            )
-            Tab(
-                selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                text = { UI.Text(s.tool("tab_upcoming"), TextType.BODY) }
-            )
-        }
+        UI.Tabs(
+            labels = listOf(s.tool("tab_received_messages"), s.tool("tab_upcoming")),
+            selected = selectedTab,
+            onSelect = { selectedTab = it }
+        )
 
         when (selectedTab) {
             0 -> ReceivedTab(

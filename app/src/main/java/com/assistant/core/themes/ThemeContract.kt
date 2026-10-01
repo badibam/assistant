@@ -242,7 +242,7 @@ interface ThemeContract {
     // SPECIALIZED CONTAINERS (appearance only)
     // =====================================
     
-    /** A view over the whole screen (FullScreenDialog), on the theme's background. */
+    /** A view over the whole screen (the app's root, FullScreenDialog), on the theme's background. */
     @Composable
     fun FullScreen(content: @Composable () -> Unit)
 
@@ -346,6 +346,25 @@ interface ThemeContract {
         checked: Boolean,
         onCheckedChange: (Boolean) -> Unit,
         label: String?
+    )
+
+    /**
+     * An on/off setting that takes effect as it is switched (a session's validation), [label]
+     * across the width at the start and the switch at the end.
+     */
+    @Composable
+    fun Switch(
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        label: String
+    )
+
+    /** A row of tabs across the width, one per label, [selected] the index of the one shown. */
+    @Composable
+    fun Tabs(
+        labels: List<String>,
+        selected: Int,
+        onSelect: (Int) -> Unit
     )
     
     /**
