@@ -310,6 +310,9 @@ dependencies {
     testImplementation("org.json:json:20240303")
     // A real SQLite with its JSON functions, to run the entry filters' SQL as the phone would
     testImplementation("org.xerial:sqlite-jdbc:3.41.2.2")
+    // The bench (docs/design/local-models.md): the app plays a scenario on the emulator, run by ./run bench
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
