@@ -261,9 +261,9 @@ object RetroTheme : ThemeContract {
 
     /**
      * The register's size: a title stands out by the strong ink, a caption steps back by the thin
-     * weight in the dim ink. Cartouche has no bold. A tile's title alone is a size up, one more
-     * screen pixel to each of its drawing pixels: still whole pixels, though larger than the
-     * screen's others and off the cells.
+     * weight in the dim ink. Cartouche has no bold. A tile's title, and a page's (PageHeader),
+     * are a size up, one more screen pixel to each of their drawing pixels: still whole pixels,
+     * though larger than the screen's others and off the cells.
      */
     @Composable
     override fun Text(text: String, type: TextType, fillMaxWidth: Boolean, textAlign: TextAlign?, maxLines: Int) {
@@ -271,6 +271,7 @@ object RetroTheme : ThemeContract {
         val s = retroSurface
         val override = LocalRetroInk.current
         val (style, ink) = when (type) {
+            TextType.TILE_TITLE -> retroGridUp().text to (override ?: s.strong.srgb)
             TextType.TITLE, TextType.SUBTITLE, TextType.STRONG -> grid.text to (override ?: s.strong.srgb)
             TextType.BODY -> grid.text to (override ?: s.ink.srgb)
             TextType.CAPTION, TextType.LABEL -> grid.thin to s.dim.srgb
@@ -643,9 +644,11 @@ object RetroTheme : ThemeContract {
                 leftButton?.let { com.assistant.core.ui.UI.ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onLeftClick ?: {}) }
             }
             Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                // The page's icon and title a size up, as a tile's title is (TILE_TITLE)
+                val up = retroGridUp()
                 Row(horizontalArrangement = Arrangement.spacedBy(grid.cells(1)), verticalAlignment = Alignment.CenterVertically) {
-                    icon?.let { NamedIcon(it, null) }
-                    Text(title, TextType.TITLE, false, TextAlign.Center)
+                    icon?.let { NamedIcon(it, null, up) }
+                    Line(title, up.text, LocalRetroInk.current ?: retroSurface.strong.srgb, align = TextAlign.Center)
                 }
                 subtitle?.let { Text(it, TextType.CAPTION, false, TextAlign.Center) }
             }
@@ -1057,10 +1060,15 @@ object RetroTheme : ThemeContract {
 
     /** A Lucide icon by name, in the register's icon box. */
     @Composable
-    private fun NamedIcon(name: String, description: String?) {
+    private fun NamedIcon(name: String, description: String?, grid: RetroGrid = retroGrid()) {
         val resource = requireNotNull(Icons.drawable(LocalContext.current, name)) { "No drawable for the icon $name" }
-        val grid = retroGrid()
-        Icon(resource, with(LocalDensity.current) { grid.px(RetroGrid.ICON).toDp() }, description, null, null)
+        // Its box once, at [grid]'s scale: drawn here rather than by Icon, which counts in the screen's grid
+        Image(
+            painter = painterResource(resource),
+            contentDescription = description,
+            colorFilter = ColorFilter.tint(LocalRetroInk.current ?: retroSurface.ink.srgb),
+            modifier = Modifier.size(grid.dp(RetroGrid.ICON))
+        )
     }
 
     /** [cells] gauge blocks, filled to [fraction] by quarters of a cell. */
