@@ -147,15 +147,19 @@ object RetroTheme : ThemeContract {
     // =====================================
 
     /**
-     * The largest even number of cells that fits in a quarter of the width: a line of a tile is
-     * half a case, and an odd case would put it between two pixels.
+     * The largest even number of cells four cases take with a cell between two: a line of a tile
+     * is half a case, and an odd case would put it between two pixels.
      */
     @Composable
     override fun gridCellPx(availableWidthPx: Int): Int {
         val grid = retroGrid()
-        val perCase = (availableWidthPx / grid.cellPx / 4).let { if (it % 2 == 0) it else it - 1 }.coerceAtLeast(2)
+        val perCase = ((availableWidthPx / grid.cellPx - 3) / 4).let { if (it % 2 == 0) it else it - 1 }.coerceAtLeast(2)
         return perCase * grid.cellPx
     }
+
+    /** A cell between two tiles, outside them: the grid spans every cell the screen has. */
+    @Composable
+    override fun gridGapPx(): Int = retroGrid().cellPx
 
     override fun sound(signal: UISignal): Int? = when (signal) {
         UISignal.CONFIRM -> R.raw.retro_confirm
@@ -531,24 +535,34 @@ object RetroTheme : ThemeContract {
     // CONTAINERS
     // =====================================
 
-    /** The screen's ground; the toasts show over its bottom. */
+    /**
+     * The screen's ground, its content a whole number of cells wide and centred: what the width
+     * leaves past the last whole cell is shared in two margins, the only ones the screen has, and
+     * whatever fills the width lines up on them. The toasts show over its bottom.
+     */
     @Composable
     override fun FullScreen(content: @Composable () -> Unit) {
-        Box(modifier = Modifier.fillMaxSize().background(retroColors.screen.ground.srgb)) {
-            CompositionLocalProvider(LocalRetroSurface provides RetroSurface.SCREEN, LocalRetroInk provides null) {
-                content()
-                ToastHost(Modifier.align(Alignment.BottomCenter))
+        val grid = retroGrid()
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().background(retroColors.screen.ground.srgb)) {
+            val margin = with(LocalDensity.current) {
+                ((constraints.maxWidth % grid.cellPx) / 2 / grid.scale * grid.scale).toDp()
+            }
+            Box(modifier = Modifier.fillMaxSize().padding(horizontal = margin)) {
+                CompositionLocalProvider(LocalRetroSurface provides RetroSurface.SCREEN, LocalRetroInk provides null) {
+                    content()
+                    ToastHost(Modifier.align(Alignment.BottomCenter))
+                }
             }
         }
     }
 
-    /** A row on the screen's ground, a cell in from the sides, closed by a divider. */
+    /** A row on the screen's ground across the width, closed by a divider. */
     @Composable
     override fun HeaderBar(content: @Composable RowScope.() -> Unit) {
         val grid = retroGrid()
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = grid.cells(1), vertical = grid.dp(RetroGrid.BORDER)),
+                modifier = Modifier.fillMaxWidth().padding(vertical = grid.dp(RetroGrid.BORDER)),
                 horizontalArrangement = Arrangement.spacedBy(grid.cells(1)),
                 verticalAlignment = Alignment.CenterVertically,
                 content = content
@@ -568,15 +582,14 @@ object RetroTheme : ThemeContract {
     }
 
     /**
-     * A cell of the grid in edit mode: a dotted outline, one pixel lit in two, inside the cell the
-     * tile would take (tileGap).
+     * A cell of the grid in edit mode: a dotted outline, one pixel lit in two, around the cell.
      */
     @Composable
     override fun GridCell() {
         val grid = retroGrid()
         val dots = retroColors.screen.borderInner.srgb
         Box(
-            modifier = Modifier.fillMaxSize().tileGap().drawBehind {
+            modifier = Modifier.fillMaxSize().drawBehind {
                 val p = grid.scale.toFloat()
                 val w = (size.width / p).toInt()
                 val h = (size.height / p).toInt()
@@ -593,18 +606,6 @@ object RetroTheme : ThemeContract {
         )
     }
 
-    /**
-     * The gap between two tiles, a cell, taken inside each tile's cells: across, five drawing
-     * pixels on the left and six on the right, so that the grid shows centred on its cells; down,
-     * the whole cell under it.
-     */
-    @Composable
-    private fun Modifier.tileGap(): Modifier {
-        val grid = retroGrid()
-        val left = RetroGrid.CELL / 2
-        return padding(start = grid.dp(left), end = grid.dp(RetroGrid.CELL - left), bottom = grid.cells(1))
-    }
-
     /** The font's triangle in the warning colour: something is running. */
     @Composable
     override fun RunningMark() {
@@ -615,16 +616,11 @@ object RetroTheme : ThemeContract {
     override fun ToolCardContainer(displayMode: DisplayMode, onClick: () -> Unit, onLongClick: () -> Unit, content: @Composable () -> Unit) =
         Tile(onClick, onLongClick, content)
 
-    /**
-     * A tile: a frame filling the cells the grid gives it but a cell across and a row down, the
-     * gap between two tiles; its content a cell in from the frame's edge.
-     */
+    /** A tile: a frame filling the cells the grid gives it; its content a cell in from the frame's edge. */
     @Composable
     private fun Tile(onClick: () -> Unit, onLongClick: () -> Unit, content: @Composable () -> Unit) {
-        Box(modifier = Modifier.fillMaxSize().tileGap()) {
-            Pressable(onClick = onClick, onLongClick = onLongClick, modifier = Modifier.fillMaxSize()) { pressed ->
-                Framed(modifier = Modifier.fillMaxSize(), pressed = pressed, fillContent = true) { content() }
-            }
+        Pressable(onClick = onClick, onLongClick = onLongClick, modifier = Modifier.fillMaxSize()) { pressed ->
+            Framed(modifier = Modifier.fillMaxSize(), pressed = pressed, fillContent = true) { content() }
         }
     }
 
@@ -639,7 +635,8 @@ object RetroTheme : ThemeContract {
         onRightClick: (() -> Unit)?
     ) {
         val grid = retroGrid()
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = grid.cells(1)), verticalAlignment = Alignment.CenterVertically) {
+        // Across the width, its buttons on the screen's margins
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.width(grid.cells(4)), contentAlignment = Alignment.CenterStart) {
                 leftButton?.let { com.assistant.core.ui.UI.ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onLeftClick ?: {}) }
             }

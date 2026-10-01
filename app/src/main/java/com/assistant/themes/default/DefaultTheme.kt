@@ -90,6 +90,10 @@ object DefaultTheme : ThemeContract {
     override fun gridCellPx(availableWidthPx: Int): Int =
         minOf(availableWidthPx, with(androidx.compose.ui.platform.LocalDensity.current) { 480.dp.roundToPx() }) / 4
 
+    /** None: a tile keeps its gap inside its cells (tileFrame). */
+    @Composable
+    override fun gridGapPx(): Int = 0
+
     /** Silent: the default theme has no sounds. */
     override fun sound(signal: com.assistant.core.ui.sound.UISignal): Int? = null
 

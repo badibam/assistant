@@ -42,8 +42,9 @@ private const val FADED = 0.4f
 
 /**
  * Tiles laid on a grid: four columns of square cells, each [tiles] at its place, [item] drawing
- * the one at an index. The theme sizes a cell from the width there is (gridCellPx), and the grid
- * is centered in what it leaves.
+ * the one at an index. The theme sizes a cell from the width there is (gridCellPx) and the gap
+ * between two cells (gridGapPx), which a tile spanning several cells covers; the grid is
+ * centered in what it leaves.
  *
  * A row is one cell high, except the row of a tile that grows with its content ([grows]: a
  * FULL tile), which is as tall as what it shows, rounded up to whole cells. Such a tile is measured
@@ -68,6 +69,7 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
         val cellPx = CurrentTheme.current.gridCellPx(constraints.maxWidth)
+        val gap = CurrentTheme.current.gridGapPx()
         Layout(
             content = {
                 // In edit mode, first the cells, one per cell of the grid, then the tiles over them
@@ -79,7 +81,7 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
                         if (selected) {
                             LaunchedEffect(place) {
                                 val line = cellPx / 2f
-                                requester.bringIntoView(Rect(0f, -line, place.width * cellPx.toFloat(), place.height * cellPx + line))
+                                requester.bringIntoView(Rect(0f, -line, place.width * (cellPx + gap).toFloat(), place.height * (cellPx + gap) + line))
                             }
                         }
                         Box(
@@ -104,32 +106,38 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
             }
         ) { measurables, _ ->
             val cell = cellPx
+            /** The pixels [count] cells span, the gaps between them included. */
+            fun span(count: Int) = count * cell + (count - 1).coerceAtLeast(0) * gap
+            val left = { column: Int -> column * (cell + gap) }
 
             // A tile that grows is measured first, at its width and a free height; its row takes
             // that height in whole cells
             val rowHeights = IntArray(rowCount) { cell }
             val grown = tiles.mapIndexedNotNull { i, tile ->
                 if (!grows[i]) return@mapIndexedNotNull null
-                val width = tile.width * cell
+                val width = span(tile.width)
                 val placeable = measurables[cells + i].measure(Constraints(minWidth = width, maxWidth = width, minHeight = cell))
                 rowHeights[tile.row] = maxOf(rowHeights[tile.row], (placeable.height + cell - 1) / cell * cell)
                 i to placeable
             }.toMap()
+            // Each row's top, a gap after every row but the last
             val rowTops = IntArray(rowCount + 1)
-            for (row in 0 until rowCount) rowTops[row + 1] = rowTops[row] + rowHeights[row]
+            for (row in 0 until rowCount) rowTops[row + 1] = rowTops[row] + rowHeights[row] + if (row < rowCount - 1) gap else 0
+            /** The pixels from the top of [row] to the bottom of the row before [end]. */
+            fun height(row: Int, end: Int) = rowTops[end] - rowTops[row] - if (end < rowCount) gap else 0
 
             val cellPlaceables = (0 until cells).map { index ->
                 measurables[index].measure(Constraints.fixed(cell, rowHeights[index / Grid.COLUMNS]))
             }
             val tilePlaceables = tiles.mapIndexed { i, tile ->
-                grown[i] ?: measurables[cells + i].measure(Constraints.fixed(tile.width * cell, rowTops[tile.bottom] - rowTops[tile.row]))
+                grown[i] ?: measurables[cells + i].measure(Constraints.fixed(span(tile.width), height(tile.row, tile.bottom)))
             }
-            layout(cell * Grid.COLUMNS, rowTops[rowCount]) {
+            layout(span(Grid.COLUMNS), rowTops[rowCount]) {
                 cellPlaceables.forEachIndexed { index, placeable ->
-                    placeable.place((index % Grid.COLUMNS) * cell, rowTops[index / Grid.COLUMNS])
+                    placeable.place(left(index % Grid.COLUMNS), rowTops[index / Grid.COLUMNS])
                 }
                 tilePlaceables.forEachIndexed { i, placeable ->
-                    placeable.place(tiles[i].column * cell, rowTops[tiles[i].row])
+                    placeable.place(left(tiles[i].column), rowTops[tiles[i].row])
                 }
             }
         }

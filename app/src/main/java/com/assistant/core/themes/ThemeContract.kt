@@ -47,11 +47,19 @@ interface ThemeContract {
 
     /**
      * The side of a cell of the tile grid (GridLayout), in pixels, given the width there is for
-     * its four columns, in pixels; the grid is centered in what it leaves. Composable, as a size
+     * its four columns and the three gaps between them (gridGapPx), in pixels; the grid is
+     * centered in what it leaves. Composable, as a size
      * in whole cells of the font depends on the screen's density.
      */
     @Composable
     fun gridCellPx(availableWidthPx: Int): Int
+
+    /**
+     * The space between two cells of the tile grid, in pixels, left empty by the grid: a theme
+     * whose tiles keep their gap inside their cells gives none.
+     */
+    @Composable
+    fun gridGapPx(): Int
 
     /**
      * The raw resource of the sound that answers [signal] in this theme, or null for silence
