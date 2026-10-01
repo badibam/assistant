@@ -81,6 +81,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    // SoundPool opens a sound through a file descriptor into the APK, which a compressed entry
+    // cannot give: the themes' FLAC sounds are stored as they are (FLAC is compressed already)
+    androidResources {
+        noCompress += "flac"
+    }
 }
 
 kotlin {
