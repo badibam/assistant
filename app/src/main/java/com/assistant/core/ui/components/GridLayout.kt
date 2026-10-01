@@ -29,9 +29,9 @@ import com.assistant.core.ui.UI
 import org.json.JSONObject
 
 /**
- * A group section in edit mode (docs/design/grid-layout.md, « Le mode d'édition »): its tiles at
- * the [places] of the move in progress, [selectedId] the tile being moved, [onSelect] what a touch
- * on a tile does instead of its own action, by the tile's id.
+ * A group section in edit mode: its tiles at the [places] of the move in progress, [selectedId]
+ * the tile being moved, [onSelect] what a touch on a tile does instead of its own action, by the
+ * tile's id.
  */
 data class GridEdit(val places: List<Grid.Tile>, val selectedId: String?, val onSelect: (String) -> Unit)
 

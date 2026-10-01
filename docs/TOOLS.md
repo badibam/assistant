@@ -202,13 +202,15 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
 Les outils d'une section de groupe sont posés sur une grille de quatre colonnes à cases carrées (`ToolGrid`), large au plus du `gridMaxWidth` du thème. Chaque outil y tient à `grid_x`/`grid_y` (`tool_instances`), placé par `ToolPositions` et `Grid` ; sa taille en cases vient de son `display_mode`, que sa config porte toujours :
 
-- **ICON** (1×1) : icône seule
-- **MINIMAL** (2×1) : icône + titre côte à côte
-- **LINE** (4×1) : icône + titre gauche, contenu libre droite
-- **CONDENSED** (2×2) : icône + titre haut, zone libre dessous
-- **EXTENDED** (4×2) : icône + titre haut, zone libre dessous
-- **SQUARE** (4×4) : icône + titre haut, grande zone libre
-- **FULL** (4 × sa hauteur) : icône + titre haut, aussi haut que son contenu, arrondi à la case
+- **ICON** (1×1) : l'icône seule
+- **MINIMAL** (2×1) : l'en-tête, icône et nom
+- **LINE** (4×1) : l'en-tête à gauche, le résumé (ou l'aperçu) à droite
+- **CONDENSED** (2×2) : l'en-tête en haut, le résumé (ou l'aperçu) dessous
+- **EXTENDED** (4×2) : l'en-tête et le résumé en haut, une rangée de corps
+- **SQUARE** (4×4) : l'en-tête et le résumé en haut, trois rangées de corps
+- **FULL** (4 × sa hauteur) : l'en-tête et le résumé en haut, le corps aussi haut que son contenu, arrondi à la case
+
+Une case fait deux lignes, et toute hauteur dans une tuile se compte en lignes. Seules ICON, MINIMAL et CONDENSED partagent une ligne de la grille. Rien ne défile dans une tuile : ce qui ne tient pas est l'affaire du type d'outil. Un élément tactile de la tuile fait son action, un toucher ailleurs ouvre l'outil (ou l'entrée qui attend), l'appui long sa config ; en édition, un toucher sélectionne. L'IA ne voit ni ne change les positions ; changer le mode d'un outil par sa config fait descendre ce que sa tuile recouvre.
 
 ## Validation JSON Schema V3
 
