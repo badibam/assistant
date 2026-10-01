@@ -204,7 +204,6 @@ object ChartToolType : ToolTypeContract {
         ))
         val stack = SettingNode.Field(field(ChartKeys.STACK, s.tool("field_stack"), FieldType.CHOICE, s.tool("schema_stack"),
             choice(Stack.entries.map { it.key }) { s.tool("stack_$it") }))
-        val numberValue = SettingNode.Field(field(ChartKeys.VALUE, s.tool("field_value"), FieldType.NUMERIC, s.tool("schema_value_$key"), mapOf("decimals" to 2)))
         val nodes: List<SettingNode> = when (channel) {
             Channel.X, Channel.Y -> listOfNotNull(
                 fieldNode, type,
@@ -232,7 +231,10 @@ object ChartToolType : ToolTypeContract {
                     legend, condition(colorValue), colorValue
                 )
             }
-            Channel.SIZE, Channel.OPACITY -> listOf(fieldNode, type, condition(numberValue), numberValue)
+            Channel.SIZE, Channel.OPACITY -> {
+                val numberValue = SettingNode.Field(field(ChartKeys.VALUE, s.tool("field_value"), FieldType.NUMERIC, s.tool("schema_value_$key"), mapOf("decimals" to 2)))
+                listOf(fieldNode, type, condition(numberValue), numberValue)
+            }
             Channel.SHAPE -> {
                 val shapeValue = SettingNode.Field(field(ChartKeys.VALUE, s.tool("field_shape"), FieldType.CHOICE, s.tool("schema_value_shape"),
                     choice(Shape.entries.map { it.key }) { s.tool("shape_$it") }))
