@@ -1,6 +1,5 @@
 package com.assistant.tools.list.ui
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +28,7 @@ import com.assistant.core.ui.Duration
 import com.assistant.core.ui.Size
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.core.ui.components.TileLine
 import com.assistant.core.ui.components.TileGrid
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
@@ -133,10 +133,10 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
                 // The late ones first, each part keeping the list's order: a stable sort
                 val left = ListItems.shown(loaded).filterNot { it.isChecked }.sortedBy { if (DueNotice.isLate(it, now)) 0 else 1 }
                 TileGrid(rows, left, columns = 2) { item ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
-                        UI.Checkbox(checked = item.isChecked, onCheckedChange = { checked -> check(item, checked) })
-                        UI.Text(item.name, TextType.BODY, maxLines = 1)
-                    }
+                    TileLine(
+                        item.name,
+                        leading = { UI.Checkbox(checked = item.isChecked, onCheckedChange = { checked -> check(item, checked) }) }
+                    )
                 }
             }
         }

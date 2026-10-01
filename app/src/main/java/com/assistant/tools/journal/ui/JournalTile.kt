@@ -2,11 +2,8 @@ package com.assistant.tools.journal.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +24,7 @@ import com.assistant.core.ui.ButtonType
 import com.assistant.core.ui.Size
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.core.ui.components.TileLine
 import com.assistant.core.ui.components.TileGrid
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
@@ -89,14 +87,11 @@ fun rememberJournalTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolTi
             override fun Body(rows: Int?) {
                 val loaded = entries ?: return
                 TileGrid(rows, loaded, columns = 1) { entry ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable { open(EntryToOpen.Existing(entry.id)) },
-                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(modifier = Modifier.weight(1f)) { UI.Text(entry.title, TextType.BODY, maxLines = 1) }
-                        UI.Text(FormatUtils.formatRelativeTimePast(entry.timestamp, context), TextType.CAPTION, maxLines = 1)
-                    }
+                    TileLine(
+                        entry.title,
+                        modifier = Modifier.clickable { open(EntryToOpen.Existing(entry.id)) },
+                        trailing = { UI.Text(FormatUtils.formatRelativeTimePast(entry.timestamp, context), TextType.CAPTION, maxLines = 1) }
+                    )
                 }
             }
         }

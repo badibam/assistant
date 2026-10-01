@@ -25,6 +25,7 @@ import com.assistant.core.tools.ToolTile
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.core.ui.components.TileLine
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.FormatUtils
@@ -125,22 +126,19 @@ fun rememberTrackingTile(tool: ToolInstance): ToolTile {
             @Composable
             override fun Body(rows: Int?) {
                 if (!loaded) return
+                val s = remember { Strings.`for`(tool = "tracking", context = context) }
                 // A shortcut, or an option of a choice
                 val items: List<Any> = actions.shortcuts + actions.choice?.options.orEmpty()
                 com.assistant.core.ui.components.TileGrid(rows, items, columns = 2) { item ->
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            when (item) {
-                                is TrackingShortcut -> UI.Text(
-                                    shortcutLabel(item, actions.kind) { com.assistant.core.utils.NumberFormatting.formatForDisplay(it.toDouble(), context = context) },
-                                    TextType.BODY, maxLines = 1
-                                )
-                                is String -> OptionLabel(actions.choice!!, item)
-                            }
-                        }
-                        when (item) {
-                            is TrackingShortcut -> ShortcutButtons(actions, item, running, null)
-                            is String -> QuickButton(ButtonAction.ADD, !actions.isSaving) { actions.quickSaveOption(item) }
+                    when (item) {
+                        is TrackingShortcut -> TileLine(
+                            shortcutLabel(item, actions.kind) { com.assistant.core.utils.NumberFormatting.formatForDisplay(it.toDouble(), context = context) },
+                            // A running stopwatch's time under its name, which keeps the width beside the button
+                            secondary = running.firstOrNull { it.name == item.name }?.let { elapsedText(it, actions.valueField?.config, s) },
+                            trailing = { ShortcutButtons(actions, item, running, null, withElapsed = false) }
+                        )
+                        is String -> TileLine(trailing = { QuickButton(ButtonAction.ADD, !actions.isSaving) { actions.quickSaveOption(item) } }) {
+                            OptionLabel(actions.choice!!, item)
                         }
                     }
                 }

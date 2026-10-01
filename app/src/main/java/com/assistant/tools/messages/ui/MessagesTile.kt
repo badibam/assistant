@@ -2,11 +2,8 @@ package com.assistant.tools.messages.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,7 +11,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.assistant.core.coordinator.Coordinator
@@ -24,6 +20,7 @@ import com.assistant.core.tools.EntryToOpen
 import com.assistant.core.tools.ToolTile
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.core.ui.components.TileLine
 import com.assistant.core.ui.components.TileGrid
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
@@ -93,16 +90,12 @@ fun rememberMessagesTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolT
                 val loaded = inbox ?: return
                 val shown = (loaded.unread + loaded.read).let { if (rows == null) it.take(FULL_MESSAGES) else it }
                 TileGrid(rows, shown, columns = 1) { message ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable { open(EntryToOpen.Existing(message.id)) },
-                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            UI.Text(message.displayTitle, if (message.read) TextType.CAPTION else TextType.STRONG, maxLines = 1)
-                        }
-                        UI.Text(FormatUtils.formatRelativeTimePast(message.dueAt, context), TextType.CAPTION, maxLines = 1)
-                    }
+                    TileLine(
+                        message.displayTitle,
+                        modifier = Modifier.clickable { open(EntryToOpen.Existing(message.id)) },
+                        type = if (message.read) TextType.CAPTION else TextType.STRONG,
+                        trailing = { UI.Text(FormatUtils.formatRelativeTimePast(message.dueAt, context), TextType.CAPTION, maxLines = 1) }
+                    )
                 }
             }
         }

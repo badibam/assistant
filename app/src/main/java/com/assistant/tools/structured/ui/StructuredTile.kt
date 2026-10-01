@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +24,7 @@ import com.assistant.core.ui.ButtonType
 import com.assistant.core.ui.Size
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.core.ui.components.TileLine
 import com.assistant.core.ui.components.TileGrid
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
@@ -85,9 +85,7 @@ fun rememberStructuredTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): Too
             override fun Body(rows: Int?) {
                 val loaded = sheets ?: return
                 TileGrid(rows, if (rows == null) loaded.take(FULL_SHEETS) else loaded, columns = 1) { sheet ->
-                    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxWidth().clickable { open(EntryToOpen.Existing(sheet.id)) }) {
-                        UI.Text(sheet.name, TextType.BODY, maxLines = 1)
-                    }
+                    TileLine(sheet.name, modifier = Modifier.clickable { open(EntryToOpen.Existing(sheet.id)) })
                 }
             }
         }

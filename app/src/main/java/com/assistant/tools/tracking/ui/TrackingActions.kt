@@ -269,9 +269,11 @@ fun rememberTrackingActions(toolInstanceId: String, config: JSONObject, onConfig
  *
  * @param running The entries whose stopwatch runs, for a timer's start or stop
  * @param timestamp The moment of the entries, or null for now
+ * @param withElapsed Whether a running stopwatch's time goes before its stop button; a tile's
+ *   line shows it under the name instead (elapsedText)
  */
 @Composable
-fun ShortcutButtons(actions: TrackingActions, shortcut: TrackingShortcut, running: List<RunningEntry>, timestamp: Long?) {
+fun ShortcutButtons(actions: TrackingActions, shortcut: TrackingShortcut, running: List<RunningEntry>, timestamp: Long?, withElapsed: Boolean = true) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
     val enabled = !actions.isSaving
@@ -294,7 +296,7 @@ fun ShortcutButtons(actions: TrackingActions, shortcut: TrackingShortcut, runnin
             TrackingKind.TIMER -> {
                 val entry = running.firstOrNull { it.name == shortcut.name }
                 if (entry != null) {
-                    ElapsedText(entry, actions.valueField?.config, s)
+                    if (withElapsed) ElapsedText(entry, actions.valueField?.config, s)
                     QuickButton(ButtonAction.STOP, enabled) { actions.stop(entry) }
                 } else {
                     QuickButton(ButtonAction.START, enabled) { actions.start(shortcut.name) }
@@ -342,7 +344,12 @@ private fun TextButton(text: String, enabled: Boolean, onClick: () -> Unit) =
 
 /** The time a running stopwatch shows, counted from its start and redrawn every second. */
 @Composable
-fun ElapsedText(entry: RunningEntry, valueConfig: Map<String, Any>?, s: StringsContext) {
+fun ElapsedText(entry: RunningEntry, valueConfig: Map<String, Any>?, s: StringsContext) =
+    UI.Text(elapsedText(entry, valueConfig, s), TextType.CAPTION, maxLines = 1)
+
+/** The text of [ElapsedText], for who lays it out itself; it changes every second. */
+@Composable
+fun elapsedText(entry: RunningEntry, valueConfig: Map<String, Any>?, s: StringsContext): String {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(entry.id) {
         while (true) {
@@ -353,5 +360,5 @@ fun ElapsedText(entry: RunningEntry, valueConfig: Map<String, Any>?, s: StringsC
     val elapsed = (entry.storedValue?.toLong() ?: 0L) + (now - entry.startedAt).coerceAtLeast(0L)
     // Shown to the second whatever the field's precision: a stopwatch that only moved every
     // minute would look stopped
-    UI.Text(Durations.format(elapsed, (valueConfig ?: emptyMap()) + ("precision" to "SECOND"), s), TextType.CAPTION, maxLines = 1)
+    return Durations.format(elapsed, (valueConfig ?: emptyMap()) + ("precision" to "SECOND"), s)
 }

@@ -1,11 +1,8 @@
 package com.assistant.tools.goal.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,7 +10,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -26,6 +22,7 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTile
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
+import com.assistant.core.ui.components.TileLine
 import com.assistant.core.ui.components.TileGrid
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.DataChangeNotifier
@@ -161,13 +158,12 @@ fun rememberGoalTile(tool: ToolInstance): ToolTile {
                 if (attempts == null) return
                 TileGrid(rows, lines(bySubGoal = rows == null), columns = 1) { line ->
                     when (line) {
-                        is GoalLine.SubGoal -> UI.Text(line.name, TextType.LABEL, maxLines = 1)
-                        is GoalLine.Criterion -> Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UI.Space.S), verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.weight(1f)) { UI.Text(line.name, TextType.BODY, maxLines = 1) }
+                        is GoalLine.SubGoal -> TileLine(line.name, type = TextType.LABEL)
+                        is GoalLine.Criterion -> TileLine(line.name, trailing = {
                             UI.Text(line.value + (line.condition?.let { " / $it" } ?: ""), TextType.CAPTION, maxLines = 1)
                             UI.Icon(iconName = when (line.met) { Met.YES -> "check"; Met.NO -> "x"; Met.UNKNOWN -> "circle-dashed" }, size = 16.dp,
                                 contentDescription = s.tool("met_${line.met.name.lowercase()}"))
-                        }
+                        })
                     }
                 }
             }
