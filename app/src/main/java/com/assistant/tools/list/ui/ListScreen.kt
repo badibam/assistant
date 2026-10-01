@@ -162,7 +162,7 @@ fun ListScreen(
                 write({ ListItems.move(coordinator, left[from], ListItems.positionForMove(left, from, to)) })
             }
         ) { _, item ->
-            ItemRow(item, loadedConfig, onCheck = { write({ ListItems.setChecked(coordinator, item, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id }) {
+            ItemRow(item, loadedConfig, onCheck = { write({ ListItems.setChecked(coordinator, item.id, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id }) {
                 DragHandle()
             }
         }
@@ -173,7 +173,7 @@ fun ListScreen(
             if (left.isNotEmpty()) UI.Divider()
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 checked.forEach { item ->
-                    ItemRow(item, loadedConfig, onCheck = { write({ ListItems.setChecked(coordinator, item, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id })
+                    ItemRow(item, loadedConfig, onCheck = { write({ ListItems.setChecked(coordinator, item.id, it, removeWhenChecked) }) }, onOpen = { openItemId = item.id })
                 }
             }
         }

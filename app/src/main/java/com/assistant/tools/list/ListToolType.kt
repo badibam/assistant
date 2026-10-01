@@ -111,8 +111,17 @@ object ListToolType : ToolTypeContract {
     override fun getSuggestedIcons(): List<String> =
         listOf("list-checks", "list-todo", "shopping-cart", "clipboard-list")
 
-    override fun getService(context: Context): ExecutableService =
-        com.assistant.core.services.ToolDataService(context)
+    override fun getService(context: Context): ExecutableService = ListService(context)
+
+    override fun getOperations(context: Context): List<com.assistant.core.tools.ToolOperation> {
+        val s = Strings.`for`(tool = "list", context = context)
+        val id = com.assistant.core.fields.settings.SettingNode.Field(FieldDefinition("id", s.tool("field_item"), null, FieldType.TEXT, false,
+            mapOf("length" to com.assistant.core.fields.TextLength.SHORT.name)), required = true)
+        return listOf(
+            com.assistant.core.tools.ToolOperation("check", s.tool("operation_check"), listOf(id)),
+            com.assistant.core.tools.ToolOperation("uncheck", s.tool("operation_uncheck"), listOf(id))
+        )
+    }
 
     override fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =
         ManualOrder.settle(entries, writtenId)

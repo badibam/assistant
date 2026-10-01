@@ -4,14 +4,8 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Mise à jour et démarrage
 
-- Installer la mise à jour par-dessus la version du téléphone (migrations jusqu'à la base 46) : l'app démarre, l'historique des conversations est intact, chaque zone garde ses outils, ses groupes et son icône, les outils et leurs icônes s'ouvrent, une config portant un champ DATE ou DATETIME s'enregistre.
-- Réglages après la mise à jour : format (fuseau, début de semaine, 24 h) inchangé et enregistrable, validation avec ses quatre choix, limites IA à 10, 20, 15 000 et 100 000.
-- Écran des journaux : il s'ouvre, et filtré sur « Error » il montre aussi les erreurs anciennes. Y chercher des lignes `MIGRATION` et `No JSON form`.
-- Volume du journal : compter les lignes par niveau sur deux minutes d'usage normal, pour voir ce que produit encore le DEBUG.
-- Après les migrations 53 et 54 : chaque zone montre ses outils dans le même ordre qu'avant, un par ligne, et l'accueil ses zones de même ; un outil dont le groupe n'existe plus dans sa zone est hors groupe ; aucune ligne `MIGRATION 52->53` ni `53->54` en erreur. Importer une sauvegarde d'avant la mise à jour : même ordre.
-- Après la migration 52 : un pointeur filtré d'une conversation passée et d'un départ d'automation, et une variable qui lit des entrées filtrées, donnent les mêmes entrées qu'avant ; aucune ligne `MIGRATION 51->52` en erreur. Un pointeur qui filtrait un instant par « = » est maintenant refusé : il le dit, rien ne part en silence.
-- Après la migration 51 : chaque automation planifiée, chaque Messages, Objectif et Questionnaire récurrent garde sa récurrence (résumé lisible, pas d'erreur « illisible »), et le journal ne montre aucune ligne `MIGRATION 50->51` en erreur.
-- Après la migration 43 : un suivi numérique qui avait une unité dans les réglages de sa valeur la retrouve en tête de ses unités, et ses anciennes entrées l'affichent toujours ; un compteur garde son unité (« 3 verres »).
+- Importer une sauvegarde faite avant la mise à jour (base 52 ou plus ancienne) : chaque zone montre ses outils dans le même ordre, l'accueil ses zones de même ; les récurrences et les pointeurs se relisent. Juste après, l'écran des journaux filtré sur « Error » ne montre aucune ligne `MIGRATION`.
+- Un pointeur qui filtrait un instant par « = » (avant la migration 52) est refusé en le disant : rien ne part en silence.
 
 ## Chat IA
 

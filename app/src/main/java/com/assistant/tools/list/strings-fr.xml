@@ -9,13 +9,18 @@
     <!-- Champs d'un élément -->
     <string name="field_content">Contenu</string>
     <string name="field_position">Position</string>
+    <string name="field_item">Élément</string>
+    <string name="operation_check">Coche un élément maintenant. Dans une liste réglée pour retirer ce qui est coché (remove_when_checked), le supprime à la place</string>
+    <string name="operation_uncheck">Décoche un élément : le moment où il avait été coché est oublié</string>
+    <string name="verbalize_check">Élément coché</string>
+    <string name="verbalize_uncheck">Élément décoché</string>
     <string name="field_checked_at">Coché le</string>
     <string name="schema_data_position">Place dans la liste, 0 en haut, parmi tous les éléments, cochés ou non. Une position déjà prise y place l\'élément et décale les suivants ; sans position, l\'élément va en dernier. Les positions restent 0, 1, 2… sans trou</string>
-    <string name="schema_data_checked_at">Quand l\'élément a été coché ; absent tant qu\'il ne l\'est pas. Le décocher l\'efface, et le moment où il avait été coché est oublié. Dans une liste réglée pour retirer ce qui est coché (remove_when_checked), un élément est supprimé au lieu d\'être coché</string>
+    <string name="schema_data_checked_at">Quand l\'élément a été coché ; absent tant qu\'il ne l\'est pas. Écrit par les opérations check et uncheck, jamais envoyé</string>
 
     <!-- Réglage -->
     <string name="field_remove_when_checked">Un élément coché est supprimé aussitôt</string>
-    <string name="schema_config_remove_when_checked">Si cocher un élément le supprime aussitôt, pour une liste dont les éléments faits n\'ont plus rien à dire (les courses). Dans une telle liste, supprimer l\'élément plutôt que remplir son checked_at</string>
+    <string name="schema_config_remove_when_checked">Si cocher un élément le supprime aussitôt, pour une liste dont les éléments faits n\'ont plus rien à dire (les courses). Dans une telle liste, l\'opération check supprime l\'élément</string>
 
     <!-- Écran -->
     <string name="list_empty">La liste est vide</string>

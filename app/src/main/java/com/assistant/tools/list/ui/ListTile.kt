@@ -74,7 +74,7 @@ fun rememberListTile(tool: ToolInstance): ToolTile {
     // A refusal is said, as on the list's screen: a box that does not stay checked needs a reason
     fun check(item: ListItem, checked: Boolean) {
         scope.launch {
-            val result = ListItems.setChecked(coordinator, item, checked, removeWhenChecked)
+            val result = ListItems.setChecked(coordinator, item.id, checked, removeWhenChecked)
             if (!result.isSuccess) UI.Toast(context, result.error ?: s.shared("message_error_simple"), Duration.LONG)
         }
     }

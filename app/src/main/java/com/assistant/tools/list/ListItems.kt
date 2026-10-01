@@ -84,13 +84,13 @@ object ListItems {
         ))
 
     /**
-     * Checks [item] now, or unchecks it, which forgets when it was checked. In a list set to
-     * remove what is checked ([removeWhenChecked]), checking deletes the item instead.
+     * Checks the item [id] now, or unchecks it, which forgets when it was checked. In a list set
+     * to remove what is checked ([removeWhenChecked]), checking deletes the item instead.
      */
-    suspend fun setChecked(coordinator: Coordinator, item: ListItem, checked: Boolean, removeWhenChecked: Boolean) =
-        if (checked && removeWhenChecked) delete(coordinator, item)
+    suspend fun setChecked(coordinator: Coordinator, id: String, checked: Boolean, removeWhenChecked: Boolean) =
+        if (checked && removeWhenChecked) coordinator.processUserAction("tool_data.delete", mapOf("id" to id))
         else coordinator.processUserAction("tool_data.update", mapOf(
-            "id" to item.id,
+            "id" to id,
             "state" to JSONObject().put(ListToolType.CHECKED_AT, if (checked) System.currentTimeMillis() else JSONObject.NULL)
         ))
 

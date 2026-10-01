@@ -9,13 +9,18 @@
     <!-- Fields of an item -->
     <string name="field_content">Content</string>
     <string name="field_position">Position</string>
+    <string name="field_item">Item</string>
+    <string name="operation_check">Checks an item now. In a list set to remove what is checked (remove_when_checked), deletes it instead</string>
+    <string name="operation_uncheck">Unchecks an item: when it was checked is forgotten</string>
+    <string name="verbalize_check">Checking an item</string>
+    <string name="verbalize_uncheck">Unchecking an item</string>
     <string name="field_checked_at">Checked on</string>
     <string name="schema_data_position">Place in the list, 0 at the top, among every item, checked or not. A position already taken puts the item there and moves the following ones down; without a position the item goes last. Positions stay 0, 1, 2… with no gap</string>
-    <string name="schema_data_checked_at">When the item was checked; absent while it is not. Unchecking removes it, and when it was checked is forgotten. In a list set to remove what is checked (remove_when_checked), an item is deleted instead of checked</string>
+    <string name="schema_data_checked_at">When the item was checked; absent while it is not. Written by the check and uncheck operations, never sent</string>
 
     <!-- Setting -->
     <string name="field_remove_when_checked">A checked item is removed at once</string>
-    <string name="schema_config_remove_when_checked">Whether checking an item deletes it at once, for a list whose done items have nothing left to say (shopping). In such a list, delete an item rather than set its checked_at</string>
+    <string name="schema_config_remove_when_checked">Whether checking an item deletes it at once, for a list whose done items have nothing left to say (shopping). In such a list, the check operation deletes the item</string>
 
     <!-- Screen -->
     <string name="list_empty">The list is empty</string>
