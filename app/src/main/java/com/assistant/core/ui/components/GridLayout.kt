@@ -19,7 +19,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.min
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.grid.Grid
 import com.assistant.core.grid.ToolPositions
@@ -43,8 +42,8 @@ private const val FADED = 0.4f
 
 /**
  * Tiles laid on a grid: four columns of square cells, each [tiles] at its place, [item] drawing
- * the one at an index. The grid is as wide as the screen up to the theme's gridMaxWidth,
- * centered beyond.
+ * the one at an index. The theme sizes a cell from the width there is (gridCellPx), and the grid
+ * is centered in what it leaves.
  *
  * A row is one cell high, except the row of a tile that grows with its content ([grows]: a
  * FULL tile), which is as tall as what it shows, rounded up to whole cells. Such a tile is measured
@@ -68,8 +67,7 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
     val cells = if (edit != null) rowCount * Grid.COLUMNS else 0
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-        val width = min(maxWidth, CurrentTheme.current.gridMaxWidth)
-        val cellPx = with(LocalDensity.current) { width.roundToPx() } / Grid.COLUMNS
+        val cellPx = CurrentTheme.current.gridCellPx(constraints.maxWidth)
         Layout(
             content = {
                 // In edit mode, first the cells, one per cell of the grid, then the tiles over them

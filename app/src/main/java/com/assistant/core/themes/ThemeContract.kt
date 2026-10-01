@@ -39,8 +39,20 @@ interface ThemeContract {
     /** Who draws this theme's icons: Lucide, or the theme itself, all of them. */
     val iconSource: com.assistant.core.icons.IconSource
 
-    /** How wide a zone's tool grid grows at most; a wider screen centers it (ToolGrid). */
-    val gridMaxWidth: Dp
+    /**
+     * The side of a cell of the tile grid (GridLayout), in pixels, given the width there is for
+     * its four columns, in pixels; the grid is centered in what it leaves. Composable, as a size
+     * in whole cells of the font depends on the screen's density.
+     */
+    @Composable
+    fun gridCellPx(availableWidthPx: Int): Int
+
+    /**
+     * How far a tool's tile frame (ToolCardContainer) keeps its content from the edge of its
+     * cells, on each side, in [displayMode]: the space between tiles and the frame's own margin.
+     */
+    @Composable
+    fun tileFrame(displayMode: DisplayMode): Dp
 
     /**
      * The size of a named space (UI.Space). Composable, as a size in whole cells depends on the

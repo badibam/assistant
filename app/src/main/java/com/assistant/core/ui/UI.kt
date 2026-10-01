@@ -487,21 +487,17 @@ object UI {
 
     /**
      * The header of a tile, filling the space it is given: its icon ([TileIcon]) at the start,
-     * its name centered in the width left, as far from the icon as the tile's margin keeps the
-     * icon from its edge.
+     * its name centered in the width left.
      */
     @Composable
     fun TileHeader(iconName: String?, name: String, waiting: Boolean, running: Boolean, textType: TextType) {
         Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             TileIcon(iconName, waiting, running)
-            Box(modifier = Modifier.weight(1f).padding(start = TILE_MARGIN), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.weight(1f).padding(start = Space.M), contentAlignment = Alignment.Center) {
                 Text(name, textType, maxLines = 2, fillMaxWidth = true, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
     }
-
-    /** The margin inside a tile, between its frame and its content (DefaultTheme's containers). */
-    private val TILE_MARGIN = 12.dp
 
     /**
      * A tool's or a zone's icon with its two marks, each in its corner: something waiting at the
@@ -662,10 +658,9 @@ object UI {
                 }
                 DisplayMode.FULL -> {
                     // As tall as the body needs; the grid rounds its row up to whole cells. The header
-                    // and the summary as tall as in EXTENDED: a cell less the default theme's
-                    // margins, 4 outside the frame and 12 inside
+                    // and the summary as tall as in EXTENDED: a cell less the tile's frame
                     Column(modifier = Modifier.fillMaxSize()) {
-                        HeaderAndSummary(Modifier.fillMaxWidth().height(com.assistant.core.ui.components.LocalGridCell.current - 16.dp))
+                        HeaderAndSummary(Modifier.fillMaxWidth().height(com.assistant.core.ui.components.LocalGridCell.current - CurrentTheme.current.tileFrame(DisplayMode.FULL)))
                         tile.Body(null)
                     }
                 }

@@ -78,7 +78,20 @@ object DefaultTheme : ThemeContract {
 
     override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
 
-    override val gridMaxWidth = 480.dp
+    /** A quarter of the width, the grid growing no wider than 480 dp. */
+    @Composable
+    override fun gridCellPx(availableWidthPx: Int): Int =
+        minOf(availableWidthPx, with(androidx.compose.ui.platform.LocalDensity.current) { 480.dp.roundToPx() }) / 4
+
+    /** 4 outside the card, between tiles, and the card's padding inside (ToolCardContainer). */
+    @Composable
+    override fun tileFrame(displayMode: DisplayMode): Dp = 4.dp + tilePadding(displayMode)
+
+    private fun tilePadding(displayMode: DisplayMode): Dp = when (displayMode) {
+        DisplayMode.ICON -> 4.dp
+        DisplayMode.MINIMAL -> 8.dp
+        else -> 12.dp
+    }
 
     @Composable
     override fun spacing(spacing: com.assistant.core.ui.Spacing): Dp = when (spacing) {
@@ -1067,11 +1080,7 @@ object DefaultTheme : ThemeContract {
         // The grid gives the tile its cells; the space between tiles is taken inside them
         val cardModifier = Modifier.fillMaxSize().padding(4.dp)
 
-        val cardPadding = when (displayMode) {
-            DisplayMode.ICON -> 4.dp
-            DisplayMode.MINIMAL -> 8.dp
-            else -> 12.dp
-        }
+        val cardPadding = tilePadding(displayMode)
         
         androidx.compose.material3.Card(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
