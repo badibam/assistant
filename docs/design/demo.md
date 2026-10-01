@@ -10,6 +10,10 @@ Camille, 34 ans, graphiste indépendante à Lyon. Prépare un semi-marathon dans
 
 Chaque description de zone et d'outil dit sa place dans l'ensemble : ce qu'il lit, qui le lit, ce que ça permet (« l'objectif de la semaine compte les sorties d'ici »). Chaque description de zone dit aussi que ce qu'on y ajoute disparaît à la prochaine mise à jour.
 
+## Les variables
+
+Toutes nommées avec le suffixe `_demo` : le nom d'une variable est unique dans l'app, et le suffixe garantit qu'aucune de l'utilisateur ne croise celles de la démo, avec les mêmes noms sur tous les téléphones. Les noms ne se traduisent pas.
+
 ## Les zones
 
 Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles dans les quatre modes qu'une zone prend (`ZonePositions.MODES`) : Course et Travail côte à côte en CONDENSED, Cuisine en LINE dessous, Balcon en MINIMAL et Italien en ICON en bas.
@@ -27,11 +31,11 @@ Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles
 - Hors groupe
   - Humeur : suivi échelle 1–5, ICON, une note par jour, liée au sommeil.
 - Analyse
-  - Semaine d'entraînement : objectif, SQUARE. Critères : 3 sorties ; `km_semaine` ≥ `objectif_km` ; sommeil moyen ≥ 7 h ; « Pas de douleur » coché à la main. Semaine en cours à moitié remplie ; 9 semaines atteintes sur 12, celle du rush manquée.
+  - Semaine d'entraînement : objectif, SQUARE. Critères : 3 sorties ; `km_semaine_demo` ≥ `objectif_km_demo` ; sommeil moyen ≥ 7 h ; « Pas de douleur » coché à la main. Semaine en cours à moitié remplie ; 9 semaines atteintes sur 12, celle du rush manquée.
   - Graphiques : Km par semaine (barres, FULL) ; Poids et moyenne 7 j (ligne, EXTENDED) ; Sommeil et humeur (deux séries, LINE) ; Calendrier de l'humeur (carte de chaleur, CONDENSED).
   - Carnet d'entraînement : journal, une entrée par semaine écrite par le Bilan de la semaine, dont les exécutions passées sont les auteures.
   - Automation Bilan de la semaine (rangée dans ce groupe), voir plus bas.
-- Variables : `km_semaine` (formule, somme des sorties depuis lundi), `objectif_km` (constante 20), `poids_moyen_7j` (formule).
+- Variables : `km_semaine_demo` (formule, somme des sorties depuis lundi), `objectif_km_demo` (constante 20), `poids_moyen_7j_demo` (formule).
 
 ### Cuisine (tuile LINE) — groupes Repas, Placard
 
@@ -44,7 +48,7 @@ Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles
   - Courses : liste, 14 articles dont 5 cochés gardés visibles ; « lait » parmi les non cochés.
   - Recettes : notes, 6 fiches.
 - Hors groupe : automation Menu de la semaine.
-- Variables : `kcal_jour` (formule, Σ quantité × kcal de l'aliment référencé ÷ 100), `objectif_calorique` (constante 2 300).
+- Variables : `kcal_jour_demo` (formule, Σ quantité × kcal de l'aliment référencé ÷ 100), `objectif_calorique_demo` (constante 2 300).
 
 ### Travail (tuile CONDENSED) — sans groupes
 
@@ -54,7 +58,7 @@ Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles
 - Point facturation : Messages (un outil = un flux et son planning), chaque lundi à 9 h, avec son historique d'envois.
 - Heures par client : graphique, barres empilées par semaine, CONDENSED.
 - Automation Point du matin.
-- Variable : `heures_semaine` (formule, somme depuis lundi). Ce qu'elle compte d'un chronomètre en cours : celui du code, constaté à l'implémentation et dit dans sa description.
+- Variable : `heures_semaine_demo` (formule, somme depuis lundi). Ce qu'elle compte d'un chronomètre en cours : celui du code, constaté à l'implémentation et dit dans sa description.
 
 ### Balcon (tuile MINIMAL) — sans groupes
 
@@ -113,7 +117,7 @@ Elles restent actives dans les outils de la démo : la démo les montre. Une dan
 
 ## Ce que le banc des modèles libres lit
 
-`docs/design/local-models.md` écrit ses scénarios contre la démo : un changement de nom ou de contenu qu'ils citent (Eau, Sorties, Sommeil, Repas et les fiches riz et poulet, Courses et son « lait » non coché, Observations, Carnet du balcon, Tâches et « Relancer la Librairie » en retard, Heures et Studio Brume, `poids_moyen_7j`, `objectif_km`, Carnet d'entraînement, les trois automations) se reporte dans le banc.
+`docs/design/local-models.md` écrit ses scénarios contre la démo : un changement de nom ou de contenu qu'ils citent (Eau, Sorties, Sommeil, Repas et les fiches riz et poulet, Courses et son « lait » non coché, Observations, Carnet du balcon, Tâches et « Relancer la Librairie » en retard, Heures et Studio Brume, `poids_moyen_7j_demo`, `objectif_km_demo`, Carnet d'entraînement, les trois automations) se reporte dans le banc.
 
 ## Les garanties, en tests
 

@@ -44,7 +44,7 @@ En français, l'émulateur réglé en français : la démo prend la langue du t�
 
 1. « Quelles tâches sont en retard ? » — « Relancer la Librairie ».
 2. « Combien de km j'ai couru cette semaine ? » — somme des Sorties depuis lundi, ±0,1.
-3. « Mon poids moyen sur les 7 derniers jours ? » — moyenne des pesées, ±0,1 ; calculée ou lue dans `poids_moyen_7j`.
+3. « Mon poids moyen sur les 7 derniers jours ? » — moyenne des pesées, ±0,1 ; calculée ou lue dans `poids_moyen_7j_demo`.
 4. « Combien d'heures facturables pour Studio Brume ce mois-ci ? » — Heures du client, Facturable oui, depuis le 1er ; chronomètre en cours compté ou non, les deux acceptés.
 5. « Combien de calories j'ai mangé hier ? » — Σ quantité × kcal ÷ 100 sur la journée d'hier, ±2 %.
 
@@ -56,7 +56,7 @@ En français, l'émulateur réglé en français : la démo prend la langue du t�
 
 ### Configuration (CHAT)
 
-1. « Monte mon objectif kilométrique à 25 » — `objectif_km` vaut 25, les critères de l'Objectif intacts.
+1. « Monte mon objectif kilométrique à 25 » — `objectif_km_demo` vaut 25, les critères de l'Objectif intacts.
 2. « Crée un suivi "Café" en compteur dans Cuisine » — un Suivi compteur nommé Café dans Cuisine.
 3. « Ajoute un champ Dénivelé, en mètres, aux Sorties » — un champ numérique en m ; les autres champs et les entrées intacts.
 4. « Ajoute "trail" aux types de sortie » — une option de plus au choix Type ; les autres et les entrées qui les portent intactes.
