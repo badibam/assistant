@@ -59,7 +59,7 @@ UI.PageHeader supporte titre, sous-titre optionnel, icône, boutons gauche/droit
 ## Système de Texte Simplifié
 
 ### UI.Text - 4 paramètres maximum
-Accepte text, type (TITLE, SUBTITLE, BODY, STRONG, CAPTION, LABEL, ERROR, WARNING), fillMaxWidth et textAlign optionnel. STRONG est un texte courant qui doit ressortir de ses voisins (un message non lu) : en gras dans le thème par défaut.
+Accepte text, type (TITLE, SUBTITLE, HEADING, BODY, STRONG, CAPTION, LABEL, ERROR, WARNING), fillMaxWidth et textAlign optionnel. STRONG est un texte courant qui doit ressortir de ses voisins (un message non lu) : en gras dans le thème par défaut. HEADING nomme une tuile ou une section de tuiles (le nom d'un outil, d'une zone, d'un groupe), un cran au-dessus du texte courant.
 
 ### Séparation Layout/Contenu
 **Principe** : UI.Text pour le rendu, Box+Modifier pour layout et interactions.
@@ -199,7 +199,7 @@ UI.Card avec type CardType.DEFAULT, contenu en Column avec padding interne `UI.S
 
 ### Titres et Sections
 - **Titre principal** : UI.Text avec TextType.TITLE, fillMaxWidth et textAlign Center
-- **Titre section** : UI.Text avec TextType.SUBTITLE dans Box avec padding horizontal
+- **Titre section** : UI.Text avec TextType.HEADING dans Box avec padding horizontal
 
 ## Recréation de l'activité
 
