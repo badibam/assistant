@@ -20,7 +20,7 @@ Conçu à partir du 2026-09-29. Un second thème, à côté du thème par défau
 
 ## Ce qui reste ouvert
 
-- Les nombres des palettes, au banc.
+- Les nombres des palettes, au banc : `./run palettes` ouvre `themes/retro/bench/palettes.html`, qui dessine l'écran d'une zone et une planche des composants, et enregistre les nombres dans `palettes.json` (ressource du thème), seule source des couleurs. Les deux palettes de départ sont la nuit et le pâle de Saylune, à régler.
 - Des icônes au trait de 4 pixels, la graisse normale de Saylune : une autre conversion, à essayer sur la même planche.
 - Le Graphique dans ce registre : sa scène dessinée en pixels et en trames (`missing-tools.md`), avec lui.
 - Le choix du thème, de la palette et du cran de taille : aujourd'hui gardés en mémoire seulement (`CurrentTheme`), jamais enregistrés, sans écran pour les choisir. Ils entrent dans la catégorie de réglages `ui`, à côté des sons.
