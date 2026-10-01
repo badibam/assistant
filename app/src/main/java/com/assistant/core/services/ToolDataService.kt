@@ -253,24 +253,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
             else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
-        // Merge JSON data: new fields overwrite, absent fields are preserved (system-managed ones
-        // included, the incoming data having lost them above)
-        val mergedData = if (dataJson != null) {
-            val existingJson = JSONObject(existingEntity.data)
-            val newJson = JSONObject(dataJson)
-
-            // Copy all keys from newJson into existingJson (overwrite present, preserve absent)
-            newJson.keys().forEach { key ->
-                existingJson.put(key, newJson.get(key))
-            }
-
-            existingJson.toString()
-        } else {
-            existingEntity.data
-        }
-
-        // extra and state are merged the same way: a key sent overwrites, a key absent is kept,
-        // a key sent as null is removed (how a value is cleared)
+        // data, extra and state are merged the same way: a key sent overwrites, a key absent is
+        // kept (in data, the system-managed ones included, the incoming data having lost them
+        // above), a key sent as null is removed (how a value is cleared). data is never null:
+        // emptied, it is the empty object.
+        val mergedData = dataJson?.let { mergeObject(existingEntity.data, JSONObject(it)) ?: "{}" } ?: existingEntity.data
         val mergedExtra = mergeObject(existingEntity.extra, extraJson)
         val mergedState = mergeObject(existingEntity.state, stateJson)
 
