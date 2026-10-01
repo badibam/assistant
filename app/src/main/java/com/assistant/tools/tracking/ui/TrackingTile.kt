@@ -31,6 +31,7 @@ import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.FormatUtils
 import com.assistant.core.utils.LogManager
 import com.assistant.tools.tracking.TrackingKind
+import com.assistant.tools.tracking.TrackingShortcut
 import org.json.JSONObject
 
 /** The most recent entry of a tracking tool, as its tile shows it. */
@@ -45,8 +46,9 @@ private data class LastEntry(val name: String, val timestamp: Long, val value: A
  * a timer started again; the user's fields at their default values) and the entry dialog
  * prefilled with its name and value.
  *
- * The body is the shortcuts in the config's order, two per line on two columns, each with its
- * buttons as on the tool's screen: four per row of cells, all of them in FULL.
+ * The body is the shortcuts in the config's order, then a choice's options, two per line on two
+ * columns: a shortcut with its buttons as on the tool's screen, an option with the button that
+ * enters it at once. Four per row of cells, all of them in FULL.
  */
 @Composable
 fun rememberTrackingTile(tool: ToolInstance): ToolTile {
@@ -124,15 +126,23 @@ fun rememberTrackingTile(tool: ToolInstance): ToolTile {
             @Composable
             override fun Body(rows: Int?) {
                 if (!loaded) return
-                com.assistant.core.ui.components.TileGrid(rows, actions.shortcuts, columns = 2) { shortcut ->
+                // A shortcut, or an option of a choice
+                val items: List<Any> = actions.shortcuts + actions.choice?.options.orEmpty()
+                com.assistant.core.ui.components.TileGrid(rows, items, columns = 2) { item ->
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.weight(1f)) {
-                            UI.Text(
-                                shortcutLabel(shortcut, actions.kind) { com.assistant.core.utils.NumberFormatting.formatForDisplay(it.toDouble(), context = context) },
-                                TextType.BODY, maxLines = 1
-                            )
+                            when (item) {
+                                is TrackingShortcut -> UI.Text(
+                                    shortcutLabel(item, actions.kind) { com.assistant.core.utils.NumberFormatting.formatForDisplay(it.toDouble(), context = context) },
+                                    TextType.BODY, maxLines = 1
+                                )
+                                is String -> OptionLabel(actions.choice!!, item)
+                            }
                         }
-                        ShortcutButtons(actions, shortcut, running, null)
+                        when (item) {
+                            is TrackingShortcut -> ShortcutButtons(actions, item, running, null)
+                            is String -> QuickButton(ButtonAction.ADD, !actions.isSaving) { actions.quickSaveOption(item) }
+                        }
                     }
                 }
             }

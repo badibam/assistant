@@ -147,7 +147,7 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
 ### Suivi (Tracking)
 **Usage** : Données temporelles quantitatives/qualitatives
-**Configuration** : Type de valeur (numeric, counter, text, scale, choice, timer…), unités (numérique : la liste où chaque entrée prend la sienne, une unité nouvelle saisie la rejoint ; compteur : une unité fixe), items prédéfinis
+**Configuration** : Type de valeur (numeric, counter, text, scale, choice, timer…), unités (numérique : la liste où chaque entrée prend la sienne, une unité nouvelle saisie la rejoint ; compteur : une unité fixe), items prédéfinis. Un choix montre en plus chacune de ses options, comme le oui/non ses réponses : enregistrée d'un toucher (nommée par son libellé, les champs de l'utilisateur à leur valeur par défaut), ou par la fenêtre de saisie préremplie
 **Exemples** : Poids, humeur échelle 1-10, alimentation libre
 
 ### Objectif (Goal)

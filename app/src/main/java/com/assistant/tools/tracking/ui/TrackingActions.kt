@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.coordinator.mapSingleData
+import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.Durations
 import com.assistant.core.fields.FieldContainer
 import com.assistant.core.fields.FieldDefinition
@@ -74,6 +75,10 @@ class TrackingActions internal constructor(
     val valueField: FieldDefinition? =
         TrackingToolType.getEntryFields(config, context).data.firstOrNull { it.definition.name == "value" }?.definition
 
+    // A choice's options, each a quick way to enter it as a yes/no's answers are; none for
+    // another kind
+    val choice: ChoiceSettings? = valueField?.takeIf { kind == TrackingKind.CHOICE }?.let { ChoiceSettings.fromConfig(it.config) }
+
     // A new entry takes the default values of the user's fields
     val extraDefaults: Map<String, Any?> = config.optJSONArray("extra_fields")?.toFieldDefinitions()?.defaultValues() ?: emptyMap()
 
@@ -115,6 +120,17 @@ class TrackingActions internal constructor(
             UI.Toast(context, s.tool("usage_entry_saved"), Duration.SHORT)
         }
     }
+
+    /** The value an entry of [option] holds: the option, alone in a list for a choice of several. */
+    fun optionValue(option: String): Any = if (choice?.shape?.isList == true) listOf(option) else option
+
+    /** An entry of [option], named by its label, saved at once, at [timestamp] or now. */
+    fun quickSaveOption(option: String, timestamp: Long? = null) =
+        quickSave(choice!!.labelOf(option), optionValue(option), null, timestamp)
+
+    /** The entry dialog prefilled with [option], to fill the user's fields before saving. */
+    fun openOptionDialog(option: String, timestamp: Long? = null) =
+        openDialog(choice!!.labelOf(option), optionValue(option), null, nameEditable = false, offerShortcut = false, timestamp = timestamp)
 
     fun openDialog(name: String, value: Any?, unit: String?, nameEditable: Boolean, offerShortcut: Boolean, timestamp: Long? = null) {
         dialog.value = DialogDraft(name, value, unit, nameEditable, offerShortcut, timestamp ?: System.currentTimeMillis())
@@ -301,6 +317,13 @@ fun shortcutLabel(shortcut: TrackingShortcut, kind: TrackingKind, format: (Numbe
         append(listOfNotNull(shortcut.value?.let(format), shortcut.unit).joinToString(" "))
         append(")")
     }
+}
+
+/** An option of a choice as its row shows it: a tag in its color when the choice has colors, its label otherwise. */
+@Composable
+fun OptionLabel(choice: ChoiceSettings, option: String) {
+    if (choice.colors.isNotEmpty()) UI.Tag(text = choice.labelOf(option), color = choice.colors[option] ?: com.assistant.core.themes.TagColor.GREY)
+    else UI.Text(choice.labelOf(option), TextType.BODY, maxLines = 1)
 }
 
 @Composable

@@ -39,6 +39,8 @@ import org.json.JSONObject
  *   survives the app being killed, and starting one stops the one running in the same tool
  * - occurrence: one press records that it happened
  * - scale, choice, text: the shortcut opens the dialog to enter the value
+ * - choice: after the shortcuts, each option, entered at once or through the dialog prefilled
+ *   with it, the way a yes/no offers its answers
  *
  * @param refreshTrigger Bumped when the tool's entries change, to reread the running timers
  * @param onConfigChanged Called once a shortcut has been added to the config
@@ -67,7 +69,8 @@ fun TrackingQuickEntry(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // The date of the next entries: now, or one chosen. A stopwatch starts now, so the
         // choice is off while one runs.
-        if (actions.shortcuts.isNotEmpty()) {
+        val options = actions.choice?.options.orEmpty()
+        if (actions.shortcuts.isNotEmpty() || options.isNotEmpty()) {
             val canChooseDate = running.isEmpty()
             UI.BooleanField(
                 label = "",
@@ -101,6 +104,21 @@ fun TrackingQuickEntry(
                 QuickButton(ButtonAction.EDIT, !actions.isSaving) {
                     actions.openDialog(shortcut.name, edits, shortcut.unit.takeIf { actions.kind == TrackingKind.NUMERIC }, nameEditable = false, offerShortcut = false, timestamp = customTimestamp)
                 }
+            }
+        }
+
+        // A choice's options, named by their label
+        options.forEach { option ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    OptionLabel(actions.choice!!, option)
+                }
+                QuickButton(ButtonAction.ADD, !actions.isSaving) { actions.quickSaveOption(option, customTimestamp) }
+                QuickButton(ButtonAction.EDIT, !actions.isSaving) { actions.openOptionDialog(option, customTimestamp) }
             }
         }
 

@@ -38,8 +38,8 @@ Une tuile se décrit par son résumé (sa LINE) et son corps : ce que montre cha
 
 - **La dernière entrée** : celle dont le chronomètre tourne s'il y en a une, sinon la plus récente.
 - **Résumé** : la dernière entrée en cours → son nom, son temps qui défile, un bouton d'arrêt. Sinon → sa valeur et le temps écoulé depuis, et deux boutons : **rapide** (la même entrée maintenant : même nom, valeur, unité ; pour un compteur le même pas, une occurrence le fait seul, une durée un chronomètre relancé ; les champs personnalisés à leur valeur par défaut), pour toute sorte de Suivi, et **personnalisé** (la fenêtre de saisie, préremplie du nom et de la valeur de la dernière).
-- **Corps** : les raccourcis de la config dans leur ordre, quatre par rangée sur deux colonnes, chacun avec son bouton comme sur l'écran de l'outil. La dernière entrée peut s'y retrouver parmi les raccourcis : ce doublon est accepté.
-- **FULL** : tous les raccourcis.
+- **Corps** : les raccourcis de la config dans leur ordre, puis, pour un Suivi de type choix, ses options, quatre par rangée sur deux colonnes ; un raccourci avec son bouton comme sur l'écran de l'outil, une option avec le bouton qui l'enregistre aussitôt. La dernière entrée peut s'y retrouver parmi les raccourcis : ce doublon est accepté.
+- **FULL** : tous les raccourcis et toutes les options.
 
   ```
   ┌─────────┬─────────┬─────────┬─────────┐
