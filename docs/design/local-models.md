@@ -2,9 +2,17 @@
 
 Conçu le 2026-10-01. But : que l'IA de l'app puisse tourner sur un modèle libre, sur le téléphone, un ordinateur ou un serveur à soi, pour la vie privée et pour ne dépendre d'aucun fournisseur propriétaire (cible F-Droid). Tous les usages sont visés, configuration des outils comprise. La crainte de départ : le prompt actuel (`ai_prompt_chunks.xml`, 50 Ko de source, assemblé par `PromptChunks` en degrés 1 et 2) serait trop complexe pour un petit modèle. Cette crainte n'est pas mesurée : le banc ci-dessous la mesure avant qu'on conçoive quoi que ce soit d'autre.
 
-## Préalable : l'adresse du fournisseur OpenAI réglable
+## Préalable : un fournisseur « compatible OpenAI »
 
-Ollama, llama.cpp, vLLM, LM Studio et OpenRouter parlent tous le protocole OpenAI. Le fournisseur OpenAI de l'app a son adresse en dur (dette enregistrée au `manifest.md`, avec la liste des prix) : la rendre réglable suffit à brancher n'importe lequel. Restent à trancher avec elle : la liste des modèles et le prix d'un serveur inconnu.
+Ollama, llama.cpp, vLLM, LM Studio et OpenRouter servent tous `/v1/chat/completions`. Le fournisseur OpenAI de l'app appelle `/v1/responses`, que ces serveurs ne servent pas tous, ou en partie : il reste tel quel, et un fournisseur à part sert tous les autres.
+
+- **Deux variantes fixes**, standard et économique, comme Claude, OpenAI et DeepSeek : une par serveur (OpenRouter et Ollama pour le banc). Le stockage ne change pas. Des instances libres et nommées se feront au troisième serveur.
+- **Réglages** : l'adresse, la clé (facultative : un Ollama local n'en demande pas), le modèle, choisi dans `GET /v1/models` comme aujourd'hui, et le forçage de sortie.
+- **Forçage de sortie, trois valeurs** : aucun, JSON valide (`json_object`), schéma exact de la réponse de l'IA (`json_schema`, depuis `AIMessageSchemas`). Un serveur qui refuse le niveau choisi rend une erreur affichée telle quelle, jamais une redescente d'un niveau.
+- **Coût** : la liste LiteLLM comme ailleurs ; un modèle qu'elle ignore a un coût inconnu, jamais nul, déjà le cas (`ModelPriceManager`).
+- **Délai** : sans streaming, la réponse entière doit arriver en 10 minutes (`READ_TIMEOUT_MINUTES`). Un modèle sur processeur seul, qui lit lentement un long prompt, peut le dépasser : la campagne de vitesse le dira.
+
+La dette du `manifest.md` (adresse OpenAI en dur, prix d'un serveur inconnu) se ferme avec ce fournisseur : l'adresse en dur reste celle d'OpenAI, qui en est une.
 
 ## Le banc
 
