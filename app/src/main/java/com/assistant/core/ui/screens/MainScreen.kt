@@ -571,7 +571,7 @@ private fun ZoneGroupSection(
         ) {
             UI.Text(
                 text = sectionLabel,
-                type = TextType.SUBTITLE
+                type = TextType.HEADING
             )
 
             com.assistant.core.ui.components.GridSectionButtons(key, groupZones.isNotEmpty(), editor, onAddZone)

@@ -592,7 +592,7 @@ object UI {
         val running = LocalRunning.current.zone(zone.id)
         val mode = DisplayMode.valueOf(zone.display_mode)
         @Composable
-        fun Header() = TileHeader(zone.icon_name, zone.name, waiting, running, TextType.SUBTITLE)
+        fun Header() = TileHeader(zone.icon_name, zone.name, waiting, running, TextType.HEADING)
         @Composable
         fun Description() = zone.description?.let { Text(it, TextType.BODY, maxLines = 2) }
         val sound = rememberUISound()
@@ -645,7 +645,7 @@ object UI {
     ) {
         val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
         // The name a size up, its tool type under it
-        TileHeader(settings.string("icon_name"), settings.string("name")!!, waiting, running, TextType.TILE_TITLE,
+        TileHeader(settings.string("icon_name"), settings.string("name")!!, waiting, running, TextType.HEADING,
             subtitle = com.assistant.core.tools.ToolTypeManager.getToolTypeName(tool.tooltype, context))
     }
 

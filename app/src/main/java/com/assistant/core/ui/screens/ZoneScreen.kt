@@ -691,7 +691,7 @@ private fun GroupSection(
         ) {
             UI.Text(
                 text = groupName,
-                type = TextType.SUBTITLE
+                type = TextType.HEADING
             )
 
             com.assistant.core.ui.components.GridSectionButtons(groupName, groupTools.isNotEmpty(), editor, onToggleToolsList)
@@ -877,7 +877,7 @@ private fun UngroupedSection(
         ) {
             UI.Text(
                 text = sectionLabel,
-                type = TextType.SUBTITLE
+                type = TextType.HEADING
             )
 
             com.assistant.core.ui.components.GridSectionButtons("", toolInstances.isNotEmpty(), editor, onToggleToolsList)

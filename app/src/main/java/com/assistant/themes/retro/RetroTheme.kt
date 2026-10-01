@@ -277,8 +277,8 @@ object RetroTheme : ThemeContract {
 
     /**
      * The register's size: a title stands out by the strong ink, a caption steps back by the thin
-     * weight in the dim ink. Cartouche has no bold. A tile's title, and a page's (PageHeader),
-     * are a size up, one more screen pixel to each of their drawing pixels: still whole pixels,
+     * weight in the dim ink. Cartouche has no bold. A heading (a tile's or a section's name) and a
+     * page's title (PageHeader) are a size up, one more screen pixel to each of their drawing pixels: still whole pixels,
      * though larger than the screen's others and off the cells.
      */
     @Composable
@@ -287,7 +287,7 @@ object RetroTheme : ThemeContract {
         val s = retroSurface
         val override = LocalRetroInk.current
         val (style, ink) = when (type) {
-            TextType.TILE_TITLE -> retroGridUp().text to (override ?: s.strong.srgb)
+            TextType.HEADING -> retroGridUp().text to (override ?: s.strong.srgb)
             TextType.TITLE, TextType.SUBTITLE, TextType.STRONG -> grid.text to (override ?: s.strong.srgb)
             TextType.BODY -> grid.text to (override ?: s.ink.srgb)
             TextType.CAPTION, TextType.LABEL -> grid.thin to s.dim.srgb
@@ -670,7 +670,7 @@ object RetroTheme : ThemeContract {
                 leftButton?.let { com.assistant.core.ui.UI.ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onLeftClick ?: {}) }
             }
             Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                // The page's icon and title a size up, as a tile's title is (TILE_TITLE)
+                // The page's icon and title a size up, as a heading is (HEADING)
                 val up = retroGridUp()
                 Row(horizontalArrangement = Arrangement.spacedBy(grid.cells(1)), verticalAlignment = Alignment.CenterVertically) {
                     icon?.let { NamedIcon(it, null, up) }

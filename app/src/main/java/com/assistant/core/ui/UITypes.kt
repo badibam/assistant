@@ -183,10 +183,10 @@ enum class ButtonDisplay {
 /**
  * Text types with hierarchy. STRONG is body text that must stand out among its neighbors (an
  * unread message among read ones): bold where the theme's font has a bold, its own way otherwise.
- * TILE_TITLE is a tool's name on its tile: a step above the body, short of a screen's title.
+ * HEADING names a tile or a section of tiles: a step above the body, short of a screen's title.
  */
 enum class TextType {
-    TITLE, SUBTITLE, TILE_TITLE, BODY, STRONG, CAPTION, LABEL, ERROR, WARNING
+    TITLE, SUBTITLE, HEADING, BODY, STRONG, CAPTION, LABEL, ERROR, WARNING
 }
 
 /**
