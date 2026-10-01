@@ -29,6 +29,7 @@ Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles
 - Analyse
   - Semaine d'entraînement : objectif, SQUARE. Critères : 3 sorties ; `km_semaine` ≥ `objectif_km` ; sommeil moyen ≥ 7 h ; « Pas de douleur » coché à la main. Semaine en cours à moitié remplie ; 9 semaines atteintes sur 12, celle du rush manquée.
   - Graphiques : Km par semaine (barres, FULL) ; Poids et moyenne 7 j (ligne, EXTENDED) ; Sommeil et humeur (deux séries, LINE) ; Calendrier de l'humeur (carte de chaleur, CONDENSED).
+  - Carnet d'entraînement : journal, une entrée par semaine écrite par le Bilan de la semaine, dont les exécutions passées sont les auteures.
   - Automation Bilan de la semaine (rangée dans ce groupe), voir plus bas.
 - Variables : `km_semaine` (formule, somme des sorties depuis lundi), `objectif_km` (constante 20), `poids_moyen_7j` (formule).
 
@@ -39,8 +40,8 @@ Toutes dans le groupe de zones « Démo » (« Demo » en anglais), leurs tuiles
   - Eau : suivi compteur (verres), MINIMAL, le compte du jour en cours.
   - Calories du jour : graphique, barres par jour et ligne d'objectif, EXTENDED.
 - Placard
-  - Aliments : donnée structurée, ≈ 30 fiches. Champs : kcal, protéines, glucides pour 100 g, Catégorie (choix).
-  - Courses : liste, 14 articles dont 5 cochés gardés visibles.
+  - Aliments : donnée structurée, ≈ 30 fiches, dont « Riz » et « Poulet » (que le banc cite). Champs : kcal, protéines, glucides pour 100 g, Catégorie (choix).
+  - Courses : liste, 14 articles dont 5 cochés gardés visibles ; « lait » parmi les non cochés.
   - Recettes : notes, 6 fiches.
 - Hors groupe : automation Menu de la semaine.
 - Variables : `kcal_jour` (formule, Σ quantité × kcal de l'aliment référencé ÷ 100), `objectif_calorique` (constante 2 300).
@@ -81,7 +82,7 @@ Les modes de tuile qui ne sont pas fixés ci-dessus se répartissent pour que le
 
 Les automations s'installent désactivées : active, une automation appelle l'IA aux frais de l'utilisateur. Leur passé est écrit.
 
-- Bilan de la semaine (Course, groupe Analyse) : lundi 7 h, rattrapage limité à 12 h. Lit sorties, sommeil, objectif ; écrit une entrée de journal.
+- Bilan de la semaine (Course, groupe Analyse) : lundi 7 h, rattrapage limité à 12 h. Lit sorties, sommeil, objectif ; écrit une entrée au Carnet d'entraînement, avec les km de la semaine passée.
 - Menu de la semaine (Cuisine, hors groupe) : dimanche 18 h. Lit Repas et Aliments ; ajoute des articles à Courses.
 - Point du matin (Travail) : sans planning, lancée à la main. Lit les tâches et le chronomètre ; répond par un module de communication.
 
@@ -109,6 +110,10 @@ Elles restent actives dans les outils de la démo : la démo les montre. Une dan
 - `assets/demo/structure.json` : zones, configs d'outils, variables, automations, groupes ; identifiants symboliques (`demo-course-sorties`) et références croisées par eux ; aucun texte affiché, des clés.
 - `assets/demo/texts-en.json`, `assets/demo/texts-fr.json` : tous les textes (noms, descriptions, options, journaux, notes, sessions), mêmes clés des deux côtés ; la langue suit celle du téléphone à l'installation. Les dates des textes sont relatives (« il y a 3 jours à 21 h 10 »).
 - Un générateur Kotlin par série chiffrée (poids, sommeil, humeur, repas, heures…), graine fixe : la même démo à chaque installation, seules les dates glissent.
+
+## Ce que le banc des modèles libres lit
+
+`docs/design/local-models.md` écrit ses scénarios contre la démo : un changement de nom ou de contenu qu'ils citent (Eau, Sorties, Sommeil, Repas et les fiches riz et poulet, Courses et son « lait » non coché, Observations, Carnet du balcon, Tâches et « Relancer la Librairie » en retard, Heures et Studio Brume, `poids_moyen_7j`, `objectif_km`, Carnet d'entraînement, les trois automations) se reporte dans le banc.
 
 ## Les garanties, en tests
 
