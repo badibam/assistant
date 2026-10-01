@@ -48,10 +48,9 @@ Toutes dans le groupe de zones « Démo », chaque tuile de zone dans un mode di
 ### Travail (tuile SQUARE) — sans groupes
 
 - Heures : suivi durée par chronomètre, EXTENDED. L'entrée porte le client (Studio Brume, Librairie Le Rameau, Mairie de Villeurbanne). Champs : Projet (choix), Facturable (oui/non). 2 à 4 sessions par jour ouvré, la semaine de rush à 50 h. Un chronomètre tourne, lancé 40 min avant l'installation, sur Studio Brume. Un raccourci par client.
-- Tâches : liste, 11 tâches dont 3 cochées.
+- Tâches : liste avec échéances (`docs/design/list-due-dates.md`), 11 tâches dont 3 cochées. « Relancer la Librairie », échue ce matin, en retard → en attente ; « Rappeler Studio Brume », à l'installation + 1 min — la notification de la première minute ; d'autres avec une échéance à venir ou sans.
 - Carnet de projet : journal, ≈ 20 entrées dans la voix de Camille.
 - Point facturation : Messages (un outil = un flux et son planning), chaque lundi à 9 h, avec son historique d'envois.
-- Relances : Rappels (`docs/design/reminders.md`). « Relancer la Librairie », échue ce matin, en retard → en attente ; « Rappeler Studio Brume », à l'installation + 1 min — la notification de la première minute ; quelques relances closes en historique.
 - Heures par client : graphique, barres empilées par semaine, CONDENSED.
 - Automation Point du matin.
 - Variable : `heures_semaine` (formule, somme depuis lundi). Ce qu'elle compte d'un chronomètre en cours : celui du code, constaté à l'implémentation et dit dans sa description.
@@ -62,7 +61,9 @@ Toutes dans le groupe de zones « Démo », chaque tuile de zone dans un mode di
 - Récoltes : suivi numérique (g), LINE, champ Plante (référence vers Plantes). ≈ 25 récoltes à partir de la semaine 5.
 - Observations : suivi texte, MINIMAL.
 - Arrosage : Messages, lundi, mercredi, vendredi et dimanche à 19 h (la brique de planning n'a pas « tous les N jours »), avec son historique.
-- Au balcon : Rappels. « Rempoter le basilic », ponctuel, samedi à venir ; « Engrais tomates », répété le 1er et le 15, avec ses entrées closes, dont une cochée en retard.
+- À faire au balcon : liste avec échéances, dont « Rempoter le basilic » samedi à venir.
+- Engrais tomates : Messages, le 1er du mois à 10 h, avec son historique ; sa description renvoie à « Engrais mis ».
+- Engrais mis : suivi occurrence, une entrée par mois — ce qui a été fait, à côté du rappel qui le demande.
 - Carnet du balcon : journal, 10 entrées.
 - Récoltes par plante : graphique, barres cumulées, FULL.
 
@@ -92,7 +93,7 @@ Fournisseur des automations et des sessions : le premier fournisseur configuré 
 
 ## Notifications
 
-Elles restent actives dans les outils de la démo : la démo les montre. Une dans la première minute : le rappel « Rappeler Studio Brume ». La démo ne demande pas la permission de notifier, l'app le fait déjà.
+Elles restent actives dans les outils de la démo : la démo les montre. Une dans la première minute : l'échéance de « Rappeler Studio Brume », dans Tâches. La démo ne demande pas la permission de notifier, l'app le fait déjà.
 
 ## La mécanique
 
@@ -112,6 +113,6 @@ Elles restent actives dans les outils de la démo : la démo les montre. Une dan
 ## Les garanties, en tests
 
 - Chaque config et chaque entrée de la démo passe la validation du schéma de son type d'outil.
-- Couverture : les 10 types d'outils (Rappels compris), les 8 types de suivi, les 7 modes de tuile (outils et zones), chaque type de champ parmi les champs à soi, un groupe d'outils, un outil hors groupe, une automation rangée dans un groupe, un outil désactivé, un chronomètre en cours, un message non lu, un rappel en retard, un rappel dû dans la minute, un rappel répété, un objectif en cours, une semaine d'objectif manquée.
+- Couverture : les 9 types d'outils, les 8 types de suivi, les 7 modes de tuile (outils et zones), chaque type de champ parmi les champs à soi, un groupe d'outils, un outil hors groupe, une automation rangée dans un groupe, un outil désactivé, un chronomètre en cours, un message non lu, un élément de liste en retard, une échéance dans la minute, un objectif en cours, une semaine d'objectif manquée.
 - Les deux fichiers de textes ont exactement les mêmes clés, et chaque clé que la structure demande existe.
 - Réinstaller ne touche à rien de ce qui n'est pas de la démo, et supprime tout ce qui l'est.
