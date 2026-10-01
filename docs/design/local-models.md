@@ -89,6 +89,8 @@ Le téléphone : le banc dit si un 3B comprend un prompt de ≈ 29k tokens, pas 
 
 ### Ce qu'elle mesure
 
+Passe de rodage, 2026-10-01, `deepseek-v4-flash` sans forçage, 0,054 $ : 15 scénarios réussis sur 19 ; deux vrais échecs, le Menu de la semaine (76 repas planifiés écrits dans l'historique des Repas) et l'objectif à 25 (texte hors JSON, JSON invalide, puis une réponse coupée à la limite de longueur) ; un fournisseur muet (Courses) ; le repas au « riz » ambigu (deux fiches), réécrit en patate douce. Une mesure de rodage sur un modèle, pas une conclusion.
+
 Le prompt actuel (degrés 1 et 2), sur toute l'échelle des tailles, chaque modèle deux fois : sans forçage et au schéma exact ; son meilleur niveau dit ce qu'on réglerait. Mesuré le 2026-10-01 sur « J'ai bu 2 verres d'eau » : `deepseek-v4-flash` au schéma exact répond dix fois `pre_text` et `validation_request` sans commande, ce que le schéma permet et que l'app refuse, jusqu'à la limite de tours ; sans forçage ou en JSON valide il réussit, comme `gpt-oss-120b` aux deux niveaux. Un seul niveau aurait jugé faux l'un ou l'autre. L'app lit un objet JSON unique entouré de texte en écartant le texte (`ResponseEnvelope.split`, message système `TEXT_OUTSIDE_JSON`) : le banc compte ces réponses à part, sans quoi la forme paraîtrait tenir quand elle cède.
 
 ## Hypothèses de niveaux de prompt
