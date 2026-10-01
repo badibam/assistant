@@ -47,6 +47,18 @@ class AIProviderRegistry(private val context: Context) {
         } catch (e: Exception) {
             LogManager.aiService("Failed to initialize DeepSeekEconomicProvider: ${e.message}", "ERROR", e)
         }
+
+        try {
+            add(OpenAICompatibleStandardProvider(context))
+        } catch (e: Exception) {
+            LogManager.aiService("Failed to initialize OpenAICompatibleStandardProvider: ${e.message}", "ERROR", e)
+        }
+
+        try {
+            add(OpenAICompatibleEconomicProvider(context))
+        } catch (e: Exception) {
+            LogManager.aiService("Failed to initialize OpenAICompatibleEconomicProvider: ${e.message}", "ERROR", e)
+        }
     }
 
     /**

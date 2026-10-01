@@ -22,6 +22,7 @@ import com.assistant.core.ai.providers.AIProvider
 import com.assistant.core.ai.providers.ProviderModel
 import com.assistant.core.fields.settings.SettingEditor
 import com.assistant.core.fields.settings.SettingsForm
+import com.assistant.core.fields.settings.storedField
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonType
@@ -37,8 +38,8 @@ import org.json.JSONObject
 
 /**
  * The config screen of any AI provider: the form of its declaration (AIProvider.getConfigSettings),
- * the API key masked, and the model chosen among those the key gives access to, listed by the
- * provider. The caller saves through the service, which checks the config against the schema
+ * the API key masked, and the model chosen among those the provider lists once the settings
+ * the listing needs are filled in. The caller saves through the service, which checks the config against the schema
  * generated from the same declaration.
  *
  * @param config The stored config, "{}" when the provider has none yet
@@ -67,15 +68,19 @@ fun AIProviderConfigScreen(
     var models by remember { mutableStateOf<List<ProviderModel>>(emptyList()) }
     var isFetching by remember { mutableStateOf(false) }
 
+    // The settings the listing needs, and whether they are all filled in
+    val listingSettings = remember(provider) { provider.modelListingSettings() }
+    fun canList() = listingSettings.all { settings.optString(it).isNotBlank() }
+
     fun fetchModels() {
-        val apiKey = settings.optString("api_key").trim()
-        if (apiKey.isEmpty()) {
-            UI.Toast(context, s.shared("ai_provider_enter_api_key_first"), Duration.SHORT)
+        if (!canList()) {
+            val labels = listingSettings.mapNotNull { name -> nodes.storedField(name)?.displayName }
+            UI.Toast(context, s.shared("ai_provider_fill_in_first").format(labels.joinToString(", ")), Duration.SHORT)
             return
         }
         scope.launch {
             isFetching = true
-            val listed = provider.listModels(apiKey)
+            val listed = provider.listModels(JSONObject(settings.toString()))
             isFetching = false
             models = listed.models
             listed.error?.let { UI.Toast(context, s.shared("ai_provider_fetch_error").format(it), Duration.LONG) }
@@ -84,9 +89,9 @@ fun AIProviderConfigScreen(
         }
     }
 
-    // A stored key lists its models on opening
+    // A stored config lists its models on opening
     LaunchedEffect(Unit) {
-        if (settings.optString("api_key").isNotBlank()) fetchModels()
+        if (canList()) fetchModels()
     }
 
     val editors = mapOf("model" to object : SettingEditor {
@@ -101,7 +106,7 @@ fun AIProviderConfigScreen(
                     UI.Button(
                         type = ButtonType.PRIMARY,
                         size = Size.M,
-                        state = if (settings.optString("api_key").isNotBlank()) ComponentState.NORMAL else ComponentState.DISABLED,
+                        state = if (canList()) ComponentState.NORMAL else ComponentState.DISABLED,
                         onClick = { fetchModels() }
                     ) { UI.Text(s.shared("ai_provider_fetch_models"), TextType.BODY) }
                 }
@@ -130,9 +135,9 @@ fun AIProviderConfigScreen(
 
         UI.Card(type = CardType.DEFAULT, size = Size.M) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // A new key lists other models: the ones listed for the former key no longer hold
+                // A new key or address lists other models: the ones listed before no longer hold
                 SettingsForm(nodes, settings, { next ->
-                    if (next.optString("api_key") != settings.optString("api_key")) models = emptyList()
+                    if (listingSettings.any { next.optString(it) != settings.optString(it) }) models = emptyList()
                     settings = next
                 }, context, editors)
                 UI.Text(provider.getConfigHelp(context), TextType.CAPTION)

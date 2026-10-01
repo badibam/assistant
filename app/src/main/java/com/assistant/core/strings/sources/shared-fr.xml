@@ -979,7 +979,6 @@
     <string name="ai_provider_fetching_models">Récupération des modèles...</string>
     <string name="ai_provider_no_models">Aucun modèle disponible</string>
     <string name="ai_provider_fetch_error">Erreur: %1$s</string>
-    <string name="ai_provider_enter_api_key_first">Veuillez d\'abord entrer une clé API</string>
     <string name="ai_provider_claude_effort">Effort de raisonnement</string>
     <string name="ai_provider_claude_schema_effort">Effort de raisonnement demandé au modèle</string>
     <string name="ai_provider_claude_effort_low">Faible</string>
@@ -1002,6 +1001,21 @@
     <string name="ai_provider_openai_schema_model">Modèle OpenAI à utiliser</string>
     <string name="ai_provider_openai_schema_temperature">Température d\'échantillonnage (0.0 à 2.0)</string>
     <string name="ai_provider_openai_schema_max_output_tokens">Limite maximale de tokens pour les réponses</string>
+    <string name="ai_provider_fill_in_first">Renseignez d\'abord : %1$s</string>
+    <string name="ai_provider_compatible_base_url">Adresse du serveur</string>
+    <string name="ai_provider_compatible_schema_base_url">Adresse de base de l\'API compatible OpenAI du serveur, en https seulement (ex. https://openrouter.ai/api/v1)</string>
+    <string name="ai_provider_compatible_api_key">Clé API (si le serveur en demande une)</string>
+    <string name="ai_provider_compatible_schema_api_key">Clé envoyée au serveur comme jeton ; aucune pour un serveur qui n\'en demande pas</string>
+    <string name="ai_provider_compatible_model">Modèle</string>
+    <string name="ai_provider_compatible_schema_model">Modèle à utiliser, parmi ceux que liste le serveur</string>
+    <string name="ai_provider_compatible_output_forcing">Forçage de la sortie</string>
+    <string name="ai_provider_compatible_schema_output_forcing">Jusqu\'où le serveur tient la réponse à une forme : rien, un JSON valide quelconque, ou le schéma exact de la réponse</string>
+    <string name="ai_provider_compatible_output_forcing_none">Aucun</string>
+    <string name="ai_provider_compatible_output_forcing_json">JSON valide</string>
+    <string name="ai_provider_compatible_output_forcing_schema">Schéma exact</string>
+    <string name="ai_provider_compatible_help">Tout serveur qui parle l\'API Chat Completions d\'OpenAI : Ollama, llama.cpp, vLLM, LM Studio, OpenRouter. L\'adresse s\'arrête avant /chat/completions, le plus souvent sur /v1 (Ollama : https://&lt;hôte&gt;/v1). En https seulement : le http enverrait vos données en clair. Un serveur à la maison obtient un certificat par tailscale serve ou un proxy inverse comme Caddy.</string>
+    <string name="ai_provider_compatible_output_forcing_help">Forçage de la sortie : le serveur tient le modèle à un JSON valide, ou au schéma exact de la réponse. Les petits modèles en ont le plus besoin ; un serveur qui n\'accepte pas le niveau choisi répond par une erreur.</string>
+    <string name="ai_provider_compatible_https_required">L\'adresse du serveur doit commencer par https:// : le http enverrait vos données en clair</string>
 
     <!-- AI ERRORS - Provider related (additional) -->
     <string name="ai_error_no_provider_configured">Aucun fournisseur IA configuré. Veuillez configurer un fournisseur dans les paramètres.</string>

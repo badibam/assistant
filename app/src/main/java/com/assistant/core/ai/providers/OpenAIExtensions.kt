@@ -65,38 +65,40 @@ internal fun PromptData.toOpenAIJson(model: String, temperature: Double, maxOutp
                 }
             }
 
-            // Transform session messages
-            // Step 1: Transform SYSTEM → USER (common transformation)
-            val normalizedMessages = transformSystemMessagesToUser(sessionMessages)
-
-            // Step 2: Add messages with proper roles
-            normalizedMessages.forEach { msg ->
-                val role = when (msg.sender) {
-                    MessageSender.USER -> "user"
-                    MessageSender.AI -> "assistant"
-                    MessageSender.SYSTEM -> "user"  // Should not happen after normalization
-                }
-
-                val content = when {
-                    msg.sender == MessageSender.AI && msg.aiMessageJson != null -> msg.aiMessageJson
-                    else -> extractTextContent(msg) ?: ""
-                }
-
-                // Only add non-empty messages
-                if (content.isNotBlank()) {
-                    addJsonObject {
-                        put("role", role)
-                        put("content", content)
-                    }
-                }
-            }
-
-            // Add current datetime as final message
-            addJsonObject {
-                put("role", "user")
-                put("content", datetimeText)
-            }
+            // The conversation, then the dated message
+            conversationMessages(datetimeText).forEach { add(it) }
         }
+    }
+}
+
+/**
+ * The session's messages as OpenAI role messages, the dated closing message last: SYSTEM messages
+ * fused into the user's turn (transformSystemMessagesToUser), an AI message sent as the JSON it
+ * answered, an empty message left out. Shared by the Responses API (toOpenAIJson) and Chat
+ * Completions (toChatCompletionsJson), whose messages have this same form.
+ *
+ * @param datetimeText The dated closing message, built by the caller (buildDatetimeMessage)
+ */
+internal fun PromptData.conversationMessages(datetimeText: String): List<JsonObject> {
+    val messages = transformSystemMessagesToUser(sessionMessages).mapNotNull { msg ->
+        val role = when (msg.sender) {
+            MessageSender.USER -> "user"
+            MessageSender.AI -> "assistant"
+            MessageSender.SYSTEM -> "user"  // Should not happen after normalization
+        }
+        val content = when {
+            msg.sender == MessageSender.AI && msg.aiMessageJson != null -> msg.aiMessageJson
+            else -> extractTextContent(msg) ?: ""
+        }
+        if (content.isBlank()) null
+        else buildJsonObject {
+            put("role", role)
+            put("content", content)
+        }
+    }
+    return messages + buildJsonObject {
+        put("role", "user")
+        put("content", datetimeText)
     }
 }
 

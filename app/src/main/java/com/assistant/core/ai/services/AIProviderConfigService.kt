@@ -134,6 +134,12 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
                 return OperationResult.error(validation.errorMessage ?: s.shared("message_validation_error_simple"))
             }
 
+            // What the schema cannot say: a rule of the provider's own (an address's form)
+            provider.configError(JSONObject(configJson), context)?.let { error ->
+                LogManager.aiService("Provider config refused: $error", "WARN")
+                return OperationResult.error(error)
+            }
+
             // Check if config already exists
             val database = AppDatabase.getDatabase(context)
             val existingConfig = database.aiDao().getProviderConfig(providerId)

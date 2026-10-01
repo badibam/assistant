@@ -3,6 +3,7 @@ package com.assistant.core.ai.providers
 import android.content.Context
 import com.assistant.core.ai.data.PromptData
 import com.assistant.core.fields.settings.SettingNode
+import org.json.JSONObject
 
 /**
  * Interface for AI providers (Claude, OpenAI, DeepSeek, etc.)
@@ -35,8 +36,21 @@ interface AIProvider {
     /** What the config screen says under the form: where to get a key, what the models are. */
     fun getConfigHelp(context: Context): String
 
-    /** The models [apiKey] gives access to, for the config screen to offer them. */
-    suspend fun listModels(apiKey: String): ProviderModels
+    /**
+     * The settings listing the models needs, by name: the config screen offers to list them once
+     * these are filled in, and lists them again when one changes. The API key, for a provider
+     * whose address is its own.
+     */
+    fun modelListingSettings(): List<String> = listOf("api_key")
+
+    /** The models [config] gives access to, for the config screen to offer them. */
+    suspend fun listModels(config: JSONObject): ProviderModels
+
+    /**
+     * Why [config] cannot be stored, beyond what its schema checks, or null when it can: a rule
+     * between settings or on a value's form, which the field types do not say. No such rule by default.
+     */
+    fun configError(config: JSONObject, context: Context): String? = null
 
     /**
      * Send query to AI provider with PromptData
