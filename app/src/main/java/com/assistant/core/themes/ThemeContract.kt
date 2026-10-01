@@ -110,6 +110,10 @@ interface ThemeContract {
         size: Dp
     )
 
+    /** The color of a state (UI.StatusIndicator, a warning's icon), in the current palette. */
+    @Composable
+    fun statusColor(status: com.assistant.core.ui.StatusColor): androidx.compose.ui.graphics.Color
+
     /**
      * A short colored label: an option of a CHOICE field whose config gives it a color.
      * The theme draws it and decides the actual color of [color] in the current palette.

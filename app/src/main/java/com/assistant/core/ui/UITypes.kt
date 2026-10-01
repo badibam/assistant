@@ -43,6 +43,14 @@ enum class Spacing {
     XS, S, M, L, XL
 }
 
+/**
+ * What a colored mark says about the state of something (an execution, a log line, an action
+ * to validate). A screen names the state; the theme gives its color, which must be seen.
+ */
+enum class StatusColor {
+    SUCCESS, WARNING, ERROR, INFO, MUTED
+}
+
 // =====================================
 // INTEGRATED VALIDATION
 // =====================================

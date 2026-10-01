@@ -9,10 +9,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.validation.ValidationContext
+import com.assistant.core.ui.StatusColor
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
 import com.assistant.core.ai.ui.components.InteractionActions
@@ -98,7 +98,7 @@ private fun ActionItem(
                 UI.Icon(
                     iconName = "triangle-alert",
                     size = 20.dp,
-                    tint = Color(0xFFFF9800)  // Orange
+                    tint = UI.statusColor(StatusColor.WARNING)
                 )
             }
 

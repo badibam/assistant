@@ -115,14 +115,18 @@ object UI {
      * StatusIndicator - Colored circular indicator for status display
      * Used to show status (success/warning/error) with themed colors
      *
-     * @param color The color of the indicator (from MaterialTheme.colorScheme)
+     * @param status The state it shows, which the theme colors
      * @param size The diameter of the circular indicator (default 8dp)
      */
     @Composable
     fun StatusIndicator(
-        color: androidx.compose.ui.graphics.Color,
+        status: StatusColor,
         size: Dp = 8.dp
-    ) = CurrentTheme.current.StatusIndicator(color, size)
+    ) = CurrentTheme.current.StatusIndicator(CurrentTheme.current.statusColor(status), size)
+
+    /** The color of a state in the current theme, for what is not a StatusIndicator (an icon's tint). */
+    @Composable
+    fun statusColor(status: StatusColor): androidx.compose.ui.graphics.Color = CurrentTheme.current.statusColor(status)
 
     /** A view over the whole screen, on the theme's background (FullScreenDialog opens one). */
     @Composable

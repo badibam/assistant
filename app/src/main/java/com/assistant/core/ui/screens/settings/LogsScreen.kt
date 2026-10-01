@@ -15,10 +15,6 @@ import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.LogEntry
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.launch
-import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.Text
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 
 /**
  * Time range enum for log filtering
@@ -281,22 +277,14 @@ private fun LogEntryCard(log: LogEntry, s: com.assistant.core.strings.StringsCon
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
-                // Level badge (color-coded) - Use native Compose Text for color support
-                val levelColor = when (log.level) {
-                    "VERBOSE" -> Color(0xFF9E9E9E)  // Light gray
-                    "DEBUG" -> Color(0xFF757575)     // Gray
-                    "INFO" -> Color(0xFF2196F3)      // Blue
-                    "WARN" -> Color(0xFFFFA500)      // Orange
-                    "ERROR" -> Color(0xFFF44336)     // Red
-                    else -> Color.Black
+                // The level: a mark in the state it says, then its name
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    UI.StatusIndicator(status = levelStatus(log.level))
+                    UI.Text(text = log.level, type = TextType.LABEL)
                 }
-
-                Text(
-                    text = log.level,
-                    color = levelColor,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
-                )
 
                 UI.Text(
                     text = "[${log.tag}]",
@@ -328,4 +316,12 @@ private fun LogEntryCard(log: LogEntry, s: com.assistant.core.strings.StringsCon
             }
         }
     }
+}
+
+/** The state a log level shows as: an error, a warning, information, or detail to look past. */
+private fun levelStatus(level: String): StatusColor = when (level) {
+    "ERROR" -> StatusColor.ERROR
+    "WARN" -> StatusColor.WARNING
+    "INFO" -> StatusColor.INFO
+    else -> StatusColor.MUTED
 }

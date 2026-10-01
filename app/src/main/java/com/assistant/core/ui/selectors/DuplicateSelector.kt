@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +16,7 @@ import androidx.compose.ui.window.Dialog
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.ButtonAction
+import com.assistant.core.ui.CardType
 import com.assistant.core.ui.TextType
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.executeWithLoading
@@ -127,13 +127,7 @@ fun DuplicateSelector(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(UI.Space.L),
-            shape = MaterialTheme.shapes.medium,
-            tonalElevation = 6.dp
-        ) {
+        UI.Card(type = CardType.DEFAULT) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -182,7 +176,7 @@ fun DuplicateSelector(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
                             ) {
-                                CircularProgressIndicator()
+                                UI.LoadingIndicator()
                             }
                         }
                         currentStep == DuplicateStep.ZONE -> {
@@ -277,21 +271,11 @@ private fun ZoneList(
         verticalArrangement = Arrangement.spacedBy(UI.Space.S)
     ) {
         items(zones) { zone ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onZoneSelected(zone) },
-                color = if (zone.id == selectedZoneId) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surface
-                },
-                shape = MaterialTheme.shapes.small,
-                tonalElevation = 2.dp
-            ) {
+            UI.Card(type = CardType.DEFAULT, highlight = zone.id == selectedZoneId) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { onZoneSelected(zone) }
                         .padding(UI.Space.L),
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
@@ -320,21 +304,11 @@ private fun InstanceList(
         verticalArrangement = Arrangement.spacedBy(UI.Space.S)
     ) {
         items(instances) { instance ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onInstanceSelected(instance) },
-                color = if (instance.id == selectedInstanceId) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surface
-                },
-                shape = MaterialTheme.shapes.small,
-                tonalElevation = 2.dp
-            ) {
+            UI.Card(type = CardType.DEFAULT, highlight = instance.id == selectedInstanceId) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { onInstanceSelected(instance) }
                         .padding(UI.Space.L),
                     verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
                 ) {

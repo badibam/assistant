@@ -671,6 +671,18 @@ object DefaultTheme : ThemeContract {
     }
 
     @Composable
+    override fun statusColor(status: com.assistant.core.ui.StatusColor): Color {
+        val scheme = CurrentTheme.getCurrentColorScheme()
+        return when (status) {
+            com.assistant.core.ui.StatusColor.SUCCESS -> scheme.primary
+            com.assistant.core.ui.StatusColor.WARNING -> scheme.tertiary
+            com.assistant.core.ui.StatusColor.ERROR -> scheme.error
+            com.assistant.core.ui.StatusColor.INFO -> scheme.secondary
+            com.assistant.core.ui.StatusColor.MUTED -> scheme.outline
+        }
+    }
+
+    @Composable
     override fun FullScreen(content: @Composable () -> Unit) {
         Box(modifier = Modifier.fillMaxSize().background(CurrentTheme.getCurrentColorScheme().surface)) {
             content()

@@ -1,7 +1,6 @@
 package com.assistant.core.ai.ui.automation
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -12,7 +11,7 @@ import com.assistant.core.ai.utils.AIFormatUtils
 import com.assistant.core.ai.utils.PhaseUtils
 import com.assistant.core.ai.utils.toDisplayString
 import com.assistant.core.ai.utils.toEndReasonDisplayString
-import com.assistant.core.ai.utils.toEndReasonColor
+import com.assistant.core.ai.utils.toEndReasonStatus
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
@@ -53,13 +52,11 @@ fun ExecutionCard(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    val colorScheme = MaterialTheme.colorScheme
-
     // Use live phase if provided, otherwise use stored phase
     val displayPhase = livePhase ?: phase
 
-    // Get status color for end reason (or phase if still running)
-    val statusColor = endReason.toEndReasonColor(colorScheme)
+    // The state shown for the end reason (a warning while still running)
+    val status = endReason.toEndReasonStatus()
 
     UI.Card(
         type = CardType.DEFAULT
@@ -93,7 +90,7 @@ fun ExecutionCard(
                     horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    UI.StatusIndicator(color = statusColor, size = 8.dp)
+                    UI.StatusIndicator(status = status, size = 8.dp)
                     UI.Text(
                         text = if (endReason != null) {
                             endReason.toEndReasonDisplayString(context)
