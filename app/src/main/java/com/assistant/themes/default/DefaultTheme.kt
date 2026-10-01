@@ -151,23 +151,28 @@ object DefaultTheme : ThemeContract {
      */
     override fun getColorScheme(paletteId: String): ColorScheme {
         return when (paletteId) {
+            // One cool family, as the dark palette is: white tiles on a pale lavender ground,
+            // set apart by their colour (1.12, the dark one's step), never tinted by elevation;
+            // the main colours dark enough for white on them, and for an icon alone on a tile
+            // (4.5 and over)
             "default_light" -> lightColorScheme(
-                primary = Color(0xFF7C9DD6),        // Bleu pervenche vif mais doux
-                onPrimary = Color(0xFFFFFFFF),      // Blanc
-                secondary = Color(0xFFB08BBE),      // Mauve moyen (accent décoratif)
-                onSecondary = Color(0xFF2E2438),    // Violet très foncé
-                tertiary = Color(0xFFF5A47A),       // Orange doux (warning)
-                onTertiary = Color(0xFF4A2E1A),     // Brun foncé
-                surface = Color(0xFFFAF8F5),        // Crème très léger
-                onSurface = Color(0xFF2E2C3A),      // Gris foncé tirant vers violet
-                surfaceVariant = Color(0xFFEBE7F2), // Lavande très pâle
-                onSurfaceVariant = Color(0xFF524E5F), // Gris violet moyen
-                background = Color(0xFFFFFCF9),     // Blanc cassé chaud
-                onBackground = Color(0xFF2E2C3A),   // Gris foncé
-                error = Color(0xFFDB6B6B),          // Rouge corail vif
-                onError = Color(0xFFFFFFFF),        // Blanc
-                outline = Color(0xFFB5AEC4),        // Gris mauve
-                outlineVariant = Color(0xFFDAD5E4)  // Lavande claire
+                primary = Color(0xFF4A68AE),        // Deep periwinkle (5.4 on white)
+                onPrimary = Color(0xFFFFFFFF),      // White
+                secondary = Color(0xFF7E5F8F),      // Deep mauve (decorative accent)
+                onSecondary = Color(0xFFFFFFFF),    // White
+                tertiary = Color(0xFFF5A47A),       // Soft orange (warning)
+                onTertiary = Color(0xFF4A2E1A),     // Dark brown
+                surface = Color(0xFFFFFFFF),        // White: the tiles
+                onSurface = Color(0xFF2E2C3A),      // Dark grey towards violet
+                surfaceVariant = Color(0xFFE6E2EE), // Pale lavender
+                onSurfaceVariant = Color(0xFF524E5F), // Mid violet grey
+                surfaceTint = Color(0xFFFFFFFF),    // No elevation tint: a tile stays white
+                background = Color(0xFFF3F1F7),     // Very pale lavender: the ground
+                onBackground = Color(0xFF2E2C3A),   // Dark grey
+                error = Color(0xFFB04545),          // Deep red (5.6 on white)
+                onError = Color(0xFFFFFFFF),        // White
+                outline = Color(0xFFB5AEC4),        // Mauve grey
+                outlineVariant = Color(0xFFDAD5E4)  // Light lavender
             )
             "default_dark" -> darkColorScheme(
                 primary = Color(0xFF9BB8E8),        // Bleu ciel doux mais vif
