@@ -297,10 +297,20 @@ object RetroTheme : ThemeContract {
         Line(text, style, ink, if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier, textAlign, maxLines)
     }
 
-    /** A card is a frame; a highlighted one keeps its tones swapped, a section's header is compact. */
+    /**
+     * A card is a frame, a highlighted one keeping its tones swapped. A section's header is no
+     * frame: its title on the screen's ground over a divider, so that the tiles are the only panels
+     * and a heading never reads as a thing to touch; its buttons keep their own frames.
+     */
     @Composable
     override fun Card(type: CardType, size: Size, highlight: Boolean, content: @Composable () -> Unit) {
-        Framed(compact = type == CardType.SECTION_HEADER, pressed = highlight) { content() }
+        when (type) {
+            CardType.SECTION_HEADER -> Column(modifier = Modifier.fillMaxWidth()) {
+                content()
+                Divider()
+            }
+            CardType.DEFAULT -> Framed(pressed = highlight) { content() }
+        }
     }
 
     @Composable
