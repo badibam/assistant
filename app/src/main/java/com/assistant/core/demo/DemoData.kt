@@ -12,7 +12,7 @@ import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 /**
- * The demo's entries, afloat at [now] (docs/design/demo.md): twelve weeks of Camille's life up to
+ * The demo's entries, afloat at [now]: twelve weeks of Camille's life up to
  * this moment, in the app's time zone [zone]. Pure, and the same at every install but for the
  * dates, which slide with [now]: the numbers come from one seed.
  *

@@ -19,7 +19,7 @@ La dette du `manifest.md` (adresse OpenAI en dur, prix d'un serveur inconnu) se 
 
 - **L'app joue les scénarios elle-même** : la vraie session, le vrai pipeline, autant de tours qu'il en faut.
 - **Lancement** : des tests d'instrumentation (`androidTest/`), un par scénario, le modèle en argument, lancés par `./run bench`, qui rassemble les résultats dans le terminal et un fichier. Rien dans l'app livrée. **Sur l'émulateur seulement** : ces tests écrivent dans la base de l'app.
-- **Base de départ : la démo** (`docs/design/demo.md`). Avant chaque scénario : base vidée, fournisseur reconfiguré depuis les arguments, démo installée (`demo.install`). Le modèle cherche le bon outil parmi une vingtaine, comme en vrai, et les scénarios s'écrivent contre des données connues. Le banc se construit après la démo. Aucun résultat n'est figé ni simulé : seul l'app sait ce que répond une requête, et deux requêtes justes écrites par un modèle ne sont presque jamais identiques.
+- **Base de départ : la démo** (`assets/demo/`, installée par `DemoService`). Avant chaque scénario : base vidée, fournisseur reconfiguré depuis les arguments, démo installée (`demo.install`). Le modèle cherche le bon outil parmi une vingtaine, comme en vrai, et les scénarios s'écrivent contre des données connues. Le banc se construit après la démo. Aucun résultat n'est figé ni simulé : seul l'app sait ce que répond une requête, et deux requêtes justes écrites par un modèle ne sont presque jamais identiques.
 - **Deux adresses** :
   - OpenRouter, pour cartographier les capacités par taille de modèle : une clé, des centaines de modèles libres, un filtre sur l'hébergeur (forçage par schéma accepté) et sur la compression du modèle (pour tester un modèle compressé comme il le serait sur la machine visée).
   - Ollama sur l'ordinateur, pour la vitesse avec le vrai prompt : servi en https (ci-dessus), donc pas par l'adresse `10.0.2.2` de l'émulateur, qui est en http. Le téléphone comme machine de calcul demande un modèle dans l'app elle-même ; hors de ce banc.
@@ -64,8 +64,7 @@ En français, l'émulateur réglé en français : la démo prend la langue du t�
 
 ### Ce que la démo doit porter pour le banc
 
-- « lait » parmi les articles non cochés de Courses (saisie 5).
-- Un journal « Carnet d'entraînement » dans Course, groupe Analyse : l'entrée qu'écrit le Bilan de la semaine (automation 3), dont la description de `demo.md` ne nomme pas la cible.
+Les scénarios citent ces noms et contenus de la démo : en changer un dans `assets/demo/` se reporte ici. Eau, Sorties, Sommeil, Repas et les fiches « Riz » et « Poulet » d'Aliments ; Courses et son « lait » non coché (saisie 5) ; Observations, Carnet du balcon ; Tâches et « Relancer la Librairie » en retard ; Heures et Studio Brume ; `poids_moyen_7j_demo`, `objectif_km_demo` ; le Carnet d'entraînement de Course (groupe Analyse), qu'écrit le Bilan de la semaine (automation 3) ; les trois automations.
 
 ## Le lancement
 

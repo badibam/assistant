@@ -8,7 +8,7 @@ import com.assistant.core.utils.LogManager
 import java.io.File
 
 /**
- * The demo at the app's start (docs/design/demo.md): installed afresh once per installation of
+ * The demo at the app's start: installed afresh once per installation of
  * the app, which `PackageInfo.lastUpdateTime` marks — a release as a debug build, an update as a
  * first install. The installation the demo was last installed for is kept in a file of the app's
  * own, which only this reads.
@@ -21,9 +21,10 @@ object DemoStartup {
     private const val STAMP_FILE = "demo_installed_for"
 
     /**
-     * Installs the demo when the app was installed since it last was, or removes it when the
-     * setting is off. Null when done or nothing was to do; the error to show once otherwise —
-     * the installation is marked all the same, so the error is not shown at every start.
+     * Installs the demo when the app was installed since it last was and the setting is on; off,
+     * the demo there is stays as it is — removing it is the user's button. Null when done or
+     * nothing was to do; the error to show once otherwise — the installation is marked all the
+     * same, so the error is not shown at every start.
      */
     suspend fun run(context: Context): String? {
         val installedAt = context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
@@ -35,10 +36,10 @@ object DemoStartup {
         val result = when (enabled) {
             null -> settings
             true -> coordinator.processUserAction("demo.install", emptyMap())
-            false -> coordinator.processUserAction("demo.remove", emptyMap())
+            false -> null
         }
         writeStamp(context, installedAt)
-        if (result.isSuccess) return null
+        if (result == null || result.isSuccess) return null
         LogManager.service("Demo at start failed: ${result.error}", "ERROR")
         return result.error
     }

@@ -17,6 +17,13 @@ interface ExecutableService {
     ): OperationResult
 
     /**
+     * The operations of this service that are long — that write or read the whole of something:
+     * the coordinator runs them in the app's one place for a long operation (`LongOperation`),
+     * refusing one while another runs.
+     */
+    val longOperations: Set<String> get() = emptySet()
+
+    /**
      * Generates a human-readable description of the action (substantive form)
      *
      * Example: "Création de la zone \"Santé\""

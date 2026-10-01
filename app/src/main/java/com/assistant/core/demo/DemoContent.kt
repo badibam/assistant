@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * The demo as the app ships it (docs/design/demo.md): `assets/demo/structure.json` holds the
+ * The demo as the app ships it: `assets/demo/structure.json` holds the
  * parameters of the operations that build it — zones, tools, variables — under ids the app gives
  * and with no text of its own: a string written `@key` is a text, given by
  * `assets/demo/texts-<lang>.json` in the phone's language. Pure: the service reads the files and

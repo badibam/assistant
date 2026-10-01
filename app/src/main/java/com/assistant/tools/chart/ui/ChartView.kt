@@ -73,8 +73,10 @@ fun ChartView(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Lon
         val metrics = remember(density) { ChartMetrics(density) }
         val layout = remember(spec, tables, period, width, height, detail, text) {
             val calendar = com.assistant.core.utils.AppConfigManager
+            val start = System.currentTimeMillis()
             ChartSceneBuilder(metrics, text, calendar.getDateTimeConfig().getZoneId(), calendar.getWeekStartDay(), now)
                 .build(spec, tables, period, width, detail, height)
+                .also { com.assistant.core.utils.LogManager.ui("Chart laid out in ${System.currentTimeMillis() - start} ms ($detail)", "INFO") }
         }
         UI.Drawing(layout.drawing, if (onTap == null) Modifier else Modifier.pointerInput(layout) {
             detectTapGestures { offset -> onTap(layout.hitAt(offset.x, offset.y, metrics.slop)) }

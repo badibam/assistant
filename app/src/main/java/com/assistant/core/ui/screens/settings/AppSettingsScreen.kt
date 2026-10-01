@@ -36,16 +36,12 @@ import org.json.JSONObject
  * The screen of one settings category (AppSettings): the form of its declaration, saved through
  * the service, which checks it and says what it refuses.
  *
- * @param afterSave What a category does once its settings are saved, with them as they were
- *        loaded and as they are saved; the error to show, or null. The screen closes either way:
- *        the settings are saved.
  * @param below What a category shows under its form, beside its settings
  */
 @Composable
 fun AppSettingsScreen(
     category: String,
     onBack: () -> Unit,
-    afterSave: (suspend (before: JSONObject, after: JSONObject) -> String?)? = null,
     below: @Composable () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -55,8 +51,6 @@ fun AppSettingsScreen(
     val nodes = remember(category) { AppSettings.nodes(category, context) }
 
     var settings by rememberSaveable(category, stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject()) }
-    // As loaded, for what a category does only when a setting changed
-    var loaded by rememberSaveable(category, stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject()) }
     var isSaving by remember { mutableStateOf(false) }
 
     val load = rememberLoadOnce(category) {
@@ -68,7 +62,6 @@ fun AppSettingsScreen(
             return@rememberLoadOnce false
         }
         settings = JsonUtils.toJSONObject(stored)
-        loaded = JsonUtils.toJSONObject(stored)
         true
     }
 
@@ -76,15 +69,11 @@ fun AppSettingsScreen(
         isSaving = true
         scope.launch {
             val result = coordinator.processUserAction("app_config.set", mapOf("category" to category, "settings" to JsonUtils.toMap(settings)))
+            isSaving = false
             if (result.isSuccess) {
-                // Still saving meanwhile: what follows a save may take its time
-                val failed = afterSave?.invoke(loaded, settings)
-                isSaving = false
-                if (failed != null) UI.Toast(context, failed, Duration.LONG)
-                else UI.Toast(context, s.shared("settings_saved"), Duration.SHORT)
+                UI.Toast(context, s.shared("settings_saved"), Duration.SHORT)
                 onBack()
             } else {
-                isSaving = false
                 UI.Toast(context, result.error ?: s.shared("error_operation_failed"), Duration.LONG)
             }
         }

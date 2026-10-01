@@ -54,6 +54,9 @@ class BackupService(private val context: Context) : ExecutableService {
 
     // No companion object needed - use BuildConfig and AppDatabase.VERSION directly
 
+    /** Both read or rewrite the whole base: never with another, the demo or an import. */
+    override val longOperations = setOf("export", "import")
+
     override suspend fun execute(
         operation: String,
         params: JSONObject,
@@ -868,9 +871,9 @@ class BackupService(private val context: Context) : ExecutableService {
     override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
         return when (operation) {
-            "export" -> "Export des données"
-            "import" -> "Import de sauvegarde"
-            "reset" -> "Réinitialisation des données"
+            "export" -> s.shared("action_verbalize_backup_export")
+            "import" -> s.shared("action_verbalize_backup_import")
+            "reset" -> s.shared("action_verbalize_backup_reset")
             else -> s.shared("action_verbalize_unknown")
         }
     }

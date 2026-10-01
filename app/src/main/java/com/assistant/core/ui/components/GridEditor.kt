@@ -31,10 +31,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * The edit mode of a screen's grids (docs/design/grid-layout.md, « Le mode d'édition »): the
- * tools of a zone, the zones of the home screen. One group section at a time, named by its key
- * (its group, "" for the ungrouped one), and in it the tile being moved, at the places of the move
- * in progress.
+ * The edit mode of a screen's grids: the tools of a zone, the zones of the home screen. One group
+ * section at a time, named by its key (its group, "" for the ungrouped one), and in it the tile
+ * being moved, at the places of the move in progress.
  *
  * A move is written when it is validated, when another tile is touched or when the edit mode is
  * closed, in one write ([placeOperation], given [placeParams], the section's group and its

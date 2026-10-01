@@ -77,6 +77,7 @@ cd assistant
 - **Backup/Restore** : Export/import/reset avec gestion versions et détection erreurs
 - **Pointeur** : désigne une zone ou un outil dans un message à l'IA, joint sa config ou ses entrées, restreintes par période, filtres par valeur et champs
 - **Logging** : Système de logs in-app avec filtres (niveau, durée, tag) et purge automatique
+- **Démo** : un groupe de zones « Démo » réinstallé à chaque mise à jour, ses données à flot au moment de l'installation (douze semaines d'une vie fictive, chronomètre en cours, échéances, objectifs, automations désactivées), en français ou en anglais selon le téléphone ; réinstallable ou supprimable depuis ses réglages
 
 ### Système IA
 
@@ -94,7 +95,7 @@ cd assistant
 - **Tracking** : Suivi avec 7 types de données (numeric, text, scale, choice, timer, audio, multi-audio)
 - **Journal** : Entrées textuelles/audio avec templates
 - **Note** : Notes individuelles avec titre et contenu
-- **Liste** : Ce qui reste à faire (courses, tâches, check-list) : un élément est un nom et les champs de la liste, coché avec sa date, réordonné en glissant ; les cochés se décochent d'un geste, ou disparaissent dès qu'on les coche si la liste le demande
+- **Liste** : Ce qui reste à faire (courses, tâches, check-list) : un élément est un nom et les champs de la liste, coché avec sa date, réordonné en glissant ; les cochés se décochent d'un geste, ou disparaissent dès qu'on les coche si la liste le demande ; avec l'option Échéances, un élément peut porter une échéance, notifiée à son heure, et reste en retard tant qu'il n'est pas coché
 - **Objectif** : Un objectif jugé par le compte de ses critères, une tentative par période : critères lus dans vos entrées ou vos variables, ou saisis ; au moins N, indispensables ; validé en réussite ou en échec, expiré sinon, rouvrable
 - **Questionnaire** : Des questions une par écran, à la demande ou sur invitation planifiée, par vous ou avec l'IA dans une conversation ; à remplir, rempli ou ignoré
 - **Graphique** : Un graphique des entrées de vos outils et de vos variables, qui dessine sans jamais calculer : couches superposées, vues l'une sous l'autre ou par catégorie, lignes, points, barres empilées, aires, camemberts, calendriers ; une grille lit à chaque jour (ou semaine, mois…) des variables et des lectures ; une valeur manquante est un trou qui mène aux entrées à corriger

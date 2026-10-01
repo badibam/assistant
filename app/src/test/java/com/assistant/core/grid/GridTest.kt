@@ -9,8 +9,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The placement rules of the grid spec (docs/design/grid-layout.md, « Positions »): where a tile
- * arrives, what its leaving closes, and what a tile that grows or shrinks does to the others.
+ * The placement rules of the grid: where a tile arrives, what its leaving closes, and what a tile
+ * that grows or shrinks does to the others.
  * On the phone these show only as tiles overlapping or rows left empty, found by chance.
  */
 class GridTest {

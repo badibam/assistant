@@ -9,12 +9,10 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Démo
 
-- Après l'installation de l'APK, un écran d'attente, puis l'accueil avec le groupe « Démo » (« Demo » sur un téléphone en anglais) et ses cinq zones : Course et Travail côte à côte en grand, Cuisine en ligne, Balcon et Italien dessous ; chaque zone ouverte montre sa description et ses groupes d'outils.
-- Relancer l'app sans réinstaller : pas d'écran d'attente, rien ne bouge. Réinstaller l'APK : la démo est réinstallée.
-- Une zone à soi rangée dans « Démo » survit à une réinstallation de la démo ; un outil ajouté dans une zone de démo disparaît.
-- La démo à flot : le chronomètre d'Heures tourne depuis 40 minutes sur Studio Brume ; une notification « Rappeler Studio Brume » dans la première minute ; « Relancer la Librairie » en retard avec le point sur Tâches et sur la zone Travail ; le dernier « Point facturation » non lu ; « Semaine d'entraînement » et « Semaine d'italien » avec la semaine en cours ouverte, la précédente à valider, et dix semaines validées dont celle du rush manquée ; l'historique des tentatives se relit, les critères de chacune lus dans sa copie.
-- Les graphiques de la démo s'affichent tous, la semaine de rush visible dans Km par semaine, Sommeil et humeur, Heures par client.
-- Réglages › Démo : désactiver « Installer la démo à chaque mise à jour » et enregistrer supprime la démo, le groupe « Démo » reste ; le réactiver la réinstalle ; « Réinstaller maintenant » la remet à neuf.
+- Réglages › Démo : désactiver « Installer la démo à chaque mise à jour » et enregistrer ne supprime rien, la démo reste ; réinstaller l'APK la laisse telle quelle ; réactiver le réglage n'installe rien avant la mise à jour suivante.
+- Réglages › Démo : « Réinstaller » puis revenir en arrière aussitôt : une bande en haut de chaque écran dit « Installation de la démo » et son étape jusqu'à la fin, puis un toast dit qu'elle est terminée ; la démo est entière. Revenir dans Réglages › Démo pendant l'installation : les boutons attendent, la roue et l'étape s'affichent.
+- Ajouter une entrée dans un outil de la démo et un outil dans une de ses zones, puis Réglages › Démo › « Supprimer la démo » : la démo et ces deux ajouts disparaissent, le reste de l'app est intact ; « Réinstaller » la remet entière.
+- Pendant un import d'un gros fichier (Données structurées), lancer « Réinstaller » la démo ou exporter une sauvegarde : refusé, le message nomme l'import en cours ; la bande compte les lignes écrites par 500.
 
 ## Chat IA
 
@@ -99,7 +97,6 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 - Liste : créer une liste, ajouter des éléments par le champ du bas ; cocher, voir l'élément descendre sous le trait ; décocher, le voir reprendre sa place ; glisser un élément parmi les non cochés, la place tient après rechargement ; ouvrir un élément, le renommer, remplir un champ personnalisé (visible sur sa ligne), le supprimer ; « Tout décocher » ; avec « Un élément coché est supprimé aussitôt » réglé, cocher supprime l'élément, depuis l'écran comme depuis la tuile ; l'ajout se fait en bas, sous le titre « Ajouter un élément », le champ « Contenu » puis les champs personnalisés à remplir sous le nom, à leur valeur par défaut, qui y reviennent après l'ajout ; un trait sépare la liste de ce formulaire, et un autre les cochés des autres ; une recréation garde la saisie en cours et l'élément ouvert.
 - Liste et IA : demander à l'IA d'ajouter trois éléments puis d'en cocher un ; ils apparaissent, l'élément coché en bas.
-- Liste à échéances : activer « Échéances » dans la config ; ajouter un élément à échéance dans 2 minutes, depuis l'écran puis depuis la tuile : l'échéance s'affiche sous son nom ; à l'heure (une minute de battement, app ouverte), une seule notification nommée par la liste, qui ouvre l'outil ; l'élément est marqué « En retard », le point d'attente paraît sur la tuile et la zone, la tuile dit « 1 en retard » et le met en tête ; le cocher retire le point ; repousser l'échéance d'un élément en retard retire le point, et la nouvelle échéance notifie à son tour ; retirer l'échéance d'un élément ; désactiver « Échéances » demande de confirmer la perte des échéances, puis la liste redevient celle d'avant. Demander à l'IA d'ajouter un élément avec une échéance, puis de la retirer.
 
 - Champs personnalisés affichés : sur la liste des entrées d'un journal (un par ligne, le nom à la taille du titre, sous un trait qui les sépare du texte), sur une entrée ouverte (un bloc par champ), sur une carte de note et sur une ligne de liste (deux par ligne, le nom en petit) ; un champ « Toujours afficher » vide y dit « Aucune valeur » ; un texte long prend toute la largeur. Décocher « Afficher le nom des champs » dans la config retire les noms partout ; une Liste neuve part sans les noms, les autres outils avec.
 
@@ -158,11 +155,11 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Objectif
 
 - Notifications : toucher celle d'une tentative à valider, d'une invitation à remplir ou d'un message ouvre l'app sur la zone puis l'outil, à sa plus ancienne entrée qui attend ; un outil supprimé depuis ouvre l'app telle quelle.
-- Toucher la tuile d'un outil marqué d'un point : un Questionnaire ouvre le formulaire de l'invitation à remplir la plus ancienne ; un Objectif sa plus ancienne tentative à valider ; Messages ses messages reçus, le plus ancien non lu en tête, qui passe en « lu » (le point disparaît). Sans point, la tuile ouvre l'écran comme avant.
-- Attente : un Questionnaire avec une invitation à remplir, un Objectif avec une tentative à valider, un Messages avec un message envoyé non lu montrent un point à côté de leur nom, et leur zone aussi à l'accueil ; remplir, valider ou lire l'entrée fait disparaître le point sans quitter l'écran.
+- Toucher la tuile d'un Questionnaire marqué d'un point ouvre le formulaire de l'invitation à remplir la plus ancienne.
+- Attente : un Questionnaire avec une invitation à remplir montre un point à côté de son nom, et sa zone aussi à l'accueil ; la remplir fait disparaître le point sans quitter l'écran.
 - Critères : un critère lu « Repas › kcal, somme ≤ 2100 » se juge sur la journée de la tentative sans toucher à la période (« Aucune choisie : celle de la tentative ») ; « ≤ » une variable à droite se juge aussi ; un critère saisi (Durée « ≥ 7 h », Choix « = bonne ») se remplit dans la tentative et se juge ; retirer la valeur saisie (bouton du groupe) ramène un critère lu. La ligne d'un critère dit sa valeur face à ce qu'elle compare, avec une jauge pour un nombre ou une durée.
 - Objectif, Questionnaire et Messages : la récurrence de la config s'affiche en une ligne de résumé sous le titre propre à l'outil, s'édite par le bouton « Configurer la récurrence » et son dialogue ; « Aucune » la retire. Le résumé est le même que sur la carte et l'éditeur d'une automation.
-- Créer un objectif ponctuel sans échéance avec trois critères (une variable « kcal » ≤ 2100, un champ « poids, dernière » ≤ 80, une saisie oui/non indispensable), au moins 2 : sa tentative s'ouvre au tick suivant ; chaque critère montre sa valeur face à sa condition, la saisie oui/non se coche sur place ; « Valider » avant d'avoir saisi est refusé en nommant le critère ; après, la tentative est réussie ou échouée, « par vous ».
+- Créer un objectif ponctuel sans échéance avec trois critères (une variable « kcal » ≤ 2100, un champ « poids, dernière » ≤ 80, une saisie oui/non indispensable), au moins 2 : sa tentative s'ouvre dès l'enregistrement ; chaque critère montre sa valeur face à sa condition, la saisie oui/non se coche sur place ; « Valider » avant d'avoir saisi est refusé en nommant le critère ; après, la tentative est réussie ou échouée, « par vous ».
 - Une tentative validée : la modifier par l'IA est refusé ; « Rouvrir » la remet à valider et garde la date de réouverture.
 - Renommer un critère saisi : sa valeur reste ; le supprimer puis le recréer : la confirmation de la config compte la valeur retirée.
 - Un objectif récurrent quotidien : une tentative par jour ; à la fin de la période, une notification et « À valider (1) » ; sans validation, expirée après le délai. Arrêté, plus aucune ne s'ouvre.
@@ -174,11 +171,6 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Planifié chaque jour à une heure passée : au tick, une entrée « à remplir » datée de cette heure et une notification ; répondre à la première question puis quitter : la réponse reste, et « Remplir » reprend à la deuxième. Une absence de plusieurs jours : autant d'entrées, « Tout ignorer » les passe en ignorées.
 - « Avec l'IA » sur une entrée à remplir : le chat s'ouvre, sa saisie porte le message et les pointeurs vers l'outil et l'entrée ; envoyé, l'IA pose les questions, écrit les réponses et marque l'entrée remplie.
 - Toucher une entrée de l'historique : ses réponses en entier, modifiables.
-
-## Grille
-
-- Les modes d'un Suivi (ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE), un Suivi de type choix compris : rien ne déborde de sa tuile ni ne défile dedans, le résumé tient sur deux lignes, le corps sur ses rangées ; un texte trop long s'arrête sur « … ».
-- Un déplacement en cours, puis thème sombre ou « Ne pas conserver les activités » : la sélection et le déplacement sont toujours là.
 
 ## Graphique
 

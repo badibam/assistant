@@ -4,7 +4,7 @@ import com.assistant.core.demo.DemoContent
 import org.json.JSONObject
 
 /**
- * The id a create may be given instead of making one (docs/design/demo.md): only by the app
+ * The id a create may be given instead of making one: only by the app
  * itself (Source.SYSTEM) and only with the demo's prefix, so that the demo is written through the
  * services as everything else is, under ids its reinstall finds again. Neither the AI nor a
  * screen chooses an id: from them, an id sent is refused.

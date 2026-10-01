@@ -3,6 +3,7 @@ package com.assistant.core.demo
 import android.content.Context
 import androidx.room.withTransaction
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.coordinator.LongOperation
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.Origin
 import com.assistant.core.coordinator.Source
@@ -25,7 +26,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * The demo (docs/design/demo.md), as the resource `demo`:
+ * The demo, as the resource `demo`:
  * - install: removes the demo there is, then builds the one the app ships through the services,
  *   as the app itself (Source.SYSTEM), which alone may give the demo's ids; its zone group joins
  *   the home screen's groups when it is not there yet, and never leaves them
@@ -43,6 +44,9 @@ class DemoService(private val context: Context) : ExecutableService {
 
     /** A step of the install refused, with the service's reason. */
     private class Refused(message: String) : Exception(message)
+
+    /** Both rewrite the whole demo: never two at once, nor with an import or a backup. */
+    override val longOperations = setOf("install", "remove")
 
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -62,18 +66,16 @@ class DemoService(private val context: Context) : ExecutableService {
             LogManager.service("Demo not read: ${e.message}", "ERROR", e)
             return OperationResult.error(s.shared("demo_error_unreadable").format(e.message ?: ""))
         }
-        DemoProgress.at(DemoProgress.Phase.ZONES)
+        LongOperation.at(s.shared("demo_phase_zones"))
         database.withTransaction { removeAll() }
         return try {
             addZoneGroup(content.group)
             build(content)
             fill(texts)
             automate(content)
-            DemoProgress.end()
             LogManager.service("Demo installed: ${content.zones.size} zones, ${content.tools.size} tools, ${content.variables.size} variables", "INFO")
             OperationResult.success(mapOf("zones" to content.zones.size, "tools" to content.tools.size, "variables" to content.variables.size))
         } catch (e: Refused) {
-            DemoProgress.end()
             database.withTransaction { removeAll() }
             DataChangeNotifier.notifyZonesChanged()
             LogManager.service("Demo not installed: ${e.message}", "ERROR")
@@ -91,7 +93,7 @@ class DemoService(private val context: Context) : ExecutableService {
         val (readingVariables, others) = content.tools.partition { DemoContent.readsVariable(it) }
         var created = 0
         suspend fun create(tool: JSONObject) {
-            DemoProgress.at(DemoProgress.Phase.TOOLS, created++, content.tools.size)
+            LongOperation.at(s.shared("demo_phase_tools").format((created++).toString(), content.tools.size.toString()))
             run("tools.create", DemoContent.paramsOf(tool))
         }
         others.forEach { create(it) }
@@ -107,13 +109,13 @@ class DemoService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * The automations, off: each one's seed session, its message the instruction, then the
-     * automation on it. Their provider is the first one configured, or the first there is when
+     * The automations, off — on, an automation calls the AI at the user's cost: each one's seed
+     * session, its message the instruction, then the automation on it; none has a past. Their provider is the first one configured, or the first there is when
      * none is: switching one on then says the provider is not configured.
      */
     private suspend fun automate(content: DemoContent) {
         if (content.automations.isEmpty()) return
-        DemoProgress.at(DemoProgress.Phase.AUTOMATIONS)
+        LongOperation.at(s.shared("demo_phase_automations"))
         @Suppress("UNCHECKED_CAST")
         val providers = run("ai_provider_config.list", JSONObject())["providers"] as List<Map<String, Any?>>
         val provider = (providers.firstOrNull { it["is_configured"] == true } ?: providers.first())["id"] as String
@@ -141,7 +143,7 @@ class DemoService(private val context: Context) : ExecutableService {
         var written = 0
         all.forEach { (tool, entries) ->
             if (entries.isEmpty()) return@forEach
-            DemoProgress.at(DemoProgress.Phase.ENTRIES, written, total)
+            LongOperation.at(s.shared("demo_phase_entries").format(written.toString(), total.toString()))
             written += entries.size
             val batch = run("tool_data.batch_create", JSONObject()
                 .put("tool_instance_id", tool)
@@ -149,7 +151,7 @@ class DemoService(private val context: Context) : ExecutableService {
             val failed = (batch["failed_count"] as? Number)?.toInt() ?: 0
             if (failed > 0) throw Refused("tool_data.batch_create $tool: $failed refused, ${batch["refusals"]}")
         }
-        DemoProgress.at(DemoProgress.Phase.GOALS)
+        LongOperation.at(s.shared("demo_phase_goals"))
         for (attempt in data.attempts()) {
             @Suppress("UNCHECKED_CAST")
             val tool = run("tools.get", JSONObject().put("tool_instance_id", attempt.toolId))["tool_instance"] as Map<String, Any?>
@@ -211,14 +213,10 @@ class DemoService(private val context: Context) : ExecutableService {
         return OperationResult.success()
     }
 
-    private suspend fun removeAll() {
-        val dao = database.demoDao()
-        dao.deleteEntries()
-        dao.deleteTools()
-        dao.deleteVariables()
-        dao.deleteSessions()
-        dao.deleteAutomations()
-        dao.deleteZones()
+    /** Everything of the demo (DemoRemoval); called inside a transaction. */
+    private fun removeAll() {
+        val db = database.openHelper.writableDatabase
+        DemoRemoval.STATEMENTS.forEach { db.execSQL(it) }
     }
 
     /**

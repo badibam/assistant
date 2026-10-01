@@ -4,8 +4,7 @@ import com.assistant.core.database.entities.ToolDataEntity
 import org.json.JSONObject
 
 /**
- * The rule between an item's due date and the mark of its notification
- * (docs/design/list-due-dates.md): the mark names the due date notified, so it only holds while
+ * The rule between an item's due date and the mark of its notification: the mark names the due date notified, so it only holds while
  * that date is still the item's. A date moved or removed makes the mark false, and it goes; the
  * date is then due anew, or no longer at all.
  */

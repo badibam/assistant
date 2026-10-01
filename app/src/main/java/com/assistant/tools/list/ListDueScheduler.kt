@@ -9,8 +9,7 @@ import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
 /**
- * Notifies the due dates of the lists that have them (docs/design/list-due-dates.md): at each
- * pass, every item whose due date has come, unchecked and not notified yet, gets one
+ * Notifies the due dates of the lists that have them: at each pass, every item whose due date has come, unchecked and not notified yet, gets one
  * notification — the list as its title, the item as its text — and its due date written as
  * notified. That mark is what makes the item wait, the waiting's conditions knowing no "now".
  */

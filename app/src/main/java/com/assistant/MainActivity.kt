@@ -10,10 +10,12 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
+import com.assistant.core.coordinator.isSuccess
 import androidx.compose.runtime.setValue
 import com.assistant.core.ui.screens.MainScreen
 import com.assistant.core.commands.CommandStatus
@@ -127,10 +129,24 @@ class MainActivity : ComponentActivity() {
                             com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
                             com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
                         ) {
-                            // The theme's sounds loaded, and the end of any list of the screens heard
+                            // The theme's sounds loaded
                             com.assistant.core.ui.sound.UISoundsLoader()
-                            androidx.compose.foundation.layout.Box(modifier = androidx.compose.ui.Modifier.scrollEndSound()) {
-                                MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
+                            // A long operation running shows over every screen; one whose caller
+                            // left (its screen closed) says once here how it ended
+                            androidx.compose.runtime.LaunchedEffect(Unit) {
+                                com.assistant.core.coordinator.LongOperation.unclaimed.collect { ended ->
+                                    val s = com.assistant.core.strings.Strings.`for`(context = this@MainActivity)
+                                    val message = if (ended.result.isSuccess) s.shared("long_operation_done").format(ended.label)
+                                        else s.shared("long_operation_failed").format(ended.label, ended.result.error ?: "")
+                                    com.assistant.core.ui.UI.Toast(this@MainActivity, message, com.assistant.core.ui.Duration.LONG)
+                                }
+                            }
+                            // The end of any list of the screens heard
+                            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().scrollEndSound()) {
+                                com.assistant.core.ui.components.LongOperationBar()
+                                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.weight(1f)) {
+                                    MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
+                                }
                             }
                         }
                     }

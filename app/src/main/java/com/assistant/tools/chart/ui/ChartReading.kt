@@ -27,7 +27,10 @@ sealed interface ChartReading {
             val now = System.currentTimeMillis()
             try {
                 val spec = ChartSpec.of(config, { s.shared(it) }, { s.tool(it) })
-                Drawn(spec, ChartSources(context).tables(spec, now), spec.period.instants(TimeResolver.at(now)), now)
+                val tables = ChartSources(context).tables(spec, now)
+                // How long a chart takes to read, beside the time its layout takes (ChartView)
+                LogManager.ui("Chart read in ${System.currentTimeMillis() - now} ms, ${tables.sumOf { it.rows.size }} rows", "INFO")
+                Drawn(spec, tables, spec.period.instants(TimeResolver.at(now)), now)
             } catch (e: IllegalArgumentException) {
                 Problem(e.message ?: "")
             } catch (e: IllegalStateException) {

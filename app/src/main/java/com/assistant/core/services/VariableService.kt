@@ -345,9 +345,15 @@ class VariableService(private val context: Context) : ExecutableService {
         }
     )
 
-    /** What the evaluator reads: the variables here, the entries through the core's services. */
+    /**
+     * What the evaluator reads: the variables here, the entries through the core's services. One
+     * per evaluation, at all its instants: an entry reached through a reference, and whether a
+     * thing still exists, are read once in it, however many entries name them.
+     */
     private inner class Sources : VariableSources {
         private val coordinator = Coordinator(context)
+        private val entriesRead = mutableMapOf<String, Map<String, Any?>?>()
+        private val goneRead = mutableMapOf<Pair<String, String>, Boolean>()
 
         override suspend fun variable(id: String): StoredVariable? = dao.getById(id)?.let { stored(it) }
 
@@ -380,7 +386,11 @@ class VariableService(private val context: Context) : ExecutableService {
             return (result.data?.get("entries") as? List<*>)?.filterIsInstance<Map<String, Any?>>()
         }
 
-        override suspend fun entry(id: String): Map<String, Any?>? {
+        // Not getOrPut: an entry gone is kept as null, which getOrPut would read again
+        override suspend fun entry(id: String): Map<String, Any?>? =
+            if (id in entriesRead) entriesRead[id] else readEntry(id).also { entriesRead[id] = it }
+
+        private suspend fun readEntry(id: String): Map<String, Any?>? {
             if (gone("ENTRY", id)) return null
             val result = coordinator.processUserAction("tool_data.get_single", mapOf("entry_id" to id))
             if (!result.isSuccess) throw IllegalStateException(result.error ?: "tool_data.get_single")
@@ -393,7 +403,9 @@ class VariableService(private val context: Context) : ExecutableService {
          *
          * @throws IllegalStateException when it cannot be read
          */
-        private suspend fun gone(kind: String, id: String): Boolean {
+        private suspend fun gone(kind: String, id: String): Boolean = goneRead.getOrPut(kind to id) { readGone(kind, id) }
+
+        private suspend fun readGone(kind: String, id: String): Boolean {
             val result = coordinator.processUserAction("references.names", mapOf("references" to listOf(mapOf("kind" to kind, "id" to id))))
             if (!result.isSuccess) throw IllegalStateException(result.error ?: "references.names")
             return ((result.data?.get("references") as? List<*>)?.firstOrNull() as? Map<*, *>)?.get("deleted") == true
