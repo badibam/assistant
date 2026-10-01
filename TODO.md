@@ -35,7 +35,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Une valeur comparée n'a pas de type à elle (constante d'un terme, valeur d'un filtre) : elle prend celui du champ en face, et se relit sans rien dire dans le nouveau type si ce champ en change (un nombre devenu durée) — quand une modification de config change le type d'un champ que des conditions ou des filtres enregistrés visent.
 - Une opération lourde en trois temps (lire, calculer longtemps sans bloquer les autres opérations, écrire), le résultat rendu à celui qui l'a lancée, un seul calcul lourd à la fois dans toute l'app et arrêté si son écran se ferme — au premier calcul qui fige l'app.
 - Streaming des réponses IA (Claude et OpenAI), avec le TCP keep-alive — quand des messages « requête envoyée, réponse perdue » s'accumulent dans les sessions : le réseau coupe les connexions restées silencieuses pendant la génération.
-- Le journal de l'app ne garde que ses ~12 000 dernières lignes, 24 minutes d'usage le 2026-10-01 (VERBOSE 7 562, DEBUG 2 439 dont 3 782 « Service result » du coordinateur) : les lignes utiles, migrations comprises, en sortent avant d'être lues. Réduire ce que VERBOSE et DEBUG écrivent, ou ne garder qu'eux en rotation courte.
+- Le journal de l'app ne garde que ses ~12 000 dernières lignes, 24 minutes d'usage le 2026-10-01 (VERBOSE 7 562 dont 3 782 « Service result » du coordinateur, DEBUG 2 439) : les lignes utiles, migrations comprises, en sortent avant d'être lues. Réduire ce que VERBOSE et DEBUG écrivent, ou ne garder qu'eux en rotation courte.
 
 ## Recette sur l'appareil
 
