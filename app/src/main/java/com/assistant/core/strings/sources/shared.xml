@@ -206,8 +206,8 @@
 
     <!-- AI Response Validation Errors -->
     <string name="ai_error_validation_multiple_action_types">Several command types present: %1$s. Only one type is allowed per answer.</string>
-    <string name="ai_error_validation_request_without_actions">validationRequest present without actionCommands. validationRequest is only allowed together with actionCommands.</string>
-    <string name="ai_error_posttext_without_actions">postText present without actionCommands. postText is only allowed together with actionCommands.</string>
+    <string name="ai_error_validation_request_without_actions">validation_request present without action_commands. validation_request is only allowed together with action_commands.</string>
+    <string name="ai_error_posttext_without_actions">post_text present without action_commands. post_text is only allowed together with action_commands.</string>
 
     <!-- Custom fields - Technical name -->
     <string name="error_field_name_unknown">Unknown technical name: %1$s. A technical name is assigned by the app and is not chosen: omit \'name\' to create a field, and repeat it as is to designate an existing field. Renaming it would destroy the values already recorded; \'display_name\' is the one that can be changed freely.</string>
@@ -1081,10 +1081,10 @@
     <string name="ai_schema_message_response_name">Structured AI answer</string>
     <string name="ai_schema_message_response_desc">Validation schema for the structured answers of the AI</string>
     <string name="ai_schema_field_pretext_desc">Explanation of what you are about to do or of your answer (always required)</string>
-    <string name="ai_schema_field_validation_request_desc">Optional validation request (Boolean, only together with actionCommands)</string>
-    <string name="ai_schema_field_data_commands_desc">Data request commands (mutually exclusive with actionCommands and communicationModule)</string>
-    <string name="ai_schema_field_action_commands_desc">Action commands to run (mutually exclusive with dataCommands and communicationModule)</string>
-    <string name="ai_schema_field_posttext_desc">Text to show after the actions have run successfully (only together with actionCommands)</string>
+    <string name="ai_schema_field_validation_request_desc">Optional validation request (Boolean, only together with action_commands)</string>
+    <string name="ai_schema_field_data_commands_desc">Data request commands (mutually exclusive with action_commands and communication_module)</string>
+    <string name="ai_schema_field_action_commands_desc">Action commands to run (mutually exclusive with data_commands and communication_module)</string>
+    <string name="ai_schema_field_posttext_desc">Text to show after the actions have run successfully (only together with action_commands)</string>
     <string name="ai_schema_field_keep_control_desc">Keep control after the actions succeed, to chain further actions. In that case you will still see what the commands of the current message returned (successes, failures, ids of the created objects, and so on). Useful for multi-step sequences with intermediate system feedback.</string>
     <string name="ai_schema_field_communication_module_desc">A question to the user as a list of fields, with the schema communication_module (mutually exclusive with data_commands and action_commands)</string>
 

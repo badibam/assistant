@@ -18,7 +18,8 @@ La dette du `manifest.md` (adresse OpenAI en dur, prix d'un serveur inconnu) se 
 ## Le banc
 
 - **L'app joue les scénarios elle-même** : la vraie session, le vrai pipeline, autant de tours qu'il en faut.
-- **Lancement** : des tests d'instrumentation (`androidTest/`), un par scénario, le modèle en argument, lancés par `./run bench`, qui rassemble les résultats dans le terminal et un fichier. Rien dans l'app livrée. **Sur l'émulateur seulement** : ces tests écrivent dans la base de l'app.
+- **Le jeu** : un test d'instrumentation (`BenchScenario`) qui ne connaît aucun scénario : base vidée, fournisseur configuré, démo installée, message envoyé ou automation lancée, attente du repos de la session (une validation ou des données au-delà du seuil acceptées et comptées, une question à l'utilisateur arrête le jeu). Il copie la base avant et après (`VACUUM INTO`). Rien dans l'app livrée. **Sur l'émulateur seulement** : il vide la base de l'app ; l'émulateur passé en français, la démo suivant la langue du téléphone.
+- **Le jugement** : `scripts/bench_checks.py`, sur les deux copies, en Python ; `scripts/bench.py` installe, joue, juge et compte.
 - **Base de départ : la démo** (`assets/demo/`, installée par `DemoService`). Avant chaque scénario : base vidée, fournisseur reconfiguré depuis les arguments, démo installée (`demo.install`). Le modèle cherche le bon outil parmi une vingtaine, comme en vrai, et les scénarios s'écrivent contre des données connues. Le banc se construit après la démo. Aucun résultat n'est figé ni simulé : seul l'app sait ce que répond une requête, et deux requêtes justes écrites par un modèle ne sont presque jamais identiques.
 - **Deux adresses** :
   - OpenRouter, pour cartographier les capacités par taille de modèle : une clé, des centaines de modèles libres, un filtre sur l'hébergeur (forçage par schéma accepté) et sur la compression du modèle (pour tester un modèle compressé comme il le serait sur la machine visée).
@@ -36,13 +37,13 @@ En français, l'émulateur réglé en français : la démo prend la langue du t�
 1. « J'ai bu 2 verres d'eau » — Eau : +2 au compte du jour.
 2. « Footing de 7,5 km ce matin en 42 minutes, ressenti 4 » — Sorties : 7,5, Durée 42 min, Type footing, Ressenti 4, daté de ce matin.
 3. « Cette nuit j'ai dormi 6 h 50, qualité moyenne » — Sommeil : 6 h 50 datée de la nuit passée, Qualité au milieu de l'échelle.
-4. « Ce midi : 150 g de riz et 120 g de poulet » — Repas : deux entrées au déjeuner, chacune la bonne fiche d'Aliments et sa quantité.
+4. « Ce midi : 150 g de patate douce et 120 g de poulet » — Repas : deux entrées au déjeuner, chacune la bonne fiche d'Aliments et sa quantité.
 5. « Ajoute du parmesan aux courses et coche le lait » — Courses : un élément ajouté, « lait » coché.
 6. « Note : les tomates cerises commencent à rougir » — une entrée dans Observations ou dans le Carnet du balcon, l'un ou l'autre.
 
 ### Lecture (CHAT) — le chiffre ou le nom dans la réponse, rien d'écrit
 
-1. « Quelles tâches sont en retard ? » — « Relancer la Librairie ».
+1. « Quelles tâches sont en retard ? » — toutes les tâches non cochées dont l'échéance est passée au moment de la question, nommées (cinq dans la démo, « Rappeler Studio Brume » le devenant une minute après l'installation).
 2. « Combien de km j'ai couru cette semaine ? » — somme des Sorties depuis lundi, ±0,1.
 3. « Mon poids moyen sur les 7 derniers jours ? » — moyenne des pesées, ±0,1 ; calculée ou lue dans `poids_moyen_7j_demo`.
 4. « Combien d'heures facturables pour Studio Brume ce mois-ci ? » — Heures du client, Facturable oui, depuis le 1er ; chronomètre en cours compté ou non, les deux acceptés.
@@ -64,11 +65,11 @@ En français, l'émulateur réglé en français : la démo prend la langue du t�
 
 ### Ce que la démo doit porter pour le banc
 
-Les scénarios citent ces noms et contenus de la démo : en changer un dans `assets/demo/` se reporte ici. Eau, Sorties, Sommeil, Repas et les fiches « Riz » et « Poulet » d'Aliments ; Courses et son « lait » non coché (saisie 5) ; Observations, Carnet du balcon ; Tâches et « Relancer la Librairie » en retard ; Heures et Studio Brume ; `poids_moyen_7j_demo`, `objectif_km_demo` ; le Carnet d'entraînement de Course (groupe Analyse), qu'écrit le Bilan de la semaine (automation 3) ; les trois automations.
+Les scénarios citent ces noms et contenus de la démo : en changer un dans `assets/demo/` se reporte ici. Eau, Sorties, Sommeil, Repas et les fiches « Patate douce » et « Poulet » d'Aliments ; Courses et son « lait » non coché (saisie 5) ; Observations, Carnet du balcon ; Tâches et « Relancer la Librairie » en retard ; Heures et Studio Brume ; `poids_moyen_7j_demo`, `objectif_km_demo` ; le Carnet d'entraînement de Course (groupe Analyse), qu'écrit le Bilan de la semaine (automation 3) ; les trois automations.
 
 ## Le lancement
 
-`./run bench` : un menu pour choisir les modèles (liste versionnée, rangée par classe de machine). Avant de lancer : le nombre d'appels et le coût estimé, puis confirmation. Chaque résultat s'affiche au fil de l'eau ; à la fin, un tableau scénario × modèle avec le coût réel, qu'OpenRouter rend à chaque appel (`usage.cost`).
+`./run bench` : un menu pour choisir les modèles (rangés par classe de machine) et les niveaux de forçage. Avant de lancer : le nombre de scénarios et le coût estimé, puis confirmation. Chaque résultat s'affiche au fil de l'eau ; à la fin, sous `tmp/bench/<date>/`, un tableau scénario × modèle et niveau, et le coût réel : les tokens que l'app a stockés, au prix du catalogue d'OpenRouter. `scripts/bench.py play <modèle> <scénario> [<forçage>]` joue un seul scénario, pour un diagnostic.
 
 ## Campagne 1
 
@@ -88,7 +89,7 @@ Le téléphone : le banc dit si un 3B comprend un prompt de ≈ 29k tokens, pas 
 
 ### Ce qu'elle mesure
 
-Le prompt actuel (degrés 1 et 2), sur toute l'échelle des tailles, chaque modèle libre avec la sortie forcée au schéma exact : la configuration où on l'utiliserait. Le format ne peut plus céder, un échec dit donc le fond (mauvaise commande, mauvais paramètre). Un modèle qui échoue est repassé à la main sans forçage : le forçage peut gêner le raisonnement de certains modèles. Les niveaux « aucun » et « JSON valide » du fournisseur servent à ce diagnostic. L'app lit un objet JSON unique entouré de texte en écartant le texte (`ResponseEnvelope.split`, message système `TEXT_OUTSIDE_JSON`) : le banc compte ces réponses à part, sans quoi la forme paraîtrait tenir quand elle cède.
+Le prompt actuel (degrés 1 et 2), sur toute l'échelle des tailles, chaque modèle deux fois : sans forçage et au schéma exact ; son meilleur niveau dit ce qu'on réglerait. Mesuré le 2026-10-01 sur « J'ai bu 2 verres d'eau » : `deepseek-v4-flash` au schéma exact répond dix fois `pre_text` et `validation_request` sans commande, ce que le schéma permet et que l'app refuse, jusqu'à la limite de tours ; sans forçage ou en JSON valide il réussit, comme `gpt-oss-120b` aux deux niveaux. Un seul niveau aurait jugé faux l'un ou l'autre. L'app lit un objet JSON unique entouré de texte en écartant le texte (`ResponseEnvelope.split`, message système `TEXT_OUTSIDE_JSON`) : le banc compte ces réponses à part, sans quoi la forme paraîtrait tenir quand elle cède.
 
 ## Hypothèses de niveaux de prompt
 
