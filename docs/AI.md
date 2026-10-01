@@ -342,11 +342,13 @@ La recherche de la prochaine occurrence démarre au plus tôt à `maintenant −
 
 ### Reprise sessions
 Détection automatique sessions orphelines par AutomationScheduler :
-- **endReason null** : Crash/interruption → reprise transparente
+- **endReason null** : Crash/interruption → reprise transparente, sauf pendant des actions (ci-dessous)
 - **NETWORK_ERROR** : Échec réseau → reprise avec retry
 - **SUSPENDED** : Éviction système → reprise quand slot libre
 
 **Transparence** : Pas de message système, IA ne sait pas qu'elle reprend (continue naturellement).
+
+**Actions coupées par la fermeture de l'app** : une session restaurée en `EXECUTING_ACTIONS` ne rejoue jamais ses actions, qu'une reprise ferait deux fois (une création, un import). Un message, envoyé aussi à l'IA, dit que celles terminées avant ont eu lieu et les autres non ; un CHAT revient à `IDLE` par `INTERRUPTED`, une AUTOMATION se ferme en `INTERRUPTED`, que l'AutomationScheduler ne reprend pas. Les lectures et l'appel IA se reprennent comme avant.
 
 ### SessionEndReason
 Raison d'arrêt session (audit + logique reprise) :
@@ -456,6 +458,8 @@ Event NetworkErrorOccurred:
 **Timeout HTTP** (providers) : connexion 15 s, lecture 10 min, écriture 2 min. Sans streaming, rien n'arrive avant la fin de la génération : le délai de lecture couvre une réponse longue entière.
 
 **Appel en cours** : `callAI` tourne dans sa propre tâche, hors de la boucle qui traite les changements d'état. `SessionCompleted` (dont STOP) et `AIRoundInterrupted` (Interrompre, CHAT) l'annulent avant la transition, ce qui ferme la connexion HTTP (`OkHttpClient.awaitReply()`) : rien n'est gardé de la réponse. Interrompre passe par `INTERRUPTED`, le temps d'écrire le message d'interruption, puis revient à `IDLE`.
+
+**Actions en cours** : `executeActions` tourne aussi dans sa propre tâche ; Stop et Interrompre l'annulent, l'opération en cours est abandonnée (une écriture en une transaction n'écrit rien) et un message, envoyé à l'IA, dit que les actions terminées avant ont eu lieu et les autres non.
 
 **Appel parti sans réponse** : coupé après l'envoi de la requête (Stop, Interrompre) ou perdu (`LOST`), l'appel a peut-être été facturé et son usage est inconnu. Son message système le dit et porte `usage_unknown`. Un appel coupé avant l'envoi n'a rien coûté et n'est pas marqué ; `RequestSent`, posé dans le contexte de la coroutine autour de l'appel, fait la différence.
 
