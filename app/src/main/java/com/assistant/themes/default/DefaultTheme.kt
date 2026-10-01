@@ -171,7 +171,27 @@ object DefaultTheme : ThemeContract {
                 error = Color(0xFFB04545),          // Deep red (5.6 on white)
                 onError = Color(0xFFFFFFFF),        // White
                 outline = Color(0xFFA8B2C5),        // Blue grey
-                outlineVariant = Color(0xFFD4DBE7)  // Light blue grey
+                outlineVariant = Color(0xFFD4DBE7), // Light blue grey
+                // Every other role named too: left out, Material fills it with its own violets
+                // (a chosen segment, a menu, a dialog, a date picker)
+                primaryContainer = Color(0xFFDCE4F5),
+                onPrimaryContainer = Color(0xFF1C2B4D),
+                secondaryContainer = Color(0xFFDDE3EE),
+                onSecondaryContainer = Color(0xFF222B3C),
+                tertiaryContainer = Color(0xFFFFDCC8),
+                onTertiaryContainer = Color(0xFF4A2E1A),
+                errorContainer = Color(0xFFF6DADA),
+                onErrorContainer = Color(0xFF5A1C1C),
+                inverseSurface = Color(0xFF2B303B),
+                inverseOnSurface = Color(0xFFEEF1F6),
+                inversePrimary = Color(0xFFAFC4F0),
+                surfaceBright = Color(0xFFFFFFFF),
+                surfaceDim = Color(0xFFDCE1EA),
+                surfaceContainerLowest = Color(0xFFFFFFFF),
+                surfaceContainerLow = Color(0xFFF7F9FC),
+                surfaceContainer = Color(0xFFF1F4F9),
+                surfaceContainerHigh = Color(0xFFEBEFF5),
+                surfaceContainerHighest = Color(0xFFE2E8F2)
             )
             "default_dark" -> darkColorScheme(
                 primary = Color(0xFF9BB8E8),        // Bleu ciel doux mais vif
