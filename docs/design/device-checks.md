@@ -7,6 +7,10 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Importer une sauvegarde faite avant la mise à jour (base 52 ou plus ancienne) : chaque zone montre ses outils dans le même ordre, l'accueil ses zones de même ; les récurrences et les pointeurs se relisent. Juste après, l'écran des journaux filtré sur « Error » ne montre aucune ligne `MIGRATION`.
 - Un pointeur qui filtrait un instant par « = » (avant la migration 52) est refusé en le disant : rien ne part en silence.
 
+## Démo
+
+- Réglages › Démo : désactiver « Installer la démo à chaque mise à jour » et enregistrer ne supprime rien, la démo reste ; réinstaller l'APK la laisse telle quelle ; réactiver le réglage n'installe rien avant la mise à jour suivante.
+
 ## Chat IA
 
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
