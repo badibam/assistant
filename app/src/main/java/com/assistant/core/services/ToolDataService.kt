@@ -108,8 +108,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val tooltype = target.tool.tooltype
 
         // Payloads arrive in milliseconds from every caller, so they are stored as they come.
-        // Fields the schema marks system-managed are the app's to produce, not the caller's.
-        val dataJson = SystemManagedFields.dropFromData(params.optJSONObject("data") ?: JSONObject(), target.schema.content).toString()
+        // Fields the schema marks system-managed are the app's to produce: kept from the app
+        // itself, dropped from a screen or the AI.
+        val sent = params.optJSONObject("data") ?: JSONObject()
+        val dataJson = (if (com.assistant.core.coordinator.calledByTheApp()) sent else SystemManagedFields.dropFromData(sent, target.schema.content)).toString()
         val extraJson = params.optJSONObject("extra")?.takeIf { it.length() > 0 }?.toString()
         // State is written by the app and the entry's actions (a note's position, a message's
         // status), never entered in a form
@@ -316,9 +318,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
 
         // Payloads arrive in milliseconds from every caller, so they are stored as they come.
-        // Fields the schema marks system-managed are the app's to produce, not the caller's.
+        // Fields the schema marks system-managed are the app's to produce: kept from the app
+        // itself, dropped from a screen or the AI.
+        val byTheApp = com.assistant.core.coordinator.calledByTheApp()
         val dataJson = params.optJSONObject("data")
-            ?.let { SystemManagedFields.dropFromData(it, target.schema.content).toString() }
+            ?.let { (if (byTheApp) it else SystemManagedFields.dropFromData(it, target.schema.content)).toString() }
         val extraJson = params.optJSONObject("extra")
         val stateJson = params.optJSONObject("state")
 

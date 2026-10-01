@@ -51,11 +51,11 @@ Aucun schéma n'est écrit à la main ni nommé dans une donnée : ils sont gén
 - **Face à l'IA** : un schéma se demande par `tooltype` (config), `tool_instance_id` (entrées) ou `id` (les autres : `zone_config`, `field_type_TEXT`…). Son nom calculé (`tracking_config`, `tracking_data`) ne sert qu'à ne pas renvoyer deux fois le même schéma.
 - **Ce que l'IA lit d'un schéma** : pas le JSON Schema, qui ne sert qu'à valider, mais sa notation (`SchemaNotation`) : une ligne par valeur, avec son libellé et sa description une seule fois, et les réglages communs d'une variante écrits une fois au lieu d'une par option. Une liste de définitions de champ y renvoie à la section Fields du prompt, qui la décrit une fois. Un mot-clé que la notation ne sait pas écrire fait échouer l'envoi plutôt que de disparaître.
 
-Un champ marqué `"system_managed": true` est à l'app de le produire, jamais à l'appelant. Dans `data`, le service retire tout champ marqué de ce qu'on lui envoie (`SystemManagedFields`) ; à la racine, il ne lit que des paramètres nommés.
+Un champ marqué `"system_managed": true` est à l'app de le produire, jamais à l'appelant. Dans `data`, le service retire tout champ marqué de ce qu'envoie un écran ou l'IA, et le garde quand c'est l'app elle-même qui écrit — un service depuis sa propre opération, un planificateur, l'origine `SYSTEM` (`Origin.byTheApp`, `SystemManagedFields`) ; un import n'offre pas ces champs à ses colonnes. À la racine, il ne lit que des paramètres nommés.
 
 La validation que font les écrans avant d'appeler le service sert à répondre tôt dans le formulaire ; elle n'est pas la garde.
 
-**Champ `id`** : pas `system_managed`, puisqu'une modification le nomme pour désigner l'entrée. Une création l'ignore : le service génère l'identifiant.
+**Champ `id`** : pas `system_managed`, puisqu'une modification le nomme pour désigner l'entrée. Une création le génère ; seule l'app elle-même en donne un, préfixé `demo-`, pour la démo (`GivenId`) — d'un écran ou de l'IA, un `id` donné à une création est refusé.
 
 ##
 ## Propagation des modifications

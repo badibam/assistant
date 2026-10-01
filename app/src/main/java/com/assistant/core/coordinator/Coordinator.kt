@@ -28,7 +28,9 @@ class Coordinator(context: Context) {
      * another), it keeps that operation's origin: the AI's import writes its lines as the AI.
      */
     suspend fun processUserAction(action: String, params: Map<String, Any?> = emptyMap()): CommandResult {
-        val command = convertToDispatchCommand(action, params, kotlin.coroutines.coroutineContext[Origin]?.source ?: Source.USER)
+        // From inside an operation, the call is the app's own, whoever started that operation
+        val running = kotlin.coroutines.coroutineContext[Origin]
+        val command = convertToDispatchCommand(action, params, running?.source ?: Source.USER, byTheApp = running != null)
         return execute(command)
     }
     
@@ -43,23 +45,24 @@ class Coordinator(context: Context) {
         Source.USER -> processUserAction(action, params)
         Source.AI -> processAICommand(action, params)
         Source.SCHEDULER -> processScheduledTask(action, params)
-        Source.SYSTEM -> execute(convertToDispatchCommand(action, params, Source.SYSTEM))
+        Source.SYSTEM -> execute(convertToDispatchCommand(action, params, Source.SYSTEM, byTheApp = true))
     }
 
     /** A task of a scheduler, which no one is watching. */
     suspend fun processScheduledTask(task: String, params: Map<String, Any?> = emptyMap()): CommandResult {
-        val command = convertToDispatchCommand(task, params, Source.SCHEDULER)
+        val command = convertToDispatchCommand(task, params, Source.SCHEDULER, byTheApp = true)
         return execute(command)
     }
     
     /**
      * Convert action/params to DispatchCommand object
      */
-    private fun convertToDispatchCommand(action: String, params: Map<String, Any?>, source: Source): DispatchCommand {
+    private fun convertToDispatchCommand(action: String, params: Map<String, Any?>, source: Source, byTheApp: Boolean = false): DispatchCommand {
         return DispatchCommand(
             action = action,
             params = params,
             source = source,
+            byTheApp = byTheApp,
             id = null
         )
     }
@@ -117,7 +120,7 @@ class Coordinator(context: Context) {
             val params = com.assistant.core.utils.JsonUtils.toJSONObject(command.params)
 
             // The origin goes with the operation, for its service and every call made from it
-            val result = kotlinx.coroutines.withContext(Origin(command.source)) { service.execute(operation, params, token) }
+            val result = kotlinx.coroutines.withContext(Origin(command.source, command.byTheApp)) { service.execute(operation, params, token) }
             LogManager.coordination("Service result: success=${result.success}, error=${result.error}", "VERBOSE")
             
             CommandResult(

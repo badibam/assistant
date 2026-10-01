@@ -8,6 +8,7 @@ data class DispatchCommand(
     val action: String,                         // "zones.create", "tracking.add_entry" 
     val params: Map<String, Any?> = emptyMap(), // Command parameters; a null asks for the field to be emptied
     val source: Source = Source.USER,           // Who initiated this command
+    val byTheApp: Boolean = false,              // Made by the app itself (Origin.byTheApp)
     val id: String? = null                      // Optional command ID for tracking
 ) {
     

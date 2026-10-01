@@ -67,8 +67,11 @@ class ImportService(private val context: Context) : ExecutableService {
         val entryFields = toolType.getEntryFields(config, context)
         val uniqueName = entryFields.nameUnique
         val nameRequired = entryFields.name == CoreFieldUsage.REQUIRED
-        // What a column may fill: the name, the date, the tool type's fields and the user's
-        val fields = ToolFields.filterable(toolInstanceId, context, s).filterKeys { !it.startsWith("state.") && it != "created_at" && it != "updated_at" }
+        // What a column may fill: the name, the date, the tool type's fields and the user's — not
+        // a field the app alone writes (a goal attempt's copy), which a file has nothing to say in;
+        // the lines are written from inside this operation, where the service would keep it
+        val appWritten = entryFields.data.filter { it.systemWritten }.map { "data.${it.definition.name}" }.toSet()
+        val fields = ToolFields.filterable(toolInstanceId, context, s).filterKeys { !it.startsWith("state.") && it != "created_at" && it != "updated_at" && it !in appWritten }
         val zone = AppConfigManager.getDateTimeConfig().getZoneId()
 
         return when (operation) {

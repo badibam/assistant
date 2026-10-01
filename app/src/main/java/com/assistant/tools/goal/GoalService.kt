@@ -83,9 +83,16 @@ class GoalService(private val context: Context) : ExecutableService {
         return Attempt(id, toolInstanceId, (entry["timestamp"] as Number).toLong(), obj("data"), obj("state"), config)
     }
 
-    /** The definition an attempt is judged by: the goal's while it is open, its own copy once locked. */
+    /**
+     * The definition an attempt is judged by: the goal's while it is open, its own copy once locked.
+     *
+     * @throws IllegalStateException for a locked attempt without its copy, which an attempt opened
+     *         before the copy was kept may be: judged by no definition, it would say nothing true
+     */
     private fun definitionOf(attempt: Attempt): GoalDefinition =
-        if (attempt.locked) GoalDefinition.of(JSONObject(attempt.data.optString(GoalToolType.DEFINITION, "{}")))
+        if (attempt.locked) GoalDefinition.of(JSONObject(
+            attempt.data.optString(GoalToolType.DEFINITION).takeIf { it.isNotEmpty() } ?: throw IllegalStateException(s.tool("error_no_definition"))
+        ))
         else GoalDefinition.of(attempt.config)
 
     /** The instant a read criterion is read at: the end of the period, now while it runs. */

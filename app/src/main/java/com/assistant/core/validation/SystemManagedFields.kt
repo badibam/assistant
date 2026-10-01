@@ -4,8 +4,9 @@ import org.json.JSONObject
 
 /**
  * The fields a data schema marks "system_managed": true, whose value the app produces and no
- * caller supplies. The mark is the rule: ToolDataService drops such a field from what a caller
- * sends inside "data" (a message occurrence's copies of its template are written by the scheduler).
+ * outside caller supplies. The mark is the rule: ToolDataService drops such a field from what a
+ * screen or the AI sends inside "data", and keeps it from the app itself (Origin.byTheApp) — a
+ * goal's scheduler and its validation writing an attempt's copy of the goal.
  *
  * At the root of an entry the service reads named params only and derives the marked ones
  * itself -- tooltype from the tool, the timestamps from the clock --

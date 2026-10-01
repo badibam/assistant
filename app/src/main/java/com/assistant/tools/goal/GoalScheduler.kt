@@ -122,7 +122,8 @@ object GoalScheduler : ToolScheduler {
             attempts.filter { it.state.optString(GoalToolType.STATUS) == GoalToolType.Status.ACTIVE }.forEach {
                 setState(coordinator, it.id, mapOf(GoalToolType.STATUS to GoalToolType.Status.TO_VALIDATE))
             }
-            val created = coordinator.processUserAction("tool_data.create", mapOf(
+            // As the scheduler: the copy of the definition is the app's to write
+            val created = coordinator.processScheduledTask("tool_data.create", mapOf(
                 "tool_instance_id" to id,
                 "name" to (config.optString("name").ifEmpty { s.tool("display_name") }),
                 "timestamp" to start,
