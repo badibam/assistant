@@ -38,6 +38,8 @@ internal fun PromptData.toOpenAIJson(model: String, temperature: Double, maxOutp
         put("model", model)
         put("temperature", temperature)
         put("max_output_tokens", maxOutputTokens)
+        // JSON mode: the answer is one JSON object, as the prompt asks, never text around it
+        putJsonObject("text") { putJsonObject("format") { put("type", "json_object") } }
 
         // Build input as array of messages
         putJsonArray("input") {
