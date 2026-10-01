@@ -27,7 +27,7 @@ La dette du `manifest.md` (adresse OpenAI en dur, prix d'un serveur inconnu) se 
 
 ## Campagne 1
 
-Le prompt actuel (degrés 1 et 2), avec et sans forçage de la sortie par le schéma de la réponse de l'IA (que l'app génère déjà), sur toute l'échelle des tailles. Deux variables seulement. Elle dit à quelle taille le prompt casse, et si c'est la forme (JSON invalide) ou le fond (mauvaise commande, mauvais paramètre) qui cède.
+Le prompt actuel (degrés 1 et 2), avec et sans forçage de la sortie par le schéma de la réponse de l'IA (que l'app génère déjà), sur toute l'échelle des tailles. Deux variables seulement. Elle dit à quelle taille le prompt casse, et si c'est la forme (JSON invalide) ou le fond (mauvaise commande, mauvais paramètre) qui cède. L'app lit un objet JSON unique entouré de texte en écartant le texte (`ResponseEnvelope.split`, message système `TEXT_OUTSIDE_JSON`) : le banc compte ces réponses à part, sans quoi la forme paraîtrait tenir quand elle cède.
 
 ## Hypothèses de niveaux de prompt
 
