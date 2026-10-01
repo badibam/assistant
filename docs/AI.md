@@ -570,12 +570,14 @@ interface AIProvider {
     fun getDisplayName(): String
     fun getConfigSettings(context: Context): List<SettingNode>
     fun getConfigHelp(context: Context): String
-    suspend fun listModels(apiKey: String): ProviderModels
+    fun modelListingSettings(): List<String>          // par défaut ["api_key"]
+    suspend fun listModels(config: JSONObject): ProviderModels
+    fun configError(config: JSONObject, context: Context): String?  // par défaut null
     suspend fun query(promptData: PromptData, config: String): AIResponse
 }
 ```
 
-**Config** : déclarée avec les champs (`getConfigSettings`) ; la clé d'API est un réglage `secret`, saisi masqué. Le schéma (`AIProviderSettings.schema`), contre lequel `AIProviderConfigService` vérifie toute écriture, et l'écran (`AIProviderConfigScreen`) en sont générés ; le modèle se choisit parmi ceux que liste `listModels` pour la clé saisie. Le code lit une config par `AIProviderSettings.read`.
+**Config** : déclarée avec les champs (`getConfigSettings`) ; la clé d'API est un réglage `secret`, saisi masqué. Le schéma (`AIProviderSettings.schema`), contre lequel `AIProviderConfigService` vérifie toute écriture, et l'écran (`AIProviderConfigScreen`) en sont générés ; le modèle se choisit parmi ceux que liste `listModels`, une fois remplis les réglages que nomme `modelListingSettings` (la clé, ou l'adresse pour un serveur compatible) ; changer l'un d'eux efface la liste. `configError` porte ce que le schéma ne sait pas dire (la forme d'une adresse) : le service refuse la config à l'enregistrement. Le code lit une config par `AIProviderSettings.read`.
 
 **Responsabilités provider** : Parser config, transformer promptData (structure spécifique API), fusionner messages (contraintes alternance si applicable), appeler API HTTP, parser réponse (content, tokens, erreurs).
 
@@ -606,6 +608,15 @@ DeepSeek passe par `ClaudeProviderCore` sur son endpoint `/anthropic` (`Messages
 - Pas de suffixe `[1m]` sur l'ID du modèle. L'API l'accepte et répond avec le modèle sans suffixe (mesuré le 2026-09-19) ; son effet sur la taille du contexte n'est pas mesuré. La doc Claude Code le décrit comme un réglage de la fenêtre de contexte de Claude Code lui-même.
 - `cache_control` ignoré : le cache de contexte de DeepSeek est automatique. Il reprend d'un appel à l'autre tout le début identique, conversation comprise, message daté final et raisonnement retiré n'y changeant rien (mesuré le 2026-09-25) ; ce qui change avant l'historique, comme un L3 reconstruit, l'arrête là.
 - La réponse commence par un bloc `thinking` : le parsing lit le bloc `text`.
+
+### Compatible OpenAI - Chat Completions à une adresse réglable
+`OpenAICompatibleProviderCore` sert tout serveur qui parle `/chat/completions` : Ollama, llama.cpp, vLLM, LM Studio, OpenRouter. Le fournisseur OpenAI reste sur `/v1/responses`, que ces serveurs ne servent pas tous. Deux variantes, `compatible_standard` et `compatible_economic`. Pourquoi ce fournisseur existe : `docs/design/local-models.md`.
+- Adresse de base (`base_url`, celle qui précède `/chat/completions`, souvent en `/v1`) **en https seulement** : le prompt porte les données de l'utilisateur. Refusée à l'enregistrement (`configError`), à la liste des modèles et à l'appel. Aucune exception de trafic en clair n'est déclarée dans l'app.
+- Clé facultative, envoyée en `Bearer` quand elle existe. Les modèles se listent par `GET /models` dès que l'adresse est remplie.
+- Forçage de la sortie (`output_forcing`), choix obligatoire : `none`, `json` (`response_format: json_object`), `schema` (`json_schema` portant le schéma de la réponse de l'IA tel que le modèle le lit, `SchemaModelView`). Un serveur qui refuse le niveau rend une erreur, affichée telle quelle.
+- L1, L2 et L3 partent en **un seul** message système : certains gabarits de conversation refusent un second message système.
+- Une réponse coupée par la limite (`finish_reason: length`) est refusée. `prompt_tokens` et `completion_tokens` sont exigés, `cached_tokens` facultatif.
+- Coût : la liste LiteLLM comme ailleurs ; un modèle qu'elle ignore a un coût inconnu.
 
 ### Configuration
 Configurations gérées par `AIProviderConfigService`, providers découverts via `AIProviderRegistry`, `AIClient` utilise coordinator (pas d'accès DB direct).

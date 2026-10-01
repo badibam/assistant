@@ -979,7 +979,6 @@
     <string name="ai_provider_fetching_models">Retrieving the models...</string>
     <string name="ai_provider_no_models">No model available</string>
     <string name="ai_provider_fetch_error">Error: %1$s</string>
-    <string name="ai_provider_enter_api_key_first">Please enter an API key first</string>
     <string name="ai_provider_claude_effort">Reasoning effort</string>
     <string name="ai_provider_claude_schema_effort">Reasoning effort asked of the model</string>
     <string name="ai_provider_claude_effort_low">Low</string>
@@ -1002,6 +1001,21 @@
     <string name="ai_provider_openai_schema_model">OpenAI model to use</string>
     <string name="ai_provider_openai_schema_temperature">Sampling temperature (0.0 to 2.0)</string>
     <string name="ai_provider_openai_schema_max_output_tokens">Maximum token limit for the answers</string>
+    <string name="ai_provider_fill_in_first">Fill in first: %1$s</string>
+    <string name="ai_provider_compatible_base_url">Server address</string>
+    <string name="ai_provider_compatible_schema_base_url">Base address of the server\'s OpenAI-compatible API, https only (e.g. https://openrouter.ai/api/v1)</string>
+    <string name="ai_provider_compatible_api_key">API key (if the server asks for one)</string>
+    <string name="ai_provider_compatible_schema_api_key">Key sent to the server as a bearer token; none for a server that asks for none</string>
+    <string name="ai_provider_compatible_model">Model</string>
+    <string name="ai_provider_compatible_schema_model">Model to use, among those the server lists</string>
+    <string name="ai_provider_compatible_output_forcing">Output forcing</string>
+    <string name="ai_provider_compatible_schema_output_forcing">How far the server holds the answer to a form: none, any valid JSON, or the exact schema of the answer</string>
+    <string name="ai_provider_compatible_output_forcing_none">None</string>
+    <string name="ai_provider_compatible_output_forcing_json">Valid JSON</string>
+    <string name="ai_provider_compatible_output_forcing_schema">Exact schema</string>
+    <string name="ai_provider_compatible_help">Any server speaking the OpenAI Chat Completions API: Ollama, llama.cpp, vLLM, LM Studio, OpenRouter. The address ends before /chat/completions, usually with /v1 (Ollama: https://&lt;host&gt;/v1). Only https: plain http would send your data in clear. A server at home can get a certificate through tailscale serve or a reverse proxy such as Caddy.</string>
+    <string name="ai_provider_compatible_output_forcing_help">Output forcing: the server holds the model to valid JSON, or to the exact schema of the answer. Small models need it most; a server that does not support the level chosen answers an error.</string>
+    <string name="ai_provider_compatible_https_required">The server address must start with https://: plain http would send your data in clear</string>
 
     <!-- AI ERRORS - Provider related (additional) -->
     <string name="ai_error_no_provider_configured">No AI provider configured. Please configure a provider in the settings.</string>

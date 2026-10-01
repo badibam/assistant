@@ -3,6 +3,7 @@ package com.assistant.core.ai.providers
 import android.content.Context
 import com.assistant.core.ai.data.PromptData
 import com.assistant.core.fields.settings.SettingNode
+import org.json.JSONObject
 
 /**
  * Claude AI Provider - Standard variant
@@ -41,7 +42,7 @@ class ClaudeStandardProvider(private val context: Context) : AIProvider {
 
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
-    override suspend fun listModels(apiKey: String): ProviderModels = core.fetchAvailableModels(apiKey)
+    override suspend fun listModels(config: JSONObject): ProviderModels = core.fetchAvailableModels(config.getString("api_key"))
 
     /**
      * Send query to Claude API with PromptData
@@ -89,7 +90,7 @@ class ClaudeEconomicProvider(private val context: Context) : AIProvider {
 
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
-    override suspend fun listModels(apiKey: String): ProviderModels = core.fetchAvailableModels(apiKey)
+    override suspend fun listModels(config: JSONObject): ProviderModels = core.fetchAvailableModels(config.getString("api_key"))
 
     /**
      * Send query to Claude API with PromptData
