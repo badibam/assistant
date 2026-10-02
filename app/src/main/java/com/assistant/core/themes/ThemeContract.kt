@@ -360,6 +360,9 @@ interface ThemeContract {
      * The one text input of the theme. Its value is the text with its selection and its
      * composition (TextFieldValue), which a Compose text field takes as it is: the cursor survives
      * the round trip, so a button can insert where it stands (the formula editor).
+     *
+     * [label] names the field above it and stands inside it while it is empty; without
+     * [labelAbove], it stands only inside: a field whose place says what it is for (a message).
      */
     @Composable
     fun FormField(
@@ -372,7 +375,8 @@ interface ThemeContract {
         onClick: (() -> Unit)?,
         contentDescription: String?,
         required: Boolean,
-        fieldModifier: FieldModifier
+        fieldModifier: FieldModifier,
+        labelAbove: Boolean
     )
     
     @Composable

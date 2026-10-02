@@ -1114,11 +1114,12 @@ object DefaultTheme : ThemeContract {
         onClick: (() -> Unit)?,
         contentDescription: String?,
         required: Boolean,
-        fieldModifier: FieldModifier
+        fieldModifier: FieldModifier,
+        labelAbove: Boolean
     ) {
         
         Column {
-            FieldLabel(label, required)
+            if (labelAbove) FieldLabel(label, required)
             
             if (readonly) {
                 // Display as text when readonly - clickable if onClick provided

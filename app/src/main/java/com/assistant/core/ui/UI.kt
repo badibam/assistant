@@ -362,7 +362,8 @@ object UI {
         readonly: Boolean = false,
         onClick: (() -> Unit)? = null,
         contentDescription: String? = null,
-        fieldModifier: FieldModifier = FieldModifier()
+        fieldModifier: FieldModifier = FieldModifier(),
+        labelAbove: Boolean = true
     ) {
         var selection by remember { mutableStateOf(TextRange(value.length)) }
         var composition by remember { mutableStateOf<TextRange?>(null) }
@@ -385,7 +386,8 @@ object UI {
             readonly = readonly,
             onClick = onClick,
             contentDescription = contentDescription,
-            fieldModifier = fieldModifier
+            fieldModifier = fieldModifier,
+            labelAbove = labelAbove
         )
     }
 
@@ -401,7 +403,8 @@ object UI {
         readonly: Boolean = false,
         onClick: (() -> Unit)? = null,
         contentDescription: String? = null,
-        fieldModifier: FieldModifier = FieldModifier()
+        fieldModifier: FieldModifier = FieldModifier(),
+        labelAbove: Boolean = true
     ) = CurrentTheme.current.FormField(
         label = label,
         value = value,
@@ -412,7 +415,8 @@ object UI {
         onClick = onClick,
         contentDescription = contentDescription,
         required = required,
-        fieldModifier = fieldModifier
+        fieldModifier = fieldModifier,
+        labelAbove = labelAbove
     )
     
     @Composable

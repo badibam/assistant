@@ -482,9 +482,11 @@ private fun TextBlockCard(
             ) {
 
                 // Text field (delete button is positioned absolute)
+                // The card says what the field is for: its placeholder stands inside it alone
                 UI.FormField(
                     required = false,
                     label = placeholder,
+                    labelAbove = false,
                     value = block.text,
                     onChange = { newText ->
                         onTextChange(newText)
