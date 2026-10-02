@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.assistant.core.ai.providers.AIProvider
 import com.assistant.core.ai.providers.ProviderModel
+import com.assistant.core.ai.providers.ReasoningSettings
 import com.assistant.core.fields.settings.SettingEditor
 import com.assistant.core.fields.settings.SettingsForm
 import com.assistant.core.fields.settings.storedField
@@ -38,7 +39,8 @@ import org.json.JSONObject
 /**
  * The config screen of any AI provider: the form of its declaration (AIProvider.getConfigSettings),
  * the API key masked, and the model chosen among those the provider lists once the settings
- * the listing needs are filled in. The caller saves through the service, which checks the config against the schema
+ * the listing needs are filled in. Its reasoning (ReasoningSettings) offers what the chosen model
+ * allows, and is cleared when the model changes: what one model accepts another may refuse. The caller saves through the service, which checks the config against the schema
  * generated from the same declaration.
  *
  * @param config The stored config, "{}" when the provider has none yet
@@ -93,6 +95,9 @@ fun AIProviderConfigScreen(
         if (canList()) fetchModels()
     }
 
+    // What the chosen model allows of its reasoning; null when it allows nothing or is not listed
+    val reasoning = models.find { it.id == settings.optString("model") }?.reasoning
+
     val editors = mapOf("model" to object : SettingEditor {
         @Composable
         override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
@@ -118,6 +123,46 @@ fun AIProviderConfigScreen(
                 )
             }
         }
+    }, ReasoningSettings.THINKING_OFF to object : SettingEditor {
+        @Composable
+        override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+            val label = s.shared("ai_provider_thinking_off")
+            val off = value == true
+            when {
+                // Not listed: what is stored, as the model field shows it
+                models.isEmpty() -> if (off) UI.Text(label, TextType.CAPTION)
+                reasoning?.thinkingOff != null -> UI.Switch(checked = off, label = label, onCheckedChange = { checked ->
+                    // An effort thinking off does not accept goes with the switch
+                    val next = JSONObject(settings.toString()).put(ReasoningSettings.THINKING_OFF, checked)
+                    val accepted = reasoning.thinkingOff.efforts
+                    if (checked && accepted != null && next.optString(ReasoningSettings.EFFORT) !in accepted) next.remove(ReasoningSettings.EFFORT)
+                    settings = next
+                })
+            }
+        }
+    }, ReasoningSettings.EFFORT to object : SettingEditor {
+        @Composable
+        override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+            val label = s.shared("ai_provider_effort")
+            val off = settings.optBoolean(ReasoningSettings.THINKING_OFF)
+            when {
+                models.isEmpty() -> (value as? String)?.let { UI.Text(s.shared("label_value").format(label, it), TextType.CAPTION) }
+                reasoning == null -> UI.Text(s.shared("ai_provider_no_reasoning"), TextType.CAPTION)
+                else -> {
+                    // Thinking off takes an effort among those its fact accepts, never the model's default
+                    val levels = if (off) reasoning.thinkingOff?.efforts ?: reasoning.efforts else reasoning.efforts
+                    val required = off || reasoning.effortRequired
+                    val byDefault = s.shared("ai_provider_effort_default")
+                    UI.FormSelection(
+                        label = label,
+                        options = if (required) levels else listOf(byDefault) + levels,
+                        selected = (value as? String) ?: if (required) "" else byDefault,
+                        onSelect = { chosen -> onChange(chosen.takeIf { it != byDefault }) },
+                        required = required
+                    )
+                }
+            }
+        }
     })
 
     Column(
@@ -137,6 +182,11 @@ fun AIProviderConfigScreen(
                 // A new key or address lists other models: the ones listed before no longer hold
                 SettingsForm(nodes, settings, { next ->
                     if (listingSettings.any { next.optString(it) != settings.optString(it) }) models = emptyList()
+                    // Another model: the reasoning chosen for the previous one may not hold
+                    if (next.optString("model") != settings.optString("model")) {
+                        next.remove(ReasoningSettings.EFFORT)
+                        next.remove(ReasoningSettings.THINKING_OFF)
+                    }
                     settings = next
                 }, context, editors)
                 UI.Text(provider.getConfigHelp(context), TextType.CAPTION)

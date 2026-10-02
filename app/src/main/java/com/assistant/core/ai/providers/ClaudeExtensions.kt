@@ -33,18 +33,23 @@ internal data class FusedMessage(
  *
  * @param model The model asked for
  * @param maxTokens The longest answer asked for
- * @param effort The reasoning effort, for an endpoint that declares levels (DeepSeek); null otherwise
+ * @param effort The reasoning effort; null leaves the model's default
+ * @param thinking The thinking.type that turns the model's thinking off (a thinking_off fact:
+ *   "disabled", "between_tools"); null keeps it on, as the model has it with no thinking field
  * @param datetimeText The dated closing message (buildDatetimeMessage), built by the caller:
  *   it reads the clock and the strings, which keeps this function pure and testable
  * @return JsonObject ready for Claude API /v1/messages endpoint
  */
-internal fun PromptData.toClaudeJson(model: String, maxTokens: Int, effort: String?, datetimeText: String): JsonObject {
+internal fun PromptData.toClaudeJson(model: String, maxTokens: Int, effort: String?, thinking: String?, datetimeText: String): JsonObject {
     return buildJsonObject {
         put("model", model)
         put("max_tokens", maxTokens)
 
-        // No "thinking" field alongside: a 400 seen through Claude Code (anthropics/claude-code#65863)
-        // points to the pair being mutually exclusive on DeepSeek (not measured here)
+        if (thinking != null) {
+            putJsonObject("thinking") {
+                put("type", thinking)
+            }
+        }
         if (effort != null) {
             putJsonObject("output_config") {
                 put("effort", effort)

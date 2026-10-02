@@ -1001,11 +1001,17 @@
     <string name="ai_provider_fetching_models">Récupération des modèles...</string>
     <string name="ai_provider_no_models">Aucun modèle disponible</string>
     <string name="ai_provider_fetch_error">Erreur: %1$s</string>
-    <string name="ai_provider_claude_effort">Effort de raisonnement</string>
-    <string name="ai_provider_claude_schema_effort">Effort de raisonnement demandé au modèle</string>
-    <string name="ai_provider_claude_effort_low">Faible</string>
-    <string name="ai_provider_claude_effort_high">Élevé</string>
-    <string name="ai_provider_claude_effort_max">Maximal</string>
+    <string name="ai_provider_effort">Effort de raisonnement</string>
+    <string name="ai_provider_schema_effort">Effort de raisonnement demandé au modèle, parmi ses niveaux</string>
+    <string name="ai_provider_effort_default">Défaut du modèle</string>
+    <string name="ai_provider_thinking_off">Sans réflexion</string>
+    <string name="ai_provider_schema_thinking_off">Coupe la réflexion du modèle, là où elle peut l\'être</string>
+    <string name="ai_provider_no_reasoning">Aucun réglage de réflexion connu pour ce modèle</string>
+    <string name="ai_provider_error_thinking_off">%1$s ne peut pas couper sa réflexion</string>
+    <string name="ai_provider_error_effort_with_thinking_off">Sans réflexion, un effort de raisonnement doit être choisi</string>
+    <string name="ai_provider_error_effort_not_allowed">Sans réflexion, ce modèle n\'accepte que ces efforts : %1$s</string>
+    <string name="ai_provider_error_effort_unknown">%1$s n\'a pas de niveau d\'effort %2$s</string>
+    <string name="ai_provider_error_effort_required">Choisissez un effort de raisonnement : le défaut de ce modèle n\'est pas connu</string>
 
     <!-- AI PROVIDERS - DeepSeek specific (shares the Claude screen, only vendor texts differ) -->
     <string name="ai_provider_deepseek_api_key">Clé API DeepSeek</string>

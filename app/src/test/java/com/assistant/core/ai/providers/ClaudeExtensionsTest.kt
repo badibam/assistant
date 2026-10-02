@@ -42,14 +42,14 @@ class ClaudeExtensionsTest {
         systemMessage = null
     )
 
-    private fun request(vararg history: SessionMessage, effort: String? = null): JsonObject {
+    private fun request(vararg history: SessionMessage, effort: String? = null, thinking: String? = null): JsonObject {
         val prompt = PromptData(
             level1Content = "L1 documentation",
             level2Content = "L2 user data",
             level3Content = "L3 app state",
             sessionMessages = history.toList()
         )
-        return prompt.toClaudeJson("claude-test", 1000, effort, "Current date and time: 2026-09-24T10:00:00+02:00")
+        return prompt.toClaudeJson("claude-test", 1000, effort, thinking, "Current date and time: 2026-09-24T10:00:00+02:00")
     }
 
     /** Every cache_control marker in the request, wherever it sits. */
@@ -144,11 +144,21 @@ class ClaudeExtensionsTest {
 
     // ==================== Options ====================
 
-    /** Effort goes inside output_config, and only when the endpoint declares one. */
+    /** Effort goes inside output_config, and only when one is chosen: none leaves the model's default. */
     @Test
     fun effort_isSentInOutputConfigOnlyWhenSet() {
         assertEquals("high", request(user("q"), effort = "high")["output_config"]!!.jsonObject["effort"]!!.jsonPrimitive.content)
         assertNull(request(user("q"))["output_config"])
+    }
+
+    /** Thinking off sends the fact's thinking.type with the chosen effort; thinking on sends no thinking field. */
+    @Test
+    fun thinkingOff_isSentAsItsTypeAlongsideTheEffort() {
+        val off = request(user("q"), effort = "low", thinking = "between_tools")
+        assertEquals("between_tools", off["thinking"]!!.jsonObject["type"]!!.jsonPrimitive.content)
+        assertEquals(1, off["thinking"]!!.jsonObject.size)
+        assertEquals("low", off["output_config"]!!.jsonObject["effort"]!!.jsonPrimitive.content)
+        assertNull(request(user("q"), effort = "low")["thinking"])
     }
 
     // ==================== Reading the answer ====================

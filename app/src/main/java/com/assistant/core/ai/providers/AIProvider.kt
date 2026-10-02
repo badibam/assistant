@@ -69,8 +69,20 @@ interface AIProvider {
     suspend fun query(promptData: PromptData, config: String): AIResponse
 }
 
-/** A model a provider offers: its identifier, and the name it is shown under. */
-data class ProviderModel(val id: String, val label: String)
+/**
+ * A model a provider offers: its identifier, the name it is shown under, and what its config may
+ * set of its reasoning (null: nothing, no fact nor list saying it).
+ */
+data class ProviderModel(val id: String, val label: String, val reasoning: Reasoning? = null)
+
+/**
+ * What a model's config may set of its reasoning, as its provider's list or the facts say.
+ *
+ * @param efforts Its effort levels, in the order given; empty when it has no effort setting
+ * @param effortRequired An effort must be chosen even with thinking on: the model's default is unknown
+ * @param thinkingOff How it turns its thinking off; null when it cannot or no fact says how
+ */
+data class Reasoning(val efforts: List<String>, val effortRequired: Boolean, val thinkingOff: ThinkingOff?)
 
 /** The models a provider listed, or why it could not. */
 data class ProviderModels(val models: List<ProviderModel>, val error: String? = null)

@@ -29,15 +29,20 @@ import com.assistant.core.utils.LogManager
  * @param model The model asked for
  * @param temperature The sampling temperature
  * @param maxOutputTokens The longest answer asked for
+ * @param effort The reasoning effort ("none" turns thinking off where a model has it); null leaves
+ *   the model's default
  * @param datetimeText The dated closing message (buildDatetimeMessage), built by the caller:
  *   it reads the clock and the strings, which keeps this function pure and testable
  * @return JsonObject ready for OpenAI API /v1/responses endpoint
  */
-internal fun PromptData.toOpenAIJson(model: String, temperature: Double, maxOutputTokens: Int, datetimeText: String): JsonObject {
+internal fun PromptData.toOpenAIJson(model: String, temperature: Double, maxOutputTokens: Int, effort: String?, datetimeText: String): JsonObject {
     return buildJsonObject {
         put("model", model)
         put("temperature", temperature)
         put("max_output_tokens", maxOutputTokens)
+        if (effort != null) {
+            putJsonObject("reasoning") { put("effort", effort) }
+        }
         // JSON mode: the answer is one JSON object, as the prompt asks, never text around it
         putJsonObject("text") { putJsonObject("format") { put("type", "json_object") } }
 

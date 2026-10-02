@@ -3,7 +3,6 @@ package com.assistant.core.ai.providers
 import android.content.Context
 import com.assistant.core.ai.data.PromptData
 import com.assistant.core.utils.LogManager
-import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import com.assistant.core.fields.TextLength
@@ -31,29 +30,34 @@ import java.util.concurrent.TimeUnit
  * @param messagesUrl POST endpoint for queries
  * @param modelsUrl GET endpoint listing available models
  * @param stringPrefix Prefix of the vendor-specific strings (API key label, help, schema texts)
- * @param effortLevels Values accepted for output_config.effort; empty = no effort field in config
+ * @param factsProvider The vendor's name in the providers' facts (ProviderFacts)
+ * @param effortsFromFacts A model's effort levels come from the facts; otherwise from the model
+ *   list, which declares them (capabilities.effort)
+ * @param effortRequired The vendor's default effort is unknown: an effort is always chosen
  * @param verifiesAnsweringModel Reject a response whose "model" differs from the requested one
  */
 internal enum class MessagesApi(
     val messagesUrl: String,
     val modelsUrl: String,
     val stringPrefix: String,
-    val effortLevels: List<String>,
+    val factsProvider: String,
+    val effortsFromFacts: Boolean,
+    val effortRequired: Boolean,
     val verifiesAnsweringModel: Boolean
 ) {
     ANTHROPIC(
         messagesUrl = "https://api.anthropic.com/v1/messages",
         modelsUrl = "https://api.anthropic.com/v1/models",
         stringPrefix = "ai_provider_claude",
-        effortLevels = emptyList(),
+        factsProvider = "anthropic",
+        effortsFromFacts = false,
+        effortRequired = false,
         // Aliases resolve to dated IDs, so the answering model legitimately differs
         verifiesAnsweringModel = false
     ),
 
-    // Real effort levels are low|high|max: the others are aliases (medium/xhigh -> high, ultra -> max),
-    // not exposed since offering an alias misleads. Thinking is enabled by default on DeepSeek,
-    // so the effort is an explicit required choice.
-    // Checked on https://api-docs.deepseek.com/guides/thinking_mode, 2026-09-19.
+    // Its model list says nothing of effort: the levels are facts (deepseek-effort-levels), and so
+    // is the default being unknown (deepseek-default-effort-unknown), hence an effort always chosen.
     // Model substitution, measured 2026-09-19: an unknown ID gets an explicit error, but claude-*
     // names are answered by deepseek-flash, which the response "model" field reveals. Valid IDs
     // come back unchanged, so any mismatch is rejected rather than silently billed as another model.
@@ -61,7 +65,9 @@ internal enum class MessagesApi(
         messagesUrl = "https://api.deepseek.com/anthropic/v1/messages",
         modelsUrl = "https://api.deepseek.com/models",
         stringPrefix = "ai_provider_deepseek",
-        effortLevels = listOf("low", "high", "max"),
+        factsProvider = "deepseek",
+        effortsFromFacts = true,
+        effortRequired = true,
         verifiesAnsweringModel = true
     )
 }
@@ -120,27 +126,27 @@ internal class ClaudeProviderCore(
 
     /**
      * The settings of this variant's config: its API key (secret), the model, the longest answer,
-     * and the reasoning effort when the endpoint declares levels (required then: DeepSeek thinks
-     * by default, so the user picks one explicitly).
+     * and the reasoning (ReasoningSettings), offered by the config screen as the model allows.
      */
     fun configSettings(context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
         // MEDIUM: an API key runs past SHORT's 60 characters (an OpenRouter key over 70, a Claude one over 100)
         val text = { name: String -> FieldDefinition(name, "", null, FieldType.TEXT, false, mapOf("length" to TextLength.MEDIUM.name)) }
-        return listOfNotNull(
+        return listOf(
             SettingNode.Field(text("api_key").copy(displayName = s.shared("${api.stringPrefix}_api_key"),
                 description = s.shared("${api.stringPrefix}_schema_api_key")), required = true, secret = true),
             // Chosen among the models the key gives access to, by the config screen
             SettingNode.Field(text("model").copy(displayName = s.shared("ai_provider_model"),
                 description = s.shared("${api.stringPrefix}_schema_model")), required = true),
             SettingNode.Field(FieldDefinition("max_tokens", s.shared("ai_provider_claude_max_tokens"), s.shared("ai_provider_claude_schema_max_tokens"),
-                FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS),
-            if (api.effortLevels.isEmpty()) null
-            else SettingNode.Field(FieldDefinition("effort", s.shared("ai_provider_claude_effort"), s.shared("ai_provider_claude_schema_effort"),
-                FieldType.CHOICE, false, mapOf("options" to ChoiceSettings.storedOptions(api.effortLevels,
-                    api.effortLevels.associateWith { s.shared("ai_provider_claude_effort_$it") }))), required = true)
-        )
+                FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS)
+        ) + ReasoningSettings.nodes(s, thinkingOff = true)
     }
+
+    /** Why [config] cannot be stored: its reasoning settings out of what the model allows. */
+    fun configError(config: JSONObject, context: Context): String? =
+        ReasoningSettings.error(config, ProviderFacts.of(context), api.factsProvider, api.effortsFromFacts, api.effortRequired,
+            Strings.`for`(context = context))
 
     /** Where to get a key, and what the models are. */
     fun configHelp(context: Context): String = Strings.`for`(context = context).shared("${api.stringPrefix}_help")
@@ -202,14 +208,17 @@ internal class ClaudeProviderCore(
                 return@withContext ProviderModels(emptyList(), "Invalid API response")
             }
 
-            // Parse models
+            // Parse models, each with what its config may set of its reasoning
+            val facts = ProviderFacts.of(context)
             val models = mutableListOf<ProviderModel>()
             for (i in 0 until dataArray.length()) {
                 val modelObj = dataArray.optJSONObject(i)
                 if (modelObj != null) {
                     // The OpenAI-format model list (DeepSeek) has no display_name: the ID is the name
                     val id = modelObj.optString("id", "")
-                    models.add(ProviderModel(id = id, label = modelObj.optString("display_name", "").ifEmpty { id }))
+                    val listedEfforts = if (api.effortsFromFacts) null else declaredEfforts(modelObj)
+                    models.add(ProviderModel(id = id, label = modelObj.optString("display_name", "").ifEmpty { id },
+                        reasoning = ReasoningSettings.of(facts, api.factsProvider, id, listedEfforts, api.effortRequired)))
                 }
             }
 
@@ -221,6 +230,18 @@ internal class ClaudeProviderCore(
             LogManager.aiService("Failed to fetch Claude models: ${e.message}", "ERROR", e)
             ProviderModels(emptyList(), e.message ?: "Unknown error")
         }
+    }
+
+    /**
+     * The effort levels Anthropic's model list declares for a model, in its order: the keys of
+     * capabilities.effort whose "supported" is true. Empty when it declares none.
+     */
+    private fun declaredEfforts(model: JSONObject): List<String> {
+        val effort = model.optJSONObject("capabilities")?.optJSONObject("effort") ?: return emptyList()
+        if (!effort.optBoolean("supported")) return emptyList()
+        return effort.keys().asSequence()
+            .filter { effort.optJSONObject(it)?.optBoolean("supported") == true }
+            .toList()
     }
 
     /**
@@ -250,7 +271,9 @@ internal class ClaudeProviderCore(
             val requestJson = promptData.toClaudeJson(
                 model = requestedModel,
                 maxTokens = settings.number("max_tokens")!!.toInt(),
-                effort = if (api.effortLevels.isEmpty()) null else settings.string("effort"),
+                effort = settings.string(ReasoningSettings.EFFORT),
+                thinking = ReasoningSettings.thinkingType(settings.boolean(ReasoningSettings.THINKING_OFF), ProviderFacts.of(context),
+                    api.factsProvider, requestedModel),
                 datetimeText = promptData.buildDatetimeMessage(context)
             )
             val requestBody = requestJson.toString()

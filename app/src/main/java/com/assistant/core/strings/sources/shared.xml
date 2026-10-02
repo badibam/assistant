@@ -1001,11 +1001,17 @@
     <string name="ai_provider_fetching_models">Retrieving the models...</string>
     <string name="ai_provider_no_models">No model available</string>
     <string name="ai_provider_fetch_error">Error: %1$s</string>
-    <string name="ai_provider_claude_effort">Reasoning effort</string>
-    <string name="ai_provider_claude_schema_effort">Reasoning effort asked of the model</string>
-    <string name="ai_provider_claude_effort_low">Low</string>
-    <string name="ai_provider_claude_effort_high">High</string>
-    <string name="ai_provider_claude_effort_max">Maximum</string>
+    <string name="ai_provider_effort">Reasoning effort</string>
+    <string name="ai_provider_schema_effort">Reasoning effort asked of the model, among the levels it has</string>
+    <string name="ai_provider_effort_default">Model\'s default</string>
+    <string name="ai_provider_thinking_off">No thinking</string>
+    <string name="ai_provider_schema_thinking_off">Turns the model\'s thinking off, where it can be</string>
+    <string name="ai_provider_no_reasoning">No known reasoning setting for this model</string>
+    <string name="ai_provider_error_thinking_off">%1$s cannot turn its thinking off</string>
+    <string name="ai_provider_error_effort_with_thinking_off">Without thinking, a reasoning effort must be chosen</string>
+    <string name="ai_provider_error_effort_not_allowed">Without thinking, this model accepts these efforts only: %1$s</string>
+    <string name="ai_provider_error_effort_unknown">%1$s has no effort level %2$s</string>
+    <string name="ai_provider_error_effort_required">Choose a reasoning effort: this model\'s default is unknown</string>
 
     <!-- AI PROVIDERS - DeepSeek specific (shares the Claude screen, only vendor texts differ) -->
     <string name="ai_provider_deepseek_api_key">DeepSeek API key</string>

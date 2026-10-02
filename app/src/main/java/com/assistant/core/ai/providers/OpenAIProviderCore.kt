@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
+import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -44,6 +45,8 @@ internal class OpenAIProviderCore(
 
     companion object {
         private const val OPENAI_API_BASE_URL = "https://api.openai.com"
+        // Its name in the providers' facts (ProviderFacts)
+        private const val FACTS_PROVIDER = "openai"
         // Failing to connect means nothing was sent: the sooner it is known, the sooner an
         // automation waits for the network, at no cost
         private const val CONNECT_TIMEOUT_SECONDS = 15L
@@ -67,7 +70,11 @@ internal class OpenAIProviderCore(
     // Settings
     // ========================================================================================
 
-    /** The settings of this variant's config: its API key (secret), the model, temperature and longest answer. */
+    /**
+     * The settings of this variant's config: its API key (secret), the model, temperature, longest
+     * answer, and the effort (ReasoningSettings), whose levels are facts: OpenAI's model list says
+     * nothing of reasoning. Turning thinking off is the effort "none", where a model has it.
+     */
     fun configSettings(context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
         // MEDIUM: an API key runs past SHORT's 60 characters (an OpenRouter key over 70, a Claude one over 100)
@@ -83,8 +90,13 @@ internal class OpenAIProviderCore(
                 FieldType.NUMERIC, false, mapOf("min" to 0, "max" to 2, "decimals" to 1)), default = 1.0),
             SettingNode.Field(FieldDefinition("max_output_tokens", s.shared("ai_provider_openai_max_output_tokens"), s.shared("ai_provider_openai_schema_max_output_tokens"),
                 FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS)
-        )
+        ) + ReasoningSettings.nodes(s, thinkingOff = false)
     }
+
+    /** Why [config] cannot be stored: an effort the model does not have. */
+    fun configError(config: JSONObject, context: Context): String? =
+        ReasoningSettings.error(config, ProviderFacts.of(context), FACTS_PROVIDER, effortsFromFacts = true, effortRequired = false,
+            Strings.`for`(context = context))
 
     /** Where to get a key, and what temperature does. */
     fun configHelp(context: Context): String {
@@ -145,9 +157,12 @@ internal class OpenAIProviderCore(
             }
 
             // Parse models
-            // The list names models by their identifier alone
+            // The list names models by their identifier alone; their effort levels are facts
+            val facts = ProviderFacts.of(context)
             val models = dataArray.mapNotNull { element ->
-                element.jsonObject["id"]?.jsonPrimitive?.content?.let { ProviderModel(id = it, label = it) }
+                element.jsonObject["id"]?.jsonPrimitive?.content?.let {
+                    ProviderModel(id = it, label = it, reasoning = ReasoningSettings.of(facts, FACTS_PROVIDER, it, null, effortRequired = false))
+                }
             }
 
             LogManager.aiService("Successfully fetched ${models.size} models from OpenAI API")
@@ -191,6 +206,7 @@ internal class OpenAIProviderCore(
                 model = settings.string("model") ?: error("Provider config has no model"),
                 temperature = settings.number("temperature")!!.toDouble(),
                 maxOutputTokens = settings.number("max_output_tokens")!!.toInt(),
+                effort = settings.string(ReasoningSettings.EFFORT),
                 datetimeText = promptData.buildDatetimeMessage(context)
             )
             val requestBody = requestJson.toString()

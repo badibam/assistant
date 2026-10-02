@@ -15,6 +15,25 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "claude-opus-5-thinking-off",
+    "provider": "anthropic",
+    "models": [
+      "claude-opus-5"
+    ],
+    "kind": "thinking_off",
+    "effective": null,
+    "thinking": "disabled",
+    "efforts": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "client": null,
+    "note": "Thinking is on with no thinking field. disabled at xhigh or max returns 400, checked on each request. With thinking disabled the model can occasionally emit tool calls as plain text or internal XML tags in its visible output.",
+    "source": "https://platform.claude.com/docs/en/build-with-claude/thinking",
+    "observed": "2026-10-02"
+  },
+  {
     "id": "claude-sonnet-5-5-effort-recalibrated",
     "provider": "anthropic",
     "models": [
@@ -38,6 +57,67 @@
     "client": null,
     "note": "thinking.type \"disabled\" returns a 400 on this model; to run without up-front thinking send {\"type\": \"between_tools\"} (progress updates between tool calls still come back as thinking blocks). between_tools is refused (400) at effort xhigh and max, accepts no display, budget_tokens or block_binding, and fixes the effort for the whole conversation (a per-message output_config.effort that differs returns 400). With no thinking field the model thinks (adaptive). GET /v1/models lists only adaptive and enabled=false under capabilities.thinking.types: it declares neither between_tools nor the refusal of disabled.",
     "source": "https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "claude-sonnet-5-5-thinking-off",
+    "provider": "anthropic",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "kind": "thinking_off",
+    "effective": null,
+    "thinking": "between_tools",
+    "efforts": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "client": null,
+    "note": "disabled returns 400. between_tools turns off up-front thinking only: progress updates between tool calls still come back as thinking blocks; without tools the response is text only. Thinking is on with no thinking field.",
+    "source": "https://platform.claude.com/docs/en/build-with-claude/thinking",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "claude-thinking-always-on",
+    "provider": "anthropic",
+    "models": [
+      "claude-opus-5-5",
+      "claude-fable-5-1",
+      "claude-fable-5"
+    ],
+    "kind": "thinking_off",
+    "effective": null,
+    "thinking": null,
+    "efforts": null,
+    "client": null,
+    "note": "Thinking cannot be turned off: disabled and between_tools return 400. Lower the effort to think less.",
+    "source": "https://platform.claude.com/docs/en/build-with-claude/thinking",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "claude-thinking-off-disabled",
+    "provider": "anthropic",
+    "models": [
+      "claude-sonnet-5",
+      "claude-opus-4-8",
+      "claude-opus-4-7",
+      "claude-opus-4-6",
+      "claude-sonnet-4-6",
+      "claude-opus-4-5",
+      "claude-opus-4-5-20251101",
+      "claude-sonnet-4-5",
+      "claude-sonnet-4-5-20250929",
+      "claude-haiku-4-5",
+      "claude-haiku-4-5-20251001"
+    ],
+    "kind": "thinking_off",
+    "effective": null,
+    "thinking": "disabled",
+    "efforts": null,
+    "client": null,
+    "note": "disabled turns thinking off at any effort. With no thinking field, Claude Sonnet 5 thinks; the 4.x models do not.",
+    "source": "https://platform.claude.com/docs/en/build-with-claude/thinking",
     "observed": "2026-10-02"
   },
   {
@@ -74,6 +154,22 @@
     "observed": "2026-09-19"
   },
   {
+    "id": "deepseek-thinking-off",
+    "provider": "deepseek",
+    "models": [
+      "deepseek-flash",
+      "deepseek-v4-pro"
+    ],
+    "kind": "thinking_off",
+    "effective": null,
+    "thinking": "disabled",
+    "efforts": null,
+    "client": null,
+    "note": "Thinking is on with no thinking field. OpenAI and Anthropic formats: {\"thinking\": {\"type\": \"disabled\"}} (with the OpenAI SDK, inside extra_body). Responses API format: reasoning.effort \"none\" instead.",
+    "source": "https://api-docs.deepseek.com/guides/thinking_mode",
+    "observed": "2026-10-02"
+  },
+  {
     "id": "deepseek-v4-flash-retired",
     "provider": "deepseek",
     "models": [
@@ -100,6 +196,442 @@
     "client": null,
     "note": "Since 04:00 UTC on 2026-09-14, every deepseek-v4-pro request is served by V4.1-Flash at V4.1-Flash rates, until V4.1-Pro launches.",
     "source": "https://api-docs.deepseek.com/news/news260910/",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "kimi-k3-effort-levels",
+    "provider": "kimi",
+    "models": [
+      "kimi-k3"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "low",
+      "high",
+      "max"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: max. Set through the top-level reasoning_effort field.",
+    "source": "https://platform.kimi.ai/docs/guide/kimi-k3-quickstart",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "kimi-k3-thinking-off",
+    "provider": "kimi",
+    "models": [
+      "kimi-k3"
+    ],
+    "kind": "thinking_off",
+    "effective": null,
+    "thinking": null,
+    "efforts": null,
+    "client": null,
+    "note": "K3 always thinks; lower reasoning_effort to think less.",
+    "source": "https://platform.kimi.ai/docs/guide/kimi-k3-quickstart",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-1-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.1",
+      "gpt-5.1-2025-11-13"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: none.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.1",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-2-codex-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.2-codex"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "The page does not state the default.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.2-codex",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-2-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.2",
+      "gpt-5.2-2025-12-11"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: none.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.2",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-2-pro-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.2-pro",
+      "gpt-5.2-pro-2025-12-11"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "The page does not state the default.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.2-pro",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-3-codex-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.3-codex"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "The page does not state the default.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.3-codex",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-4-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4",
+      "gpt-5.4-2026-03-05"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: none.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-4-mini-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4-mini",
+      "gpt-5.4-mini-2026-03-17"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: none.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-4-nano-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4-nano",
+      "gpt-5.4-nano-2026-03-17"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: none.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4-nano",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-4-pro-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4-pro",
+      "gpt-5.4-pro-2026-03-05"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: medium.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4-pro",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-5-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.5",
+      "gpt-5.5-2026-04-23"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: medium.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.5",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-5-pro-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.5-pro",
+      "gpt-5.5-pro-2026-04-23"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "medium",
+      "high",
+      "xhigh"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: high.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.5-pro",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-6-luna-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.6-luna"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: medium.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-6-sol-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.6-sol",
+      "gpt-5.6"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: medium. The gpt-5.6 alias routes to gpt-5.6-sol.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-6-terra-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5.6-terra"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: medium.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5",
+      "gpt-5-2025-08-07"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "minimal",
+      "low",
+      "medium",
+      "high"
+    ],
+    "client": null,
+    "note": "The page does not state the default.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-pro-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-5-pro",
+      "gpt-5-pro-2025-10-06"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "high"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: high.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5-pro",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-6-1-sol-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-6.1-sol"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: medium. none and minimal are refused.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-6-astra-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-6-astra"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "client": null,
+    "note": "The page does not state the default. none returns HTTP 400 (reasoning guide).",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-6-luna-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-6-luna"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: medium.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-6-sol-effort-levels",
+    "provider": "openai",
+    "models": [
+      "gpt-6-sol"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "none",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max"
+    ],
+    "client": null,
+    "note": "Default when no effort is sent: medium. Chat Completions accepts function calling only at none.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-sol",
     "observed": "2026-10-02"
   }
 ]

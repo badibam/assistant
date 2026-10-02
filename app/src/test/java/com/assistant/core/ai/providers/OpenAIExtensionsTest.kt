@@ -10,6 +10,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -35,13 +36,13 @@ class OpenAIExtensionsTest {
         systemMessage = null
     )
 
-    private fun request(vararg history: SessionMessage): JsonObject =
+    private fun request(vararg history: SessionMessage, effort: String? = null): JsonObject =
         PromptData(
             level1Content = "L1 documentation",
             level2Content = "L2 user data",
             level3Content = "L3 app state",
             sessionMessages = history.toList()
-        ).toOpenAIJson("gpt-test", 1.0, 1000, "Current date and time: 2026-09-24T10:00:00+02:00")
+        ).toOpenAIJson("gpt-test", 1.0, 1000, effort, "Current date and time: 2026-09-24T10:00:00+02:00")
 
     private fun JsonObject.input() = this["input"]!!.jsonArray.map { it.jsonObject }
 
@@ -66,6 +67,13 @@ class OpenAIExtensionsTest {
     }
 
     /** An empty message is left out rather than sent as an empty turn. */
+    /** The effort goes inside reasoning, "none" included, and only when one is chosen. */
+    @Test
+    fun effort_isSentInReasoningOnlyWhenSet() {
+        assertEquals("none", request(message(MessageSender.USER, text = "q"), effort = "none")["reasoning"]!!.jsonObject["effort"]!!.jsonPrimitive.content)
+        assertNull(request(message(MessageSender.USER, text = "q"))["reasoning"])
+    }
+
     @Test
     fun blankMessages_areLeftOut() {
         val input = request(message(MessageSender.USER, text = " "), message(MessageSender.USER, text = "q")).input()

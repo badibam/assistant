@@ -29,6 +29,8 @@ class DeepSeekStandardProvider(private val context: Context) : AIProvider {
 
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
+    override fun configError(config: JSONObject, context: Context): String? = core.configError(config, context)
+
     override suspend fun listModels(config: JSONObject): ProviderModels = core.fetchAvailableModels(config.getString("api_key"))
 
     override suspend fun query(promptData: PromptData, config: String): AIResponse {
@@ -53,6 +55,8 @@ class DeepSeekEconomicProvider(private val context: Context) : AIProvider {
     override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
+
+    override fun configError(config: JSONObject, context: Context): String? = core.configError(config, context)
 
     override suspend fun listModels(config: JSONObject): ProviderModels = core.fetchAvailableModels(config.getString("api_key"))
 
