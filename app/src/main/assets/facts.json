@@ -28,6 +28,19 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "claude-sonnet-5-5-thinking-between-tools",
+    "provider": "anthropic",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "kind": "trap",
+    "effective": null,
+    "client": null,
+    "note": "thinking.type \"disabled\" returns a 400 on this model; to run without up-front thinking send {\"type\": \"between_tools\"} (progress updates between tool calls still come back as thinking blocks). between_tools is refused (400) at effort xhigh and max, accepts no display, budget_tokens or block_binding, and fixes the effort for the whole conversation (a per-message output_config.effort that differs returns 400). With no thinking field the model thinks (adaptive). GET /v1/models lists only adaptive and enabled=false under capabilities.thinking.types: it declares neither between_tools nor the refusal of disabled.",
+    "source": "https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide",
+    "observed": "2026-10-02"
+  },
+  {
     "id": "deepseek-default-effort-unknown",
     "provider": "deepseek",
     "models": [
