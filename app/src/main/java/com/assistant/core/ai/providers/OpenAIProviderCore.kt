@@ -28,8 +28,8 @@ import java.util.concurrent.TimeUnit
  * - Response parsing with usage metrics
  *
  * This internal class is used by public provider variants:
- * - OpenAIStandardProvider (default model, e.g., gpt-4.1)
- * - OpenAIEconomicProvider (economic model, e.g., gpt-4.1-mini)
+ * - OpenAIStandardProvider (default model, e.g., gpt-5.5)
+ * - OpenAIEconomicProvider (economic model, e.g., gpt-5.4-mini)
  *
  * Each variant creates its own core instance with a unique variantId,
  * allowing separate configurations while sharing all implementation code.

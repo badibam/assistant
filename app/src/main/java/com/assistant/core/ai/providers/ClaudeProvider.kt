@@ -8,7 +8,7 @@ import org.json.JSONObject
 /**
  * Claude AI Provider - Standard variant
  *
- * Default Claude provider using standard models (e.g., claude-sonnet-4-5).
+ * Default Claude provider using standard models (e.g., claude-sonnet-5-5).
  * Delegates all implementation to ClaudeProviderCore with variant ID "claude_standard".
  *
  * This variant is recommended for:
@@ -56,7 +56,7 @@ class ClaudeStandardProvider(private val context: Context) : AIProvider {
 /**
  * Claude AI Provider - Economic variant
  *
- * Economic Claude provider using cost-optimized models (e.g., claude-haiku-4).
+ * Economic Claude provider using cost-optimized models (e.g., claude-haiku-4-5-20251001).
  * Delegates all implementation to ClaudeProviderCore with variant ID "claude_economic".
  *
  * This variant is recommended for:

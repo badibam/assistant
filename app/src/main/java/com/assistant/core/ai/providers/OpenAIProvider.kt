@@ -8,7 +8,7 @@ import org.json.JSONObject
 /**
  * OpenAI AI Provider - Standard variant
  *
- * Default OpenAI provider using standard models (e.g., gpt-4.1).
+ * Default OpenAI provider using standard models (e.g., gpt-5.5).
  * Delegates all implementation to OpenAIProviderCore with variant ID "openai_standard".
  *
  * This variant is recommended for:
@@ -18,7 +18,7 @@ import org.json.JSONObject
  *
  * Configuration:
  * - API key: OpenAI API key
- * - Model: Model ID (e.g., "gpt-4.1", "gpt-4.1-2025-04-14")
+ * - Model: Model ID (e.g., "gpt-5.5", "gpt-5.5-2026-04-23")
  * - Temperature: Sampling temperature 0.0-2.0 (optional, default 1.0)
  * - Max output tokens: Response length limit (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
  *
@@ -57,7 +57,7 @@ class OpenAIStandardProvider(private val context: Context) : AIProvider {
 /**
  * OpenAI AI Provider - Economic variant
  *
- * Economic OpenAI provider using cost-optimized models (e.g., gpt-4.1-mini).
+ * Economic OpenAI provider using cost-optimized models (e.g., gpt-5.4-mini).
  * Delegates all implementation to OpenAIProviderCore with variant ID "openai_economic".
  *
  * This variant is recommended for:
@@ -67,7 +67,7 @@ class OpenAIStandardProvider(private val context: Context) : AIProvider {
  *
  * Configuration:
  * - API key: OpenAI API key (can be same as standard or different)
- * - Model: Model ID (e.g., "gpt-4.1-mini")
+ * - Model: Model ID (e.g., "gpt-5.4-mini")
  * - Temperature: Sampling temperature 0.0-2.0 (optional, default 1.0)
  * - Max output tokens: Response length limit (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
  *
