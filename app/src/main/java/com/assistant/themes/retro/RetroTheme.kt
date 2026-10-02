@@ -364,12 +364,14 @@ object RetroTheme : ThemeContract {
     override fun drawingTextStyle(): TextStyle = retroGrid().thin.copy(color = retroSurface.dim.srgb)
 
     /**
-     * The default theme's drawing for now, in this theme's text and Material colours: the chart's
-     * scene in pixels and screens of dots is still to be drawn (retro-theme.md).
+     * The default theme's strokes for now, in this theme's text and colours (RetroColors.drawing,
+     * a series keeping its tag's hue whatever the hue shift): the chart's scene in pixels and
+     * screens of dots is still to be drawn (retro-theme.md).
      */
     @Composable
     override fun Drawing(drawing: com.assistant.core.drawing.Drawing, modifier: Modifier) {
-        DefaultDrawing.Draw(drawing, drawingTextStyle(), CurrentTheme.isDark, modifier)
+        val colors = retroColors
+        DefaultDrawing.Draw(drawing, drawingTextStyle(), { colors.drawing(it).srgb }, modifier)
     }
 
     /** The top edge of a frame across the width, both tones. */

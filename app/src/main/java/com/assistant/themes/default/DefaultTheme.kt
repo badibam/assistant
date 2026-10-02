@@ -748,7 +748,8 @@ object DefaultTheme : ThemeContract {
 
     @Composable
     override fun Drawing(drawing: com.assistant.core.drawing.Drawing, modifier: Modifier) {
-        DefaultDrawing.Draw(drawing, drawingTextStyle(), com.assistant.core.themes.CurrentTheme.isDark, modifier)
+        val dark = com.assistant.core.themes.CurrentTheme.isDark
+        DefaultDrawing.Draw(drawing, drawingTextStyle(), { DefaultDrawing.color(it, dark) }, modifier)
     }
 
     @Composable

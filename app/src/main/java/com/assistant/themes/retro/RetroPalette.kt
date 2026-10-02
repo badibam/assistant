@@ -121,6 +121,15 @@ class RetroColors(val numbers: PaletteNumbers) {
         else -> Lch(numbers.tagLightness, numbers.tagChroma, TAG_HUES.getValue(color))
     }
 
+    /**
+     * A name of the palette in a drawing (a chart's series): its tag's hue at the states'
+     * lightness and chroma in a frame, which read on a tile; grey the palette's own.
+     */
+    fun drawing(color: TagColor): Lch = when (color) {
+        TagColor.GREY -> Lch(numbers.panelStatusLightness, GREY_CHROMA, numbers.hue)
+        else -> Lch(numbers.panelStatusLightness, numbers.statusChroma, TAG_HUES.getValue(color))
+    }
+
     /** A tag's name on its colour: dark letters on a light tag, light ones on a dark tag. */
     val tagText: Lch =
         if (numbers.tagLightness >= 0.6f) Lch(0.25f, STRONG_CHROMA, numbers.hue)
