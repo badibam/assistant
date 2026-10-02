@@ -20,7 +20,7 @@ import com.assistant.core.strings.StringsContext
 private const val SEARCH_RESULTS_SHOWN = 60
 
 /** Icons per row of the picker's grids. */
-private const val ICONS_PER_ROW = 4
+private const val ICONS_PER_ROW = 3
 
 /**
  * Reusable icon selector: the current icon and a button opening the picker.
@@ -183,32 +183,38 @@ private fun IconGrid(
         return
     }
     names.chunked(ICONS_PER_ROW).forEach { row ->
+        // The row shared in equal parts, each button filling its own: whatever a theme adds
+        // around a button (a frame's border, a margin) is taken from its part, never past the row
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
             row.forEach { name ->
-                UI.Button(
-                    type = if (current == name) ButtonType.PRIMARY else ButtonType.DEFAULT,
-                    onClick = { onPick(name) }
-                ) {
-                    Column(
-                        modifier = Modifier.size(64.dp).padding(UI.Space.XS),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                Box(modifier = Modifier.weight(1f)) {
+                    UI.Button(
+                        type = if (current == name) ButtonType.PRIMARY else ButtonType.DEFAULT,
+                        // The smallest padding a text button has: the name needs the width
+                        size = Size.S,
+                        onClick = { onPick(name) }
                     ) {
-                        UI.Icon(iconName = name, size = 28.dp)
-                        UI.Text(
-                            text = name,
-                            type = TextType.CAPTION,
-                            fillMaxWidth = true,
-                            textAlign = TextAlign.Center
-                        )
+                        Column(
+                            modifier = Modifier.fillMaxWidth().height(64.dp).padding(UI.Space.XS),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            UI.Icon(iconName = name, size = 28.dp)
+                            UI.Text(
+                                text = name,
+                                type = TextType.CAPTION,
+                                fillMaxWidth = true,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
             repeat(ICONS_PER_ROW - row.size) {
-                Spacer(modifier = Modifier.size(64.dp))
+                Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
