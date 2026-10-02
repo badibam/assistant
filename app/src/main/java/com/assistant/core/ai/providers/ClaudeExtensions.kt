@@ -263,31 +263,6 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
         )
     }
 
-    // Extract content from the text block: with thinking enabled, a "thinking" block comes first
-    val contentArray = jsonObj["content"]?.jsonArray
-    val textBlock = contentArray?.firstOrNull { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "text" }
-    if (textBlock == null) {
-        // What came instead, each block by its type and length: DeepSeek is known to leave its
-        // whole answer in a long thinking block now and then, its text empty
-        val received = contentArray?.joinToString(", ") { block ->
-            val obj = block.jsonObject
-            val type = obj["type"]?.jsonPrimitive?.contentOrNull ?: "?"
-            val length = (obj[type] as? JsonPrimitive)?.contentOrNull?.length
-            if (length != null) "$type ($length chars)" else type
-        }?.ifEmpty { null } ?: "none"
-        return AIResponse(
-            success = false,
-            content = "",
-            errorMessage = "Provider response has no text block (stop_reason: $stopReason; blocks: $received).",
-            failure = AIFailure.CONFIG,
-            tokensUsed = 0,
-            cacheWriteTokens = 0,
-            cacheReadTokens = 0,
-            inputTokens = 0
-        )
-    }
-    val content = textBlock.jsonObject["text"]?.jsonPrimitive?.content ?: ""
-
     // Usage: input and output counts are required, since the cost is computed from them and a
     // missing one would show a paid call as free. The cache counts are optional: a provider
     // on this format that does not cache (DeepSeek's documentation is silent on them) sends
@@ -309,6 +284,32 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
     }
     val cacheWriteTokens = usage["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
     val cacheReadTokens = usage["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+
+    // Extract content from the text block: with thinking enabled, a "thinking" block comes first
+    val contentArray = jsonObj["content"]?.jsonArray
+    val textBlock = contentArray?.firstOrNull { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "text" }
+    if (textBlock == null) {
+        // What came instead, each block by its type and length: DeepSeek is known to leave its
+        // whole answer in a long thinking block now and then, its text empty
+        val received = contentArray?.joinToString(", ") { block ->
+            val obj = block.jsonObject
+            val type = obj["type"]?.jsonPrimitive?.contentOrNull ?: "?"
+            val length = (obj[type] as? JsonPrimitive)?.contentOrNull?.length
+            if (length != null) "$type ($length chars)" else type
+        }?.ifEmpty { null } ?: "none"
+        return AIResponse(
+            success = false,
+            content = "",
+            errorMessage = "Provider response has no text block (stop_reason: $stopReason; blocks: $received).",
+            failure = AIFailure.EMPTY,
+            // Answered, so billed: its usage counts in the session's cost
+            tokensUsed = outputTokens,
+            cacheWriteTokens = cacheWriteTokens,
+            cacheReadTokens = cacheReadTokens,
+            inputTokens = inputTokens
+        )
+    }
+    val content = textBlock.jsonObject["text"]?.jsonPrimitive?.content ?: ""
 
     return AIResponse(
         success = true,

@@ -703,7 +703,37 @@ class AIEventProcessor(
                 val failure = response.failure ?: AIFailure.REFUSED
                 LogManager.aiSession("callAI: AI provider error ($failure): $errorMessage", "ERROR")
 
-                if (failure != AIFailure.NETWORK) {
+                if (failure == AIFailure.EMPTY) {
+                    // Answered with no text: asked again once, at once. The previous message
+                    // being the notice of a first empty answer, this one is the second.
+                    val previous = messageRepository.loadMessages(sessionId).lastOrNull()
+                    val again = previous?.systemMessage?.type == SystemMessageType.EMPTY_ANSWER
+                    messageRepository.storeMessage(sessionId, SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = null,
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = com.assistant.core.ai.data.SystemMessage(
+                            type = SystemMessageType.EMPTY_ANSWER,
+                            commandResults = emptyList(),
+                            summary = s.shared(if (again) "ai_error_empty_answer_again" else "ai_error_empty_answer_retried").format(errorMessage),
+                            formattedData = null
+                        ),
+                        executionMetadata = null,
+                        excludeFromPrompt = true, // The same request goes again, unchanged
+                        // Answered, so billed: its usage counts in the session's cost
+                        inputTokens = response.inputTokens,
+                        cacheWriteTokens = response.cacheWriteTokens,
+                        cacheReadTokens = response.cacheReadTokens,
+                        outputTokens = response.tokensUsed,
+                        pricing = callPricing(providerId, response)
+                    ))
+                    if (again) emit(AIEvent.ProviderErrorOccurred(errorMessage))
+                    else emit(AIEvent.ParseErrorOccurred(errorMessage)) // Retries at once, as after a format error
+                } else if (failure != AIFailure.NETWORK) {
                     // The provider was reached, or may have been (LOST): retrying on a timer
                     // would bill the same call again
                     // Create system message (visible in UI, excluded from prompt)

@@ -165,6 +165,8 @@
     <string name="ai_module_free_reply_hint">Write your reply below: sending it replaces this form.</string>
     <string name="ai_module_missing">Missing: %s</string>
     <string name="ai_response_refused">Response refused: the message below says why.</string>
+    <string name="ai_error_empty_answer_retried">Answer without text (%1$s): the request is sent again, once.</string>
+    <string name="ai_error_empty_answer_again">Answer without text again (%1$s): send your message again to retry.</string>
     <string name="ai_module_add_note">Add a note</string>
     <string name="ai_module_note">Note</string>
     <string name="ai_module_note_prefix">Note from the user:</string>

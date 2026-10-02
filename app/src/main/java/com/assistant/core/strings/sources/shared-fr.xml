@@ -165,6 +165,8 @@
     <string name="ai_module_free_reply_hint">Écrivez votre réponse en bas : l\'envoyer remplace ce formulaire.</string>
     <string name="ai_module_missing">Il manque : %s</string>
     <string name="ai_response_refused">Réponse refusée : le message suivant dit pourquoi.</string>
+    <string name="ai_error_empty_answer_retried">Réponse sans texte (%1$s) : la demande est renvoyée, une fois.</string>
+    <string name="ai_error_empty_answer_again">Réponse sans texte une seconde fois (%1$s) : renvoyez votre message pour réessayer.</string>
     <string name="ai_module_add_note">Ajouter une précision</string>
     <string name="ai_module_note">Précision</string>
     <string name="ai_module_note_prefix">Précision de l\'utilisateur :</string>

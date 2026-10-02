@@ -32,6 +32,13 @@ enum class AIFailure {
     REFUSED,
 
     /**
+     * The provider answered, billed, with no text: DeepSeek now and then leaves its whole reply
+     * in a long thinking block. The same call is asked again once; a second empty answer stops
+     * the session as a refusal does.
+     */
+    EMPTY,
+
+    /**
      * Configuration, credentials, or a request the provider cannot honour as built. No retry
      * changes it; the user has to act.
      */

@@ -115,7 +115,8 @@ enum class SystemMessageType {
     SCHEMA_REQUIRED,         // Entries schemas a query or a write waits on, sent to the AI; the commands were not carried out
     DATA_AWAITING_CONFIRMATION, // Data above the CHAT size threshold, kept out of the prompt until the user sends it
     DATA_REFUSED,            // Data above the size threshold not sent: refused by the user or by an automation (sent to AI to narrow its request)
-    TEXT_OUTSIDE_JSON        // Text the AI wrote around its JSON, set aside: quoted to the user in summary; the AI gets only the notice in formattedData (PromptManager)
+    TEXT_OUTSIDE_JSON,       // Text the AI wrote around its JSON, set aside: quoted to the user in summary; the AI gets only the notice in formattedData (PromptManager)
+    EMPTY_ANSWER             // The provider answered with no text, the request asked again once (stored for audit and cost, FILTERED from prompt)
 }
 
 /**
