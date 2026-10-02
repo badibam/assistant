@@ -39,8 +39,8 @@ interface ThemeContract {
     /** The theme's name, in the app's language, from its own strings (themes/<id>/strings.xml). */
     fun name(context: Context): String
 
-    /** The name of one of its palettes, from its own strings. */
-    fun paletteName(paletteId: String, context: Context): String
+    /** The name of one of its palette families, from its own strings. */
+    fun paletteName(family: String, context: Context): String
 
     /** Who draws this theme's icons: Lucide, or the theme itself, all of them. */
     val iconSource: com.assistant.core.icons.IconSource
@@ -458,36 +458,23 @@ interface ThemeContract {
     // =====================================
     
     /**
-     * Gets all base palettes supported by this theme
-     * Every theme must provide LIGHT and DARK as minimum
-     * 
-     * @return List of base palettes (LIGHT, DARK) adapted to theme style
+     * Every palette of the theme: each of its families in both modes (ThemePalette), the first
+     * family being the one a new choice of the theme starts on.
      */
-    fun getBasePalettes(): List<ThemePalette>
-    
-    /**
-     * Gets custom palettes specific to this theme
-     * Optional - themes can return empty list if no custom palettes
-     * 
-     * @return List of theme-specific custom palettes
-     */
-    fun getCustomPalettes(): List<ThemePalette>
-    
-    /**
-     * Gets all available palettes (base + custom)
-     * Convenience method that combines base and custom palettes
-     * 
-     * @return List of all palettes available for this theme
-     */
-    fun getAllPalettes(): List<ThemePalette> {
-        return getBasePalettes() + getCustomPalettes()
-    }
-    
+    fun palettes(): List<ThemePalette>
+
+    /** Its families, in the order of palettes(). */
+    fun paletteFamilies(): List<String> = palettes().map { it.family }.distinct()
+
+    /** The palette of [family] in [mode]; a family the theme lacks is a bug. */
+    fun palette(family: String, mode: PaletteMode): ThemePalette =
+        palettes().firstOrNull { it.family == family && it.mode == mode }
+            ?: error("The theme has no palette '$family' in ${mode.name}")
+
     /**
      * Gets ColorScheme for specific palette
      * 
-     * @param paletteId The palette identifier (e.g., "default_light", "glass_frosted")
-     * @return ColorScheme for the palette, or default if not found
+     * @param paletteId One of palettes()' ids
      */
     fun getColorScheme(paletteId: String): ColorScheme
 

@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.assistant.core.themes.ThemeContract
 import com.assistant.core.themes.ThemePalette
-import com.assistant.core.themes.BasePalette
+import com.assistant.core.themes.PaletteMode
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.ui.ButtonType
 import com.assistant.core.ui.ButtonAction
@@ -76,12 +76,17 @@ import java.util.Calendar
 @OptIn(ExperimentalFoundationApi::class)
 object DefaultTheme : ThemeContract {
 
+    private const val THEME_ID = "default"
+    private const val BLUE = "blue"
+    private val LIGHT_ID = ThemePalette.of(THEME_ID, BLUE, PaletteMode.LIGHT).id
+    private val DARK_ID = ThemePalette.of(THEME_ID, BLUE, PaletteMode.DARK).id
+
     override fun name(context: android.content.Context): String =
         com.assistant.core.strings.Strings.`for`(context = context, theme = "default").theme("name")
 
-    /** A palette's name is its id past the theme's: "default_dark" is named by palette_dark. */
-    override fun paletteName(paletteId: String, context: android.content.Context): String =
-        com.assistant.core.strings.Strings.`for`(context = context, theme = "default").theme("palette_${paletteId.removePrefix("default_")}")
+    /** A palette family is named by palette_<family>: "blue" by palette_blue. */
+    override fun paletteName(family: String, context: android.content.Context): String =
+        com.assistant.core.strings.Strings.`for`(context = context, theme = "default").theme("palette_$family")
 
     override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
 
@@ -129,23 +134,12 @@ object DefaultTheme : ThemeContract {
     // PALETTE SYSTEM IMPLEMENTATION
     // =====================================
     
-    /**
-     * Base palettes - LIGHT and DARK versions of default theme
-     */
-    override fun getBasePalettes(): List<ThemePalette> {
-        return listOf(
-            ThemePalette.createBase("default", BasePalette.LIGHT),
-            ThemePalette.createBase("default", BasePalette.DARK)
-        )
-    }
-    
-    /**
-     * Custom palettes - none for default theme (minimalist approach)
-     */
-    override fun getCustomPalettes(): List<ThemePalette> {
-        return emptyList()
-    }
-    
+    /** One family, blue, in both modes. */
+    override fun palettes(): List<ThemePalette> = listOf(
+        ThemePalette.of(THEME_ID, BLUE, PaletteMode.LIGHT),
+        ThemePalette.of(THEME_ID, BLUE, PaletteMode.DARK)
+    )
+
     /**
      * Gets ColorScheme for specific palette
      */
@@ -154,7 +148,7 @@ object DefaultTheme : ThemeContract {
             // One hue, the main blue's (about 222°): every grey a blue grey, white tiles on a pale
             // blue ground, set apart by their colour (1.1), never tinted by elevation; the main
             // colours dark enough for white on them, and for an icon alone on a tile (4.5 and over)
-            "default_light" -> lightColorScheme(
+            LIGHT_ID -> lightColorScheme(
                 primary = Color(0xFF4A68AE),        // Deep periwinkle (5.4 on white)
                 onPrimary = Color(0xFFFFFFFF),      // White
                 secondary = Color(0xFF5C6E91),      // Slate blue (5.1 on white)
@@ -193,7 +187,7 @@ object DefaultTheme : ThemeContract {
                 surfaceContainerHigh = Color(0xFFEBEFF5),
                 surfaceContainerHighest = Color(0xFFE2E8F2)
             )
-            "default_dark" -> darkColorScheme(
+            DARK_ID -> darkColorScheme(
                 primary = Color(0xFF9BB8E8),        // Bleu ciel doux mais vif
                 onPrimary = Color(0xFF1B2A3F),      // Bleu marine profond
                 secondary = Color(0xFFC9A8D8),      // Mauve lumineux (accent décoratif)
@@ -211,7 +205,7 @@ object DefaultTheme : ThemeContract {
                 outline = Color(0xFF6B6178),        // Mauve grisé
                 outlineVariant = Color(0xFF433E4D)  // Violet foncé
             )
-            else -> getColorScheme("default_dark") // Default fallback
+            else -> error("No default palette '$paletteId'")
         }
     }
 
@@ -732,7 +726,7 @@ object DefaultTheme : ThemeContract {
 
     @Composable
     override fun Drawing(drawing: com.assistant.core.drawing.Drawing, modifier: Modifier) {
-        DefaultDrawing.Draw(drawing, drawingTextStyle(), com.assistant.core.themes.CurrentTheme.currentPaletteId == "default_dark", modifier)
+        DefaultDrawing.Draw(drawing, drawingTextStyle(), com.assistant.core.themes.CurrentTheme.isDark, modifier)
     }
 
     @Composable
@@ -775,7 +769,7 @@ object DefaultTheme : ThemeContract {
     }
 
     override fun getTagColor(color: com.assistant.core.themes.TagColor, paletteId: String): Color {
-        val dark = paletteId == "default_dark"
+        val dark = paletteId == DARK_ID
         return when (color) {
             com.assistant.core.themes.TagColor.RED -> if (dark) Color(0xFFE39A9A) else Color(0xFFF4B9B9)
             com.assistant.core.themes.TagColor.ORANGE -> if (dark) Color(0xFFEFB48C) else Color(0xFFF9CDAE)

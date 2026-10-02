@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +18,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.assistant.core.config.AppSettings
+import com.assistant.core.database.entities.AppSettingCategories
+import com.assistant.core.themes.Appearance
+import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.fields.settings.SettingsForm
@@ -34,7 +39,8 @@ import org.json.JSONObject
 
 /**
  * The screen of one settings category (AppSettings): the form of its declaration, saved through
- * the service, which checks it and says what it refuses.
+ * the service, which checks it and says what it refuses. The interface's look is shown as it is
+ * chosen, before it is saved.
  *
  * @param below What a category shows under its form, beside its settings
  */
@@ -52,17 +58,41 @@ fun AppSettingsScreen(
 
     var settings by rememberSaveable(category, stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject()) }
     var isSaving by remember { mutableStateOf(false) }
+    // The settings as stored, which the interface's look goes back to when it is left unsaved
+    var stored by rememberSaveable(category, stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject()) }
+    var saved by remember { mutableStateOf(false) }
 
     val load = rememberLoadOnce(category) {
         val result = coordinator.processUserAction("app_config.get", mapOf("category" to category))
         @Suppress("UNCHECKED_CAST")
-        val stored = result.data?.get("settings") as? Map<String, Any?>
-        if (!result.isSuccess || stored == null) {
+        val read = result.data?.get("settings") as? Map<String, Any?>
+        if (!result.isSuccess || read == null) {
             UI.Toast(context, result.error ?: s.shared("error_load_failed"), Duration.LONG)
             return@rememberLoadOnce false
         }
-        settings = JsonUtils.toJSONObject(stored)
+        settings = JsonUtils.toJSONObject(read)
+        stored = JsonUtils.toJSONObject(read)
         true
+    }
+
+    // The interface's look shows as it is chosen, and goes back to the stored one when the screen
+    // is left without saving; a save applies the stored one, now the chosen one (AppConfigManager)
+    if (category == AppSettingCategories.UI && load == LoadState.LOADED) {
+        val focus = androidx.compose.ui.platform.LocalFocusManager.current
+        LaunchedEffect(settings) {
+            // Once the menu the choice was made in has closed, in the theme that drew it: Material's
+            // menu fades out over a few frames, and taken off the screen by the new theme while it
+            // fades, it crashes (its window gone, its position still updated)
+            kotlinx.coroutines.delay(MENU_CLOSED_MS)
+            // Nothing focused when the screens move to another theme's frame (MainActivity): a
+            // focus carried along points at a field the move left behind, and the next field
+            // touched crashes
+            focus.clearFocus(force = true)
+            Appearance.from(settings)?.let { CurrentTheme.apply(it) }
+        }
+        DisposableEffect(Unit) {
+            onDispose { if (!saved) Appearance.from(stored)?.let { CurrentTheme.apply(it) } }
+        }
     }
 
     fun save() {
@@ -71,6 +101,7 @@ fun AppSettingsScreen(
             val result = coordinator.processUserAction("app_config.set", mapOf("category" to category, "settings" to JsonUtils.toMap(settings)))
             isSaving = false
             if (result.isSuccess) {
+                saved = true
                 UI.Toast(context, s.shared("settings_saved"), Duration.SHORT)
                 onBack()
             } else {
@@ -111,3 +142,6 @@ fun AppSettingsScreen(
         }
     }
 }
+
+/** Past the fade-out of Material's menu (75 ms), with room for a slow frame. */
+private const val MENU_CLOSED_MS = 300L

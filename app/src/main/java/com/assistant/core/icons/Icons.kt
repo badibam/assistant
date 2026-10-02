@@ -35,7 +35,7 @@ object Icons {
      */
     fun drawable(context: Context, iconName: String): Int? = when (CurrentTheme.current.iconSource) {
         IconSource.LUCIDE -> drawableOf(context, "lucide", iconName)
-        IconSource.OWN -> drawableOf(context, CurrentTheme.getCurrentThemeId(), iconName)
+        IconSource.OWN -> drawableOf(context, CurrentTheme.themeId, iconName)
     }
 
     /**

@@ -943,8 +943,15 @@
 
     <string name="settings_ui">User interface</string>
     <string name="settings_ui_description">Configure the look and the behaviour of the interface</string>
-    <string name="settings_ui_appearance">Appearance</string>
-    <string name="settings_ui_appearance_help">The theme the app is drawn in, and its palette.</string>
+    <string name="settings_ui_theme">Theme</string>
+    <string name="settings_ui_theme_help">How the app is drawn: its shapes, its letters, its icons.</string>
+    <string name="settings_ui_palette">Palette</string>
+    <string name="settings_ui_palette_help">The theme's colours, each palette in a light and a dark version.</string>
+    <string name="settings_ui_mode">Mode</string>
+    <string name="settings_ui_mode_help">Light, dark, or as the phone is set, following it when it changes.</string>
+    <string name="settings_ui_mode_light">Light</string>
+    <string name="settings_ui_mode_dark">Dark</string>
+    <string name="settings_ui_mode_system">As the phone</string>
     <string name="settings_ui_size_step">Interface size</string>
     <string name="settings_ui_size_step_help">Makes the interface larger by whole steps, in the themes drawn pixel by pixel, so their pixels stay sharp: they ignore Android\'s text size. The other themes keep their own size.</string>
     <string name="settings_ui_sounds">Interface sounds</string>

@@ -66,8 +66,8 @@ dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}
         <legend>La palette</legend>
         <div class="seg" id="segPalette"></div>
         <div class="acts">
-          <button id="btnNew">Nouvelle</button>
-          <button id="btnRemove">Retirer</button>
+          <button id="btnNew">Nouvelle famille</button>
+          <button id="btnRemove">Retirer la famille</button>
           <button id="btnSave" class="main">Enregistrer</button>
         </div>
       </fieldset>
@@ -89,7 +89,7 @@ dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}
   </div>
 
   <div class="notes">
-    <p><b>Une palette est un registre</b> : un fond d'écran avec son encre, et l'intérieur d'un cadre (un panneau, avec son encre à lui), chacun avec les deux tons de sa bordure. Les deux palettes de base sont la nuit et le pâle d'une même teinte ; une autre teinte est une palette de plus, que l'utilisateur choisit. Tout ce qui est dessiné ici sort des nombres de droite par <code>palette-derive.js</code>, et l'enregistrement garde ces couleurs à côté des nombres : celles que le thème doit en tirer.</p>
+    <p><b>Une palette est un registre</b> : un fond d'écran avec son encre, et l'intérieur d'un cadre (un panneau, avec son encre à lui), chacun avec les deux tons de sa bordure. Une palette appartient à une famille (prune, crème), qui existe en clair et en sombre : l'utilisateur choisit la famille, et le mode à part. Tout ce qui est dessiné ici sort des nombres de droite par <code>palette-derive.js</code>, et l'enregistrement garde ces couleurs à côté des nombres : celles que le thème doit en tirer.</p>
     <p><b>Les distances</b> sont mesurées en OKLab entre une encre et le fond qu'elle touche. Ce sont des mesures, pas des verdicts : aucun seuil n'est encore réglé. L'œil décide.</p>
     <p><b>Ce que le banc ne montre pas</b> : le toucher (bordure inversée), le mouvement, les sélecteurs de date et d'heure, le mode d'édition de la grille. Les icônes sont pixelisées dans la page avec la même méthode que le script à venir, sans son fichier de retouches.</p>
   </div>
@@ -164,7 +164,6 @@ const SLIDERS = [
 ];
 
 const S = { doc: null, sel: 0, dev: 2, step: 1, gap: 1, dirty: false };
-const BASE_IDS = ["retro_dark", "retro_light"];
 
 // ---------------------------------------------------------------------------------------------
 // Icons, pixelized as the theme's script will: drawn large, each pixel kept over a coverage.
@@ -507,7 +506,8 @@ function buildPaletteSeg() {
   seg("segPalette", S.doc.palettes.map((p) => p.id.replace(/^retro_/, "")), S.sel, (i) => {
     S.sel = i; buildPaletteSeg(); buildSliders(); draw();
   });
-  document.getElementById("btnRemove").disabled = BASE_IDS.includes(S.doc.palettes[S.sel].id);
+  // A family goes with both its modes, and the theme keeps at least one
+  document.getElementById("btnRemove").disabled = new Set(S.doc.palettes.map((p) => p.family)).size < 2;
 }
 
 function buildSliders() {
@@ -537,23 +537,26 @@ function buildSliders() {
 }
 
 document.getElementById("btnNew").onclick = () => {
-  const name = prompt("Nom de la nouvelle palette (lettres, chiffres, _) :");
-  if (!name || !/^[a-z0-9_]+$/.test(name)) return;
-  const id = "retro_" + name;
-  if (S.doc.palettes.some((p) => p.id === id)) { alert("Ce nom existe déjà."); return; }
-  const from = S.doc.palettes[S.sel];
-  S.doc.palettes.push({ id, base: from.base, numbers: { ...from.numbers } });
+  // A new family, in both modes: each a copy of the selected family's palette in that mode
+  const family = prompt("Nom de la nouvelle famille (lettres, chiffres) :");
+  if (!family || !/^[a-z0-9]+$/.test(family)) return;
+  if (S.doc.palettes.some((p) => p.family === family)) { alert("Ce nom existe déjà."); return; }
+  const from = S.doc.palettes[S.sel].family;
+  for (const mode of ["LIGHT", "DARK"]) {
+    const source = S.doc.palettes.find((p) => p.family === from && p.mode === mode);
+    S.doc.palettes.push({ id: "retro_" + family + "_" + mode.toLowerCase(), family, mode, numbers: { ...source.numbers } });
+  }
   S.sel = S.doc.palettes.length - 1;
-  setDirty(true, "palette ajoutée, pas enregistrée");
+  setDirty(true, "famille ajoutée, pas enregistrée");
   buildPaletteSeg(); buildSliders(); draw();
 };
 
 document.getElementById("btnRemove").onclick = () => {
-  const p = S.doc.palettes[S.sel];
-  if (BASE_IDS.includes(p.id) || !confirm("Retirer la palette " + p.id + " ?")) return;
-  S.doc.palettes.splice(S.sel, 1);
+  const family = S.doc.palettes[S.sel].family;
+  if (!confirm("Retirer la famille " + family + ", en clair et en sombre ?")) return;
+  S.doc.palettes = S.doc.palettes.filter((p) => p.family !== family);
   S.sel = 0;
-  setDirty(true, "palette retirée, pas enregistrée");
+  setDirty(true, "famille retirée, pas enregistrée");
   buildPaletteSeg(); buildSliders(); draw();
 };
 

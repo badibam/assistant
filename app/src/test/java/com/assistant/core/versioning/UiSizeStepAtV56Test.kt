@@ -24,7 +24,7 @@ class UiSizeStepAtV56Test {
     fun `another category, or interface settings without a step, are left as they are`() {
         val format = JSONObject().put("timezone_override", "Europe/Paris")
         assertEquals(format.toString(), UiSizeStepAtV56.settings(AppSettingCategories.FORMAT, format).toString())
-        val ui = JSONObject().put(AppSettings.UI_APPEARANCE, "retro_light")
+        val ui = JSONObject().put(UiAppearanceAtV55.KEY, "retro_light")
         assertEquals(ui.toString(), UiSizeStepAtV56.settings(AppSettingCategories.UI, ui).toString())
     }
 }

@@ -5,189 +5,74 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
 /**
- * CurrentTheme - Global theme manager with discovery pattern + palette system
- * 
- * Central point for current theme and palette management:
- * - UI.* → CurrentTheme.current.* → ThemeScanner.getTheme().*
- * - Transparent theme and palette switching for the app
- * - One active theme + one active palette at a time
- * - Automatic discovery of available themes and their palettes
+ * The look the app is shown in: a theme, one of its palette families, a mode, a size step. UI.*
+ * calls go to [current]; the palette shown is derived from the family and the mode, the phone's
+ * dark theme setting deciding when the mode is SYSTEM.
+ *
+ * Everything here is Compose state: a screen that reads it is drawn again when it changes, which
+ * is how the interface settings show a choice before it is saved (Appearance).
  */
 object CurrentTheme {
-    
-    /**
-     * Currently active theme
-     * Default: "default" theme via ThemeScanner
-     * Can be changed at runtime via switchTheme()
-     */
+
+    /** The theme every UI.* call is drawn by. */
     var current: ThemeContract by mutableStateOf(ThemeScanner.getDefaultTheme())
         private set
-    
-    /**
-     * Currently active palette ID
-     * Default: first DARK palette of current theme
-     * Can be changed at runtime via switchPalette()
-     */
-    var currentPaletteId: String by mutableStateOf(getDefaultPaletteId())
+
+    /** [current]'s id. */
+    var themeId: String by mutableStateOf(ThemeScanner.scanForThemes().entries.first { it.value === ThemeScanner.getDefaultTheme() }.key)
         private set
-    
+
+    /** The family of [current]'s palettes shown. */
+    var family: String by mutableStateOf(ThemeScanner.getDefaultTheme().paletteFamilies().first())
+        private set
+
+    /** The mode asked for. */
+    var mode: AppearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
+        private set
+
+    /** Whether the phone is in its dark theme: set by the activity, read when [mode] is SYSTEM. */
+    var systemDark: Boolean by mutableStateOf(true)
+
     /**
-     * How many whole steps the interface's size is moved by, from -1 to +2: a pixel theme changes
-     * its integer factor by that much, so everything grows together and nothing falls between two
-     * pixels. Kept in memory, like the theme and the palette.
+     * How many whole steps the interface's size is moved by: a pixel theme changes its integer
+     * factor by that much, so everything grows together and nothing falls between two pixels.
      */
     var sizeStep: Int by mutableStateOf(0)
         private set
 
-    /**
-     * Shows the app in [paletteId], in the theme it belongs to, at [step]: the interface settings
-     * as AppConfigManager reads them. A palette no theme has is a bug, the settings' schema
-     * offering only the palettes the themes declare.
-     */
-    fun applyAppearance(paletteId: String, step: Int) {
-        val theme = ThemeScanner.scanForThemes().values.firstOrNull { theme -> theme.getAllPalettes().any { it.id == paletteId } }
-            ?: error("No theme has the palette '$paletteId'")
-        current = theme
-        currentPaletteId = paletteId
-        sizeStep = step
-    }
+    /** The mode shown, the phone's resolved. */
+    val paletteMode: PaletteMode
+        get() = when (mode) {
+            AppearanceMode.LIGHT -> PaletteMode.LIGHT
+            AppearanceMode.DARK -> PaletteMode.DARK
+            AppearanceMode.SYSTEM -> if (systemDark) PaletteMode.DARK else PaletteMode.LIGHT
+        }
+
+    /** Whether the palette shown is a dark one. */
+    val isDark: Boolean
+        get() = paletteMode == PaletteMode.DARK
+
+    /** The id of the palette shown, which the theme looks its colours up by. */
+    val currentPaletteId: String
+        get() = current.palette(family, paletteMode).id
 
     /**
-     * Changes current theme by ID
-     * All UI components will be automatically re-rendered
-     * 
-     * @param themeId The theme identifier to activate
-     * @return true if theme was changed, false if theme not found
+     * Shows the app in [appearance]. A theme or a family that does not exist is a bug: the
+     * settings' schema offers only those the themes declare.
      */
-    fun switchTheme(themeId: String): Boolean {
-        val theme = ThemeScanner.getTheme(themeId)
-        return if (theme != null) {
-            current = theme
-            // A palette belongs to its theme: the new one starts on its own dark palette
-            if (theme.getAllPalettes().none { it.id == currentPaletteId }) resetPaletteToDefault()
-            true
-        } else {
-            false
-        }
+    fun apply(appearance: Appearance) {
+        val theme = ThemeScanner.getTheme(appearance.theme) ?: error("No theme '${appearance.theme}'")
+        require(appearance.family in theme.paletteFamilies()) { "The theme '${appearance.theme}' has no palette '${appearance.family}'" }
+        current = theme
+        themeId = appearance.theme
+        family = appearance.family
+        mode = appearance.mode
+        sizeStep = appearance.sizeStep
     }
-    
-    
-    /**
-     * Gets the list of available themes
-     * 
-     * @return Map<themeId, ThemeContract> of all discovered themes
-     */
-    fun getAvailableThemes(): Map<String, ThemeContract> {
-        return ThemeScanner.scanForThemes()
-    }
-    
-    /**
-     * Gets the list of available theme IDs
-     * Useful for theme selection interfaces
-     * 
-     * @return List of theme identifiers
-     */
-    fun getAvailableThemeIds(): List<String> {
-        return ThemeScanner.getAvailableThemeIds()
-    }
-    
-    /**
-     * Gets the currently active theme ID
-     * 
-     * @return Current theme ID or "unknown" if not found
-     */
-    fun getCurrentThemeId(): String {
-        return getAvailableThemes()
-            .entries
-            .firstOrNull { it.value === current }
-            ?.key ?: "unknown"
-    }
-    
-    // =====================================
-    // PALETTE MANAGEMENT
-    // =====================================
-    
-    /**
-     * Changes current palette by ID
-     * Palette must belong to current theme
-     * 
-     * @param paletteId The palette identifier to activate
-     * @return true if palette was changed, false if palette not found or doesn't belong to current theme
-     */
-    fun switchPalette(paletteId: String): Boolean {
-        val availablePalettes = current.getAllPalettes().map { it.id }
-        return if (paletteId in availablePalettes) {
-            currentPaletteId = paletteId
-            true
-        } else {
-            false
-        }
-    }
-    
-    /**
-     * Gets all palettes available for current theme
-     * 
-     * @return List of all palettes (base + custom) for current theme
-     */
-    fun getCurrentThemePalettes(): List<ThemePalette> {
-        return current.getAllPalettes()
-    }
-    
-    /**
-     * Gets base palettes for current theme
-     * 
-     * @return List of base palettes (LIGHT, DARK) for current theme
-     */
-    fun getCurrentThemeBasePalettes(): List<ThemePalette> {
-        return current.getBasePalettes()
-    }
-    
-    /**
-     * Gets custom palettes for current theme
-     * 
-     * @return List of custom palettes for current theme
-     */
-    fun getCurrentThemeCustomPalettes(): List<ThemePalette> {
-        return current.getCustomPalettes()
-    }
-    
-    /**
-     * Gets the currently active ColorScheme
-     * Based on current theme + current palette
-     * 
-     * @return ColorScheme for current theme and palette
-     */
-    fun getCurrentColorScheme(): androidx.compose.material3.ColorScheme {
-        return current.getColorScheme(currentPaletteId)
-    }
-    
-    /**
-     * Gets the currently active palette info
-     * 
-     * @return ThemePalette info for current palette, or null if not found
-     */
-    fun getCurrentPalette(): ThemePalette? {
-        return current.getAllPalettes().firstOrNull { it.id == currentPaletteId }
-    }
-    
-    /**
-     * Helper to get default palette ID for theme
-     * Used for initialization - defaults to DARK as specified
-     */
-    private fun getDefaultPaletteId(): String {
-        return ThemeScanner.getDefaultTheme()
-            .getBasePalettes()
-            .firstOrNull { it.base == BasePalette.DARK }
-            ?.id ?: "default_dark"
-    }
-    
-    /**
-     * Resets palette to default when theme changes
-     * Called internally when switching themes
-     */
-    private fun resetPaletteToDefault() {
-        val darkPalette = current.getBasePalettes()
-            .firstOrNull { it.base == BasePalette.DARK }
-        currentPaletteId = darkPalette?.id ?: current.getAllPalettes().firstOrNull()?.id ?: "default_dark"
-    }
+
+    /** Every theme, by id. */
+    fun getAvailableThemes(): Map<String, ThemeContract> = ThemeScanner.scanForThemes()
+
+    /** The Material colours of the palette shown, for what Material still draws at the app's root. */
+    fun getCurrentColorScheme(): androidx.compose.material3.ColorScheme = current.getColorScheme(currentPaletteId)
 }

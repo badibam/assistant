@@ -1,12 +1,12 @@
 package com.assistant.themes.retro
 
-import com.assistant.core.themes.BasePalette
+import com.assistant.core.themes.PaletteMode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /*
- * palettes.json as the theme reads it: each palette's id, its base, its numbers, and the colours
+ * palettes.json as the theme reads it: each palette's id, its family and mode, its numbers, and the colours
  * the bench derived from them (RetroPalette.kt derives the theme's own).
  */
 
@@ -39,11 +39,15 @@ data class PaletteNumbers(
     @SerialName("status_chroma") val statusChroma: Float,
 )
 
-/** One palette of palettes.json: its id, its base, its numbers, and the colours the bench derived. */
+/**
+ * One palette of palettes.json: its id ("retro_<family>_<mode>"), its family and mode, its
+ * numbers, and the colours the bench derived. Every family is there in both modes.
+ */
 @Serializable
 data class PaletteEntry(
     val id: String,
-    val base: BasePalette,
+    val family: String,
+    val mode: PaletteMode,
     val numbers: PaletteNumbers,
     val derived: Map<String, String> = emptyMap(),
 )

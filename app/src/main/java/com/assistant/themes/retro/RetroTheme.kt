@@ -15,6 +15,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -75,7 +76,7 @@ import com.assistant.core.ai.data.MessageSender
 import com.assistant.core.icons.IconSource
 import com.assistant.core.icons.Icons
 import com.assistant.core.strings.Strings
-import com.assistant.core.themes.BasePalette
+import com.assistant.core.themes.PaletteMode
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.themes.TagColor
 import com.assistant.core.themes.ThemeContract
@@ -132,9 +133,9 @@ object RetroTheme : ThemeContract {
     override fun name(context: android.content.Context): String =
         com.assistant.core.strings.Strings.`for`(context = context, theme = "retro").theme("name")
 
-    /** A palette's name is its id past the theme's: "retro_dark" is named by palette_dark. */
-    override fun paletteName(paletteId: String, context: android.content.Context): String =
-        com.assistant.core.strings.Strings.`for`(context = context, theme = "retro").theme("palette_${paletteId.removePrefix("retro_")}")
+    /** A palette family is named by palette_<family>: "prune" by palette_prune. */
+    override fun paletteName(family: String, context: android.content.Context): String =
+        com.assistant.core.strings.Strings.`for`(context = context, theme = "retro").theme("palette_$family")
 
     /**
      * Its own icons, every one: Lucide's pixelized in the register's box (icons/, written by
@@ -373,8 +374,7 @@ object RetroTheme : ThemeContract {
      */
     @Composable
     override fun Drawing(drawing: com.assistant.core.drawing.Drawing, modifier: Modifier) {
-        val dark = RetroPalettes.entries.first { it.id == CurrentTheme.currentPaletteId }.base == BasePalette.DARK
-        DefaultDrawing.Draw(drawing, drawingTextStyle(), dark, modifier)
+        DefaultDrawing.Draw(drawing, drawingTextStyle(), CurrentTheme.isDark, modifier)
     }
 
     /** The top edge of a frame across the width, both tones. */
@@ -581,15 +581,20 @@ object RetroTheme : ThemeContract {
     @Composable
     override fun FullScreen(content: @Composable () -> Unit) {
         val grid = retroGrid()
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().background(retroColors.screen.ground.srgb)) {
-            val margin = with(LocalDensity.current) {
-                ((constraints.maxWidth % grid.cellPx) / 2 / grid.scale * grid.scale).toDp()
-            }
-            Box(modifier = Modifier.fillMaxSize().padding(horizontal = margin)) {
-                CompositionLocalProvider(LocalRetroSurface provides RetroSurface.SCREEN, LocalRetroInk provides null) {
-                    content()
-                    ToastHost(Modifier.align(Alignment.BottomCenter))
-                }
+        // The width past whole cells, as the two side margins, in whole drawing pixels. Laid out
+        // rather than read from BoxWithConstraints, whose content is composed apart: the app's
+        // screens, moved in when the theme changes (MainActivity), would not follow the theme there
+        Box(modifier = Modifier.fillMaxSize().background(retroColors.screen.ground.srgb).layout { measurable, constraints ->
+            val margin = (constraints.maxWidth % grid.cellPx) / 2 / grid.scale * grid.scale
+            val placeable = measurable.measure(constraints.copy(
+                minWidth = (constraints.minWidth - 2 * margin).coerceAtLeast(0),
+                maxWidth = constraints.maxWidth - 2 * margin
+            ))
+            layout(constraints.maxWidth, placeable.height) { placeable.place(margin, 0) }
+        }) {
+            CompositionLocalProvider(LocalRetroSurface provides RetroSurface.SCREEN, LocalRetroInk provides null) {
+                content()
+                ToastHost(Modifier.align(Alignment.BottomCenter))
             }
         }
     }
@@ -959,23 +964,13 @@ object RetroTheme : ThemeContract {
     // PALETTES
     // =====================================
 
-    override fun getBasePalettes(): List<ThemePalette> = listOf(
-        ThemePalette.createBase(THEME_ID, BasePalette.LIGHT),
-        ThemePalette.createBase(THEME_ID, BasePalette.DARK)
-    )
-
-    /** The palettes of palettes.json past the two base ones: other hues, set on the bench. */
-    override fun getCustomPalettes(): List<ThemePalette> {
-        val bases = getBasePalettes().map { it.id }
-        return RetroPalettes.entries.filter { it.id !in bases }.map {
-            ThemePalette.createCustom(THEME_ID, it.id.removePrefix("${THEME_ID}_"), it.id.removePrefix("${THEME_ID}_"), basedOn = it.base)
-        }
-    }
+    /** The palettes of palettes.json, set on the bench: each family in both modes. */
+    override fun palettes(): List<ThemePalette> = RetroPalettes.entries.map { ThemePalette(it.id, it.family, it.mode) }
 
     /** For what Material still draws at the app's root: the palette's colours under its names. */
     override fun getColorScheme(paletteId: String): ColorScheme {
         val c = RetroPalettes.colors(paletteId)
-        val dark = RetroPalettes.entries.first { it.id == paletteId }.base == BasePalette.DARK
+        val dark = RetroPalettes.entries.first { it.id == paletteId }.mode == PaletteMode.DARK
         val screen = c.screen
         val panel = c.panel
         return if (dark) darkColorScheme(

@@ -54,8 +54,17 @@ object AppSettings {
     /** The setting under which the theme's interface sounds play. */
     const val UI_SOUNDS = "sounds"
 
-    /** The interface's look: a theme's palette, by its id (default_dark, retro_light...). */
-    const val UI_APPEARANCE = "appearance"
+    /** The interface's theme, by its id. */
+    const val UI_THEME = "theme"
+
+    /** Light, dark, or the phone's (AppearanceMode). */
+    const val UI_MODE = "mode"
+
+    /**
+     * The family of a theme's palettes, stored under a key of that theme's: the choice of palettes
+     * depends on the theme (a Variant), and switching themes drops the former's.
+     */
+    fun uiPaletteKey(themeId: String) = "${themeId}_palette"
 
     /** How many whole steps the interface's size is moved by. */
     const val UI_SIZE_STEP = "size_step"
@@ -115,15 +124,21 @@ object AppSettings {
                     text("settings_demo_install_on_update_help"), FieldType.BOOLEAN, required = true)
             )
             AppSettingCategories.UI -> {
-                // Every palette of every theme, named "Theme · palette"
-                val appearances = com.assistant.core.themes.CurrentTheme.getAvailableThemes().values.flatMap { theme ->
-                    theme.getAllPalettes().map { palette ->
-                        palette.id to "${theme.name(context)} · ${theme.paletteName(palette.id, context)}"
-                    }
-                }
+                val themes = com.assistant.core.themes.CurrentTheme.getAvailableThemes()
+                val modes = com.assistant.core.themes.AppearanceMode.entries.map { it.name }
                 listOf(
-                    choice(UI_APPEARANCE, text("settings_ui_appearance"), text("settings_ui_appearance_help"),
-                        appearances.map { it.first }, labels = appearances.toMap(), required = true),
+                    // The theme, then its palettes: each theme offers its own families, starting on its first
+                    SettingNode.Variant(
+                        choice(UI_THEME, text("settings_ui_theme"), text("settings_ui_theme_help"), themes.keys.toList(),
+                            labels = themes.mapValues { it.value.name(context) }, required = true),
+                        themes.mapValues { (id, theme) ->
+                            val families = theme.paletteFamilies()
+                            listOf(choice(uiPaletteKey(id), text("settings_ui_palette"), text("settings_ui_palette_help"), families,
+                                labels = families.associateWith { theme.paletteName(it, context) }, required = true, default = families.first()))
+                        }
+                    ),
+                    choice(UI_MODE, text("settings_ui_mode"), text("settings_ui_mode_help"), modes,
+                        labels = modes.associateWith { text("settings_ui_mode_${it.lowercase()}") }, required = true),
                     scale(UI_SIZE_STEP, text("settings_ui_size_step"), text("settings_ui_size_step_help"), SIZE_STEP_RANGE),
                     field(UI_SOUNDS, text("settings_ui_sounds"), text("settings_ui_sounds_help"), FieldType.BOOLEAN, required = true)
                 )
@@ -163,12 +178,12 @@ object AppSettings {
         SettingValues(nodes(category, context), settings)
 
     private fun field(name: String, label: String, description: String?, type: FieldType, required: Boolean = false,
-                      config: Map<String, Any>? = null) =
-        SettingNode.Field(FieldDefinition(name, label, description, type, false, config), required = required)
+                      config: Map<String, Any>? = null, default: Any? = null) =
+        SettingNode.Field(FieldDefinition(name, label, description, type, false, config), required = required, default = default)
 
     private fun choice(name: String, label: String, description: String, values: List<String>,
-                       labels: Map<String, String> = emptyMap(), required: Boolean = false) =
-        field(name, label, description, FieldType.CHOICE, required, mapOf("options" to ChoiceSettings.storedOptions(values, labels)))
+                       labels: Map<String, String> = emptyMap(), required: Boolean = false, default: String? = null) =
+        field(name, label, description, FieldType.CHOICE, required, mapOf("options" to ChoiceSettings.storedOptions(values, labels)), default)
 
     /** A bounded whole number, set with a slider. */
     private fun scale(name: String, label: String, description: String, range: IntProgression) =

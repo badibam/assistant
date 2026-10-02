@@ -13,6 +13,8 @@ import org.json.JSONObject
  */
 object UiAppearanceAtV55 {
 
+    /** The appearance's key at v55, gone at v57 (UiThemeModeAtV57). */
+    const val KEY = "appearance"
     const val APPEARANCE = "default_dark"
     const val SIZE_STEP = 0
 
@@ -20,7 +22,7 @@ object UiAppearanceAtV55 {
     fun settings(category: String, settings: JSONObject): JSONObject {
         if (category != AppSettingCategories.UI) return settings
         val out = JSONObject(settings.toString())
-        if (!out.has(AppSettings.UI_APPEARANCE)) out.put(AppSettings.UI_APPEARANCE, APPEARANCE)
+        if (!out.has(KEY)) out.put(KEY, APPEARANCE)
         if (!out.has(AppSettings.UI_SIZE_STEP)) out.put(AppSettings.UI_SIZE_STEP, SIZE_STEP)
         return out
     }

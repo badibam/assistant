@@ -1,6 +1,6 @@
 package com.assistant.themes.retro
 
-import com.assistant.core.themes.BasePalette
+import com.assistant.core.themes.ThemePalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -38,11 +38,9 @@ class RetroPaletteTest {
     }
 
     @Test
-    fun `the two base palettes exist, and ids are unique`() {
+    fun `ids are unique, each the conventional id of its family and mode`() {
         val ids = RetroPalettes.entries.map { it.id }
         assertEquals(ids.toSet().size, ids.size)
-        assertTrue("retro_dark" in ids && "retro_light" in ids)
-        assertEquals(BasePalette.DARK, RetroPalettes.entries.first { it.id == "retro_dark" }.base)
-        assertEquals(BasePalette.LIGHT, RetroPalettes.entries.first { it.id == "retro_light" }.base)
+        for (entry in RetroPalettes.entries) assertEquals(ThemePalette.of("retro", entry.family, entry.mode).id, entry.id)
     }
 }

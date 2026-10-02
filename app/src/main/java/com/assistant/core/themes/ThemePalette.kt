@@ -1,59 +1,28 @@
 package com.assistant.core.themes
 
-/**
- * Base palette categories that all themes should support
- * Ensures minimum consistency across themes
- */
-enum class BasePalette {
-    LIGHT,      // Light background, dark text
-    DARK        // Dark background, light text
-}
+/** Whether a palette is drawn on a light ground with dark ink, or the other way round. */
+enum class PaletteMode { LIGHT, DARK }
 
 /**
- * Theme palette definition - combines base categories with custom theme variations
- * 
- * Examples:
- * - BasePalette.LIGHT → "default_light", "glass_light", "retro_light"
- * - Custom → "glass_frosted_blue", "retro_neon_pink"
+ * The mode the user asks for: one of the two, or the phone's, which follows Android's dark theme
+ * setting as it changes.
+ */
+enum class AppearanceMode { LIGHT, DARK, SYSTEM }
+
+/**
+ * One palette of a theme: a [family] (the colours' character, "prune", "cream") in one [mode].
+ * Every family of a theme exists in both modes, so that any family can be shown in any mode.
+ *
+ * @property id Unique across the themes, "<theme>_<family>_<mode>": what a theme's colours are looked up by
  */
 data class ThemePalette(
-    val id: String,              // Unique identifier: "default_light", "glass_frosted_blue"
-    val displayName: String,     // User-friendly name: "Light", "Frosted Blue"
-    val description: String?,    // Optional description: "Cool blue tones with transparency"
-    val base: BasePalette?,      // Base category if applicable (null for pure custom)
-    val isCustom: Boolean        // true = theme-specific, false = standard base
+    val id: String,
+    val family: String,
+    val mode: PaletteMode
 ) {
     companion object {
-        /**
-         * Creates a standard base palette for a theme
-         */
-        fun createBase(themeId: String, base: BasePalette): ThemePalette {
-            return ThemePalette(
-                id = "${themeId}_${base.name.lowercase()}",
-                displayName = base.name.lowercase().replaceFirstChar { it.uppercase() },
-                description = null,
-                base = base,
-                isCustom = false
-            )
-        }
-        
-        /**
-         * Creates a custom palette for a theme
-         */
-        fun createCustom(
-            themeId: String,
-            name: String,
-            displayName: String,
-            description: String? = null,
-            basedOn: BasePalette? = null
-        ): ThemePalette {
-            return ThemePalette(
-                id = "${themeId}_${name}",
-                displayName = displayName,
-                description = description,
-                base = basedOn,
-                isCustom = true
-            )
-        }
+        /** The palette of [family] in [mode] for [themeId], under its conventional id. */
+        fun of(themeId: String, family: String, mode: PaletteMode): ThemePalette =
+            ThemePalette("${themeId}_${family}_${mode.name.lowercase()}", family, mode)
     }
 }

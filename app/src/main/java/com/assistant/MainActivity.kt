@@ -107,50 +107,61 @@ class MainActivity : ComponentActivity() {
         // Complements CoreScheduler's 1-minute heartbeat for app-open scenarios
         scheduleCoreSchedulerWorker()
 
+        // The phone's dark theme setting from the first frame on
+        CurrentTheme.systemDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+
         setContent {
-            MaterialTheme(
-                colorScheme = CurrentTheme.getCurrentColorScheme()
-            ) {
-                UI.FullScreen {
-                    // The demo first, installed afresh after an update, before the home screen
-                    // reads the zones; once per activity, a recreation finding it done
-                    var demoReady by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-                    if (!demoReady) {
+            // The phone's dark theme setting, which the mode "as the phone" follows as it changes
+            val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            androidx.compose.runtime.SideEffect { CurrentTheme.systemDark = systemDark }
+            // The app's screens, moved whole from one theme's frame to another's when the theme
+            // changes: each theme draws FullScreen its own way, and without moving them every
+            // screen's state would start over, the interface settings being edited among them
+            val app = androidx.compose.runtime.remember { androidx.compose.runtime.movableContentOf {
+                // The demo first, installed afresh after an update, before the home screen
+                // reads the zones; once per activity, a recreation finding it done
+                var demoReady by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+                if (!demoReady) {
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        val failed = withContext(Dispatchers.IO) { com.assistant.core.demo.DemoStartup.run(this@MainActivity) }
+                        if (failed != null) com.assistant.core.ui.UI.Toast(this@MainActivity, failed, com.assistant.core.ui.Duration.LONG)
+                        demoReady = true
+                    }
+                    com.assistant.core.ui.components.DemoInstalling()
+                } else {
+                    // What waits for the user and the stopwatches running, marked on every tile of
+                    // every screen: watched once the demo is written, not at each of its writes
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
+                        com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
+                    ) {
+                        // The theme's sounds loaded
+                        com.assistant.core.ui.sound.UISoundsLoader()
+                        // A long operation running shows over every screen; one whose caller
+                        // left (its screen closed) says once here how it ended
                         androidx.compose.runtime.LaunchedEffect(Unit) {
-                            val failed = withContext(Dispatchers.IO) { com.assistant.core.demo.DemoStartup.run(this@MainActivity) }
-                            if (failed != null) com.assistant.core.ui.UI.Toast(this@MainActivity, failed, com.assistant.core.ui.Duration.LONG)
-                            demoReady = true
-                        }
-                        com.assistant.core.ui.components.DemoInstalling()
-                    } else {
-                        // What waits for the user and the stopwatches running, marked on every tile of
-                        // every screen: watched once the demo is written, not at each of its writes
-                        androidx.compose.runtime.CompositionLocalProvider(
-                            com.assistant.core.ui.LocalWaiting provides com.assistant.core.ui.rememberWaiting(null),
-                            com.assistant.core.ui.LocalRunning provides com.assistant.core.ui.rememberRunning()
-                        ) {
-                            // The theme's sounds loaded
-                            com.assistant.core.ui.sound.UISoundsLoader()
-                            // A long operation running shows over every screen; one whose caller
-                            // left (its screen closed) says once here how it ended
-                            androidx.compose.runtime.LaunchedEffect(Unit) {
-                                com.assistant.core.coordinator.LongOperation.unclaimed.collect { ended ->
-                                    val s = com.assistant.core.strings.Strings.`for`(context = this@MainActivity)
-                                    val message = if (ended.result.isSuccess) s.shared("long_operation_done").format(ended.label)
-                                        else s.shared("long_operation_failed").format(ended.label, ended.result.error ?: "")
-                                    com.assistant.core.ui.UI.Toast(this@MainActivity, message, com.assistant.core.ui.Duration.LONG)
-                                }
+                            com.assistant.core.coordinator.LongOperation.unclaimed.collect { ended ->
+                                val s = com.assistant.core.strings.Strings.`for`(context = this@MainActivity)
+                                val message = if (ended.result.isSuccess) s.shared("long_operation_done").format(ended.label)
+                                    else s.shared("long_operation_failed").format(ended.label, ended.result.error ?: "")
+                                com.assistant.core.ui.UI.Toast(this@MainActivity, message, com.assistant.core.ui.Duration.LONG)
                             }
-                            // The end of any list of the screens heard
-                            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().scrollEndSound()) {
-                                com.assistant.core.ui.components.LongOperationBar()
-                                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.weight(1f)) {
-                                    MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
-                                }
+                        }
+                        // The end of any list of the screens heard
+                        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxSize().scrollEndSound()) {
+                            com.assistant.core.ui.components.LongOperationBar()
+                            androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.weight(1f)) {
+                                MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
                             }
                         }
                     }
                 }
+            } }
+            MaterialTheme(
+                colorScheme = CurrentTheme.getCurrentColorScheme()
+            ) {
+                UI.FullScreen { app() }
             }
         }
     }
