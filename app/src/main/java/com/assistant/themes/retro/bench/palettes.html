@@ -8,7 +8,7 @@
   The retro theme's palettes are set here, by eye: a zone's screen and a sheet of components
   drawn at a phone's real resolution, in the embedded Cartouche, frames written with its own
   pieces. The numbers live in palettes.json, which the theme reads; this page saves them there
-  through `./run palettes`, which also serves the fonts and Lucide's icons from the repository.
+  through `./run themes`, which also serves the fonts and Lucide's icons from the repository.
 -->
 <style>
 @font-face{font-family:"CartoucheR";src:url("/app/src/main/res/font/cartouche_regular.ttf") format("truetype");font-display:block}
@@ -65,9 +65,9 @@ dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}
       <fieldset>
         <legend>La palette</legend>
         <div class="seg" id="segPalette"></div>
+        <div class="row"><div class="lab"><span>Décalage de teinte (aperçu, non enregistré)</span><b id="shiftOut">0</b></div>
+          <input type="range" id="shift" min="0" max="359" step="1" value="0"></div>
         <div class="acts">
-          <button id="btnNew">Nouvelle famille</button>
-          <button id="btnRemove">Retirer la famille</button>
           <button id="btnSave" class="main">Enregistrer</button>
         </div>
       </fieldset>
@@ -89,7 +89,7 @@ dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}
   </div>
 
   <div class="notes">
-    <p><b>Une palette est un registre</b> : un fond d'écran avec son encre, et l'intérieur d'un cadre (un panneau, avec son encre à lui), chacun avec les deux tons de sa bordure. Une palette appartient à une famille (prune, crème), qui existe en clair et en sombre : l'utilisateur choisit la famille, et le mode à part. Tout ce qui est dessiné ici sort des nombres de droite par <code>palette-derive.js</code>, et l'enregistrement garde ces couleurs à côté des nombres : celles que le thème doit en tirer.</p>
+    <p><b>Une palette est un registre</b> : un fond d'écran avec son encre, et l'intérieur d'un cadre (un panneau, avec son encre à lui), chacun avec les deux tons de sa bordure. Le thème a deux palettes, claire et sombre ; l'utilisateur choisit le mode, et un décalage de teinte qui tourne les deux du même angle (essayé ici sans être enregistré) : les états et les tags gardent leurs teintes. Tout ce qui est dessiné ici sort des nombres de droite par <code>palette-derive.js</code>, et l'enregistrement garde ces couleurs à côté des nombres : celles que le thème doit en tirer.</p>
     <p><b>Les distances</b> sont mesurées en OKLab entre une encre et le fond qu'elle touche. Ce sont des mesures, pas des verdicts : aucun seuil n'est encore réglé. L'œil décide.</p>
     <p><b>Ce que le banc ne montre pas</b> : le toucher (bordure inversée), le mouvement, les sélecteurs de date et d'heure, le mode d'édition de la grille. Les icônes sont pixelisées dans la page avec la même méthode que le script à venir, sans son fichier de retouches.</p>
   </div>
@@ -164,7 +164,7 @@ const SLIDERS = [
   ]],
 ];
 
-const S = { doc: null, sel: 0, dev: 2, step: 1, gap: 1, dirty: false };
+const S = { doc: null, sel: 0, dev: 2, step: 1, gap: 1, shift: 0, dirty: false };
 
 // ---------------------------------------------------------------------------------------------
 // Icons, pixelized as the theme's script will: drawn large, each pixel kept over a coverage.
@@ -242,8 +242,10 @@ function gauge(x, base, cells, f, fill, track) {
 // ---------------------------------------------------------------------------------------------
 // The zone's screen.
 
+// Drawn at the hue shift tried, as the app's setting turns it (Appearance.hueShift); saved at its own hue
 function paletteColors() {
-  const n = S.doc.palettes[S.sel].numbers;
+  const own = S.doc.palettes[S.sel].numbers;
+  const n = { ...own, hue: (own.hue + S.shift) % 360 };
   const lch = D.derive(n), hex = {};
   for (const [k, v] of Object.entries(lch)) hex[k] = D.hex(v);
   return { n, lch, c: hex };
@@ -516,7 +518,6 @@ function buildPaletteSeg() {
     S.sel = i; buildPaletteSeg(); buildSliders(); draw();
   });
   // A family goes with both its modes, and the theme keeps at least one
-  document.getElementById("btnRemove").disabled = new Set(S.doc.palettes.map((p) => p.family)).size < 2;
 }
 
 function buildSliders() {
@@ -545,28 +546,10 @@ function buildSliders() {
   }
 }
 
-document.getElementById("btnNew").onclick = () => {
-  // A new family, in both modes: each a copy of the selected family's palette in that mode
-  const family = prompt("Nom de la nouvelle famille (lettres, chiffres) :");
-  if (!family || !/^[a-z0-9]+$/.test(family)) return;
-  if (S.doc.palettes.some((p) => p.family === family)) { alert("Ce nom existe déjà."); return; }
-  const from = S.doc.palettes[S.sel].family;
-  for (const mode of ["LIGHT", "DARK"]) {
-    const source = S.doc.palettes.find((p) => p.family === from && p.mode === mode);
-    S.doc.palettes.push({ id: "retro_" + family + "_" + mode.toLowerCase(), family, mode, numbers: { ...source.numbers } });
-  }
-  S.sel = S.doc.palettes.length - 1;
-  setDirty(true, "famille ajoutée, pas enregistrée");
-  buildPaletteSeg(); buildSliders(); draw();
-};
-
-document.getElementById("btnRemove").onclick = () => {
-  const family = S.doc.palettes[S.sel].family;
-  if (!confirm("Retirer la famille " + family + ", en clair et en sombre ?")) return;
-  S.doc.palettes = S.doc.palettes.filter((p) => p.family !== family);
-  S.sel = 0;
-  setDirty(true, "famille retirée, pas enregistrée");
-  buildPaletteSeg(); buildSliders(); draw();
+document.getElementById("shift").oninput = (e) => {
+  S.shift = +e.target.value;
+  document.getElementById("shiftOut").textContent = S.shift + "°";
+  draw();
 };
 
 document.getElementById("btnSave").onclick = async () => {
@@ -581,7 +564,7 @@ document.getElementById("btnSave").onclick = async () => {
     if (!r.ok) throw new Error(await r.text());
     setDirty(false, "enregistré dans palettes.json");
   } catch (e) {
-    setDirty(true, "échec de l'enregistrement : " + e.message + " (le banc doit être servi par ./run palettes)", true);
+    setDirty(true, "échec de l'enregistrement : " + e.message + " (le banc doit être servi par ./run themes)", true);
   }
 };
 
@@ -598,7 +581,7 @@ async function start() {
   try {
     S.doc = await (await fetch(PALETTES_URL, { cache: "no-store" })).json();
   } catch (e) {
-    setDirty(false, "palettes.json illisible : ouvrir le banc par ./run palettes", true);
+    setDirty(false, "palettes.json illisible : ouvrir le banc par ./run themes", true);
     return;
   }
   await Promise.all([document.fonts.load('16px "CartoucheR"'), document.fonts.load('16px "CartoucheT"')]);

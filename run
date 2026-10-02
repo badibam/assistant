@@ -58,10 +58,10 @@ STRING_KEYS_CHECK = ROOT / "scripts" / "check_string_keys.py"
 # where a glyph drawn after the copy would otherwise never reach the app.
 FONT_COPY_CHECK = ROOT / "scripts" / "check_font_copy.py"
 
-# The retro theme's palettes: the numbers the theme derives its colours from, and the bench
-# they are set on by eye, which writes them back.
+# The retro theme's palettes: the numbers the theme derives its colours from, set by eye on its
+# bench, which writes them back; the themes' benches open from one page.
 PALETTES = ROOT / "app" / "src" / "main" / "resources" / "com" / "assistant" / "themes" / "retro" / "palettes.json"
-PALETTE_BENCH = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "themes" / "retro" / "bench" / "palettes.html"
+THEME_BENCHES = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "themes" / "bench.html"
 
 # And on spaces: a space a screen writes in dp looks right in the default theme and falls
 # between two cells in the retro one, so every space is named (UI.Space) and the theme sizes it.
@@ -534,10 +534,10 @@ def task_bench(*args):
                           check=False).returncode
 
 
-def task_palettes():
-    """Serve the retro theme's palette bench and open it; Ctrl+C stops the server.
+def task_themes():
+    """Serve the themes' benches and open their page; Ctrl+C stops the server.
 
-    The bench reads the fonts, Lucide's icons and palettes.json from the repository, which a
+    The retro theme's bench reads the fonts, Lucide's icons and palettes.json from the repository, which a
     page opened from the disk may not do, and saves palettes.json back through here: the one
     path this server writes, replaced whole so that a save cut short leaves the old file.
     """
@@ -571,7 +571,7 @@ def task_palettes():
             pass
 
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Bench)
-    url = f"http://127.0.0.1:{server.server_port}/{PALETTE_BENCH.relative_to(ROOT)}"
+    url = f"http://127.0.0.1:{server.server_port}/{THEME_BENCHES.relative_to(ROOT)}"
     print(f"{url}\nCtrl+C to stop.")
     subprocess.Popen(["xdg-open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
@@ -592,7 +592,7 @@ ACTIONS = {
     "install-release": task_install_release,
     "db": task_db,
     "bench": task_bench,
-    "palettes": task_palettes,
+    "themes": task_themes,
     "clean": task_clean,
 }
 
@@ -608,7 +608,7 @@ LABELS = {
     "install-release": "install-release   assemble, install and start the release",
     "db": "db         back up or restore the device database",
     "bench": "bench      free models played on the app's scenarios, on the emulator",
-    "palettes": "palettes   set the retro theme's palettes on their bench",
+    "themes": "themes     the themes' benches: their colours, the retro palettes set and saved",
     "clean": "clean      drop build outputs",
 }
 
@@ -654,7 +654,7 @@ def menu():
     choices += [Separator("Release")]
     choices += [Choice(LABELS[k], k) for k in ("release", "install-release")]
     choices += [Separator("Theme")]
-    choices += [Choice(LABELS["palettes"], "palettes")]
+    choices += [Choice(LABELS["themes"], "themes")]
     choices += [Separator(""), Choice(LABELS["clean"], "clean")]
     choices += [Choice("quit", _QUIT)]
 

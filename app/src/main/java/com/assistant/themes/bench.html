@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bancs des thèmes</title>
+<!--
+  The themes' benches, served by `./run themes`: each theme's colours seen at a phone's size, in
+  both modes and at any hue shift. The retro theme's numbers are set and saved on its bench; the
+  default theme's colours live in DefaultTheme.kt, its page only showing them.
+-->
+<style>
+  :root { --ground: #f4f1ec; --ink: #2b2620; --dim: #6b6358; --line: #d8d0c4; }
+  @media (prefers-color-scheme: dark) { :root { --ground: #1e1a16; --ink: #ece6dc; --dim: #a59c8f; --line: #3a332b; } }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 32px 16px; }
+  h1 { font-size: 22px; margin: 0 0 24px; }
+  a { display: block; padding: 16px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 8px; color: inherit; text-decoration: none; }
+  a:hover { border-color: var(--dim); }
+  a b { display: block; font-size: 18px; }
+  a span { color: var(--dim); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bancs des thèmes</h1>
+  <a href="retro/bench/palettes.html"><b>Rétro · palettes</b><span>Les nombres des palettes claire et sombre, réglés à l'œil et enregistrés dans palettes.json ; le décalage de teinte essayé sans être enregistré.</span></a>
+  <a href="default/bench/colors.html"><b>Par défaut · couleurs</b><span>Les couleurs du thème, claires et sombres, à tout décalage de teinte. Un aperçu : elles se changent dans DefaultTheme.kt.</span></a>
+</main>
+</body>
+</html>
