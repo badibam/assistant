@@ -53,7 +53,10 @@ android {
 
         release {
             isMinifyEnabled = true
-            isShrinkResources = true
+            // Off: every resource is resolved by name at runtime (strings through
+            // StringsManager's getIdentifier, icons and sounds the same way), references
+            // the shrinker cannot see -- it strips them all, and the release shows raw keys.
+            isShrinkResources = false
             isDebuggable = false
             signingConfig = signingConfigs.findByName("release")
 
