@@ -928,18 +928,21 @@ object RetroTheme : ThemeContract {
                 Line(value?.let { String.format(Locale.getDefault(), "%.${decimals}f", it) } ?: "—", grid.text, (if (value != null) s.strong else s.dim).srgb)
                 if (value != null && !required) WordButton(strings.shared("action_clear"), { onValueChange(null) })
             }
+            // The gestures below are installed once: they call the latest onValueChange, which
+            // writes into the settings as they are now, not as they were when the slider was drawn
+            val latest by androidx.compose.runtime.rememberUpdatedState(onValueChange)
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val width = constraints.maxWidth.toFloat()
                 val cells = (constraints.maxWidth / grid.cellPx).coerceAtLeast(1)
                 fun answer(x: Float) {
                     val raw = min + (x / width).coerceIn(0f, 1f) * (lastStop - min)
-                    onValueChange(SliderSteps.snap(raw, min, step))
+                    latest(SliderSteps.snap(raw, min, step))
                 }
                 Box(
                     modifier = Modifier
                         .heightIn(min = grid.cells(grid.touch))
-                        .pointerInput(min, lastStop, step) { detectTapGestures { answer(it.x) } }
-                        .pointerInput(min, lastStop, step) { detectHorizontalDragGestures { change, _ -> answer(change.position.x) } },
+                        .pointerInput(min, lastStop, step, width) { detectTapGestures { answer(it.x) } }
+                        .pointerInput(min, lastStop, step, width) { detectHorizontalDragGestures { change, _ -> answer(change.position.x) } },
                     contentAlignment = Alignment.CenterStart
                 ) {
                     val fraction = value?.let { ((it - min) / (lastStop - min)).toFloat() } ?: 0f
