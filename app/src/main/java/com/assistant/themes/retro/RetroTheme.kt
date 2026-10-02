@@ -213,7 +213,7 @@ object RetroTheme : ThemeContract {
         val enabled = state == ComponentState.NORMAL || state == ComponentState.SUCCESS
         Pressable(onClick = onClick, enabled = enabled) { pressed ->
             TouchRoom {
-                Framed(compact = true, minRows = touchRows, pressed = pressed) {
+                Framed(compact = true, minRows = touchRows, pressed = pressed, off = !enabled) {
                     CompositionLocalProvider(LocalRetroInk provides buttonInk(type, enabled)) { content() }
                 }
             }
@@ -250,10 +250,10 @@ object RetroTheme : ThemeContract {
             // Switched on, it stays pressed: the two tones swapped while what it opens lasts
             val down = pressed || active
             if (display == ButtonDisplay.ICON) {
-                IconFrame(action.iconName, label, ink, retroGrid().touch, down)
+                IconFrame(action.iconName, label, ink, retroGrid().touch, down, off = !enabled)
             } else {
                 TouchRoom {
-                    Framed(compact = true, minRows = touchRows, pressed = down) { Line(label, retroGrid().text, ink) }
+                    Framed(compact = true, minRows = touchRows, pressed = down, off = !enabled) { Line(label, retroGrid().text, ink) }
                 }
             }
         }
@@ -865,7 +865,7 @@ object RetroTheme : ThemeContract {
         }
     }
 
-    /** Two buttons: the chosen one a frame in the strong ink, the other on the page in the dim. */
+    /** Two buttons: the chosen one a frame filled with the strong ink, the other on the page in the dim. */
     @Composable
     override fun BooleanField(
         label: String,
@@ -891,9 +891,9 @@ object RetroTheme : ThemeContract {
                         modifier = if (compact) Modifier else Modifier.weight(1f)
                     ) { pressed ->
                         val fill = if (compact) Modifier else Modifier.fillMaxWidth()
-                        Framed(modifier = fill, input = !chosen, compact = true, minRows = touchRows, pressed = pressed) {
+                        Framed(modifier = fill, input = !chosen, compact = true, minRows = touchRows, pressed = pressed, filled = chosen) {
                             Box(modifier = fill, contentAlignment = Alignment.Center) {
-                                Line(text, if (chosen) grid.text else grid.thin, (if (chosen) retroColors.panel.strong else retroSurface.dim).srgb)
+                                Line(text, if (chosen) grid.text else grid.thin, (if (chosen) retroColors.panel.ground else retroSurface.dim).srgb)
                             }
                         }
                     }
@@ -1078,8 +1078,8 @@ object RetroTheme : ThemeContract {
 
     /** An icon in a square frame [side] cells wide, centred; the icon drawn at [grid]'s scale. */
     @Composable
-    private fun IconFrame(name: String, description: String?, ink: Color, side: Int, pressed: Boolean, grid: RetroGrid = retroGrid()) {
-        Framed(modifier = Modifier.size(retroGrid().cells(side)), pressed = pressed) {
+    private fun IconFrame(name: String, description: String?, ink: Color, side: Int, pressed: Boolean, grid: RetroGrid = retroGrid(), off: Boolean = false) {
+        Framed(modifier = Modifier.size(retroGrid().cells(side)), pressed = pressed, off = off) {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 CompositionLocalProvider(LocalRetroInk provides ink) { NamedIcon(name, description, grid) }
             }
@@ -1097,7 +1097,7 @@ object RetroTheme : ThemeContract {
             else -> panel.ink
         }.srgb
         Pressable(onClick = onClick, enabled = enabled) { pressed ->
-            TouchRoom { Framed(compact = true, minRows = touchRows, pressed = pressed) { Line(text, retroGrid().text, ink) } }
+            TouchRoom { Framed(compact = true, minRows = touchRows, pressed = pressed, off = !enabled) { Line(text, retroGrid().text, ink) } }
         }
     }
 

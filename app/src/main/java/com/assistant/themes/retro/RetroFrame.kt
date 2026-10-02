@@ -53,6 +53,9 @@ internal fun dividerRow(columns: Int, dark: Boolean): String = piece(Piece.TOP, 
  * [pressed] swaps the border's two tones while a finger is down: no ripple in this register. A
  * frame inside an item being lifted (LocalRetroLifted) swaps them too.
  *
+ * A [filled] frame is chosen: its inside takes the strong ink, its content written in the ground's
+ * colour. An [off] frame cannot be used: its border in the dim ink, its two tones one.
+ *
  * A [fillContent] frame gives its content all its inside, a cell in from every edge, laid from the
  * top: a tile, whose content places itself.
  */
@@ -64,14 +67,16 @@ internal fun Framed(
     minRows: Int = 2,
     pressed: Boolean = false,
     fillContent: Boolean = false,
+    filled: Boolean = false,
+    off: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val grid = retroGrid()
     val surface = if (input) retroSurface else retroColors.panel
     val swapped = pressed || LocalRetroLifted.current
-    val outer = (if (swapped) surface.borderInner else surface.borderOuter).srgb
-    val inner = (if (swapped) surface.borderOuter else surface.borderInner).srgb
-    val fill = surface.ground.srgb
+    val outer = (if (off) surface.dim else if (swapped) surface.borderInner else surface.borderOuter).srgb
+    val inner = (if (off) surface.dim else if (swapped) surface.borderOuter else surface.borderInner).srgb
+    val fill = (if (filled) surface.strong else surface.ground).srgb
     val measurer = rememberTextMeasurer()
     val style = grid.text
     val tile = grid.cellPx
