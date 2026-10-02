@@ -1027,13 +1027,22 @@ object RetroTheme : ThemeContract {
     // PIECES
     // =====================================
 
-    /** A text in one style and colour, cut with an ellipsis past [maxLines]. */
+    /**
+     * A text in one style and colour, cut with an ellipsis past [maxLines]. It goes to the line at
+     * spaces; a word wider than its line, which the font's wide letters make frequent in a narrow
+     * column, is split between syllables with a hyphen, by the system's rules for the language.
+     */
     @Composable
     private fun Line(text: String, style: TextStyle, color: Color, modifier: Modifier = Modifier, align: TextAlign? = null, maxLines: Int = Int.MAX_VALUE) {
         BasicText(
             text = text,
             modifier = modifier,
-            style = style.copy(color = color, textAlign = align ?: TextAlign.Unspecified),
+            style = style.copy(
+                color = color,
+                textAlign = align ?: TextAlign.Unspecified,
+                hyphens = androidx.compose.ui.text.style.Hyphens.Auto,
+                lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph
+            ),
             overflow = TextOverflow.Ellipsis,
             maxLines = maxLines
         )
