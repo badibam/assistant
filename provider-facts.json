@@ -1,6 +1,7 @@
 {
   "copy": "app/src/main/assets/facts.json",
   "handled": {
+    "claude-sonnet-5-5-thinking-between-tools": "Never sends thinking nor an effort to Anthropic (toClaudeJson, MessagesApi.CLAUDE effortLevels empty): picked from the list, Sonnet 5.5 thinks adaptively, never hits the disabled 400, and its thinking blocks are skipped for the text block. No tool use: commands travel in the text. Running it without up-front thinking (between_tools) is not offered.",
     "deepseek-default-effort-unknown": "Never relied on: the effort is a required setting of both DeepSeek providers, sent with every call (MessagesApi.DEEPSEEK effortLevels, ClaudeProviderCore).",
     "deepseek-v4-pro-served-by-flash": "The app names no model: the user picks one from DeepSeek's own list, which still offers deepseek-v4-pro; until V4.1-Pro launches, choosing it gets V4.1-Flash, and nothing in the app says so."
   }
