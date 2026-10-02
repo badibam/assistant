@@ -11,6 +11,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Les conditions typées à l'écriture, conçues dans `docs/design/typed-conditions.md` : le type de chaque côté d'une condition connu sans lire de données, les constantes de l'IA traduites à l'entrée, la vérification au service, et le refus d'un changement dont dépend une condition ailleurs.
 - Le formulaire de config en pages (`docs/design/settings-pages.md`) est dans `develop`, essayé sur le téléphone le 2026-10-01. Reste à coder : les marques d'un problème sur la ligne d'une page et celles au-dessus ; la phrase d'une condition sur la ligne de sa page (deux côtés et un opérateur), comme celle d'un terme. Puis élaguer la spec.
 
+- Essayer sur le téléphone les réglages de réflexion de chaque fournisseur, en envoyant une requête : Claude (Sonnet 5.5 sans réflexion par `between_tools`, Opus 5.5 sans « Sans réflexion », Haiku 4.5 sans effort), OpenAI (un modèle à `none`, un modèle qu'aucun fait ne couvre), DeepSeek (effort obligatoire, sans réflexion) ; le changement de modèle qui vide les deux réglages, l'enregistrement d'une combinaison refusée.
 - Thème rétro, Suivi : le texte « il y a… » est coupé alors qu'il y a la place pour deux lignes.
 - Thème rétro : les graphiques dessinés dans le style du thème, pas seulement à ses couleurs.
 - Un vrai écran de Réglages : des titres de catégories et des tuiles bien rangées.
