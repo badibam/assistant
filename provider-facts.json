@@ -1,8 +1,11 @@
 {
   "copy": "app/src/main/assets/facts.json",
   "handled": {
+    "claude-sonnet-5-5-effort-recalibrated": "Never meets it: no effort is sent to Anthropic (MessagesApi.CLAUDE effortLevels empty), every Claude model runs at its own default.",
     "claude-sonnet-5-5-thinking-between-tools": "Never sends thinking nor an effort to Anthropic (toClaudeJson, MessagesApi.CLAUDE effortLevels empty): picked from the list, Sonnet 5.5 thinks adaptively, never hits the disabled 400, and its thinking blocks are skipped for the text block. No tool use: commands travel in the text. Running it without up-front thinking (between_tools) is not offered.",
     "deepseek-default-effort-unknown": "Never relied on: the effort is a required setting of both DeepSeek providers, sent with every call (MessagesApi.DEEPSEEK effortLevels, ClaudeProviderCore).",
+    "deepseek-effort-levels": "The effort setting offers low, high and max only (MessagesApi.DEEPSEEK effortLevels); the aliases are not offered.",
+    "deepseek-v4-flash-retired": "The app names no model; a provider config saved with this ID keeps it. If the answer's model field then names V4.1-Flash, the call fails as a substitution (verifiesAnsweringModel), plainly; not measured. The free-models bench still lists deepseek/deepseek-v4-flash on OpenRouter.",
     "deepseek-v4-pro-served-by-flash": "The app names no model: the user picks one from DeepSeek's own list, which still offers deepseek-v4-pro; until V4.1-Pro launches, choosing it gets V4.1-Flash, and nothing in the app says so."
   }
 }
