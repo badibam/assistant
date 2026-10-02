@@ -151,6 +151,26 @@ fun CommunicationModuleCard(
     )
 }
 
+/**
+ * What a module no longer waiting asked, in the history: its fields by their labels, read only.
+ * A confirmation, without fields, shows its title alone.
+ */
+@Composable
+fun CommunicationQuestions(module: CommunicationModule) {
+    val s = Strings.`for`(context = LocalContext.current)
+    UI.Card(type = CardType.DEFAULT) {
+        Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
+            UI.Text(
+                text = s.shared(if (module.fields.isEmpty()) "ai_module_validation_title" else "ai_module_question_title"),
+                type = TextType.LABEL
+            )
+            module.fields.forEach { field ->
+                UI.Text(text = field.definition.displayName, type = TextType.CAPTION)
+            }
+        }
+    }
+}
+
 /** Whether [value] leaves its field unanswered: absent, or an empty text or list. */
 private fun isEmptyValue(value: Any?): Boolean = when (value) {
     null, JSONObject.NULL -> true

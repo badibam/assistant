@@ -148,6 +148,12 @@ fun ChatMessageBubble(
                                 val shouldShow = isLastAIMessage &&
                                     aiState.waitingContext is com.assistant.core.ai.domain.WaitingContext.Communication
 
+                                // A module no longer waiting shows what it asked, read only:
+                                // what became of it (answered, replaced, cancelled) follows it
+                                if (!shouldShow) {
+                                    Spacer(modifier = Modifier.height(UI.Space.S))
+                                    com.assistant.core.ai.ui.components.CommunicationQuestions(module)
+                                }
                                 if (shouldShow) {
                                     Spacer(modifier = Modifier.height(UI.Space.S))
                                     com.assistant.core.ai.ui.components.CommunicationModuleCard(
@@ -178,6 +184,13 @@ fun ChatMessageBubble(
                                     }
                                 )
                             }
+                        }
+                        // An AI response the app could not take: the message after it says why
+                        message.sender == MessageSender.AI && message.aiMessage == null -> {
+                            UI.Text(
+                                text = s.shared("ai_response_refused"),
+                                type = TextType.CAPTION
+                            )
                         }
                         message.systemMessage != null -> {
                             // System message: show summary + command details
