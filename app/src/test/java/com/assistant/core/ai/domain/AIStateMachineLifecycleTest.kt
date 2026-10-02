@@ -36,6 +36,20 @@ class AIStateMachineLifecycleTest {
         assertEquals(false, state.isSlotAvailable())
     }
 
+    /** A CHAT taken up again on a module nobody answered waits for that answer, not a message. */
+    @Test
+    fun activatingChatLeftOnAModule_waitsForTheAnswer() {
+        val state = AIStateMachine.transition(
+            state = AIState.idle(),
+            event = AIEvent.SessionActivationRequested("resumed-chat", SessionType.CHAT, awaitingAnswer = true),
+            limits = testLimits,
+            currentTime = T0
+        )
+
+        assertEquals(Phase.WAITING_COMMUNICATION_RESPONSE, state.phase)
+        assertEquals("resumed-chat", state.sessionId)
+    }
+
     /** An AUTOMATION has nobody to wait for, so activation starts the work at once. */
     @Test
     fun activatingAutomation_startsExecutingImmediately() {

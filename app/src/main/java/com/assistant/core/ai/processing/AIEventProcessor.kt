@@ -96,8 +96,14 @@ class AIEventProcessor(
      *
      * This is the main entry point for all events.
      */
-    suspend fun emit(event: AIEvent) {
+    suspend fun emit(incoming: AIEvent) {
         try {
+            // A CHAT taken up again whose last message is a module nobody answered waits for
+            // that answer again, its form back under the question
+            val event = if (incoming is AIEvent.SessionActivationRequested && incoming.sessionType == SessionType.CHAT) {
+                incoming.copy(awaitingAnswer = endsOnOpenModule(incoming.sessionId))
+            } else incoming
+
             // Stop, Interrupt and every other ending cut the AI call in flight BEFORE the
             // transition, so no answer can arrive for a session that has moved on
             if (event is AIEvent.AIRoundInterrupted || event is AIEvent.SessionCompleted) {
@@ -242,7 +248,7 @@ class AIEventProcessor(
             throw e
         } catch (e: Exception) {
             LogManager.aiSession(
-                "Event processing failed: ${event::class.simpleName}, error: ${e.message}",
+                "Event processing failed: ${incoming::class.simpleName}, error: ${e.message}",
                 "ERROR",
                 e
             )
@@ -1774,6 +1780,15 @@ class AIEventProcessor(
             dataChars = pending.systemMessage?.formattedData?.length ?: 0,
             maxDataChars = AppConfigManager.getAILimits().getLimitsForSessionType(sessionType).maxDataChars
         ))
+    }
+
+    /**
+     * Whether the session's last message is an AI message carrying a communication module: an
+     * answer, a message sent in its place or its cancellation would all come after it.
+     */
+    private suspend fun endsOnOpenModule(sessionId: String): Boolean {
+        val last = messageRepository.loadMessages(sessionId).lastOrNull() ?: return false
+        return last.sender == MessageSender.AI && last.aiMessage?.communicationModule != null
     }
 
     /**

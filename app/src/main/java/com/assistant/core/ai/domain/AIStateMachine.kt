@@ -53,7 +53,9 @@ object AIStateMachine {
                     state
                 } else {
                     val nextPhase = if (event.sessionType == SessionType.CHAT) {
-                        Phase.IDLE // CHAT waits for user message
+                        // CHAT waits for the user: for their answer to the module it was left on,
+                        // otherwise for their message
+                        if (event.awaitingAnswer) Phase.WAITING_COMMUNICATION_RESPONSE else Phase.IDLE
                     } else {
                         Phase.EXECUTING_ENRICHMENTS // AUTOMATION starts immediately
                     }

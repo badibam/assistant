@@ -29,10 +29,13 @@ sealed class AIEvent {
      *
      * @param sessionId ID of session to activate
      * @param sessionType Type of session (CHAT, AUTOMATION, SEED)
+     * @param awaitingAnswer Whether the CHAT's last message is the AI's communication module, left
+     *   unanswered: set by AIEventProcessor from the stored messages, never by the caller
      */
     data class SessionActivationRequested(
         val sessionId: String,
-        val sessionType: com.assistant.core.ai.data.SessionType
+        val sessionType: com.assistant.core.ai.data.SessionType,
+        val awaitingAnswer: Boolean = false
     ) : AIEvent()
 
     /**
