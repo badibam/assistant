@@ -27,14 +27,16 @@ object FieldTypeSettings {
      * "config".
      *
      * [types] narrows the variant to some types, for the schema of a definition of one type.
+     * [labels] is how long the texts shown for the field may be (its name, an option's label, a
+     * bound's): short under a tool's column, longer for a question the AI asks.
      */
-    fun definitionNodes(text: (String) -> String, types: List<FieldType> = FieldType.entries): List<SettingNode> = listOf(
+    fun definitionNodes(text: (String) -> String, types: List<FieldType> = FieldType.entries, labels: TextLength = TextLength.SHORT): List<SettingNode> = listOf(
         // Made by the app from the label when the field is created, then sent back unchanged to
         // name the field: its format is checked by the service (FieldConfigValidator)
         field("name", "label_name", FieldType.TEXT, text, description = "field_type_schema_name_description",
             config = mapOf("length" to TextLength.SHORT.name)).copy(systemWritten = true),
         field("display_name", "custom_fields_display_name", FieldType.TEXT, text, required = true,
-            description = "field_type_schema_display_name_description", config = mapOf("length" to TextLength.SHORT.name)),
+            description = "field_type_schema_display_name_description", config = mapOf("length" to labels.name)),
         field("description", "custom_fields_description", FieldType.TEXT, text, config = mapOf("length" to TextLength.MEDIUM.name)),
         field("always_visible", "custom_fields_always_visible", FieldType.BOOLEAN, text, default = false,
             description = "field_type_schema_always_visible_description"),
@@ -42,7 +44,7 @@ object FieldTypeSettings {
             selector = field("type", "custom_fields_type", FieldType.CHOICE, text, required = true,
                 description = "field_type_schema_type_description",
                 config = choice(types.map { it.name }, types.associate { it.name to text("field_type_${it.name.lowercase()}_display_name") })),
-            cases = types.associate { type -> type.name to caseNodes(type, text) }
+            cases = types.associate { type -> type.name to caseNodes(type, text, labels) }
         )
     )
 
@@ -50,8 +52,8 @@ object FieldTypeSettings {
      * What a field of [type] adds to its definition: its settings, if the type has any. A number
      * or a range the user adds measures in one unit, set with the field.
      */
-    private fun caseNodes(type: FieldType, text: (String) -> String): List<SettingNode> {
-        val config = configGroup(type, text)
+    private fun caseNodes(type: FieldType, text: (String) -> String, labels: TextLength): List<SettingNode> {
+        val config = configGroup(type, text, labels)
         // A fixed day or instant is hardly a suggestion for every new entry: dates have none, nor
         // a reference, one thing for all the entries to come
         val default = if (type == FieldType.DATE || type == FieldType.DATETIME || type == FieldType.REFERENCE) null
@@ -73,9 +75,9 @@ object FieldTypeSettings {
     )
 
     /** The "config" of a value of [type], its unit first for a number or a range; null when the type has no settings. */
-    private fun configGroup(type: FieldType, text: (String) -> String): SettingNode.Group? {
+    private fun configGroup(type: FieldType, text: (String) -> String, labels: TextLength = TextLength.SHORT): SettingNode.Group? {
         val settings = listOfNotNull(if (type == FieldType.NUMERIC || type == FieldType.RANGE) unit(text) else null) +
-            configNodes(type, text)
+            configNodes(type, text, labels)
         // A number or a range needs its decimals, a scale its bounds and a choice its options:
         // their config is required
         return if (settings.isEmpty()) null else SettingNode.Group("config", text("field_config_section_title"), settings,
@@ -86,7 +88,10 @@ object FieldTypeSettings {
      * The settings of a value of [type]: how it is made (a number's decimals, a scale's bounds, a
      * choice's options...). What it measures is not among them: see [unit].
      */
-    fun configNodes(type: FieldType, text: (String) -> String): List<SettingNode> = when (type) {
+    fun configNodes(type: FieldType, text: (String) -> String): List<SettingNode> = configNodes(type, text, TextLength.SHORT)
+
+    /** [configNodes] whose shown texts (an option's label, a bound's) may be [labels] long. */
+    private fun configNodes(type: FieldType, text: (String) -> String, labels: TextLength): List<SettingNode> = when (type) {
         FieldType.TEXT -> listOf(
             field("length", "field_config_text_length", FieldType.CHOICE, text, default = TextLength.UNLIMITED.name,
                 description = "field_type_text_length_description",
@@ -100,7 +105,7 @@ object FieldTypeSettings {
         )
         FieldType.SCALE -> listOf(
             number("min", "field_config_min", text, required = true), number("max", "field_config_max", text, required = true),
-            label("min_label", "field_config_min_label", text), label("max_label", "field_config_max_label", text),
+            label("min_label", "field_config_min_label", text, labels), label("max_label", "field_config_max_label", text, labels),
             number("step", "field_config_step", text, default = 1)
         )
         FieldType.CHOICE -> listOf(
@@ -110,7 +115,7 @@ object FieldTypeSettings {
                 item = SettingNode.Item.Of(listOf(
                     field("value", "field_config_option_value", FieldType.TEXT, text, required = true,
                         config = mapOf("length" to TextLength.SHORT.name)),
-                    label("label", "field_config_option_label", text),
+                    label("label", "field_config_option_label", text, labels),
                     // Each color is its own swatch, wherever the value shows
                     field("color", "field_config_option_color", FieldType.CHOICE, text,
                         config = choice(TagColor.entries.map { it.name },
@@ -127,7 +132,7 @@ object FieldTypeSettings {
             flag("open", "field_config_open", "field_type_choice_open_description", text)
         )
         FieldType.BOOLEAN -> listOf(
-            label("true_label", "field_config_true_label", text), label("false_label", "field_config_false_label", text)
+            label("true_label", "field_config_true_label", text, labels), label("false_label", "field_config_false_label", text, labels)
         )
         FieldType.RANGE -> listOf(
             number("min", "field_config_min", text), number("max", "field_config_max", text),
@@ -192,8 +197,8 @@ object FieldTypeSettings {
     private fun wholeNumber(name: String, labelKey: String, text: (String) -> String, default: Int, required: Boolean = false) =
         field(name, labelKey, FieldType.NUMERIC, text, required = required, default = default, config = mapOf("min" to 0, "decimals" to 0))
 
-    private fun label(name: String, labelKey: String, text: (String) -> String) =
-        field(name, labelKey, FieldType.TEXT, text, config = mapOf("length" to TextLength.SHORT.name))
+    private fun label(name: String, labelKey: String, text: (String) -> String, length: TextLength = TextLength.SHORT) =
+        field(name, labelKey, FieldType.TEXT, text, config = mapOf("length" to length.name))
 
     /**
      * The one unit a number or a range is in, set once for all its values ("km"), stored as "unit"

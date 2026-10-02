@@ -6,6 +6,7 @@ import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.fields.FieldConfigValidator
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.TextLength
 import com.assistant.core.fields.settings.FieldTypeSettings
 import com.assistant.core.fields.settings.SettingNode
 import com.assistant.core.fields.settings.SettingsSchemaGenerator
@@ -33,7 +34,8 @@ object CommunicationModules {
 
     /** The declaration of one field of a module. */
     private fun fieldNodes(text: (String) -> String): List<SettingNode> =
-        FieldTypeSettings.definitionNodes(text).mapNotNull { node ->
+        // A question's texts are read once, in a card as wide as the screen: longer than a column's
+        FieldTypeSettings.definitionNodes(text, labels = TextLength.MEDIUM).mapNotNull { node ->
             val name = (node as? SettingNode.Field)?.definition?.name
             when (name) {
                 // The AI's own key for the answer, not one the app makes from the label
