@@ -15,8 +15,10 @@ object FieldInput {
 
     /** The keyboard a field of [fieldType] opens. */
     fun keyboardOptions(fieldType: FieldType): KeyboardOptions = when (fieldType) {
+        // A capital at the start of a sentence only: a capital to every word is no rule in French,
+        // and a style in English this field cannot assume (a name, an option, a unit like "kg")
         FieldType.TEXT -> KeyboardOptions(
-            capitalization = KeyboardCapitalization.Words,
+            capitalization = KeyboardCapitalization.Sentences,
             autoCorrect = true,
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Next
@@ -50,8 +52,9 @@ object FieldInput {
             capitalization = KeyboardCapitalization.None,
             imeAction = ImeAction.Done
         )
+        // A search is a few words to find, not a sentence: no capital
         FieldType.SEARCH -> KeyboardOptions(
-            capitalization = KeyboardCapitalization.Words,
+            capitalization = KeyboardCapitalization.None,
             autoCorrect = true,
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Search
