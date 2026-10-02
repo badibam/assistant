@@ -16,6 +16,8 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Thème rétro : les graphiques dessinés dans le style du thème, pas seulement à ses couleurs.
 - Un vrai écran de Réglages : des titres de catégories et des tuiles bien rangées.
 - Les couleurs des icônes — à discuter.
+- Le clavier cache encore le bas du champ de message dans la discussion : la fenêtre en `SOFT_INPUT_ADJUST_RESIZE` (`FullScreenDialog`) n'a pas suffi.
+- Les boutons copier / coller sur un texte sélectionné sont ceux d'Android, hors du thème (la barre d'outils du texte, `TextToolbar` en Compose).
 - Voir sur le téléphone ce qui n'y est pas passé le 2026-10-02 : la conversion du réglage d'apparence en v58 (une famille devient une teinte), les titres de section du thème par défaut, le graphique du rétro à ses couleurs de série, la tuile sans icône centrée.
 
 ## En attente d'un déclencheur
