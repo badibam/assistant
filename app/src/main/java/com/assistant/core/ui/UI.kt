@@ -609,7 +609,8 @@ object UI {
                     TileIcon(zone.icon_name, waiting, running)
                 }
                 DisplayMode.MINIMAL -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Header() }
-                DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                // The smallest space between the two halves, so that their texts never touch
+                DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Space.XS), verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) { Header() }
                     Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) { Description() }
                 }
@@ -684,7 +685,7 @@ object UI {
         ) {
             // The header and the summary side by side, each on half the width
             @Composable
-            fun HeaderAndSummary(modifier: Modifier) = Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+            fun HeaderAndSummary(modifier: Modifier) = Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(Space.XS), verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
                     ToolCardHeader(tool, context, waiting, running)
                 }
@@ -705,7 +706,8 @@ object UI {
                         ToolCardHeader(tool, context, waiting, running)
                     }
                 }
-                DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                // The smallest space between the two halves, so that their texts never touch
+                DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Space.XS), verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
                         ToolCardHeader(tool, context, waiting, running)
                     }
