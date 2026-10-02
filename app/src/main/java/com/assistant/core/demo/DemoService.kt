@@ -29,8 +29,9 @@ import org.json.JSONObject
  * The demo, as the resource `demo`:
  * - install: removes the demo there is, then builds the one the app ships through the services,
  *   as the app itself (Source.SYSTEM), which alone may give the demo's ids; its zone group joins
- *   the home screen's groups when it is not there yet, and never leaves them
- * - remove: removes the demo, what lives in it included
+ *   the home screen's groups when it is not there yet
+ * - remove: removes the demo, what lives in it included, and the zone groups its zones stood in
+ *   that no zone stands in any more
  *
  * Built through the services, the demo is what the app produces and is checked as anything else
  * written. A step refused stops the install and removes what it built: the demo is whole or
@@ -67,7 +68,7 @@ class DemoService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("demo_error_unreadable").format(e.message ?: ""))
         }
         LongOperation.at(s.shared("demo_phase_zones"))
-        database.withTransaction { removeAll() }
+        removeDemo()
         return try {
             addZoneGroup(content.group)
             build(content)
@@ -76,7 +77,7 @@ class DemoService(private val context: Context) : ExecutableService {
             LogManager.service("Demo installed: ${content.zones.size} zones, ${content.tools.size} tools, ${content.variables.size} variables", "INFO")
             OperationResult.success(mapOf("zones" to content.zones.size, "tools" to content.tools.size, "variables" to content.variables.size))
         } catch (e: Refused) {
-            database.withTransaction { removeAll() }
+            removeDemo()
             DataChangeNotifier.notifyZonesChanged()
             LogManager.service("Demo not installed: ${e.message}", "ERROR")
             OperationResult.error(s.shared("demo_error_refused").format(e.message ?: ""))
@@ -207,10 +208,24 @@ class DemoService(private val context: Context) : ExecutableService {
     }
 
     private suspend fun remove(): OperationResult {
-        database.withTransaction { removeAll() }
+        removeDemo()
         DataChangeNotifier.notifyZonesChanged()
         LogManager.service("Demo removed", "INFO")
         return OperationResult.success()
+    }
+
+    /**
+     * Everything of the demo, then the zone groups its zones stood in that are left empty — read
+     * from the zones themselves, so a group named in another language than the demo's texts now
+     * goes too. A group where a zone of the user's still stands stays.
+     */
+    private suspend fun removeDemo() {
+        val demoGroups = database.zoneDao().getAllZones()
+            .filter { it.id.startsWith(DemoContent.PREFIX) }
+            .mapNotNull { it.group }.toSet()
+        database.withTransaction { removeAll() }
+        val stillUsed = database.zoneDao().getAllZones().mapNotNull { it.group }.toSet()
+        removeZoneGroups(demoGroups - stillUsed)
     }
 
     /** Everything of the demo (DemoRemoval); called inside a transaction. */
@@ -232,6 +247,20 @@ class DemoService(private val context: Context) : ExecutableService {
         run("app_config.set", JSONObject()
             .put("category", AppSettingCategories.MAIN_SCREEN)
             .put("settings", JSONObject(settings.toString()).put("zone_groups", JSONArray(groups.toString()).put(group))))
+    }
+
+    /** Takes [groups] out of the home screen's zone groups through the settings service; nothing when none is there. */
+    private suspend fun removeZoneGroups(groups: Set<String>) {
+        if (groups.isEmpty()) return
+        val read = run("app_config.get", JSONObject().put("category", AppSettingCategories.MAIN_SCREEN))
+        @Suppress("UNCHECKED_CAST")
+        val settings = JsonUtils.toJSONObject(read["settings"] as Map<String, Any?>)
+        val before = settings.getJSONArray("zone_groups")
+        val kept = (0 until before.length()).map { before.getString(it) }.filter { it !in groups }
+        if (kept.size == before.length()) return
+        run("app_config.set", JSONObject()
+            .put("category", AppSettingCategories.MAIN_SCREEN)
+            .put("settings", JSONObject(settings.toString()).put("zone_groups", JSONArray(kept))))
     }
 
     private fun asset(path: String): JSONObject =
