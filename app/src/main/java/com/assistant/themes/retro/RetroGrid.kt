@@ -146,7 +146,7 @@ val LocalRetroSurface = compositionLocalOf { RetroSurface.SCREEN }
 
 /** The current palette's colours. */
 val retroColors: RetroColors
-    @Composable @ReadOnlyComposable get() = RetroPalettes.colors(CurrentTheme.currentPaletteId)
+    @Composable @ReadOnlyComposable get() = RetroPalettes.colors(CurrentTheme.paletteMode, CurrentTheme.hueShift)
 
 /** The colours of the surface one is drawing on. */
 val retroSurface: Surface

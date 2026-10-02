@@ -218,7 +218,7 @@ object UI {
         color: com.assistant.core.themes.TagColor,
         size: Dp = 24.dp
     ) = CurrentTheme.current.StatusIndicator(
-        CurrentTheme.current.getTagColor(color, CurrentTheme.currentPaletteId),
+        CurrentTheme.current.getTagColor(color, CurrentTheme.paletteMode),
         size
     )
 

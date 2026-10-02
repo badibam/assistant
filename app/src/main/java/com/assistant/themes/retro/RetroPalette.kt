@@ -13,7 +13,7 @@ import kotlin.math.sin
  * The retro theme's palettes: each a handful of numbers in OKLCH (palettes.json, a resource of
  * this package), every colour derived from them here.
  *
- * The numbers are set by eye on the bench (bench/palettes.html, `./run palettes`), which derives
+ * The numbers are set by eye on the bench (bench/palettes.html, `./run themes`), which derives
  * the same colours in bench/palette-derive.js and saves them beside the numbers; RetroPaletteTest
  * requires this file to find them again. Any change to the derivation is made in both.
  */

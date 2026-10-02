@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="name">Retro</string>
-    <string name="palette_prune">prune</string>
-    <string name="palette_cream">cream</string>
 </resources>

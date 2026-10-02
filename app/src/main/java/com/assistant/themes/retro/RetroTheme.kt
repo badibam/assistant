@@ -80,7 +80,6 @@ import com.assistant.core.themes.PaletteMode
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.themes.TagColor
 import com.assistant.core.themes.ThemeContract
-import com.assistant.core.themes.ThemePalette
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
 import com.assistant.core.ui.ButtonType
@@ -132,10 +131,6 @@ object RetroTheme : ThemeContract {
 
     override fun name(context: android.content.Context): String =
         com.assistant.core.strings.Strings.`for`(context = context, theme = "retro").theme("name")
-
-    /** A palette family is named by palette_<family>: "prune" by palette_prune. */
-    override fun paletteName(family: String, context: android.content.Context): String =
-        com.assistant.core.strings.Strings.`for`(context = context, theme = "retro").theme("palette_$family")
 
     /**
      * Its own icons, every one: Lucide's pixelized in the register's box (icons/, written by
@@ -402,7 +397,7 @@ object RetroTheme : ThemeContract {
         CompositionLocalProvider(LocalRetroLifted provides lifted) { content() }
     }
 
-    override fun getTagColor(color: TagColor, paletteId: String): Color = RetroPalettes.colors(paletteId).tag(color).srgb
+    override fun getTagColor(color: TagColor, mode: PaletteMode): Color = RetroPalettes.colors(mode, 0).tag(color).srgb
 
     // =====================================
     // FEEDBACK
@@ -964,13 +959,10 @@ object RetroTheme : ThemeContract {
     // PALETTES
     // =====================================
 
-    /** The palettes of palettes.json, set on the bench: each family in both modes. */
-    override fun palettes(): List<ThemePalette> = RetroPalettes.entries.map { ThemePalette(it.id, it.family, it.mode) }
-
     /** For what Material still draws at the app's root: the palette's colours under its names. */
-    override fun getColorScheme(paletteId: String): ColorScheme {
-        val c = RetroPalettes.colors(paletteId)
-        val dark = RetroPalettes.entries.first { it.id == paletteId }.mode == PaletteMode.DARK
+    override fun getColorScheme(mode: PaletteMode, hueShift: Int): ColorScheme {
+        val c = RetroPalettes.colors(mode, hueShift)
+        val dark = mode == PaletteMode.DARK
         val screen = c.screen
         val panel = c.panel
         return if (dark) darkColorScheme(

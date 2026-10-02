@@ -60,11 +60,11 @@ object AppSettings {
     /** Light, dark, or the phone's (AppearanceMode). */
     const val UI_MODE = "mode"
 
-    /**
-     * The family of a theme's palettes, stored under a key of that theme's: the choice of palettes
-     * depends on the theme (a Variant), and switching themes drops the former's.
-     */
-    fun uiPaletteKey(themeId: String) = "${themeId}_palette"
+    /** Degrees the theme's colours are turned round the hue circle (Appearance.hueShift). */
+    const val UI_HUE_SHIFT = "hue_shift"
+
+    /** The hue shifts: a whole turn, by degree. */
+    val HUE_SHIFT_RANGE = 0..359
 
     /** How many whole steps the interface's size is moved by. */
     const val UI_SIZE_STEP = "size_step"
@@ -127,18 +127,11 @@ object AppSettings {
                 val themes = com.assistant.core.themes.CurrentTheme.getAvailableThemes()
                 val modes = com.assistant.core.themes.AppearanceMode.entries.map { it.name }
                 listOf(
-                    // The theme, then its palettes: each theme offers its own families, starting on its first
-                    SettingNode.Variant(
-                        choice(UI_THEME, text("settings_ui_theme"), text("settings_ui_theme_help"), themes.keys.toList(),
-                            labels = themes.mapValues { it.value.name(context) }, required = true),
-                        themes.mapValues { (id, theme) ->
-                            val families = theme.paletteFamilies()
-                            listOf(choice(uiPaletteKey(id), text("settings_ui_palette"), text("settings_ui_palette_help"), families,
-                                labels = families.associateWith { theme.paletteName(it, context) }, required = true, default = families.first()))
-                        }
-                    ),
+                    choice(UI_THEME, text("settings_ui_theme"), text("settings_ui_theme_help"), themes.keys.toList(),
+                        labels = themes.mapValues { it.value.name(context) }, required = true),
                     choice(UI_MODE, text("settings_ui_mode"), text("settings_ui_mode_help"), modes,
                         labels = modes.associateWith { text("settings_ui_mode_${it.lowercase()}") }, required = true),
+                    scale(UI_HUE_SHIFT, text("settings_ui_hue_shift"), text("settings_ui_hue_shift_help"), HUE_SHIFT_RANGE),
                     scale(UI_SIZE_STEP, text("settings_ui_size_step"), text("settings_ui_size_step_help"), SIZE_STEP_RANGE),
                     field(UI_SOUNDS, text("settings_ui_sounds"), text("settings_ui_sounds_help"), FieldType.BOOLEAN, required = true)
                 )
@@ -178,12 +171,12 @@ object AppSettings {
         SettingValues(nodes(category, context), settings)
 
     private fun field(name: String, label: String, description: String?, type: FieldType, required: Boolean = false,
-                      config: Map<String, Any>? = null, default: Any? = null) =
-        SettingNode.Field(FieldDefinition(name, label, description, type, false, config), required = required, default = default)
+                      config: Map<String, Any>? = null) =
+        SettingNode.Field(FieldDefinition(name, label, description, type, false, config), required = required)
 
     private fun choice(name: String, label: String, description: String, values: List<String>,
-                       labels: Map<String, String> = emptyMap(), required: Boolean = false, default: String? = null) =
-        field(name, label, description, FieldType.CHOICE, required, mapOf("options" to ChoiceSettings.storedOptions(values, labels)), default)
+                       labels: Map<String, String> = emptyMap(), required: Boolean = false) =
+        field(name, label, description, FieldType.CHOICE, required, mapOf("options" to ChoiceSettings.storedOptions(values, labels)))
 
     /** A bounded whole number, set with a slider. */
     private fun scale(name: String, label: String, description: String, range: IntProgression) =

@@ -945,8 +945,8 @@
     <string name="settings_ui_description">Configurer l\'apparence et le comportement de l\'interface</string>
     <string name="settings_ui_theme">Thème</string>
     <string name="settings_ui_theme_help">La façon dont l\'app est dessinée : ses formes, ses lettres, ses icônes.</string>
-    <string name="settings_ui_palette">Palette</string>
-    <string name="settings_ui_palette_help">Les couleurs du thème, chaque palette en version claire et sombre.</string>
+    <string name="settings_ui_hue_shift">Teinte</string>
+    <string name="settings_ui_hue_shift_help">Fait tourner les couleurs du thème sur le cercle des couleurs, degré par degré : 0 montre les siennes. Les couleurs des états et des tags ne changent pas.</string>
     <string name="settings_ui_mode">Mode</string>
     <string name="settings_ui_mode_help">Clair, sombre, ou comme le téléphone, en le suivant quand il change.</string>
     <string name="settings_ui_mode_light">Clair</string>

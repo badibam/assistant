@@ -40,7 +40,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.assistant.core.themes.ThemeContract
-import com.assistant.core.themes.ThemePalette
 import com.assistant.core.themes.PaletteMode
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.ui.ButtonType
@@ -76,17 +75,8 @@ import java.util.Calendar
 @OptIn(ExperimentalFoundationApi::class)
 object DefaultTheme : ThemeContract {
 
-    private const val THEME_ID = "default"
-    private const val BLUE = "blue"
-    private val LIGHT_ID = ThemePalette.of(THEME_ID, BLUE, PaletteMode.LIGHT).id
-    private val DARK_ID = ThemePalette.of(THEME_ID, BLUE, PaletteMode.DARK).id
-
     override fun name(context: android.content.Context): String =
         com.assistant.core.strings.Strings.`for`(context = context, theme = "default").theme("name")
-
-    /** A palette family is named by palette_<family>: "blue" by palette_blue. */
-    override fun paletteName(family: String, context: android.content.Context): String =
-        com.assistant.core.strings.Strings.`for`(context = context, theme = "default").theme("palette_$family")
 
     override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
 
@@ -134,21 +124,46 @@ object DefaultTheme : ThemeContract {
     // PALETTE SYSTEM IMPLEMENTATION
     // =====================================
     
-    /** One family, blue, in both modes. */
-    override fun palettes(): List<ThemePalette> = listOf(
-        ThemePalette.of(THEME_ID, BLUE, PaletteMode.LIGHT),
-        ThemePalette.of(THEME_ID, BLUE, PaletteMode.DARK)
-    )
+    /** The schemes turned so far, by mode and hue shift: a shift is chosen by dragging a slider. */
+    private val turnedSchemes = java.util.concurrent.ConcurrentHashMap<Pair<PaletteMode, Int>, ColorScheme>()
 
     /**
-     * Gets ColorScheme for specific palette
+     * The theme's colours in [mode], every role but the states' (the warning's tertiary, the
+     * error) turned [hueShift] degrees round the hue circle, their lightness and chroma kept.
      */
-    override fun getColorScheme(paletteId: String): ColorScheme {
-        return when (paletteId) {
+    override fun getColorScheme(mode: PaletteMode, hueShift: Int): ColorScheme {
+        val base = baseScheme(mode)
+        if (hueShift % 360 == 0) return base
+        return turnedSchemes.getOrPut(mode to hueShift) {
+            val shift = hueShift.toFloat()
+            fun r(c: Color) = com.assistant.core.themes.Oklch.rotate(c, shift)
+            base.copy(
+                primary = r(base.primary), onPrimary = r(base.onPrimary),
+                primaryContainer = r(base.primaryContainer), onPrimaryContainer = r(base.onPrimaryContainer),
+                inversePrimary = r(base.inversePrimary),
+                secondary = r(base.secondary), onSecondary = r(base.onSecondary),
+                secondaryContainer = r(base.secondaryContainer), onSecondaryContainer = r(base.onSecondaryContainer),
+                background = r(base.background), onBackground = r(base.onBackground),
+                surface = r(base.surface), onSurface = r(base.onSurface),
+                surfaceVariant = r(base.surfaceVariant), onSurfaceVariant = r(base.onSurfaceVariant),
+                surfaceTint = r(base.surfaceTint),
+                inverseSurface = r(base.inverseSurface), inverseOnSurface = r(base.inverseOnSurface),
+                outline = r(base.outline), outlineVariant = r(base.outlineVariant), scrim = r(base.scrim),
+                surfaceBright = r(base.surfaceBright), surfaceDim = r(base.surfaceDim),
+                surfaceContainer = r(base.surfaceContainer), surfaceContainerHigh = r(base.surfaceContainerHigh),
+                surfaceContainerHighest = r(base.surfaceContainerHighest), surfaceContainerLow = r(base.surfaceContainerLow),
+                surfaceContainerLowest = r(base.surfaceContainerLowest)
+            )
+        }
+    }
+
+    /** The theme's own colours in [mode]. */
+    private fun baseScheme(mode: PaletteMode): ColorScheme {
+        return when (mode) {
             // One hue, the main blue's (about 222°): every grey a blue grey, white tiles on a pale
             // blue ground, set apart by their colour (1.1), never tinted by elevation; the main
             // colours dark enough for white on them, and for an icon alone on a tile (4.5 and over)
-            LIGHT_ID -> lightColorScheme(
+            PaletteMode.LIGHT -> lightColorScheme(
                 primary = Color(0xFF4A68AE),        // Deep periwinkle (5.4 on white)
                 onPrimary = Color(0xFFFFFFFF),      // White
                 secondary = Color(0xFF5C6E91),      // Slate blue (5.1 on white)
@@ -187,7 +202,7 @@ object DefaultTheme : ThemeContract {
                 surfaceContainerHigh = Color(0xFFEBEFF5),
                 surfaceContainerHighest = Color(0xFFE2E8F2)
             )
-            DARK_ID -> darkColorScheme(
+            PaletteMode.DARK -> darkColorScheme(
                 primary = Color(0xFF9BB8E8),        // Bleu ciel doux mais vif
                 onPrimary = Color(0xFF1B2A3F),      // Bleu marine profond
                 secondary = Color(0xFFC9A8D8),      // Mauve lumineux (accent décoratif)
@@ -205,7 +220,6 @@ object DefaultTheme : ThemeContract {
                 outline = Color(0xFF6B6178),        // Mauve grisé
                 outlineVariant = Color(0xFF433E4D)  // Violet foncé
             )
-            else -> error("No default palette '$paletteId'")
         }
     }
 
@@ -693,7 +707,7 @@ object DefaultTheme : ThemeContract {
         Box(
             modifier = Modifier
                 .background(
-                    color = getTagColor(color, com.assistant.core.themes.CurrentTheme.currentPaletteId),
+                    color = getTagColor(color, com.assistant.core.themes.CurrentTheme.paletteMode),
                     shape = RoundedCornerShape(50)
                 )
                 .padding(horizontal = 10.dp, vertical = 2.dp)
@@ -768,8 +782,8 @@ object DefaultTheme : ThemeContract {
         }
     }
 
-    override fun getTagColor(color: com.assistant.core.themes.TagColor, paletteId: String): Color {
-        val dark = paletteId == DARK_ID
+    override fun getTagColor(color: com.assistant.core.themes.TagColor, mode: PaletteMode): Color {
+        val dark = mode == PaletteMode.DARK
         return when (color) {
             com.assistant.core.themes.TagColor.RED -> if (dark) Color(0xFFE39A9A) else Color(0xFFF4B9B9)
             com.assistant.core.themes.TagColor.ORANGE -> if (dark) Color(0xFFEFB48C) else Color(0xFFF9CDAE)

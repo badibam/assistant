@@ -5,9 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
 /**
- * The look the app is shown in: a theme, one of its palette families, a mode, a size step. UI.*
- * calls go to [current]; the palette shown is derived from the family and the mode, the phone's
- * dark theme setting deciding when the mode is SYSTEM.
+ * The look the app is shown in: a theme, a mode, a hue shift, a size step. UI.* calls go to
+ * [current], which draws in its light or dark colours turned by [hueShift], the phone's dark
+ * theme setting deciding when the mode is SYSTEM.
  *
  * Everything here is Compose state: a screen that reads it is drawn again when it changes, which
  * is how the interface settings show a choice before it is saved (Appearance).
@@ -22,8 +22,8 @@ object CurrentTheme {
     var themeId: String by mutableStateOf(ThemeScanner.scanForThemes().entries.first { it.value === ThemeScanner.getDefaultTheme() }.key)
         private set
 
-    /** The family of [current]'s palettes shown. */
-    var family: String by mutableStateOf(ThemeScanner.getDefaultTheme().paletteFamilies().first())
+    /** Degrees the theme's colours are turned round the hue circle (Appearance.hueShift). */
+    var hueShift: Int by mutableStateOf(0)
         private set
 
     /** The mode asked for. */
@@ -52,20 +52,15 @@ object CurrentTheme {
     val isDark: Boolean
         get() = paletteMode == PaletteMode.DARK
 
-    /** The id of the palette shown, which the theme looks its colours up by. */
-    val currentPaletteId: String
-        get() = current.palette(family, paletteMode).id
-
     /**
-     * Shows the app in [appearance]. A theme or a family that does not exist is a bug: the
-     * settings' schema offers only those the themes declare.
+     * Shows the app in [appearance]. A theme that does not exist is a bug: the settings' schema
+     * offers only those ThemeScanner knows.
      */
     fun apply(appearance: Appearance) {
         val theme = ThemeScanner.getTheme(appearance.theme) ?: error("No theme '${appearance.theme}'")
-        require(appearance.family in theme.paletteFamilies()) { "The theme '${appearance.theme}' has no palette '${appearance.family}'" }
         current = theme
         themeId = appearance.theme
-        family = appearance.family
+        hueShift = appearance.hueShift
         mode = appearance.mode
         sizeStep = appearance.sizeStep
     }
@@ -73,6 +68,6 @@ object CurrentTheme {
     /** Every theme, by id. */
     fun getAvailableThemes(): Map<String, ThemeContract> = ThemeScanner.scanForThemes()
 
-    /** The Material colours of the palette shown, for what Material still draws at the app's root. */
-    fun getCurrentColorScheme(): androidx.compose.material3.ColorScheme = current.getColorScheme(currentPaletteId)
+    /** The Material colours shown, for what Material still draws at the app's root. */
+    fun getCurrentColorScheme(): androidx.compose.material3.ColorScheme = current.getColorScheme(paletteMode, hueShift)
 }

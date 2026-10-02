@@ -42,13 +42,12 @@ data class PaletteNumbers(
 )
 
 /**
- * One palette of palettes.json: its id ("retro_<family>_<mode>"), its family and mode, its
- * numbers, and the colours the bench derived. Every family is there in both modes.
+ * One palette of palettes.json: its id ("retro_light", "retro_dark"), its mode, its numbers, and
+ * the colours the bench derived from them at their own hue.
  */
 @Serializable
 data class PaletteEntry(
     val id: String,
-    val family: String,
     val mode: PaletteMode,
     val numbers: PaletteNumbers,
     val derived: Map<String, String> = emptyMap(),
@@ -57,7 +56,7 @@ data class PaletteEntry(
 @Serializable
 private data class PaletteFile(val palettes: List<PaletteEntry>)
 
-/** The palettes of palettes.json, read once. */
+/** The palettes of palettes.json, read once: one per mode. */
 object RetroPalettes {
 
     val entries: List<PaletteEntry> by lazy {
@@ -69,11 +68,15 @@ object RetroPalettes {
         Json { ignoreUnknownKeys = false }.decodeFromString(PaletteFile.serializer(), text).palettes
     }
 
-    private val colors: Map<String, RetroColors> by lazy {
-        entries.associate { it.id to RetroColors(it.numbers) }
-    }
+    /** The colours derived so far, by mode and hue shift: a shift is chosen by dragging a slider. */
+    private val colors = java.util.concurrent.ConcurrentHashMap<Pair<PaletteMode, Int>, RetroColors>()
 
-    /** The colours of [paletteId], which must be one of this theme's: a palette asked of the wrong theme is a bug. */
-    fun colors(paletteId: String): RetroColors =
-        colors[paletteId] ?: error("no retro palette '$paletteId'")
+    /**
+     * The colours of [mode], the palette's hue turned [hueShift] degrees (Appearance.hueShift): every
+     * colour derived from the hue turns with it, the states and the tags keeping their own hues.
+     */
+    fun colors(mode: PaletteMode, hueShift: Int): RetroColors = colors.getOrPut(mode to hueShift) {
+        val numbers = entries.firstOrNull { it.mode == mode }?.numbers ?: error("no retro palette in ${mode.name}")
+        RetroColors(numbers.copy(hue = (numbers.hue + hueShift) % 360f))
+    }
 }

@@ -43,6 +43,7 @@ import com.assistant.core.versioning.ZoneGridAtV54
 import com.assistant.core.versioning.UiAppearanceAtV55
 import com.assistant.core.versioning.UiSizeStepAtV56
 import com.assistant.core.versioning.UiThemeModeAtV57
+import com.assistant.core.versioning.UiHueShiftAtV58
 import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
@@ -92,7 +93,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 57
+        const val VERSION = 58
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1601,6 +1602,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** A theme's palette family gives way to a hue shift: see UiHueShiftAtV58. */
+        private val MIGRATION_57_58 = object : Migration(57, 58) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.query("SELECT category, settings FROM app_settings_categories").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val category = cursor.getString(0)
+                        // A row that cannot be read stays as it was and is logged
+                        try {
+                            val settings = UiHueShiftAtV58.settings(category, org.json.JSONObject(cursor.getString(1)))
+                            database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), category))
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 57->58: settings of $category left as they were: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 57->58: palette family replaced by a hue shift", "INFO")
+            }
+        }
+
         /** The appearance becomes a theme, a palette family and a mode: see UiThemeModeAtV57. */
         private val MIGRATION_56_57 = object : Migration(56, 57) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2250,7 +2270,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_53_54,
                     MIGRATION_54_55,
                     MIGRATION_55_56,
-                    MIGRATION_56_57
+                    MIGRATION_56_57,
+                    MIGRATION_57_58
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

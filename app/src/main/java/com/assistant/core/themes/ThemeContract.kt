@@ -39,9 +39,6 @@ interface ThemeContract {
     /** The theme's name, in the app's language, from its own strings (themes/<id>/strings.xml). */
     fun name(context: Context): String
 
-    /** The name of one of its palette families, from its own strings. */
-    fun paletteName(family: String, context: Context): String
-
     /** Who draws this theme's icons: Lucide, or the theme itself, all of them. */
     val iconSource: com.assistant.core.icons.IconSource
 
@@ -216,10 +213,11 @@ interface ThemeContract {
     fun ReorderItem(lifted: Boolean, content: @Composable () -> Unit)
 
     /**
-     * The actual color a tag color name takes in [paletteId], for the swatches a color is
-     * chosen from. Every name of TagColor has one in every palette.
+     * The actual color a tag color name takes in [mode], for the swatches a color is chosen from.
+     * Every name of TagColor has one in both modes; a hue shift leaves it as it is, its hue being
+     * its meaning.
      */
-    fun getTagColor(color: TagColor, paletteId: String): androidx.compose.ui.graphics.Color
+    fun getTagColor(color: TagColor, mode: PaletteMode): androidx.compose.ui.graphics.Color
 
     // =====================================
     // FEEDBACK SYSTEM
@@ -458,25 +456,10 @@ interface ThemeContract {
     // =====================================
     
     /**
-     * Every palette of the theme: each of its families in both modes (ThemePalette), the first
-     * family being the one a new choice of the theme starts on.
+     * The Material colours of the theme in [mode], turned [hueShift] degrees round the hue circle
+     * (Appearance.hueShift), the colours of the states kept: for what Material still draws.
      */
-    fun palettes(): List<ThemePalette>
-
-    /** Its families, in the order of palettes(). */
-    fun paletteFamilies(): List<String> = palettes().map { it.family }.distinct()
-
-    /** The palette of [family] in [mode]; a family the theme lacks is a bug. */
-    fun palette(family: String, mode: PaletteMode): ThemePalette =
-        palettes().firstOrNull { it.family == family && it.mode == mode }
-            ?: error("The theme has no palette '$family' in ${mode.name}")
-
-    /**
-     * Gets ColorScheme for specific palette
-     * 
-     * @param paletteId One of palettes()' ids
-     */
-    fun getColorScheme(paletteId: String): ColorScheme
+    fun getColorScheme(mode: PaletteMode, hueShift: Int): ColorScheme
 
     /**
      * AI Thinking Indicator

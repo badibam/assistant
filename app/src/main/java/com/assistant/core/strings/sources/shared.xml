@@ -945,8 +945,8 @@
     <string name="settings_ui_description">Configure the look and the behaviour of the interface</string>
     <string name="settings_ui_theme">Theme</string>
     <string name="settings_ui_theme_help">How the app is drawn: its shapes, its letters, its icons.</string>
-    <string name="settings_ui_palette">Palette</string>
-    <string name="settings_ui_palette_help">The theme's colours, each palette in a light and a dark version.</string>
+    <string name="settings_ui_hue_shift">Hue</string>
+    <string name="settings_ui_hue_shift_help">Turns the theme's colours round the colour wheel, by degree: 0 shows its own. The colours of states and tags stay as they are.</string>
     <string name="settings_ui_mode">Mode</string>
     <string name="settings_ui_mode_help">Light, dark, or as the phone is set, following it when it changes.</string>
     <string name="settings_ui_mode_light">Light</string>

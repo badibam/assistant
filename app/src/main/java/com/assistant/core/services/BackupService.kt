@@ -30,6 +30,7 @@ import com.assistant.core.versioning.ZoneGridAtV54
 import com.assistant.core.versioning.UiAppearanceAtV55
 import com.assistant.core.versioning.UiSizeStepAtV56
 import com.assistant.core.versioning.UiThemeModeAtV57
+import com.assistant.core.versioning.UiHueShiftAtV58
 import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
@@ -820,6 +821,9 @@ class BackupService(private val context: Context) : ExecutableService {
             }
             if (fromVersion < 57 && toVersion >= 57) {
                 UiThemeModeAtV57.backup(data)
+            }
+            if (fromVersion < 58 && toVersion >= 58) {
+                UiHueShiftAtV58.backup(data)
             }
 
             // Transform app settings
