@@ -11,6 +11,10 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Les conditions typées à l'écriture, conçues dans `docs/design/typed-conditions.md` : le type de chaque côté d'une condition connu sans lire de données, les constantes de l'IA traduites à l'entrée, la vérification au service, et le refus d'un changement dont dépend une condition ailleurs.
 - Le formulaire de config en pages (`docs/design/settings-pages.md`) est dans `develop`, essayé sur le téléphone le 2026-10-01. Reste à coder : les marques d'un problème sur la ligne d'une page et celles au-dessus ; la phrase d'une condition sur la ligne de sa page (deux côtés et un opérateur), comme celle d'un terme. Puis élaguer la spec.
 
+- Thème rétro, Suivi : le texte « il y a… » est coupé alors qu'il y a la place pour deux lignes.
+- Thème rétro : les graphiques dessinés dans le style du thème, pas seulement à ses couleurs.
+- Un vrai écran de Réglages : des titres de catégories et des tuiles bien rangées.
+- Les couleurs des icônes — à discuter.
 - Voir sur le téléphone ce qui n'y est pas passé le 2026-10-02 : la conversion du réglage d'apparence en v58 (une famille devient une teinte), les titres de section du thème par défaut, le graphique du rétro à ses couleurs de série, la tuile sans icône centrée.
 
 ## En attente d'un déclencheur
