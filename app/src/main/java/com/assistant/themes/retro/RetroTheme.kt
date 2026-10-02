@@ -828,15 +828,19 @@ object RetroTheme : ThemeContract {
         }
     }
 
-    /** The label across, two dots at the end: the filled one on the right when it is on. */
+    /**
+     * The label across, a square frame a touch wide at the end: empty when off, Lucide's check in
+     * the strong ink when on. The icon buttons' frame (IconFrame).
+     */
     @Composable
     override fun Switch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, label: String) {
         val grid = retroGrid()
         val s = retroSurface
-        Pressable(onClick = { onCheckedChange(!checked) }, modifier = Modifier.fillMaxWidth()) {
+        Pressable(onClick = { onCheckedChange(!checked) }, modifier = Modifier.fillMaxWidth()) { pressed ->
             Row(modifier = Modifier.fillMaxWidth().heightIn(min = grid.cells(grid.touch)), verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.weight(1f)) { Line(label, grid.text, s.ink.srgb) }
-                Line(if (checked) "$DOT_HOLLOW$DOT_FILLED" else "$DOT_FILLED$DOT_HOLLOW", grid.text, (if (checked) s.strong else s.dim).srgb)
+                if (checked) IconFrame("check", null, s.strong.srgb, touchRows, pressed)
+                else Framed(modifier = Modifier.size(grid.cells(touchRows)), pressed = pressed) { }
             }
         }
     }
@@ -1231,7 +1235,6 @@ object RetroTheme : ThemeContract {
     private const val ARROW_DOWN = ''
     private const val CHECK = ''
     private const val DOT_FILLED = ''
-    private const val DOT_HOLLOW = ''
     private const val MINUS = '−'
 }
 
