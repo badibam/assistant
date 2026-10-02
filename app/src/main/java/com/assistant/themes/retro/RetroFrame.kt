@@ -84,8 +84,10 @@ internal fun Framed(
     val air = if (compact) border else tile
 
     val drawn = modifier.drawWithCache {
-        val columns = (size.width / tile).toInt()
-        val rows = (size.height / tile).toInt()
+        // Two cells at least each way, as the layout below asks: a parent that squeezes the frame
+        // under them gets the frame overflowing its place, never a row of a negative count of pieces
+        val columns = (size.width / tile).toInt().coerceAtLeast(2)
+        val rows = (size.height / tile).toInt().coerceAtLeast(2)
         // What is left past the whole cells, shared on both sides in whole drawing pixels
         val origin = Offset(centring(size.width.toInt(), columns * tile, grid.scale).toFloat(),
             centring(size.height.toInt(), rows * tile, grid.scale).toFloat())
