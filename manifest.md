@@ -8,5 +8,5 @@
 - 9b59e58  screens call the command dispatcher (Coordinator) directly and keep only view state; the dispatcher and its services are the controller layer
 ## fdroid @ bf72ce6
 ! b2320db  no fastlane store listing yet; en-US text and screenshots come with the English default, before the first submission
-## pixel-ui @ 79f2b4f
+## pixel-ui @ 0db9979
 ! 95688669  the retro theme is designed (docs/design/retro-theme.md), not built: nothing of the module is applied yet
