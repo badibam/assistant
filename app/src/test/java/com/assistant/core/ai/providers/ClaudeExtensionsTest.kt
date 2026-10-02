@@ -201,13 +201,14 @@ class ClaudeExtensionsTest {
         assertEquals(AIFailure.CONFIG, response.failure)
     }
 
-    /** An answer with no text block says so instead of passing on an empty string. */
+    /** An answer with no text block says so, and what came instead, rather than passing on an empty string. */
     @Test
     fun anAnswerWithNoText_isAConfigFailure() {
-        val response = answer("""{"content":[{"type":"thinking","thinking":""}],"stop_reason":"end_turn"}""")
+        val response = answer("""{"content":[{"type":"thinking","thinking":"a whole answer"}],"stop_reason":"end_turn"}""")
 
         assertFalse(response.success)
         assertEquals(AIFailure.CONFIG, response.failure)
+        assertEquals("Provider response has no text block (stop_reason: end_turn; blocks: thinking (14 chars)).", response.errorMessage)
     }
 
     /** An error object in the body is a refusal from a provider that was reached. */
