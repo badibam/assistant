@@ -1652,6 +1652,8 @@
 
     <!-- Groups System -->
     <string name="label_group">Groupe</string>
+    <string name="label_zone_group">Groupe de zones</string>
+    <string name="label_tool_group">Groupe d\'outils</string>
     <string name="label_tool_groups">Groupes d\'outils</string>
     <string name="label_zone_groups">Groupes de zones</string>
     <string name="label_main_screen_config">Configuration de l\'écran principal</string>

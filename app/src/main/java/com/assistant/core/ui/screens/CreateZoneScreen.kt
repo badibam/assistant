@@ -81,7 +81,7 @@ fun CreateZoneScreen(
             @Composable
             override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
                 com.assistant.core.ui.components.GroupSelector(availableGroups = availableZoneGroups, selectedGroup = value as? String,
-                    onGroupSelected = { onChange(it) }, label = s.shared("label_group"))
+                    onGroupSelected = { onChange(it) }, label = s.shared("label_zone_group"))
             }
         }
     )
