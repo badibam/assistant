@@ -429,6 +429,8 @@ def task_release():
     file would be rejected by the phone much later, for no visible reason. F-Droid is the
     exception -- it signs with its own key -- and does not go through here.
     """
+    if task_provider_facts() != 0:
+        return 1
     keys = signing()
     if keys is None:
         print(
@@ -520,6 +522,24 @@ def task_db():
                           check=False).returncode
 
 
+# The project that keeps what AI providers change without their API saying so
+# (`ia-service-distant`, "Faits fournisseurs"): retired models, traps, recalibrations.
+FACTS_PROJECT = ROOT.parent / "provider-facts"
+
+
+def task_provider_facts():
+    """Check the app against the providers' facts: its copy of `facts.json`, and the models it names.
+
+    A retired model the code still names fails, so does a trap left without a note in
+    `provider-facts.json`. The check is that project's; it stays out of the Gradle build, which
+    F-Droid runs without the neighbouring folder.
+    """
+    if not (FACTS_PROJECT / "run").is_file():
+        print(f"{FACTS_PROJECT} is missing: the facts project is not where it is expected.", file=sys.stderr)
+        return 1
+    return subprocess.run([str(FACTS_PROJECT / "run"), "check", str(ROOT)], cwd=FACTS_PROJECT, check=False).returncode
+
+
 def task_clean():
     return gradle("clean")
 
@@ -590,6 +610,7 @@ ACTIONS = {
     "devices": task_devices,
     "release": task_release,
     "install-release": task_install_release,
+    "provider-facts": task_provider_facts,
     "db": task_db,
     "bench": task_bench,
     "themes": task_themes,
@@ -606,6 +627,7 @@ LABELS = {
     "devices": "devices    list attached devices and their state",
     "release": "release    assemble the signed release APK",
     "install-release": "install-release   assemble, install and start the release",
+    "provider-facts": "provider-facts    check the app against the providers' facts (run by release)",
     "db": "db         back up or restore the device database",
     "bench": "bench      free models played on the app's scenarios, on the emulator",
     "themes": "themes     the themes' benches: their colours, the retro palettes set and saved",
@@ -652,7 +674,7 @@ def menu():
     choices += [Separator("Device")]
     choices += [Choice(LABELS[k], k) for k in ("logs", "devices", "db", "bench")]
     choices += [Separator("Release")]
-    choices += [Choice(LABELS[k], k) for k in ("release", "install-release")]
+    choices += [Choice(LABELS[k], k) for k in ("release", "install-release", "provider-facts")]
     choices += [Separator("Theme")]
     choices += [Choice(LABELS["themes"], "themes")]
     choices += [Separator(""), Choice(LABELS["clean"], "clean")]

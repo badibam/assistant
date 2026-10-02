@@ -1,0 +1,92 @@
+[
+  {
+    "id": "claude-5-5-default-effort-medium",
+    "provider": "anthropic",
+    "models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "kind": "default",
+    "effective": null,
+    "value": "medium",
+    "client": "claude-code",
+    "note": "Claude Code defaults effort to medium on these models; their predecessors defaulted to high. Nothing signals the change.",
+    "source": "https://code.claude.com/docs/en/model-config",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "claude-sonnet-5-5-effort-recalibrated",
+    "provider": "anthropic",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "kind": "recalibrated",
+    "effective": null,
+    "client": null,
+    "note": "Effort levels keep their names but are recalibrated against Claude Sonnet 5: a level does not produce the same amount of thinking. Anthropic's starting points: medium for well-specified agentic work (high for harder or longer tasks), medium or low for chat and latency-sensitive work.",
+    "source": "https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "deepseek-default-effort-unknown",
+    "provider": "deepseek",
+    "models": [
+      "deepseek-flash",
+      "deepseek-v4-pro"
+    ],
+    "kind": "trap",
+    "effective": null,
+    "client": null,
+    "note": "The effort applied when none is set is not established: the doc read on 2026-07-24 said max for agent clients such as Claude Code, the doc read on 2026-09-19 says high. Not measured.",
+    "source": "https://api-docs.deepseek.com/guides/thinking_mode",
+    "observed": "2026-09-19"
+  },
+  {
+    "id": "deepseek-effort-levels",
+    "provider": "deepseek",
+    "models": [
+      "deepseek-flash",
+      "deepseek-v4-pro"
+    ],
+    "kind": "effort_levels",
+    "effective": null,
+    "levels": [
+      "low",
+      "high",
+      "max"
+    ],
+    "client": null,
+    "note": "Other names are aliases: minimal maps to low, medium and xhigh to high, ultra to max.",
+    "source": "https://api-docs.deepseek.com/guides/thinking_mode",
+    "observed": "2026-09-19"
+  },
+  {
+    "id": "deepseek-v4-flash-retired",
+    "provider": "deepseek",
+    "models": [
+      "deepseek-v4-flash",
+      "deepseek-v4-flash-vision-exp"
+    ],
+    "kind": "retired",
+    "effective": "2026-09-10",
+    "replacement": "deepseek-flash",
+    "old_name_accepted": true,
+    "client": null,
+    "note": "Served by V4.1-Flash under the old names, temporarily.",
+    "source": "https://api-docs.deepseek.com/news/news260910/",
+    "observed": "2026-10-02"
+  },
+  {
+    "id": "deepseek-v4-pro-served-by-flash",
+    "provider": "deepseek",
+    "models": [
+      "deepseek-v4-pro"
+    ],
+    "kind": "trap",
+    "effective": "2026-09-14",
+    "client": null,
+    "note": "Since 04:00 UTC on 2026-09-14, every deepseek-v4-pro request is served by V4.1-Flash at V4.1-Flash rates, until V4.1-Pro launches.",
+    "source": "https://api-docs.deepseek.com/news/news260910/",
+    "observed": "2026-10-02"
+  }
+]

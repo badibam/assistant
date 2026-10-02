@@ -1,0 +1,7 @@
+{
+  "copy": "app/src/main/assets/facts.json",
+  "handled": {
+    "deepseek-default-effort-unknown": "Never relied on: the effort is a required setting of both DeepSeek providers, sent with every call (MessagesApi.DEEPSEEK effortLevels, ClaudeProviderCore).",
+    "deepseek-v4-pro-served-by-flash": "The app names no model: the user picks one from DeepSeek's own list, which still offers deepseek-v4-pro; until V4.1-Pro launches, choosing it gets V4.1-Flash, and nothing in the app says so."
+  }
+}

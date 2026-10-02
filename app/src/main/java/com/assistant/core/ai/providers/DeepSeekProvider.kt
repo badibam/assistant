@@ -40,7 +40,7 @@ class DeepSeekStandardProvider(private val context: Context) : AIProvider {
  * DeepSeek AI Provider - Economic variant
  *
  * Same as DeepSeekStandardProvider with its own configuration,
- * typically a cheaper model (e.g., "deepseek-v4-flash") or a lower effort.
+ * typically a cheaper model (e.g., "deepseek-flash") or a lower effort.
  */
 class DeepSeekEconomicProvider(private val context: Context) : AIProvider {
 
