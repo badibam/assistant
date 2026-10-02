@@ -149,6 +149,7 @@ const SLIDERS = [
     ["panel_border_inner_step", "Bordure intérieure · écart au panneau", -0.7, 0.7, 0.01],
   ]],
   ["Les encres", [
+    ["ink_chroma", "Encres · chroma (texte, icônes)", 0, 0.12, 0.002],
     ["dim_step", "Encre faible · vers le fond", 0, 0.5, 0.01],
     ["strong_step", "Encre vive · loin du fond", 0, 0.4, 0.01],
   ]],
@@ -426,6 +427,14 @@ function drawSheet(P) {
   frame(x, y - CELL, 4, 4, c.panel_border_outer, c.panel_border_inner, c.panel_ground);
   icon("search", x + CELL, y, c.panel_ink);
   y += 4 * CELL;
+
+  // A yes or no: the chosen answer a frame filled with the dim ink, its word in the ground's
+  // colour; the other an input on the screen, its word thin and dim.
+  frame(0, y, 6, 2, c.panel_border_outer, c.panel_border_inner, c.panel_dim);
+  text("Oui", CELL, y + BORDER + 12, c.panel_ground);
+  frame(7 * CELL, y, 6, 2, c.screen_border_outer, c.screen_border_inner, c.screen_ground);
+  text("Non", 8 * CELL, y + BORDER + 12, c.screen_dim, true);
+  y += 3 * CELL;
 
   // Tabs: the shown one framed, the others plain.
   x = 0;

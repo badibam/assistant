@@ -17,6 +17,8 @@ data class PaletteNumbers(
     @SerialName("ground_lightness") val groundLightness: Float,
     @SerialName("ground_chroma") val groundChroma: Float,
     @SerialName("ink_lightness") val inkLightness: Float,
+    /** The chroma of every ink, in the palette's hue: the text's and the icons' warmth. */
+    @SerialName("ink_chroma") val inkChroma: Float,
     /** How far the dim ink stands from the ink, toward the ground. */
     @SerialName("dim_step") val dimStep: Float,
     /** How far the strong ink stands from the ink, away from the ground. */

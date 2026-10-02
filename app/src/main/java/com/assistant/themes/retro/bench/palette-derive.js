@@ -10,10 +10,11 @@
 
 (function (root) {
 
-  /** The faint tint of the register's hue that every ink carries. */
+  /** A tag's name: a faint tint of the palette's hue, a little more on a light tag. */
   const INK_CHROMA = 0.018;
-  /** The chroma of a strong ink: a little more than the ink's, so it reads as the same ink, lit. */
   const STRONG_CHROMA = 0.03;
+  /** A strong ink carries a little more chroma than the ink, so it reads as the same ink, lit. */
+  const STRONG_EXTRA_CHROMA = 0.012;
   /** A border's chroma never falls under this, or a frame on a grey ground would be grey too. */
   const DECOR_MIN_CHROMA = 0.045;
   /** The outer tone of a border turns this far from the hue, for the relief of two tones. */
@@ -76,12 +77,12 @@
   function surface(n, hue, groundL, groundC, inkL, outerStep, innerStep, statusL) {
     const up = groundL < 0.5 ? 1 : -1;
     const decor = Math.max(groundC, DECOR_MIN_CHROMA);
-    const dim = [inkL - n.dim_step * up, INK_CHROMA, hue];
+    const dim = [inkL - n.dim_step * up, n.ink_chroma, hue];
     const out = {
       ground: [groundL, groundC, hue],
-      ink: [inkL, INK_CHROMA, hue],
+      ink: [inkL, n.ink_chroma, hue],
       dim: dim,
-      strong: [clamp01(inkL + n.strong_step * up), STRONG_CHROMA, hue],
+      strong: [clamp01(inkL + n.strong_step * up), n.ink_chroma + STRONG_EXTRA_CHROMA, hue],
       border_outer: [groundL + outerStep, decor, hue + OUTER_HUE_TURN],
       border_inner: [groundL + innerStep, decor, hue],
       status_muted: dim,

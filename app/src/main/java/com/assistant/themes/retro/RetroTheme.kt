@@ -865,7 +865,7 @@ object RetroTheme : ThemeContract {
         }
     }
 
-    /** Two buttons: the chosen one a frame filled with the strong ink, the other on the page in the dim. */
+    /** Two buttons: the chosen one a frame filled with the dim ink, its word in the ground's colour; the other on the page in the dim. */
     @Composable
     override fun BooleanField(
         label: String,

@@ -156,9 +156,9 @@ class RetroColors(val numbers: PaletteNumbers) {
         fun status(statusHue: Float) = Lch(statusL, numbers.statusChroma, statusHue)
         return Surface(
             ground = Lch(groundL, groundC, hue),
-            ink = Lch(inkL, INK_CHROMA, hue),
-            dim = Lch(inkL - numbers.dimStep * up, INK_CHROMA, hue),
-            strong = Lch((inkL + numbers.strongStep * up).coerceIn(0f, 1f), STRONG_CHROMA, hue),
+            ink = Lch(inkL, numbers.inkChroma, hue),
+            dim = Lch(inkL - numbers.dimStep * up, numbers.inkChroma, hue),
+            strong = Lch((inkL + numbers.strongStep * up).coerceIn(0f, 1f), numbers.inkChroma + STRONG_EXTRA_CHROMA, hue),
             borderOuter = Lch(groundL + outerStep, decor, hue + OUTER_HUE_TURN),
             borderInner = Lch(groundL + innerStep, decor, hue),
             success = status(145f),
@@ -169,10 +169,11 @@ class RetroColors(val numbers: PaletteNumbers) {
     }
 
     private companion object {
-        /** The faint tint of the palette's hue every ink carries. */
+        /** A tag's name: a faint tint of the palette's hue, a little more on a light tag. */
         const val INK_CHROMA = 0.018f
-        /** A strong ink's chroma: a little more than the ink's, the same ink lit. */
         const val STRONG_CHROMA = 0.03f
+        /** A strong ink carries a little more chroma than the ink, so it reads as the same ink, lit. */
+        const val STRONG_EXTRA_CHROMA = 0.012f
         /** A border's chroma never falls under this, or a frame on a grey ground is grey too. */
         const val DECOR_MIN_CHROMA = 0.045f
         /** The outer tone of a border turns this far from the hue, for the relief of two tones. */
