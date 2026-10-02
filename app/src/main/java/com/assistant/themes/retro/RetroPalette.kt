@@ -152,6 +152,7 @@ class RetroColors(val numbers: PaletteNumbers) {
                 put("${prefix}_status_info", s.info)
             }
             TagColor.entries.forEach { put("tag_${it.name.lowercase()}", tag(it)) }
+            TagColor.entries.forEach { put("drawing_${it.name.lowercase()}", drawing(it)) }
             put("tag_text", tagText)
         }
 

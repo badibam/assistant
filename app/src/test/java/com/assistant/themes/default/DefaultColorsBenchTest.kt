@@ -38,4 +38,14 @@ class DefaultColorsBenchTest {
             for ((role, colour) in pageColors(name)) assertEquals("$name $role", hex(scheme, role), colour)
         }
     }
+
+    @Test
+    fun `the page's chart series are the drawing's`() {
+        val series = Regex("""const SERIES = \{ LIGHT: \["(#\w{6})", "(#\w{6})"\], DARK: \["(#\w{6})", "(#\w{6})"\] \};""").find(page)
+            ?.groupValues?.drop(1) ?: error("no SERIES in colors.html")
+        fun hex(c: androidx.compose.ui.graphics.Color) = "#%06X".format(c.toArgb() and 0xFFFFFF)
+        val tags = listOf(com.assistant.core.themes.TagColor.BLUE, com.assistant.core.themes.TagColor.ORANGE)
+        val expected = listOf(false, true).flatMap { dark -> tags.map { hex(DefaultDrawing.color(it, dark)) } }
+        assertEquals(expected, series.map { it.uppercase() })
+    }
 }

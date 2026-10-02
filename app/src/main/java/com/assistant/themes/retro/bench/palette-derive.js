@@ -103,6 +103,9 @@
     for (const [k, v] of Object.entries(panel)) out["panel_" + k] = v;
     for (const [name, th] of Object.entries(TAG_HUES)) out["tag_" + name] = [n.tag_lightness, n.tag_chroma, th];
     out.tag_grey = [n.tag_lightness, GREY_CHROMA, h];
+    // A drawing's series (a chart): its tag's hue at the states' lightness and chroma in a frame
+    for (const [name, th] of Object.entries(TAG_HUES)) out["drawing_" + name] = [n.panel_status_lightness, n.status_chroma, th];
+    out.drawing_grey = [n.panel_status_lightness, GREY_CHROMA, h];
     // A tag's name reads on its colour: dark letters on a light tag, light ones on a dark tag.
     out.tag_text = n.tag_lightness >= 0.6 ? [0.25, STRONG_CHROMA, h] : [0.97, INK_CHROMA, h];
     return out;

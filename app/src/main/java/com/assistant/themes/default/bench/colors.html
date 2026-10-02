@@ -16,11 +16,15 @@
   .bar { height: 24px; }
   .screen { padding: 0 0 16px; min-height: 720px; position: relative; }
   .title { font-size: 26px; text-align: center; padding: 16px 0; }
-  .section { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; font-size: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .section { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 10px; font-size: 18px; border-bottom: 1px solid; margin: 0 6px; }
   .section .plus { font-size: 22px; }
   .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 6px; }
   .tile { padding: 12px; min-height: 92px; box-shadow: 0 1px 2px rgba(0,0,0,.25); display: flex; flex-direction: column; gap: 6px; }
   .tile.wide { grid-column: span 2; min-height: 60px; flex-direction: row; align-items: center; justify-content: space-between; }
+  .tile.bare { align-items: center; justify-content: center; }
+  .icon { width: 22px; height: 22px; border: 2px solid; border-radius: 4px; display: inline-block; vertical-align: -5px; margin-right: 8px; }
+  .chart { display: flex; align-items: flex-end; gap: 4px; height: 56px; }
+  .chart div { flex: 1; display: flex; flex-direction: column; }
   .tile b { font-size: 16px; font-weight: 500; }
   .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .form { margin: 8px 6px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
@@ -60,6 +64,8 @@ const DARK = {
   error: "#E88888", onError: "#2D1A1A", outline: "#6B6178", outlineVariant: "#433E4D",
   secondaryContainer: "#4A4458", onSecondaryContainer: "#E8DEF8",
 };
+// A chart's series, as DefaultDrawing.color gives them: a tag's hue, which does not turn
+const SERIES = { LIGHT: ["#3D6FC6", "#D9772B"], DARK: ["#8DB0F0", "#F5AE72"] };
 // The colours that say something whatever the hue: they do not turn (DefaultTheme.getColorScheme)
 const SEMANTIC = ["tertiary", "onTertiary", "error", "onError"];
 
@@ -103,18 +109,21 @@ function turned(scheme, delta) {
   return out;
 }
 
-function phone(name, c) {
+function phone(name, c, series) {
+  const bars = [[0.72, 0.2], [0.9, 0.1], [0.64, 0.25], [1, 0.15], [0.82, 0.2], [0.55, 0.3], [0.77, 0.12]]
+    .map(([v, top]) => `<div style="height:${v * 100}%"><span style="flex:${top};background:${series[1]}"></span><span style="flex:${1 - top};background:${series[0]}"></span></div>`).join("");
   return `<div class="phone" style="background:${c.background};color:${c.onBackground}">
     <div class="bar" style="background:${c.background}"></div>
     <div class="screen">
       <div class="title" style="background:${c.surface};color:${c.onSurface}">Assistant · ${name}</div>
-      <div class="section" style="background:${c.surfaceVariant};color:${c.onSurfaceVariant}">Démo <span class="plus" style="color:${c.primary}">+</span></div>
+      <div class="section" style="border-color:${c.outline}">Démo <span class="plus" style="color:${c.primary}">+</span></div>
       <div class="tiles">
-        <div class="tile" style="background:${c.surface};color:${c.onSurface}"><b>Course <span class="dot" style="background:${c.primary}"></span></b><span style="color:${c.onSurfaceVariant}">Camille prépare un semi-marathon…</span></div>
-        <div class="tile" style="background:${c.surface};color:${c.onSurface}"><b>Travail</b><span style="color:${c.onSurfaceVariant}">Camille est graphiste…</span></div>
-        <div class="tile wide" style="background:${c.surface};color:${c.onSurface}"><b>Tâches</b><span><span class="chk" style="border:2px solid ${c.onSurfaceVariant}"></span>Relancer la librairie</span><span style="color:${c.primary};font-size:22px">+</span></div>
+        <div class="tile" style="background:${c.surface};color:${c.onSurface}"><b><span class="icon" style="border-color:${c.onSurfaceVariant}"></span>Course <span class="dot" style="background:${c.primary}"></span></b><span style="color:${c.onSurfaceVariant}">Camille prépare un semi-marathon…</span></div>
+        <div class="tile bare" style="background:${c.surface};color:${c.onSurface}"><b>Recette</b><span style="color:${c.onSurfaceVariant}">sans icône : centré</span></div>
+        <div class="tile wide" style="background:${c.surface};color:${c.onSurface}"><b><span class="icon" style="border-color:${c.onSurfaceVariant}"></span>Tâches</b><span><span class="chk" style="border:2px solid ${c.onSurfaceVariant}"></span>Relancer la librairie</span><span style="color:${c.primary};font-size:22px">+</span></div>
+        <div class="tile wide" style="background:${c.surface};color:${c.onSurface};flex-direction:column;align-items:stretch"><b><span class="icon" style="border-color:${c.onSurfaceVariant}"></span>Heures par client</b><div class="chart">${bars}</div></div>
       </div>
-      <div class="section" style="background:${c.surfaceVariant};color:${c.onSurfaceVariant}">Configurer</div>
+      <div class="section" style="border-color:${c.outline}">Configurer</div>
       <div class="form" style="background:${c.surface};color:${c.onSurface}">
         <div><div class="label">Nom *</div><div class="field" style="border:1px solid ${c.outline}">Heures par client</div></div>
         <div><div class="label">Gestion</div><div class="select" style="background:${c.surfaceVariant};border-bottom:1px solid ${c.onSurfaceVariant}">Manuel <span>▾</span></div></div>
@@ -122,7 +131,7 @@ function phone(name, c) {
         <div class="states"><span style="color:${c.tertiary}">● attention</span><span style="color:${c.error}">● erreur</span><span style="color:${c.onSurfaceVariant}">● éteint</span></div>
         <div class="row"><div class="btn" style="border:1px solid ${c.primary};color:${c.primary}">Sauvegarder</div><div class="btn" style="background:${c.surfaceVariant};color:${c.onSurfaceVariant}">Annuler</div></div>
       </div>
-      <div class="fab" style="background:${c.primary};color:${c.onPrimary}">💬</div>
+      <div class="fab" style="background:${c.primary};color:${c.onPrimary}">●</div>
     </div>
   </div>`;
 }
@@ -131,7 +140,7 @@ function draw() {
   const delta = +document.getElementById("hue").value;
   document.getElementById("hueOut").textContent = "+" + delta + "°";
   document.getElementById("main").innerHTML =
-    phone("clair", turned(LIGHT, delta)) + phone("sombre", turned(DARK, delta));
+    phone("clair", turned(LIGHT, delta), SERIES.LIGHT) + phone("sombre", turned(DARK, delta), SERIES.DARK);
 }
 document.getElementById("hue").oninput = draw;
 draw();

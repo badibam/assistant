@@ -56,6 +56,15 @@
         "tag_purple": "#ceb5ff",
         "tag_pink": "#faa6ce",
         "tag_grey": "#cac3ba",
+        "drawing_red": "#bb5752",
+        "drawing_orange": "#b3621e",
+        "drawing_yellow": "#917900",
+        "drawing_green": "#418e47",
+        "drawing_teal": "#008e82",
+        "drawing_blue": "#347ec4",
+        "drawing_purple": "#8766bb",
+        "drawing_pink": "#b25785",
+        "drawing_grey": "#807971",
         "tag_text": "#2a2011"
       }
     },
@@ -115,6 +124,15 @@
         "tag_purple": "#c1a9ee",
         "tag_pink": "#e89dc0",
         "tag_grey": "#c1b4b2",
+        "drawing_red": "#d67069",
+        "drawing_orange": "#ce7a3b",
+        "drawing_yellow": "#ab9017",
+        "drawing_green": "#5aa75e",
+        "drawing_teal": "#00a99b",
+        "drawing_blue": "#4d97de",
+        "drawing_purple": "#9f7ed6",
+        "drawing_pink": "#cc6f9d",
+        "drawing_grey": "#9b8f8d",
         "tag_text": "#2f1c1a"
       }
     }

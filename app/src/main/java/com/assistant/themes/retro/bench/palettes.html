@@ -339,11 +339,14 @@ function drawScreen(P) {
   const ax = t.x + CELL, aw = (t.w - 2) * CELL;
   // The day letters' baseline two rows over the bottom border, room for their descent.
   const ay = t.y + 4 * CELL, ah = (t.h - 5) * CELL - 5;
+  // Two series stacked, in the drawing's colours (RetroColors.drawing)
   const values = [0.72, 0.9, 0.64, 1.0, 0.82, 0.55, 0.77];
+  const tops = [0.2, 0.1, 0.25, 0.15, 0.2, 0.3, 0.12];
   const gapPx = 4, bw = Math.floor((aw - 6 * gapPx) / 7);
   values.forEach((v, i) => {
-    const h = Math.round(v * ah);
-    px(ax + i * (bw + gapPx), ay + ah - h, bw, h, c.tag_blue);
+    const h = Math.round(v * ah), top = Math.round(tops[i] * h);
+    px(ax + i * (bw + gapPx), ay + ah - h + top, bw, h - top, c.drawing_blue);
+    px(ax + i * (bw + gapPx), ay + ah - h, bw, top, c.drawing_orange);
     text("LMMJVSD"[i], ax + i * (bw + gapPx) + Math.floor((bw - CELL) / 2) + 1, ay + ah + 2 + 12, c.panel_dim, true);
   });
   const goal = ay + ah - Math.round(0.8 * ah);
