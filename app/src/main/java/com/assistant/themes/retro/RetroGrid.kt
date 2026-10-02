@@ -45,6 +45,18 @@ class RetroGrid(
     /** The cell, in screen pixels. */
     val cellPx: Int get() = px(CELL)
 
+    /** The whole number of cells nearest [points] dp: a size the finger asks for, on the cells. */
+    private fun cellsNear(points: Float): Int = (points * density.density / cellPx).roundToInt()
+
+    /**
+     * The rows of anything a finger takes — a field, a button, a choice, a row of a list — and
+     * the side of an icon button: the cells nearest 48 dp, the target Android asks for.
+     */
+    val touch: Int get() = cellsNear(TOUCH_DP).coerceAtLeast(3)
+
+    /** The side of the button floating over a screen: the cells nearest 56 dp. */
+    val floating: Int get() = cellsNear(FLOATING_DP).coerceAtLeast(touch)
+
     /** Ordinary text: the regular weight, the ink of the surface it is on. */
     val text: TextStyle = style(FontWeight.Normal)
 
@@ -87,6 +99,12 @@ class RetroGrid(
 
         /** An icon's box, the register's second size: two cells. */
         const val ICON = 22
+
+        /** A finger's target, in dp. */
+        const val TOUCH_DP = 48f
+
+        /** A floating button's side, in dp. */
+        const val FLOATING_DP = 56f
     }
 }
 

@@ -212,17 +212,23 @@ object RetroTheme : ThemeContract {
         val enabled = state == ComponentState.NORMAL || state == ComponentState.SUCCESS
         Pressable(onClick = onClick, enabled = enabled) { pressed ->
             TouchRoom {
-                Framed(compact = true, minRows = WORD_ROWS, pressed = pressed) {
+                Framed(compact = true, minRows = touchRows, pressed = pressed) {
                     CompositionLocalProvider(LocalRetroInk provides buttonInk(type, enabled)) { content() }
                 }
             }
         }
     }
 
-    /** An icon's frame, as any icon button: a frame has its own fill. */
+    /**
+     * An icon's frame, a frame having its own fill: the size of a floating button
+     * (RetroGrid.floating), its icon a size up.
+     */
     @Composable
-    override fun FloatingButton(action: ButtonAction, onClick: () -> Unit) =
-        ActionButton(action, ButtonDisplay.ICON, Size.L, null, true, false, null, false, onClick)
+    override fun FloatingButton(action: ButtonAction, onClick: () -> Unit) {
+        Pressable(onClick = onClick) { pressed ->
+            IconFrame(action.iconName, action.label(), buttonInk(action.defaultType(), true), retroGrid().floating, pressed, retroGridUp())
+        }
+    }
 
     @Composable
     override fun ActionButton(
@@ -243,12 +249,10 @@ object RetroTheme : ThemeContract {
             // Switched on, it stays pressed: the two tones swapped while what it opens lasts
             val down = pressed || active
             if (display == ButtonDisplay.ICON) {
-                Framed(pressed = down) {
-                    CompositionLocalProvider(LocalRetroInk provides ink) { NamedIcon(action.iconName, label) }
-                }
+                IconFrame(action.iconName, label, ink, retroGrid().touch, down)
             } else {
                 TouchRoom {
-                    Framed(compact = true, minRows = WORD_ROWS, pressed = down) { Line(label, retroGrid().text, ink) }
+                    Framed(compact = true, minRows = touchRows, pressed = down) { Line(label, retroGrid().text, ink) }
                 }
             }
         }
@@ -671,7 +675,7 @@ object RetroTheme : ThemeContract {
         val grid = retroGrid()
         // Across the width, its buttons on the screen's margins
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.width(grid.cells(4)), contentAlignment = Alignment.CenterStart) {
+            Box(modifier = Modifier.width(grid.cells(grid.touch)), contentAlignment = Alignment.CenterStart) {
                 leftButton?.let { com.assistant.core.ui.UI.ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onLeftClick ?: {}) }
             }
             Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -683,7 +687,7 @@ object RetroTheme : ThemeContract {
                 }
                 subtitle?.let { Text(it, TextType.CAPTION, false, TextAlign.Center) }
             }
-            Box(modifier = Modifier.width(grid.cells(4)), contentAlignment = Alignment.CenterEnd) {
+            Box(modifier = Modifier.width(grid.cells(grid.touch)), contentAlignment = Alignment.CenterEnd) {
                 rightButton?.let { com.assistant.core.ui.UI.ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onRightClick ?: {}) }
             }
         }
@@ -726,7 +730,7 @@ object RetroTheme : ThemeContract {
             } else {
                 val isPassword = fieldType == FieldType.PASSWORD
                 var revealed by remember { mutableStateOf(false) }
-                Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, minRows = WORD_ROWS) {
+                Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, minRows = touchRows) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         BasicTextField(
                             value = value,
@@ -768,7 +772,7 @@ object RetroTheme : ThemeContract {
         Column(verticalArrangement = Arrangement.spacedBy(grid.dp(3))) {
             FieldLabel(label, required)
             Pressable(onClick = { open = true }) { pressed ->
-                Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, minRows = WORD_ROWS, pressed = pressed) {
+                Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, minRows = touchRows, pressed = pressed) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.weight(1f)) { Line(selected, grid.text, s.ink.srgb, maxLines = 1) }
                         Line(ARROW_DOWN.toString(), grid.text, s.dim.srgb)
@@ -782,7 +786,7 @@ object RetroTheme : ThemeContract {
                     val panel = retroColors.panel
                     options.forEach { option ->
                         Box(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = grid.cells(3))
+                            modifier = Modifier.fillMaxWidth().heightIn(min = grid.cells(grid.touch))
                                 .combinedClickable(onClick = { onSelect(option); open = false }),
                             contentAlignment = Alignment.CenterStart
                         ) {
@@ -811,7 +815,7 @@ object RetroTheme : ThemeContract {
         val s = retroSurface
         Pressable(onClick = { onCheckedChange(!checked) }) {
             Row(
-                modifier = Modifier.heightIn(min = grid.cells(4)),
+                modifier = Modifier.heightIn(min = grid.cells(grid.touch)),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(grid.cells(1))
             ) {
@@ -827,7 +831,7 @@ object RetroTheme : ThemeContract {
         val grid = retroGrid()
         val s = retroSurface
         Pressable(onClick = { onCheckedChange(!checked) }, modifier = Modifier.fillMaxWidth()) {
-            Row(modifier = Modifier.fillMaxWidth().heightIn(min = grid.cells(4)), verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.fillMaxWidth().heightIn(min = grid.cells(grid.touch)), verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.weight(1f)) { Line(label, grid.text, s.ink.srgb) }
                 Line(if (checked) "$DOT_HOLLOW$DOT_FILLED" else "$DOT_FILLED$DOT_HOLLOW", grid.text, (if (checked) s.strong else s.dim).srgb)
             }
@@ -844,9 +848,9 @@ object RetroTheme : ThemeContract {
                 Pressable(onClick = { onSelect(index) }) { pressed ->
                     TouchRoom {
                         if (index == selected) {
-                            Framed(compact = true, minRows = WORD_ROWS, pressed = pressed) { Line(label, grid.text, retroColors.panel.strong.srgb) }
+                            Framed(compact = true, minRows = touchRows, pressed = pressed) { Line(label, grid.text, retroColors.panel.strong.srgb) }
                         } else {
-                            Box(modifier = Modifier.height(grid.cells(WORD_ROWS)).padding(horizontal = grid.cells(1)), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.height(grid.cells(touchRows)).padding(horizontal = grid.cells(1)), contentAlignment = Alignment.Center) {
                                 Line(label, grid.thin, s.dim.srgb)
                             }
                         }
@@ -882,7 +886,7 @@ object RetroTheme : ThemeContract {
                         modifier = if (compact) Modifier else Modifier.weight(1f)
                     ) { pressed ->
                         val fill = if (compact) Modifier else Modifier.fillMaxWidth()
-                        Framed(modifier = fill, input = !chosen, compact = true, minRows = WORD_ROWS, pressed = pressed) {
+                        Framed(modifier = fill, input = !chosen, compact = true, minRows = touchRows, pressed = pressed) {
                             Box(modifier = fill, contentAlignment = Alignment.Center) {
                                 Line(text, if (chosen) grid.text else grid.thin, (if (chosen) retroColors.panel.strong else retroSurface.dim).srgb)
                             }
@@ -933,7 +937,7 @@ object RetroTheme : ThemeContract {
                 }
                 Box(
                     modifier = Modifier
-                        .heightIn(min = grid.cells(3))
+                        .heightIn(min = grid.cells(grid.touch))
                         .pointerInput(min, lastStop, step) { detectTapGestures { answer(it.x) } }
                         .pointerInput(min, lastStop, step) { detectHorizontalDragGestures { change, _ -> answer(change.position.x) } },
                     contentAlignment = Alignment.CenterStart
@@ -1065,15 +1069,26 @@ object RetroTheme : ThemeContract {
     }
 
     /**
-     * A button's word, a field's line, a yes or no in three frame rows: four pixels of border, then
-     * five and six of air around its fourteen rows, where two left it touching the border.
+     * A button's word, a field's line, a yes or no: a frame as tall as a finger's target
+     * (RetroGrid.touch), its line centred in it.
      */
-    private val WORD_ROWS = 3
+    private val touchRows: Int
+        @Composable get() = retroGrid().touch
 
-    /** A target a finger can take: at least four cells tall, the frame centred in the empty ones. */
+    /** A target a finger can take: at least a finger's target tall, the frame centred in the empty rows. */
     @Composable
     private fun TouchRoom(content: @Composable () -> Unit) {
-        Box(modifier = Modifier.heightIn(min = retroGrid().cells(4)), contentAlignment = Alignment.Center) { content() }
+        Box(modifier = Modifier.heightIn(min = retroGrid().cells(touchRows)), contentAlignment = Alignment.Center) { content() }
+    }
+
+    /** An icon in a square frame [side] cells wide, centred; the icon drawn at [grid]'s scale. */
+    @Composable
+    private fun IconFrame(name: String, description: String?, ink: Color, side: Int, pressed: Boolean, grid: RetroGrid = retroGrid()) {
+        Framed(modifier = Modifier.size(retroGrid().cells(side)), pressed = pressed) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CompositionLocalProvider(LocalRetroInk provides ink) { NamedIcon(name, description, grid) }
+            }
+        }
     }
 
     /** A framed word that acts. */
@@ -1087,16 +1102,16 @@ object RetroTheme : ThemeContract {
             else -> panel.ink
         }.srgb
         Pressable(onClick = onClick, enabled = enabled) { pressed ->
-            TouchRoom { Framed(compact = true, minRows = WORD_ROWS, pressed = pressed) { Line(text, retroGrid().text, ink) } }
+            TouchRoom { Framed(compact = true, minRows = touchRows, pressed = pressed) { Line(text, retroGrid().text, ink) } }
         }
     }
 
-    /** A framed glyph of the font that acts: an arrow, a minus, a plus. Fixed width, four cells. */
+    /** A framed glyph of the font that acts: an arrow, a minus, a plus. A square, a finger's target wide. */
     @Composable
     private fun GlyphButton(glyph: Char, onClick: () -> Unit) {
         val grid = retroGrid()
         Pressable(onClick = onClick) { pressed ->
-            Framed(modifier = Modifier.width(grid.cells(4)).height(grid.cells(4)), pressed = pressed) {
+            Framed(modifier = Modifier.size(grid.cells(grid.touch)), pressed = pressed) {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Line(glyph.toString(), grid.text, retroColors.panel.ink.srgb)
                 }
