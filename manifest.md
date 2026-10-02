@@ -10,4 +10,4 @@
 ! b2320db  no fastlane store listing yet; en-US text and screenshots come with the English default, before the first submission
 ## pixel-ui @ 0db9979
 ! 95688669  the retro theme is designed (docs/design/retro-theme.md), not built: nothing of the module is applied yet
-## ia-service-distant @
+## ia-service-distant @ 80c1a43
