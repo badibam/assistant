@@ -615,6 +615,10 @@ object DefaultTheme : ThemeContract {
         )
     }
     
+    /**
+     * A card on its own fill, raised. A section's header is no card: its title on the screen's
+     * ground over a divider, so that the tiles under it are the only cards, as in the retro theme.
+     */
     @Composable
     override fun Card(
         type: CardType,
@@ -622,6 +626,16 @@ object DefaultTheme : ThemeContract {
         highlight: Boolean,
         content: @Composable () -> Unit
     ) {
+        if (type == CardType.SECTION_HEADER) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides CurrentTheme.getCurrentColorScheme().onBackground) {
+                    content()
+                }
+                HorizontalDivider(color = CurrentTheme.getCurrentColorScheme().outline)
+            }
+            return
+        }
+
         val elevation = when (size) {
             Size.XS, Size.S -> CardDefaults.cardElevation(defaultElevation = 2.dp)
             Size.M -> CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -634,16 +648,10 @@ object DefaultTheme : ThemeContract {
             null
         }
 
-        val colors = when (type) {
-            CardType.SECTION_HEADER -> CardDefaults.cardColors(
-                containerColor = CurrentTheme.getCurrentColorScheme().surfaceVariant,
-                contentColor = CurrentTheme.getCurrentColorScheme().onSurfaceVariant
-            )
-            CardType.DEFAULT -> CardDefaults.cardColors(
-                containerColor = CurrentTheme.getCurrentColorScheme().surface,
-                contentColor = CurrentTheme.getCurrentColorScheme().onSurface
-            )
-        }
+        val colors = CardDefaults.cardColors(
+            containerColor = CurrentTheme.getCurrentColorScheme().surface,
+            contentColor = CurrentTheme.getCurrentColorScheme().onSurface
+        )
 
         androidx.compose.material3.Card(
             elevation = elevation,

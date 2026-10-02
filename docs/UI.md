@@ -195,7 +195,7 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 ## Cards et Conteneurs
 
 ### Cards Pleine Largeur
-UI.Card avec type CardType.DEFAULT, contenu en Column avec padding interne `UI.Space.L`.
+UI.Card avec type CardType.DEFAULT, contenu en Column avec padding interne `UI.Space.L`. Un en-tête de section (`CardType.SECTION_HEADER`) n'est pas une carte, dans aucun thème : son titre sur le fond de l'écran au-dessus d'un trait, les tuiles dessous restant les seules cartes.
 
 ### Titres et Sections
 - **Titre principal** : UI.Text avec TextType.TITLE, fillMaxWidth et textAlign Center

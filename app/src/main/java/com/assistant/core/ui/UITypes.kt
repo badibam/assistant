@@ -194,6 +194,6 @@ enum class TextType {
  */
 enum class CardType {
     DEFAULT,
-    SECTION_HEADER  // For group/section headers - uses surfaceVariant for subtle contrast
+    SECTION_HEADER  // A group's or section's header: its title over a divider, no card
     // Types to be added as needed
 }

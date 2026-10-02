@@ -680,7 +680,7 @@ private fun GroupSection(
     val groupTools = toolInstances.filter { ToolPositions.section(it, zoneToolGroups) == groupName }
     val groupAutomations = automations.filter { it.group == groupName }
 
-    // Section header - use SECTION_HEADER for subtle contrast with surfaceVariant
+    // Section header: its title over a divider (SECTION_HEADER)
     UI.Card(type = CardType.SECTION_HEADER) {
         Row(
             modifier = Modifier
@@ -866,7 +866,7 @@ private fun UngroupedSection(
         s.shared("label_tools_and_automations")
     }
 
-    // Section header - use SECTION_HEADER for subtle contrast with surfaceVariant
+    // Section header: its title over a divider (SECTION_HEADER)
     UI.Card(type = CardType.SECTION_HEADER) {
         Row(
             modifier = Modifier
