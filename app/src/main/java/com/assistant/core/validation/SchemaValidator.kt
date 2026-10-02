@@ -20,6 +20,30 @@ object SchemaValidator {
     private val cacheEnabled = true
     
     private val schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)
+
+    /**
+     * The library's messages in the phone's language, read as the ISO-8859-1 its files are
+     * written in: Android reads a properties bundle as UTF-8, which turned every accent of the
+     * French messages into a replacement character ("dépasser" shown as "d?passer").
+     */
+    private val schemaConfig = com.networknt.schema.SchemaValidatorsConfig().apply {
+        resourceBundle = messageBundle(java.util.Locale.getDefault())
+    }
+
+    /** The library's messages for [locale], their accents read right. */
+    internal fun messageBundle(locale: java.util.Locale): java.util.ResourceBundle =
+        java.util.ResourceBundle.getBundle("jsv-messages", locale, Latin1Properties)
+
+    /** Reads a properties bundle in ISO-8859-1, the encoding of the library's message files. */
+    private object Latin1Properties : java.util.ResourceBundle.Control() {
+        override fun getFormats(baseName: String): List<String> = FORMAT_PROPERTIES
+
+        override fun newBundle(baseName: String, locale: java.util.Locale, format: String, loader: ClassLoader, reload: Boolean): java.util.ResourceBundle? {
+            val resource = toResourceName(toBundleName(baseName, locale), "properties")
+            val stream = loader.getResourceAsStream(resource) ?: return null
+            return stream.reader(Charsets.ISO_8859_1).use { java.util.PropertyResourceBundle(it) }
+        }
+    }
     
     /**
      * Main validation function using direct schema objects
@@ -262,7 +286,7 @@ object SchemaValidator {
     private fun compileSchema(schemaJson: String): JsonSchema {
         val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
         val schemaNode = objectMapper.readTree(schemaJson)
-        return schemaFactory.getSchema(schemaNode)
+        return schemaFactory.getSchema(schemaNode, schemaConfig)
     }
     
     /**
