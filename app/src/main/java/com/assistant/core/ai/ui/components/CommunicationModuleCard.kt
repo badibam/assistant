@@ -22,8 +22,10 @@ import org.json.JSONObject
  *
  * The fields the AI asks for, each entered with the input of its field type (SettingsForm, as
  * any declaration), under the AI's preText which holds the question. Confirming sends the
- * answer, its dates and durations in the form the AI reads; it is possible once every field
- * the module needs has a value its field takes. A module without fields is a confirmation.
+ * answer, its dates and durations in the form the AI reads. An answer the module does not take
+ * yet is not sent: the card says what is missing, the fields the module needs left empty, or
+ * what the check refused. The answer is checked when sent, not at each key typed. A module
+ * without fields is a confirmation.
  *
  * Below the form, two ways out of it: a note added to the answer, sent with it; and a reply by
  * message, which frees the composer while the form stays answerable. Sending that message is
@@ -52,7 +54,8 @@ fun CommunicationModuleCard(
         mutableStateOf(JsonUtils.toJSONObject(module.fields.map { it.definition }.defaultValues()).toString())
     }
     val answer = remember(answerJson) { JSONObject(answerJson) }
-    val isComplete = remember(answerJson) { CommunicationModules.checkAnswer(module, answer, context).isValid }
+    // What the last confirmation found missing or wrong, until the answer changes
+    var refusal by remember { mutableStateOf<String?>(null) }
     // The note added to the answer: null while the user has not asked for one
     var note by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -67,7 +70,7 @@ fun CommunicationModuleCard(
                     SettingsForm(
                         nodes = module.fields,
                         config = answer,
-                        onChange = { answerJson = it.toString() },
+                        onChange = { answerJson = it.toString(); refusal = null },
                         context = context
                     )
                 }
@@ -100,8 +103,15 @@ fun CommunicationModuleCard(
                             action = ButtonAction.CONFIRM,
                             display = ButtonDisplay.LABEL,
                             size = Size.M,
-                            enabled = isComplete,
                             onClick = {
+                                val check = CommunicationModules.checkAnswer(module, answer, context)
+                                if (!check.isValid) {
+                                    val missing = module.fields.filter { it.required && isEmptyValue(answer.opt(it.definition.name)) }
+                                    refusal = if (missing.isNotEmpty()) {
+                                        s.shared("ai_module_missing").format(missing.joinToString(", ") { it.definition.displayName })
+                                    } else check.errorMessage
+                                    return@ActionButton
+                                }
                                 onResponse(
                                     if (module.fields.isEmpty()) CONFIRMED
                                     else CommunicationModules.answerForModel(module, answer, context).toString(),
@@ -111,6 +121,7 @@ fun CommunicationModuleCard(
                         )
                     }
                 }
+                refusal?.let { UI.Text(text = it, type = TextType.ERROR) }
 
                 // The other ways to answer
                 Row(
@@ -138,6 +149,14 @@ fun CommunicationModuleCard(
             // The buttons are inside the content, next to the fields they send
         }
     )
+}
+
+/** Whether [value] leaves its field unanswered: absent, or an empty text or list. */
+private fun isEmptyValue(value: Any?): Boolean = when (value) {
+    null, JSONObject.NULL -> true
+    is String -> value.isBlank()
+    is org.json.JSONArray -> value.length() == 0
+    else -> false
 }
 
 /** What a module without fields answers when the user confirms: read by the AI. */

@@ -163,6 +163,7 @@
     <string name="ai_module_response_prefix">Réponse :</string>
     <string name="ai_module_free_reply">Répondre par un message</string>
     <string name="ai_module_free_reply_hint">Écrivez votre réponse en bas : l\'envoyer remplace ce formulaire.</string>
+    <string name="ai_module_missing">Il manque : %s</string>
     <string name="ai_module_add_note">Ajouter une précision</string>
     <string name="ai_module_note">Précision</string>
     <string name="ai_module_note_prefix">Précision de l\'utilisateur :</string>
