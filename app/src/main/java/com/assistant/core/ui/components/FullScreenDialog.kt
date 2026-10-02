@@ -21,6 +21,9 @@ import com.assistant.core.ui.sound.scrollEndSound
  * Its own window, with the navigation bar hidden in it as in the activity's: otherwise it keeps
  * the bar's place, and stops short of the bottom of the screen. Back closes it; a touch cannot
  * fall outside it.
+ *
+ * The keyboard shrinks the window rather than sliding it up: slid, it showed only the line being
+ * typed, the bottom of the field under the keys and the top of the window under the status bar.
  */
 @Composable
 fun FullScreenDialog(onDismiss: () -> Unit, content: @Composable () -> Unit) {
@@ -35,7 +38,11 @@ fun FullScreenDialog(onDismiss: () -> Unit, content: @Composable () -> Unit) {
         )
     ) {
         val window = (LocalView.current.parent as DialogWindowProvider).window
-        SideEffect { hideNavigationBar(window) }
+        SideEffect {
+            hideNavigationBar(window)
+            @Suppress("DEPRECATION") // The insets API replaces it from edge-to-edge only, which the app is not yet
+            window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        }
         UI.FullScreen { Box(modifier = Modifier.fillMaxSize().scrollEndSound()) { content() } }
     }
 }
