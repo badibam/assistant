@@ -689,10 +689,13 @@ private fun GroupSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            UI.Text(
-                text = groupName,
-                type = TextType.HEADING
-            )
+            // The title takes what the buttons leave, wrapping rather than squeezing them
+            Box(modifier = Modifier.weight(1f)) {
+                UI.Text(
+                    text = groupName,
+                    type = TextType.HEADING
+                )
+            }
 
             com.assistant.core.ui.components.GridSectionButtons(groupName, groupTools.isNotEmpty(), editor, onToggleToolsList)
         }
@@ -875,10 +878,13 @@ private fun UngroupedSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            UI.Text(
-                text = sectionLabel,
-                type = TextType.HEADING
-            )
+            // The title takes what the buttons leave, wrapping rather than squeezing them
+            Box(modifier = Modifier.weight(1f)) {
+                UI.Text(
+                    text = sectionLabel,
+                    type = TextType.HEADING
+                )
+            }
 
             com.assistant.core.ui.components.GridSectionButtons("", toolInstances.isNotEmpty(), editor, onToggleToolsList)
         }
