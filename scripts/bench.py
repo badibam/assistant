@@ -15,6 +15,8 @@ after, and how the session ended; this script fetches them and judges them
     scripts/bench.py resume [<folder>]   an interrupted campaign, the latest by default: the plays
         that have their verdict are kept, the others played
     scripts/bench.py table [<folder>]   a campaign's table rebuilt from its verdicts, the latest by default
+    scripts/bench.py judge [<folder>]   every play judged again on its copies, then the table: after a
+        check is corrected
 
 The OpenRouter key comes from OPENROUTER_API_KEY, else from .env at the main repository's root.
 """
@@ -283,6 +285,30 @@ def write_table(folder, results, models, forcings, names):
     (folder / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def judge(folder):
+    """Every play of [folder]'s campaign judged again on its copies, nothing played: after a check is
+    corrected. A play that left no result keeps its verdict."""
+    plan = json.loads((folder / "campaign.json").read_text(encoding="utf-8"))
+    for m in plan["models"]:
+        for f in plan["forcings"]:
+            for n in plan["scenarios"]:
+                into = folder / model_dir(m) / f / n
+                verdict = into / "verdict.json"
+                if not verdict.is_file():
+                    continue
+                result = json.loads(verdict.read_text(encoding="utf-8"))
+                if result["status"] == "error":
+                    continue
+                try:
+                    passed, details = check(n, into)
+                except Exception as e:  # as in campaign(): a copy the check cannot read
+                    passed, details = False, [f"check failed: {e!r}"]
+                if passed != result["passed"]:
+                    print(f"{'PASS' if result['passed'] else 'FAIL'} -> {'PASS' if passed else 'FAIL'}  {m} {f} {n}")
+                write_json(verdict, {**result, "passed": passed, "details": details})
+    return rebuild(folder)
+
+
 def rebuild(folder):
     """The table of [folder]'s campaign from the verdicts written so far, nothing played."""
     plan = json.loads((folder / "campaign.json").read_text(encoding="utf-8"))
@@ -390,6 +416,9 @@ def main(argv):
         return 0
     if argv[0] == "show":
         return show(Path(argv[1]))
+    if argv[0] == "judge":
+        folder = Path(argv[1]) if len(argv) > 1 else max(OUT.glob("*/campaign.json")).parent
+        return judge(folder)
     if argv[0] == "table":
         folder = Path(argv[1]) if len(argv) > 1 else max(OUT.glob("*/campaign.json")).parent
         return rebuild(folder)

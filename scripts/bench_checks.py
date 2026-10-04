@@ -128,11 +128,11 @@ def norm(text):
 
 def numbers_in(text):
     """Every number written in [text], a decimal comma read as a point, a space between thousands
-    ("1 274", also a no-break space) read as one number; "6 h 50" also read as 6.83."""
+    ("1 274", also a no-break space) read as one number; "6 h 50" and "6 heures 50" also read as 6.83."""
     grouped = re.findall(r"\d{1,3}(?:[   ]\d{3})+(?:[.,]\d+)?", text)
     found = [float(re.sub(r"[   ]", "", n).replace(",", ".")) for n in grouped]
     found += [float(n.replace(",", ".")) for n in re.findall(r"\d+(?:[.,]\d+)?", text)]
-    found += [int(h) + int(m) / 60 for h, m in re.findall(r"(\d+)\s*h\s*(\d{1,2})", text)]
+    found += [int(h) + int(m) / 60 for h, m in re.findall(r"(\d+)\s*(?:h|heures?)\s*(\d{1,2})", text)]
     return found
 
 
@@ -220,7 +220,8 @@ def entry_shopping(run):
 def entry_ambiguous(run):
     new = {tool: run.new_rows(tool) for tool in ("demo-balcony-observations", "demo-balcony-notebook")}
     written = [(tool, r) for tool, rows in new.items() for r in rows]
-    if len(written) != 1 or "tomate" not in norm(json.dumps(written[0][1]["data"], ensure_ascii=False)):
+    # The note may be the entry's name, its value, or both ("Tomates cerises": "commencent à rougir")
+    if len(written) != 1 or "tomate" not in norm((written[0][1]["name"] or "") + json.dumps(written[0][1]["data"], ensure_ascii=False)):
         run.fail(f"{len(written)} notes about tomatoes, not 1 in Observations or the balcony notebook")
     run.hold_still(lambda t, i: t == "tool_data" and i in {r["id"] for _, r in written})
 
