@@ -1,6 +1,6 @@
 # Banc des modèles libres — campagne 1
 
-Ce que la campagne 1 du banc (`docs/design/local-models.md`) a mesuré, et ce que chaque modèle fait quand il échoue. Jouée le 2026-10-04 sur l'émulateur, à travers OpenRouter : 5 modèles, chacun sans forçage puis au schéma exact, sur les 19 scénarios, 190 jeux en 5 h 15. Les copies de la base et les verdicts sont dans `tmp/bench/2026-10-04_1326/` (non versionné) ; `scripts/bench.py trace <dossier>` y relit les conversations tour par tour, `refusals` y compte les refus de l'app. Jouée sur le commit `9363cb13` ; les prix du catalogue au lancement n'ont pas été gardés.
+Ce que la campagne 1 du banc (`docs/design/local-models.md`) a mesuré, et ce que chaque modèle fait quand il échoue. Jouée le 2026-10-04 sur l'émulateur, à travers OpenRouter : 5 modèles, chacun sans forçage puis au schéma exact, sur les 19 scénarios, 190 jeux en 5 h 15. Les copies de la base et les verdicts sont dans `bench-results/2026-10-04_1326/` (non versionné) ; `scripts/bench.py trace <dossier>` y relit les conversations tour par tour, `refusals` y compte les refus de l'app. Jouée sur le commit `9363cb13` ; les prix du catalogue au lancement n'ont pas été gardés.
 
 Chaque case est un seul jeu : la campagne ne dit pas ce qu'un modèle réussit une fois sur deux. Les jeux ont été rejugés après la correction de deux défauts du jugement (plus bas) ; aucun n'a été rejoué.
 

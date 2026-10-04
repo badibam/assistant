@@ -7,10 +7,10 @@ installed, the message sent or the automation run. It leaves a copy of the base 
 after, and how the session ended; this script fetches them and judges them
 (scripts/bench_checks.py).
 
-    scripts/bench.py play <model> <scenario> [<forcing>]   one scenario, its files kept under tmp/bench/;
+    scripts/bench.py play <model> <scenario> [<forcing>]   one scenario, its files kept under bench-results/;
                                                          forcing none|json|schema, schema by default
     scripts/bench.py run [--forcing none,schema] [--only s1,s2] <model> ...
-        every scenario on each model and forcing level, judged as it goes, under tmp/bench/<date>/:
+        every scenario on each model and forcing level, judged as it goes, under bench-results/<date>/:
         each play's verdict in its folder, the table and the costs rewritten after each one
     scripts/bench.py resume [<folder>]   an interrupted campaign, the latest by default: the plays
         that have their verdict are kept, the others played
@@ -37,8 +37,9 @@ ROOT = Path(__file__).resolve().parent.parent
 # The main checkout, where .env lives, whichever worktree runs this
 MAIN_ROOT = Path(subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
                                 cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()).parent
-# In the main checkout: a worktree's tmp/ goes with it when it is removed
-OUT = MAIN_ROOT / "tmp" / "bench"
+# In the main checkout, out of tmp/, which is disposable: a campaign is kept to be read again, and a
+# worktree's folders go with it when it is removed
+OUT = MAIN_ROOT / "bench-results"
 
 APP = "com.assistant.debug"
 RUNNER = f"{APP}.test/androidx.test.runner.AndroidJUnitRunner"
@@ -521,7 +522,7 @@ def main(argv):
     if argv[0] == "resume":
         folder = Path(argv[1]) if len(argv) > 1 else unfinished()
         if folder is None:
-            sys.exit("No unfinished campaign under tmp/bench/")
+            sys.exit("No unfinished campaign under bench-results/")
         key = api_key()
         prepare_device()
         campaign(folder, key)

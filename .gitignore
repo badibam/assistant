@@ -24,6 +24,8 @@ build/
 **/kapt3/
 **/kotlin/
 **/tmp/
+# The bench's campaigns: copies of the base, too big for git, kept to be read again
+bench-results/
 **/intermediates/
 
 # Editor temporary files
