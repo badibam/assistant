@@ -93,6 +93,8 @@ Passe de rodage, 2026-10-01, `deepseek-v4-flash` sans forçage, 0,054 $ : 15 sc�
 
 Le prompt actuel (degrés 1 et 2), sur toute l'échelle des tailles, chaque modèle deux fois : sans forçage et au schéma exact ; son meilleur niveau dit ce qu'on réglerait. Mesuré le 2026-10-01 sur « J'ai bu 2 verres d'eau » : `deepseek-v4-flash` au schéma exact répond dix fois `pre_text` et `validation_request` sans commande, ce que le schéma permet et que l'app refuse, jusqu'à la limite de tours ; sans forçage ou en JSON valide il réussit, comme `gpt-oss-120b` aux deux niveaux. Un seul niveau aurait jugé faux l'un ou l'autre. L'app lit un objet JSON unique entouré de texte en écartant le texte (`ResponseEnvelope.split`, message système `TEXT_OUTSIDE_JSON`) : le banc compte ces réponses à part, sans quoi la forme paraîtrait tenir quand elle cède.
 
+Résultat de la campagne 1 (2026-10-04) et relecture de ses échecs, modèle par modèle : `docs/design/bench-campaign-1.md`.
+
 ## Hypothèses de niveaux de prompt
 
 Aucune n'est choisie. La campagne 1 dit lesquelles valent d'être mesurées.
