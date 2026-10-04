@@ -10,8 +10,10 @@ after, and how the session ended; this script fetches them and judges them
     scripts/bench.py play <model> <scenario> [<forcing>]   one scenario, its files kept under tmp/bench/;
                                                          forcing none|json|schema, schema by default
     scripts/bench.py run [--forcing none,schema] [--only s1,s2] <model> ...
-        every scenario on each model and forcing level, judged as it goes, the table and the
-        costs at the end, under tmp/bench/<date>/
+        every scenario on each model and forcing level, judged as it goes, under tmp/bench/<date>/:
+        each play's verdict in its folder, the table and the costs rewritten after each one
+    scripts/bench.py resume [<folder>]   an interrupted campaign, the latest by default: the plays
+        that have their verdict are kept, the others played
 
 The OpenRouter key comes from OPENROUTER_API_KEY, else from .env at the main repository's root.
 """
@@ -159,18 +161,62 @@ def mute(outcome, folder):
     return answers == 0
 
 
-def campaign(models, forcings, names, key):
-    """Plays [names] on each model and level, judged as it goes; writes summary.json and summary.md."""
+def write_json(path, data):
+    """Written whole or not at all: a resumed campaign trusts every verdict it finds."""
+    part = path.with_name(path.name + ".part")
+    part.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    os.replace(part, path)
+
+
+def new_campaign(models, forcings, names):
+    """A campaign's folder, with what it plays, so that it can be resumed."""
+    unknown = [m for m in models if m not in prices()]
+    if unknown:
+        sys.exit(f"Unknown OpenRouter models: {unknown}")
     folder = OUT / time.strftime("%Y-%m-%d_%H%M")
+    folder.mkdir(parents=True)
+    write_json(folder / "campaign.json", {"models": models, "forcings": forcings, "scenarios": names})
+    return folder
+
+
+def progress(folder):
+    """(plays with a verdict, plays planned) of a campaign."""
+    plan = json.loads((folder / "campaign.json").read_text(encoding="utf-8"))
+    plays = [(m, f, n) for m in plan["models"] for f in plan["forcings"] for n in plan["scenarios"]]
+    done = sum((folder / model_dir(m) / f / n / "verdict.json").is_file() for m, f, n in plays)
+    return done, len(plays)
+
+
+def unfinished():
+    """The latest campaign that has plays left, or None."""
+    for folder in sorted(OUT.glob("*/campaign.json"), reverse=True):
+        done, total = progress(folder.parent)
+        if done < total:
+            return folder.parent
+    return None
+
+
+def campaign(folder, key):
+    """Plays what [folder]'s campaign plans and has no verdict yet, judged as it goes.
+
+    Each play's verdict lands in its folder once judged; summary.json and summary.md are rewritten
+    after each, so an interrupted campaign leaves its table so far and resumes where it stopped.
+    """
+    plan = json.loads((folder / "campaign.json").read_text(encoding="utf-8"))
+    models, forcings, names = plan["models"], plan["forcings"], plan["scenarios"]
     table = prices()
-    for model in models:
-        if model not in table:
-            sys.exit(f"Unknown OpenRouter model: {model}")
+    done, total = progress(folder)
+    if done:
+        print(f"Reprise de {folder.name} : {done}/{total} déjà joués", flush=True)
     results = []
     for model in models:
         for forcing in forcings:
             for name in names:
                 into = folder / model_dir(model) / forcing / name
+                verdict = into / "verdict.json"
+                if verdict.is_file():
+                    results.append(json.loads(verdict.read_text(encoding="utf-8")))
+                    continue
                 outcome = play(model, name, key, into, forcing)
                 # A provider that never answered says nothing of the model: played once more
                 if mute(outcome, into):
@@ -185,9 +231,12 @@ def campaign(models, forcings, names, key):
                 results.append({"model": model, "forcing": forcing, "scenario": name, "passed": passed,
                                 "status": outcome.get("status"), "seconds": round(outcome.get("elapsed_ms", 0) / 1000),
                                 "cost": spent, "details": details})
+                write_json(verdict, results[-1])
+                write_json(folder / "summary.json", results)
+                write_table(folder, results, models, forcings, names)
                 print(f"{'PASS' if passed else 'FAIL'}  {model:<34} {forcing:<6} {name:<22} "
                       f"{outcome.get('status', ''):<7} {results[-1]['seconds']:>4}s  ${spent:.4f}  {'; '.join(details)}", flush=True)
-    (folder / "summary.json").write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(folder / "summary.json", results)
     write_table(folder, results, models, forcings, names)
     print(f"\nTable: {folder / 'summary.md'}")
 
@@ -265,11 +314,22 @@ ESTIMATED_TOKENS_PER_PLAY = 3 * 29_000
 
 
 def ask():
-    """The models and levels to play, chosen in a menu, with the estimated cost confirmed first."""
+    """The campaign to play: an unfinished one resumed, or models and levels chosen in a menu, the
+    estimated cost confirmed first."""
     try:
         import questionary
     except ImportError:
         sys.exit("questionary is missing: sudo apt install python3-questionary\nOr: scripts/bench.py run <model> ...")
+    left = unfinished()
+    if left is not None:
+        done, total = progress(left)
+        resume = questionary.select("Campagne", choices=[
+            questionary.Choice(f"Reprendre {left.name} ({done}/{total} joués)", True),
+            questionary.Choice("Nouvelle campagne", False)]).ask()
+        if resume is None:
+            return None
+        if resume:
+            return left
     models = questionary.checkbox("Modèles", choices=[
         questionary.Choice(f"{model}  ({machine})", model, checked=True) for machine, model in CAMPAIGN_MODELS]).ask()
     if not models:
@@ -285,20 +345,28 @@ def ask():
           f"coût estimé ≈ {estimate:.2f} $ (au plus, sans le cache)")
     if not questionary.confirm("Lancer ?", default=False).ask():
         return None
-    return models, forcings
+    return new_campaign(models, forcings, list(SCENARIOS))
 
 
 def main(argv):
     if not argv:
-        chosen = ask()
-        if chosen is None:
+        folder = ask()
+        if folder is None:
             return 0
         key = api_key()
         prepare_device()
-        campaign(chosen[0], chosen[1], list(SCENARIOS), key)
+        campaign(folder, key)
         return 0
     if argv[0] == "show":
         return show(Path(argv[1]))
+    if argv[0] == "resume":
+        folder = Path(argv[1]) if len(argv) > 1 else unfinished()
+        if folder is None:
+            sys.exit("No unfinished campaign under tmp/bench/")
+        key = api_key()
+        prepare_device()
+        campaign(folder, key)
+        return 0
     if argv[0] not in ("play", "run"):
         print(__doc__)
         return 2
@@ -328,7 +396,7 @@ def main(argv):
             sys.exit(f"Unknown option {option}")
     if not args:
         sys.exit("Name at least one model")
-    campaign(args, forcings, names, key)
+    campaign(new_campaign(args, forcings, names), key)
     return 0
 
 

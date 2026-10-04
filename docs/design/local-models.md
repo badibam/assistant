@@ -69,7 +69,7 @@ Les scénarios citent ces noms et contenus de la démo : en changer un dans `ass
 
 ## Le lancement
 
-`./run bench` : un menu pour choisir les modèles (rangés par classe de machine) et les niveaux de forçage. Avant de lancer : le nombre de scénarios et le coût estimé, puis confirmation. Chaque résultat s'affiche au fil de l'eau ; à la fin, sous `tmp/bench/<date>/`, un tableau scénario × modèle et niveau, et le coût réel : les tokens que l'app a stockés, au prix du catalogue d'OpenRouter. `scripts/bench.py play <modèle> <scénario> [<forçage>]` joue un seul scénario, pour un diagnostic.
+`./run bench` : un menu pour choisir les modèles (rangés par classe de machine) et les niveaux de forçage. Avant de lancer : le nombre de scénarios et le coût estimé, puis confirmation. Chaque résultat s'affiche au fil de l'eau et s'écrit sous `tmp/bench/<date>/`, avec le tableau scénario × modèle et niveau et le coût réel (les tokens que l'app a stockés, au prix du catalogue d'OpenRouter), réécrits après chaque jeu. Une campagne interrompue se reprend : le menu la propose, ou `scripts/bench.py resume` ; les jeux déjà jugés sont gardés, celui qui a été coupé est rejoué. `scripts/bench.py play <modèle> <scénario> [<forçage>]` joue un seul scénario, pour un diagnostic.
 
 ## Campagne 1
 
