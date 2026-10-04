@@ -14,6 +14,7 @@ after, and how the session ended; this script fetches them and judges them
         each play's verdict in its folder, the table and the costs rewritten after each one
     scripts/bench.py resume [<folder>]   an interrupted campaign, the latest by default: the plays
         that have their verdict are kept, the others played
+    scripts/bench.py table [<folder>]   a campaign's table rebuilt from its verdicts, the latest by default
 
 The OpenRouter key comes from OPENROUTER_API_KEY, else from .env at the main repository's root.
 """
@@ -241,25 +242,55 @@ def campaign(folder, key):
     print(f"\nTable: {folder / 'summary.md'}")
 
 
-def mark(result):
-    """✓ passed, ✗ failed, — the provider never answered (the model not judged)."""
-    return "✓" if result["passed"] else "—" if result["status"] == "mute" else "✗"
+def cut(into):
+    """Whether an answer of the play was cut by the output length limit: the app keeps none of it."""
+    import sqlite3
+    if not (into / "after.db").is_file():
+        return False
+    return sqlite3.connect(into / "after.db").execute(
+        "SELECT COUNT(*) FROM session_messages WHERE sender = 'SYSTEM' AND session_id NOT LIKE 'demo-%' "
+        "AND system_message_json LIKE '%cut by the length limit%'").fetchone()[0] > 0
+
+
+def mark(result, into):
+    """✓ passed, ✗ failed, ✗ coupé failed with an answer cut, — the provider never answered (the model not judged)."""
+    if result["passed"]:
+        return "✓"
+    if result["status"] == "mute":
+        return "—"
+    return "✗ coupé" if cut(into) else "✗"
 
 
 def write_table(folder, results, models, forcings, names):
-    """Scenario by model and level, the total per column, and what each column cost."""
+    """Scenario by model and level, the totals per column, and what each column cost."""
     columns = [(m, f) for m in models for f in forcings]
     by = {(r["model"], r["forcing"], r["scenario"]): r for r in results}
+
+    def into(m, f, n):
+        return folder / model_dir(m) / f / n
     lines = ["| scénario | " + " | ".join(f"{m.split('/')[-1]} {f}" for m, f in columns) + " |",
              "|---|" + "---|" * len(columns)]
     for name in names:
         lines.append(f"| {name} | " + " | ".join(
-            mark(by[(m, f, name)]) if (m, f, name) in by else "" for m, f in columns) + " |")
+            mark(by[(m, f, name)], into(m, f, name)) if (m, f, name) in by else "" for m, f in columns) + " |")
     lines.append("| **réussis** | " + " | ".join(
         f"{sum(by[(m, f, n)]['passed'] for n in names if (m, f, n) in by)}/{len(names)}" for m, f in columns) + " |")
+    lines.append("| **coupés** | " + " | ".join(
+        str(sum(cut(into(m, f, n)) for n in names if (m, f, n) in by)) for m, f in columns) + " |")
+    # A cut answer's tokens are billed but not stored: the cost of a column with cuts is a floor
     lines.append("| **coût** | " + " | ".join(
         f"${sum(by[(m, f, n)]['cost'] for n in names if (m, f, n) in by):.3f}" for m, f in columns) + " |")
     (folder / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def rebuild(folder):
+    """The table of [folder]'s campaign from the verdicts written so far, nothing played."""
+    plan = json.loads((folder / "campaign.json").read_text(encoding="utf-8"))
+    results = [json.loads(v.read_text(encoding="utf-8")) for m in plan["models"] for f in plan["forcings"]
+               for n in plan["scenarios"] if (v := folder / model_dir(m) / f / n / "verdict.json").is_file()]
+    write_table(folder, results, plan["models"], plan["forcings"], plan["scenarios"])
+    print(folder / "summary.md")
+    return 0
 
 
 def show(folder):
@@ -359,6 +390,9 @@ def main(argv):
         return 0
     if argv[0] == "show":
         return show(Path(argv[1]))
+    if argv[0] == "table":
+        folder = Path(argv[1]) if len(argv) > 1 else max(OUT.glob("*/campaign.json")).parent
+        return rebuild(folder)
     if argv[0] == "resume":
         folder = Path(argv[1]) if len(argv) > 1 else unfinished()
         if folder is None:
