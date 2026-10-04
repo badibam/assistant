@@ -15,6 +15,9 @@ after, and how the session ended; this script fetches them and judges them
     scripts/bench.py resume [<folder>]   an interrupted campaign, the latest by default: the plays
         that have their verdict are kept, the others played
     scripts/bench.py table [<folder>]   a campaign's table rebuilt from its verdicts, the latest by default
+    scripts/bench.py trace <folder> [<model> [<forcing>]] [--all]   the turns of a campaign's failed
+        plays (every play with --all): what the AI sent, what the app answered
+    scripts/bench.py refusals <folder>   what the app refused or failed, counted by kind, model and level
     scripts/bench.py judge [<folder>]   every play judged again on its copies, then the table: after a
         check is corrected
 
@@ -171,14 +174,27 @@ def write_json(path, data):
     os.replace(part, path)
 
 
+def code_version():
+    """The commit the app is built from, "+changes" when the working tree differs from it: the prompt
+    the models read is built from that code."""
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    dirty = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    return head + ("+changes" if dirty else "")
+
+
 def new_campaign(models, forcings, names):
-    """A campaign's folder, with what it plays, so that it can be resumed."""
-    unknown = [m for m in models if m not in prices()]
+    """A campaign's folder, with what it plays, the code it starts on and the prices it is costed at,
+    so that it can be resumed and read again later."""
+    table = prices()
+    unknown = [m for m in models if m not in table]
     if unknown:
         sys.exit(f"Unknown OpenRouter models: {unknown}")
     folder = OUT / time.strftime("%Y-%m-%d_%H%M")
     folder.mkdir(parents=True)
-    write_json(folder / "campaign.json", {"models": models, "forcings": forcings, "scenarios": names})
+    write_json(folder / "campaign.json", {
+        "models": models, "forcings": forcings, "scenarios": names, "code": code_version(),
+        # $ per token: input, cached input, output, from OpenRouter's catalogue at the start
+        "prices": {m: table[m] for m in models}})
     return folder
 
 
@@ -208,6 +224,9 @@ def campaign(folder, key):
     plan = json.loads((folder / "campaign.json").read_text(encoding="utf-8"))
     models, forcings, names = plan["models"], plan["forcings"], plan["scenarios"]
     table = prices()
+    code = code_version()
+    if plan.get("code") and plan["code"] != code:
+        print(f"Le code a changé depuis le lancement ({plan['code']} → {code}) : chaque verdict note le sien", flush=True)
     done, total = progress(folder)
     if done:
         print(f"Reprise de {folder.name} : {done}/{total} déjà joués", flush=True)
@@ -233,7 +252,7 @@ def campaign(folder, key):
                 spent = cost(into, table[model])
                 results.append({"model": model, "forcing": forcing, "scenario": name, "passed": passed,
                                 "status": outcome.get("status"), "seconds": round(outcome.get("elapsed_ms", 0) / 1000),
-                                "cost": spent, "details": details})
+                                "cost": spent, "details": details, "code": code})
                 write_json(verdict, results[-1])
                 write_json(folder / "summary.json", results)
                 write_table(folder, results, models, forcings, names)
@@ -353,6 +372,75 @@ def show(folder):
     return 0
 
 
+def turns(folder, width=160):
+    """One line per turn of a play: what the AI sent (its kind, its text, its commands), what the app
+    answered (its kind, its summary, the errors of its commands)."""
+    import sqlite3
+    db = sqlite3.connect(folder / "after.db")
+    for sender, parsed, system, raw in db.execute(
+            "SELECT sender, ai_message_parsed_json, system_message_json, ai_message_json FROM session_messages "
+            "WHERE session_id NOT LIKE 'demo-%' ORDER BY timestamp"):
+        if sender == "AI" and parsed:
+            m = json.loads(parsed)
+            kinds = [k for k in ("data_commands", "action_commands", "communication_module", "completed") if m.get(k)]
+            commands = " ; ".join(f"{c.get('type')}{json.dumps(c.get('params'), ensure_ascii=False)[:width]}"
+                                  for c in (m.get("data_commands") or []) + (m.get("action_commands") or []))
+            print("  AI ", kinds, (m.get("pre_text") or "")[:width], "||", commands[:width * 2])
+        elif sender == "AI" and (raw or "").strip():
+            # An answer the app could not read: kept as the model wrote it
+            print("  AI?", raw.strip().replace("\n", " ")[:width])
+        elif sender == "SYSTEM" and system:
+            m = json.loads(system)
+            errors = [r.get("error") for r in (m.get("command_results") or []) if r.get("error")]
+            print("  APP", m.get("type"), (m.get("summary") or "").replace("\n", " ")[:width],
+                  ("ERR " + " | ".join(errors)[:width * 2]) if errors else "")
+
+
+def trace(folder, model=None, forcing=None, failed_only=True):
+    """The turns of a campaign's plays, failed ones by default, one model or level if named."""
+    plan = json.loads((folder / "campaign.json").read_text(encoding="utf-8"))
+    for m in [model] if model else plan["models"]:
+        for f in [forcing] if forcing else plan["forcings"]:
+            for n in plan["scenarios"]:
+                into = folder / model_dir(m) / f / n
+                verdict = into / "verdict.json"
+                if not verdict.is_file():
+                    continue
+                result = json.loads(verdict.read_text(encoding="utf-8"))
+                if failed_only and result["passed"]:
+                    continue
+                print(f"##### {m} {f} {n} [{result['status']}] {'; '.join(result['details'])[:200]}")
+                if (into / "after.db").is_file():
+                    turns(into)
+    return 0
+
+
+def refusals(folder):
+    """What the app refused or failed in a campaign, numbers and quoted names folded so that one kind
+    of message counts once: how often, in how many plays, by model and level."""
+    import re
+    import sqlite3
+    from collections import Counter, defaultdict
+    counts, plays = defaultdict(Counter), defaultdict(set)
+    for db_path in folder.glob("*/*/*/after.db"):
+        play = db_path.parent
+        column = f"{play.parent.parent.name.split('__')[-1]} {play.parent.name}"
+        for (system,) in sqlite3.connect(db_path).execute(
+                "SELECT system_message_json FROM session_messages WHERE sender = 'SYSTEM' AND session_id NOT LIKE 'demo-%'"):
+            m = json.loads(system or "{}")
+            texts = [m["type"] + " " + (m.get("summary") or "").split("\n")[0]] if m.get("type") in (
+                "FORMAT_ERROR", "PROVIDER_ERROR", "SCHEMA_REQUIRED", "LIMIT_REACHED", "TEXT_OUTSIDE_JSON") else []
+            texts += ["COMMAND " + r["error"] for r in m.get("command_results") or [] if r.get("error")]
+            for text in texts:
+                kind = re.sub(r"'[^']*'", "'…'", re.sub(r"\d+", "N", text))[:120]
+                counts[kind][column] += 1
+                plays[kind].add(play)
+    for kind, by in sorted(counts.items(), key=lambda kv: -sum(kv[1].values())):
+        print(f"{sum(by.values()):>4} in {len(plays[kind]):>3} plays  {kind}")
+        print("      " + ", ".join(f"{c}: {n}" for c, n in by.most_common()))
+    return 0
+
+
 def model_dir(model):
     return model.replace("/", "__")
 
@@ -416,6 +504,14 @@ def main(argv):
         return 0
     if argv[0] == "show":
         return show(Path(argv[1]))
+    if argv[0] == "trace":
+        folder = Path(argv[1])
+        rest = argv[2:]
+        everything = "--all" in rest
+        rest = [a for a in rest if a != "--all"]
+        return trace(folder, rest[0] if rest else None, rest[1] if len(rest) > 1 else None, not everything)
+    if argv[0] == "refusals":
+        return refusals(Path(argv[1]))
     if argv[0] == "judge":
         folder = Path(argv[1]) if len(argv) > 1 else max(OUT.glob("*/campaign.json")).parent
         return judge(folder)
