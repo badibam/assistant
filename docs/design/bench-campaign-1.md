@@ -23,9 +23,15 @@ Ces causes font échouer plusieurs modèles de la même façon ; elles sont dans
 - **`period` refusé dans une lecture d'entrées.** Le prompt présente `period` comme paramètre de `TOOL_DATA` (avec un exemple), `CommandTransformer` le traite, mais la liste des paramètres acceptés (`AICommandProcessor.TOOL_DATA_PARAMS`) ne le contient pas : l'app répond « Paramètre 'period' inconnu ». 195 refus dans 54 jeux sur 190, dont 26 échoués ; tous les modèles le rencontrent. gemma, deepseek et gpt-oss passent alors à un filtre sur `timestamp` ; ministral renvoie la même requête jusqu'à 20 fois.
 - **Une lecture de variable au début d'hier vaut 0.** Pour « calories d'hier », les modèles qui lisent `kcal_jour_demo` à la fin d'hier (`edge: END`) trouvent 902, ceux qui la lisent au début (`edge: START`) trouvent 0 et le disent : gemma sans forçage, gpt-oss sans forçage, qwen au schéma. La lecture calcule la journée qui se termine à cet instant, donc une journée vide au début d'hier. Le prompt donne un exemple en `END` sans dire pourquoi.
 - **`"validation_request": false` refusé.** L'app refuse le champ dès qu'il est présent sans `action_commands`, même à `false` : 177 refus dans 34 jeux. 157 viennent de deepseek au schéma (ci-dessous) ; les autres modèles le corrigent au tour suivant.
+- **Le schéma forcé n'a pas `completed`.** En automation, l'app demande au modèle de finir par le drapeau `completed` (« Si tu as terminé, utilise le flag 'completed' »), mais le schéma de réponse que le forçage impose (`AIMessageSchemas`, envoyé par `OpenAICompatibleProviderCore.responseSchemaForModel`) n'a pas ce champ et refuse tout champ de plus. Au schéma, gemma et gpt-oss finissent leurs automations, puis renvoient 10 à 13 fois un module de communication vide, l'app répétant la consigne à chaque fois, avant que la session se close ; sans forçage, ils écrivent `completed` et s'arrêtent. Le jugement ne regarde pas comment la session se termine : ces jeux comptent comme réussis.
 - **Les réponses coupées** : 25 jeux, chez ministral sans forçage et qwen ; souvent au tour où le modèle doit calculer, juste après des données ou un message d'erreur.
 - **Une erreur technique au lieu d'un outil inconnu** : une écriture dans un outil qui n'existe pas (`"demo-work‑*"`, gpt-oss au schéma, et deepseek au schéma) reçoit « Schema keyword 'error' at $ has no notation for the model » (`SchemaNotation`), qui ne dit pas que l'outil n'existe pas.
 - **Un message d'exception brut** : « Erreur ToolInstanceService: Failed to parse custom field: No value for display_name », 8 fois dans un jeu de ministral, ne dit pas quel champ corriger.
+- **Moins fréquent** :
+  - Un filtre `between` écrit `{"constant": [début, fin]}` au lieu de la paire `[{"constant": début}, {"constant": fin}]` que donne le prompt : deepseek et gpt-oss, 5 refus dans 4 jeux. La forme du prompt, une paire hors de `constant`, est celle qu'ils ratent.
+  - Un filtre sur `id` ou sur `state.running` refusé (« les entrées de cet outil n'ont pas ce champ à filtrer »), alors que le prompt présente les deux comme des champs à demander : 6 refus dans 5 jeux. gpt-oss cherchait ainsi le départ du chronomètre en cours, que le paramètre `running` donne.
+  - Une date seule (`2026-10-04`) là où l'app attend une date et une heure : 2 refus.
+  - Un module de communication vide (`{}` ou sans champ) est accepté : gemma termine ainsi plusieurs lectures après avoir répondu, et c'est la forme des boucles de fin d'automation au schéma.
 - **Le banc**, deux défauts corrigés avant de rejuger : une note dont le texte est dans le nom de l'entrée (« Tomates cerises » : « commencent à rougir ») n'était pas lue ; une durée écrite « 3 heures 38 minutes » non plus. Cinq jeux passent d'échec à réussite. Reste fragile : le contrôle de « cette nuit » refuse une entrée datée après le début de la session, ce qui juge juste ici mais par accident.
 - **Un silence de 5 minutes** : gemma au schéma, Point du matin, aucune réponse après la lecture des données, jusqu'au délai du banc. Cause non établie (fournisseur ou modèle).
 
@@ -50,12 +56,13 @@ Des heuristiques tirées de la relecture des conversations échouées, pas des m
 - Devine un nom de champ (`data.distance` au lieu de `data.value`), et, ne trouvant rien, demande à l'utilisateur de saisir les distances au lieu de relire le schéma.
 - Cherche « lait » par nom exact, ne le trouve pas, crée un « lait » et le coche ; une fois, écrit un identifiant terminé par `????`.
 - Pour la zone Lecture, crée la zone et s'arrête là (sans `keep_control`), ou demande quelle icône choisir.
+- Au schéma, au Point du matin (réussi), écrit « Je ne dois plus créer ou modifier de données » dans la même réponse qu'une création d'entrée dans un outil qui n'existe pas.
 - Son total d'heures facturables sans forçage (« environ 4 heures 19 ») passe au jugement, mais la conversation ne montre pas d'où il tient la durée en cours : il n'a jamais lu le départ du chronomètre.
 
 **deepseek-v4-flash.** Le meilleur sans forçage, cassé par le forçage.
 - Sans forçage, 19/19 : contourne `period`, lit la variable à la fin d'hier, trouve les fiches des aliments.
 - Au schéma, 157 de ses 201 réponses sont exactement `pre_text` et `validation_request: false` : il annonce ce qu'il va faire (« Je vais lire la variable kcal_jour_demo… ») et s'arrête avant la commande. L'app refuse, il recommence à l'identique, 12 jeux finissent à la limite de tours. C'était déjà vu sur un scénario à la passe de rodage du 2026-10-01. Cause non vérifiée : que le forçage fasse écrire les clés dans l'ordre du schéma, où `validation_request` vient juste après `pre_text`.
-- Au schéma aussi, une écriture que personne n'a demandée : au Point du matin, il coche la tâche « Rappeler Studio Brume ».
+- Au schéma aussi, des écritures que personne n'a demandées : au Point du matin, il coche la tâche « Rappeler Studio Brume » ; à la question des heures facturables, il joint un `UPDATE_DATA` à sa réponse (le bon total, 3 h 38), sans que rien ne change dans la base.
 
 ## Ce que la campagne ne dit pas
 
