@@ -65,4 +65,18 @@ class ProviderFactsTest {
         assertEquals("ai_image_error_model_does_not_read", ImageInput.refusal(1, false, s))
         assertEquals("ai_image_error_model_unknown", ImageInput.refusal(1, null, s))
     }
+
+    /**
+     * The model lists that say which models read images: Anthropic's under capabilities, DeepSeek's
+     * at the top level (input_modalities, as listed on 2026-10-05); no fact is kept for them.
+     */
+    @Test
+    fun imageInput_isReadFromEachModelList() {
+        val json = { text: String -> org.json.JSONObject(text) }
+        assertEquals(true, MessagesApi.DEEPSEEK.listedImageInput(json("""{"id": "deepseek-flash", "input_modalities": ["text", "image"]}""")))
+        assertEquals(false, MessagesApi.DEEPSEEK.listedImageInput(json("""{"id": "deepseek-v4-pro", "input_modalities": ["text"]}""")))
+        assertNull(MessagesApi.DEEPSEEK.listedImageInput(json("""{"id": "deepseek-other"}""")))
+        assertEquals(true, MessagesApi.ANTHROPIC.listedImageInput(json("""{"id": "claude-x", "capabilities": {"image_input": {"supported": true}}}""")))
+        assertNull(MessagesApi.ANTHROPIC.listedImageInput(json("""{"id": "claude-y"}""")))
+    }
 }

@@ -56,8 +56,11 @@ internal enum class MessagesApi(
         verifiesAnsweringModel = false
     ),
 
-    // Its model list says nothing of effort: the levels are facts (deepseek-effort-levels), and so
-    // is the default being unknown (deepseek-default-effort-unknown), hence an effort always chosen.
+    // Its effort levels are read from the facts (deepseek-effort-levels), and so is the default
+    // being unknown (deepseek-default-effort-unknown), hence an effort always chosen. Its model
+    // list now declares effort too (effort.supported_levels, effort.default_level), unread: the
+    // fate of those facts waits in provider-facts. It declares the images a model reads at the
+    // top level (input_modalities), where Anthropic's has capabilities.
     // Model substitution, measured 2026-09-19: an unknown ID gets an explicit error, but claude-*
     // names are answered by deepseek-flash, which the response "model" field reveals. Valid IDs
     // come back unchanged, so any mismatch is rejected rather than silently billed as another model.
@@ -70,6 +73,18 @@ internal enum class MessagesApi(
         effortRequired = true,
         verifiesAnsweringModel = true
     )
+}
+
+/**
+ * Whether the model list says the model reads images: Anthropic's by capabilities.image_input,
+ * DeepSeek's by input_modalities; null when it says nothing.
+ */
+internal fun MessagesApi.listedImageInput(model: JSONObject): Boolean? = when (this) {
+    MessagesApi.ANTHROPIC -> model.optJSONObject("capabilities")?.optJSONObject("image_input")
+        ?.takeIf { it.has("supported") }?.getBoolean("supported")
+    // An "image" among its input_modalities: DeepSeek's list, OpenAI's format
+    MessagesApi.DEEPSEEK -> model.optJSONArray("input_modalities")
+        ?.let { modalities -> (0 until modalities.length()).any { modalities.optString(it) == "image" } }
 }
 
 /**
@@ -219,7 +234,7 @@ internal class ClaudeProviderCore(
                     val listedEfforts = if (api.effortsFromFacts) null else declaredEfforts(modelObj)
                     models.add(ProviderModel(id = id, label = modelObj.optString("display_name", "").ifEmpty { id },
                         reasoning = ReasoningSettings.of(facts, api.factsProvider, id, listedEfforts, api.effortRequired),
-                        readsImages = declaredImageInput(modelObj)))
+                        readsImages = api.listedImageInput(modelObj)))
                 }
             }
 
@@ -233,14 +248,6 @@ internal class ClaudeProviderCore(
         }
     }
 
-    /**
-     * Whether Anthropic's model list says the model reads images (capabilities.image_input);
-     * null when it says nothing, as DeepSeek's list never does.
-     */
-    private fun declaredImageInput(model: JSONObject): Boolean? {
-        val imageInput = model.optJSONObject("capabilities")?.optJSONObject("image_input") ?: return null
-        return if (imageInput.has("supported")) imageInput.getBoolean("supported") else null
-    }
 
     /**
      * The effort levels Anthropic's model list declares for a model, in its order: the keys of
