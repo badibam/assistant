@@ -169,7 +169,7 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 
 **UI.Switch, UI.Tabs** - Un réglage qui prend effet dès qu'on le bascule, son libellé au début ; une rangée d'onglets, un par libellé. Dessinés par le thème.
 
-**UI.FullScreen, UI.HeaderBar** - Une vue qui couvre l'écran sur le fond du thème (la racine de l'app, et le chat par `FullScreenDialog`, qui masque aussi la barre de navigation dans sa fenêtre) ; le bandeau en haut d'une telle vue, son titre et ses boutons en rangée.
+**UI.FullScreen, UI.HeaderBar** - Une vue qui couvre l'écran sur le fond du thème (la racine de l'app, et le chat par `FullScreenDialog`, dont la fenêtre couvre tout l'écran, masque la barre de navigation et peint sous la barre d'état la bande de l'activité, sa couleur et le ton de ses icônes recopiés) ; le bandeau en haut d'une telle vue, son titre et ses boutons en rangée.
 
 **UI.StatusIndicator** - Une pastille d'état : l'écran nomme l'état (`StatusColor` : succès, avertissement, erreur, info, discret), le thème en donne la couleur (`UI.statusColor` pour la teinte d'une icône).
 
