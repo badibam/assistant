@@ -14,7 +14,9 @@ Conçu le 2026-10-05 : joindre une photo à un message, prise avec l'appareil ph
 - **Un fichier par image** dans le dossier privé de l'app, `files/attachments/<id>.jpg`, à plat, nommé par l'id ; le chemin se déduit de l'id, la base n'en stocke pas. Écrit en `<id>.jpg.part` puis renommé : un fichier final est complet. Écarté : les octets en base, qui la font grossir sans rendre la place sans `VACUUM`.
 - **Une table `attached_images`** décrit chaque image : `id`, `session_id` (clé étrangère, suppression en cascade), `size_bytes`, `width`, `height`, `created_at`. Elle est tenue par le service `files`, comme `attached_files`.
 - **La suppression** : la cascade ne supprime que la ligne ; le fichier est supprimé par le service qui supprime une session, seul chemin de toute suppression de session. Une image retirée du composeur avant l'envoi est supprimée, comme un fichier joint.
-- **Ouvert, à valider** : un ménage au démarrage, qui confronte le dossier et la table et supprime les fichiers qu'aucune ligne ne désigne. C'est un filet de sécurité, donc pas posé sans accord.
+- **Un ordre fixe, pour qu'un orphelin ne puisse être qu'un fichier** : le fichier est écrit avant la ligne, la ligne est supprimée avant le fichier. Une ligne sans fichier est une vraie erreur : l'image l'affiche, l'envoi est refusé, rien ne la répare.
+- **Un ménage au démarrage, avant tout écran** (rien ne peut alors être en train de joindre une image) : il confronte le dossier et la table, et supprime les fichiers qu'aucune ligne ne désigne. Il termine une opération interrompue, l'app tuée entre les deux gestes, et ne cache pas d'erreur : chaque suppression s'écrit au journal, en INFO pour un `.part`, cas attendu, en WARN avec son nom pour un `.jpg` sans ligne, qui vient d'un arrêt brutal ou d'un chemin de suppression qui a oublié le fichier.
+- **L'import d'une sauvegarde gère lui-même le dossier** : il le vide et y dépose les images du zip, dans le même geste que les tables, pour ne pas laisser au ménage suivant des centaines de fichiers devenus orphelins.
 
 ## Dans le message
 
