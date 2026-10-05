@@ -53,8 +53,6 @@
     <!-- AI Interface - Composer and Enrichments -->
     <string name="ai_composer_placeholder">Write your message...</string>
     <string name="ai_composer_add_text">Text</string>
-    <string name="ai_composer_active_block">Active</string>
-    <string name="ai_composer_enrichments_label">Enrichments:</string>
     <string name="pointer_enrichment_selector_title">Select data</string>
     <string name="pointer_level_app">App</string>
     <string name="pointer_attach_config">Config</string>
