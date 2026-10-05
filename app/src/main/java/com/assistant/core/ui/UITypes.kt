@@ -66,7 +66,8 @@ enum class FieldType {
     NUMERIC,
     EMAIL,
     PASSWORD,
-    SEARCH
+    SEARCH,
+    URL             // a web address: no capital, no correction
 }
 
 /**

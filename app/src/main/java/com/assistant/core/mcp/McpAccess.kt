@@ -1,5 +1,6 @@
 package com.assistant.core.mcp
 
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -60,7 +61,10 @@ object McpAccess {
     suspend fun relay(context: Context): Pair<String, String>? {
         val result = Coordinator(context).processUserAction("app_config.get", mapOf("category" to AppSettingCategories.EXTERNAL_ACCESS))
         val settings = result.data?.get("settings") as? Map<*, *> ?: return null
-        val url = (settings[AppSettings.RELAY_URL] as? String)?.trim()?.trimEnd('/')?.takeIf { it.startsWith("https://") } ?: return null
+        // Parsed rather than compared: a scheme or a host typed with a capital is the same address,
+        // written back in lower case
+        val url = (settings[AppSettings.RELAY_URL] as? String)?.trim()?.toHttpUrlOrNull()?.takeIf { it.isHttps }
+            ?.toString()?.trimEnd('/') ?: return null
         val secret = (settings[AppSettings.RELAY_SECRET] as? String)?.trim()?.takeIf { it.isNotEmpty() } ?: return null
         return url to secret
     }

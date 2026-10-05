@@ -52,6 +52,13 @@ object FieldInput {
             capitalization = KeyboardCapitalization.None,
             imeAction = ImeAction.Done
         )
+        // An address is typed as it is written: a capital or a correction breaks it
+        FieldType.URL -> KeyboardOptions(
+            keyboardType = KeyboardType.Uri,
+            autoCorrect = false,
+            capitalization = KeyboardCapitalization.None,
+            imeAction = ImeAction.Next
+        )
         // A search is a few words to find, not a sentence: no capital
         FieldType.SEARCH -> KeyboardOptions(
             capitalization = KeyboardCapitalization.None,
@@ -64,7 +71,7 @@ object FieldInput {
     /** How many characters a field of [fieldType] takes. */
     fun maxLength(fieldType: FieldType): Int = when (fieldType) {
         FieldType.TEXT -> FieldLimits.SHORT_LENGTH
-        FieldType.TEXT_MEDIUM -> FieldLimits.MEDIUM_LENGTH
+        FieldType.TEXT_MEDIUM, FieldType.URL -> FieldLimits.MEDIUM_LENGTH
         FieldType.TEXT_LONG -> FieldLimits.LONG_LENGTH
         FieldType.TEXT_UNLIMITED -> FieldLimits.UNLIMITED_LENGTH
         FieldType.NUMERIC, FieldType.EMAIL, FieldType.PASSWORD, FieldType.SEARCH -> FieldLimits.UNLIMITED_LENGTH

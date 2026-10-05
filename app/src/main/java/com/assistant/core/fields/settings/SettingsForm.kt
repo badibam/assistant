@@ -467,6 +467,13 @@ private fun NodeForm(
                     fieldType = com.assistant.core.ui.FieldType.PASSWORD,
                     required = node.required
                 )
+                node.address -> UI.FormField(
+                    label = node.definition.displayName,
+                    value = stored?.toString() ?: "",
+                    onChange = { set(name, it.ifEmpty { null }) },
+                    fieldType = com.assistant.core.ui.FieldType.URL,
+                    required = node.required
+                )
                 // A typed setting (a number, a text) with a default shows it until the user types in
                 // it; from then on it shows what is typed, empty included, the label saying what
                 // empty means. Shown again once emptied, the default would come back at once, and
