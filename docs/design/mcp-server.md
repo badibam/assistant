@@ -33,7 +33,8 @@ L'app est son propre serveur OAuth (description, enregistrement dynamique du cli
 ## Ce que voit le client
 
 - **Un outil MCP par commande, tiré du catalogue des commandes** (préalable, ci-dessous) : son nom, le schéma de ses paramètres, sa description, sa marque lecture ou écriture (`readOnlyHint`, `destructiveHint`). Toutes les commandes de l'IA intégrée, structure comprise ; le client règle outil par outil ce qu'il autorise d'office ou demande.
-- **`app_context`**, en lecture : les notions de l'app, L2 et L3. Sa description : « une fois, au début d'une conversation ; ensuite, les outils de lecture ciblés ». Pas d'`instructions` du serveur ni d'envoi d'office : seuls les outils et leurs réponses arrivent au modèle à coup sûr.
+- **`app_context`**, en lecture : les notions de l'app, L2 et L3, et un jeton de contexte signé par l'app, valable 24 heures. Sa description : « une fois, au début d'une conversation ; ensuite, les outils de lecture ciblés ». Pas d'`instructions` du serveur ni d'envoi d'office : seuls les outils et leurs réponses arrivent au modèle à coup sûr.
+- **Tout autre outil exige ce jeton** en paramètre ; absent, faux ou expiré, l'appel est refusé (« appelle d'abord `app_context` »). Le modèle ne peut rien faire sans avoir lu le contexte, et une conversation reprise après 24 heures le relit. Rien ne dépend de la session MCP, qui n'est pas une conversation.
 - **Chaque réponse d'outil porte la date et l'heure**, au fuseau de l'app.
 - Une commande aux identifiants inconnus est refusée comme aujourd'hui, l'erreur ajoutant qu'ils s'obtiennent par `app_context`.
 - Les paramètres se lisent comme ceux de l'IA intégrée (ISO, périodes relatives), par le même chemin.
