@@ -133,6 +133,19 @@ object AttachedImages {
         }
     }
 
+    /** Where a backup's images wait while its tables are imported: beside the folder, never swept. */
+    fun importDir(context: Context): File = File(context.filesDir, "$DIR.import")
+
+    /**
+     * The folder emptied, and given [replacement]'s files when there is one (a backup's, set
+     * aside while its tables were imported).
+     */
+    fun replaceDir(context: Context, replacement: File?) {
+        val dir = dir(context)
+        check(!dir.exists() || dir.deleteRecursively()) { "The images' folder could not be emptied" }
+        if (replacement != null && replacement.exists()) check(replacement.renameTo(dir)) { "The backup's images could not be moved into place" }
+    }
+
     /** What the startup sweep removes from the folder: the parts left, and the images no row names. */
     data class Sweep(val parts: List<String>, val orphans: List<String>)
 

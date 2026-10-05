@@ -950,10 +950,10 @@
     <string name="backup_reset_success">Réinitialisation réussie, redémarrage...</string>
     <string name="backup_version_too_recent">Ce fichier provient d\'une version plus récente de l\'application</string>
     <string name="backup_invalid_file">Fichier de sauvegarde invalide</string>
+    <string name="backup_image_missing">Le fichier de l\'image %1$s (session %2$s) est introuvable : la sauvegarde ne se fait pas avec un trou.</string>
+    <string name="backup_import_image_missing">La sauvegarde nomme l\'image %1$s (session %2$s) sans en contenir le fichier : rien n\'a été importé.</string>
     <string name="backup_export_failed">Échec de l\'export</string>
-    <string name="backup_export_no_data">Échec de l\'export: aucune donnée retournée</string>
     <string name="backup_import_failed">Échec de l\'import</string>
-    <string name="backup_import_read_failed">Impossible de lire le fichier de sauvegarde</string>
     <string name="backup_reset_failed">Échec de la réinitialisation</string>
 
     <!-- AI PROVIDERS - Provider management -->

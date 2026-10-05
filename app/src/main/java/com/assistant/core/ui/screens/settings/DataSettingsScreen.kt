@@ -71,33 +71,21 @@ fun DataSettingsScreen(
 
     // SAF launcher for export (create document)
     val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
+        contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
         uri?.let {
             isLoading = true
             scope.launch {
                 try {
-                    // Call export service
+                    // The service writes the zip into the chosen file itself: its images are copied
+                    // there file by file, never held in memory
                     val result = coordinator.processUserAction(
                         "backup.export",
-                        emptyMap()
+                        mapOf("uri" to uri.toString())
                     )
 
                     if (result.status == CommandStatus.SUCCESS) {
-                        val jsonData = result.data?.get("json_data") as? String
-                        if (jsonData != null) {
-                            // Write to SAF uri with explicit error handling
-                            val outputStream = context.contentResolver.openOutputStream(uri)
-                                ?: throw Exception("Failed to open output stream (permission denied or invalid URI)")
-
-                            outputStream.use {
-                                it.write(jsonData.toByteArray())
-                            }
-
-                            Toast.makeText(context, s.shared("backup_export_success"), Toast.LENGTH_SHORT).show()
-                        } else {
-                            errorMessage = s.shared("backup_export_no_data")
-                        }
+                        Toast.makeText(context, s.shared("backup_export_success"), Toast.LENGTH_SHORT).show()
                     } else {
                         errorMessage = result.error ?: s.shared("backup_export_failed")
                     }
@@ -172,7 +160,7 @@ fun DataSettingsScreen(
                     onClick = {
                         val timestamp = DateUtils.format(System.currentTimeMillis(), "yyyyMMdd_HHmmss")
                         val version = com.assistant.BuildConfig.VERSION_NAME
-                        exportLauncher.launch("assistant_backup_${timestamp}_v$version.json")
+                        exportLauncher.launch("assistant_backup_${timestamp}_v$version.zip")
                     }
                 ) {
                     UI.Text(
@@ -200,7 +188,7 @@ fun DataSettingsScreen(
                     size = Size.M,
                     state = if (isLoading) ComponentState.DISABLED else ComponentState.NORMAL,
                     onClick = {
-                        importLauncher.launch(arrayOf("application/json"))
+                        importLauncher.launch(arrayOf("application/zip", "application/json"))
                     }
                 ) {
                     UI.Text(
@@ -253,31 +241,22 @@ fun DataSettingsScreen(
                     isLoading = true
                     scope.launch {
                         try {
-                            // Read JSON from SAF uri
-                            val jsonData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                                inputStream.bufferedReader().readText()
-                            }
+                            // The service reads the chosen file itself: a zip, or an older .json
+                            val result = coordinator.processUserAction(
+                                "backup.import",
+                                mapOf("uri" to uri.toString())
+                            )
 
-                            if (jsonData != null) {
-                                // Call import service
-                                val result = coordinator.processUserAction(
-                                    "backup.import",
-                                    mapOf("json_data" to jsonData)
-                                )
-
-                                if (result.status == CommandStatus.SUCCESS) {
-                                    Toast.makeText(
-                                        context,
-                                        s.shared("backup_import_success"),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    // Restart app with clean state
-                                    restartApp(context)
-                                } else {
-                                    errorMessage = result.error ?: s.shared("backup_import_failed")
-                                }
+                            if (result.status == CommandStatus.SUCCESS) {
+                                Toast.makeText(
+                                    context,
+                                    s.shared("backup_import_success"),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                // Restart app with clean state
+                                restartApp(context)
                             } else {
-                                errorMessage = s.shared("backup_import_read_failed")
+                                errorMessage = result.error ?: s.shared("backup_import_failed")
                             }
                         } catch (e: Exception) {
                             errorMessage = "${s.shared("backup_import_failed")}: ${e.message}"

@@ -950,10 +950,10 @@
     <string name="backup_reset_success">Reset succeeded, restarting...</string>
     <string name="backup_version_too_recent">This file comes from a more recent version of the application</string>
     <string name="backup_invalid_file">Invalid backup file</string>
+    <string name="backup_image_missing">The file of image %1$s (session %2$s) is missing: the backup is not made with a hole in it.</string>
+    <string name="backup_import_image_missing">The backup names image %1$s (session %2$s) but does not hold its file: nothing was imported.</string>
     <string name="backup_export_failed">Export failed</string>
-    <string name="backup_export_no_data">Export failed: no data returned</string>
     <string name="backup_import_failed">Import failed</string>
-    <string name="backup_import_read_failed">Unable to read the backup file</string>
     <string name="backup_reset_failed">Reset failed</string>
 
     <!-- AI PROVIDERS - Provider management -->
