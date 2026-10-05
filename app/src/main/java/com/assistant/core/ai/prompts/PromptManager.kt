@@ -33,8 +33,6 @@ object PromptManager {
         LogManager.aiPrompt("Building prompt data for session $sessionId", "INFO")
 
         val coordinator = Coordinator(context)
-        val commandExecutor = CommandExecutor(context)
-        val userCommandProcessor = UserCommandProcessor(context)
 
         // 1. Load session to determine type and get snapshot
         val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf("session_id" to sessionId))
@@ -65,26 +63,7 @@ object PromptManager {
         )
 
         // 3. Build Level 2 (USER DATA - always_send tools)
-        LogManager.aiPrompt("Building Level 2 (USER DATA)", "DEBUG")
-        val level2Commands = buildLevel2Commands(context)
-        // L2 commands name a tool instance and carry no period, so the reference never applies
-        val level2Executable = userCommandProcessor.processCommands(level2Commands, System.currentTimeMillis())
-        val level2Result = commandExecutor.executeCommands(
-            commands = level2Executable,
-            messageType = SystemMessageType.DATA_ADDED,
-            origin = com.assistant.core.coordinator.Source.SYSTEM,
-            level = "L2",
-            sessionId = sessionId  // Enable schema deduplication
-        )
-
-        // Include intro only if L2 has data
-        val s = Strings.`for`(context = context)
-        val level2Intro = if (level2Result.promptResults.isNotEmpty()) {
-            s.shared("ai_prompt_level2_intro")
-        } else {
-            ""
-        }
-        val level2Content = formatLevel("Level 2: User Data", level2Intro, level2Result.promptResults)
+        val level2Content = buildLevel2Content(context, sessionId)
 
         // 4. Build/Load Level 3 (APP_STATE snapshot)
         val level3Content = if (existingSnapshot != null) {
@@ -328,6 +307,38 @@ object PromptManager {
         LogManager.aiPrompt("Level 2: Generated ${commands.size} commands for always_send tool instances", "DEBUG")
         return commands
     }
+
+    /**
+     * Level 2: the data of the tools marked always_send, read now.
+     *
+     * @param sessionId The session the schemas it carries are counted against, so none is sent
+     *   twice in it; null outside a session (an outside AI's context), where each is sent
+     */
+    suspend fun buildLevel2Content(context: Context, sessionId: String?): String {
+        LogManager.aiPrompt("Building Level 2 (USER DATA)", "DEBUG")
+        val level2Commands = buildLevel2Commands(context)
+        // L2 commands name a tool instance and carry no period, so the reference never applies
+        val level2Executable = UserCommandProcessor(context).processCommands(level2Commands, System.currentTimeMillis())
+        val level2Result = CommandExecutor(context).executeCommands(
+            commands = level2Executable,
+            messageType = SystemMessageType.DATA_ADDED,
+            origin = com.assistant.core.coordinator.Source.SYSTEM,
+            level = "L2",
+            sessionId = sessionId
+        )
+
+        // Include intro only if L2 has data
+        val level2Intro = if (level2Result.promptResults.isNotEmpty()) {
+            Strings.`for`(context = context).shared("ai_prompt_level2_intro")
+        } else {
+            ""
+        }
+        return formatLevel("Level 2: User Data", level2Intro, level2Result.promptResults)
+    }
+
+    /** Level 3 as it stands now: the zones and the tools, for an outside AI's context. */
+    suspend fun buildAppStateContent(context: Context): String =
+        formatSnapshotContent(generateAppStateSnapshot(context), context)
 
     /**
      * Generate APP_STATE snapshot (zones + tool instances)
