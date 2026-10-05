@@ -32,14 +32,24 @@ object PromptChunks {
         val includeDegree1: Boolean = true,   // ESSENTIAL (always true)
         val includeDegree2: Boolean = true,   // IMPORTANT
         val includeDegree3: Boolean = false   // OPTIMIZATION (disabled by default for token economy)
-    )
+    ) {
+        fun includes(degree: Int): Boolean = when (degree) {
+            1 -> includeDegree1
+            2 -> includeDegree2
+            3 -> includeDegree3
+            else -> false
+        }
+    }
 
     /**
-     * Chunk metadata
+     * Chunk metadata. A shared chunk says what the app is (its zones, fields, schemas, dates,
+     * tool types), true for any AI that works in it; the others say how the built-in AI talks to
+     * the app (its JSON envelope, its session, its examples written in that envelope).
      */
     private data class Chunk(
         val id: String,
         val degree: Int,
+        val shared: Boolean = false,
         val builder: suspend (Context, SessionType) -> String
     )
 
@@ -49,6 +59,7 @@ object PromptChunks {
     private val ALL_CHUNKS = listOf(
         // PARTIE A : INTRODUCTION & CONFIGURATION
         Chunk("intro_role", 1) { ctx, _ -> buildIntroRole(ctx) },
+        Chunk("environment", 1, shared = true) { ctx, _ -> buildChunk("environment", ctx) },
         Chunk("session_types", 1) { ctx, sessionType -> buildSessionTypes(ctx, sessionType) },
         Chunk("automation_completion", 1) { ctx, sessionType -> buildAutomationCompletion(ctx, sessionType) },
 
@@ -63,19 +74,21 @@ object PromptChunks {
         Chunk("commands_queries", 1) { ctx, _ -> buildCommandsChunk("commands_queries_intro", AICommands.queries, ctx) },
         Chunk("commands_actions", 1) { ctx, _ -> buildCommandsChunk("commands_actions_intro", AICommands.actions, ctx) },
         Chunk("commands_response_format", 2) { ctx, _ -> buildChunk("commands_response_format", ctx) },
-        Chunk("extra", 1) { ctx, _ -> buildCustomFieldsChunk(ctx) },
+        Chunk("extra", 1, shared = true) { ctx, _ -> buildCustomFieldsChunk(ctx) },
         Chunk("commands_queries_examples", 3) { ctx, _ -> buildChunk("commands_queries_examples", ctx) },
         Chunk("commands_actions_examples", 3) { ctx, _ -> buildChunk("commands_actions_examples", ctx) },
 
         // PARTIE D : SYSTÈME DE VALIDATION
-        Chunk("validation_schema_principle", 1) { ctx, _ -> buildChunk("validation_schema_principle", ctx) },
-        Chunk("validation_schema_ids", 1) { ctx, _ -> runBlocking { buildSystemSchemaIds(ctx) } },
-        Chunk("validation_strategy", 1) { ctx, _ -> buildChunk("validation_strategy", ctx) },
-        Chunk("validation_system_managed", 1) { ctx, _ -> buildChunk("validation_system_managed", ctx) },
+        Chunk("validation_schema_principle", 1, shared = true) { ctx, _ -> buildChunk("validation_schema_principle", ctx) },
+        Chunk("validation_schema_ids", 1, shared = true) { ctx, _ -> runBlocking { buildSystemSchemaIds(ctx) } },
+        Chunk("validation_strategy", 1, shared = true) { ctx, _ -> buildChunk("validation_strategy", ctx) },
+        // The session holds back a command on entries whose schema it has not sent yet
+        Chunk("validation_schema_enforced", 1) { ctx, _ -> buildChunk("validation_schema_enforced", ctx) },
+        Chunk("validation_system_managed", 1, shared = true) { ctx, _ -> buildChunk("validation_system_managed", ctx) },
 
         // PART E: TIME HANDLING
-        Chunk("temporal_formats", 1) { ctx, _ -> buildChunk("temporal_formats", ctx) },
-        Chunk("temporal_examples", 2) { ctx, _ -> buildChunk("temporal_examples", ctx) },
+        Chunk("temporal_formats", 1, shared = true) { ctx, _ -> buildChunk("temporal_formats", ctx) },
+        Chunk("temporal_examples", 2, shared = true) { ctx, _ -> buildChunk("temporal_examples", ctx) },
 
         // PART F: ERROR HANDLING
         Chunk("errors_types", 3) { ctx, _ -> buildChunk("errors_types", ctx) },
@@ -91,7 +104,7 @@ object PromptChunks {
         Chunk("flow_example_errors", 3) { ctx, _ -> buildChunk("flow_example_errors", ctx) },
 
         // PARTIE J : TOOL TYPES (dynamic content)
-        Chunk("tooltypes_list", 1) { ctx, _ -> buildTooltypesList(ctx) }
+        Chunk("tooltypes_list", 1, shared = true) { ctx, _ -> buildTooltypesList(ctx) }
     )
 
     /**
@@ -108,15 +121,7 @@ object PromptChunks {
     ): String {
         val sb = StringBuilder()
 
-        // Filter chunks based on configuration
-        val enabledChunks = ALL_CHUNKS.filter { chunk ->
-            when (chunk.degree) {
-                1 -> config.includeDegree1
-                2 -> config.includeDegree2
-                3 -> config.includeDegree3
-                else -> false
-            }
-        }
+        val enabledChunks = ALL_CHUNKS.filter { config.includes(it.degree) }
 
         // Build each enabled chunk
         for (chunk in enabledChunks) {
@@ -130,6 +135,17 @@ object PromptChunks {
         return sb.toString()
     }
 
+
+    /**
+     * What the app is, for an AI that works in it from outside (app_context): the shared chunks
+     * at the degrees [config] enables, in the L1's order. The commands are not in it: an outside
+     * AI reads each one as it is offered to it.
+     */
+    suspend fun buildAppNotions(context: Context, config: ChunkConfig = ChunkConfig()): String =
+        ALL_CHUNKS.filter { it.shared && config.includes(it.degree) }
+            .map { it.builder(context, SessionType.CHAT) }
+            .filter { it.isNotEmpty() }
+            .joinToString("\n\n")
 
     // ================================================================
     // PLACEHOLDER SYSTEM
