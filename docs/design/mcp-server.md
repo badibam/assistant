@@ -9,6 +9,20 @@ Conçu le 2026-10-05. Une IA extérieure — un chat claude.ai, d'abord — lit 
 - **Un relais sur l'hébergement OVH**, simple tuyau : il met en file toute requête HTTP reçue à son adresse (méthode, chemin, en-têtes, corps), attend la réponse que l'app dépose, la rend, efface les deux. Sans réponse dans le délai : 503. Il ne connaît ni MCP, ni OAuth, ni les commandes ; son seul secret est celui qu'il partage avec l'app, pour qu'elle seule lise la file et y réponde. Il voit passer les données en clair (le HTTPS s'arrête chez lui) et n'en garde rien. Un projet à part (`php-heberge-leger`). À mesurer : combien de temps l'hébergement tient une requête ouverte.
 - **Passer plus tard à un relais qui ne lit rien** (un serveur loué qui fait passer les octets chiffrés, le certificat sur le téléphone) ne change que l'adresse dans l'app.
 
+## Le contrat du relais
+
+Ce que le relais et l'app se doivent, pour que chacun s'écrive sans l'autre. `<base>` est l'adresse publique du relais (`https://domaine/assistant`).
+
+- **Côté client, toute requête** à `<base>/…`, sauf `<base>/_relay/…`, est mise en file telle quelle : un id tiré au hasard, la méthode, le chemin sous `<base>`, la chaîne de requête, les en-têtes (sans ceux du transport : `Host`, `Connection`, `Content-Length`…), le corps. Le relais tient la requête ouverte jusqu'à la réponse de l'app, au plus `REPLY_TIMEOUT` (25 s), puis répond 503 et efface.
+- **Côté app**, tout appel à `<base>/_relay/…` porte `Authorization: Bearer <secret du relais>` ; sans lui, 404, comme une adresse qui n'existe pas.
+  - `GET <base>/_relay/next?wait=<s>` : la plus ancienne requête en attente, en JSON, retirée de la file ; sans requête, le relais attend jusqu'à `wait` secondes (au plus ce que l'hébergement tient) et répond 204.
+  - `POST <base>/_relay/reply/<id>` : la réponse, en JSON ; le relais la rend au client et l'efface. 404 si le client n'attend plus.
+- **Le JSON d'une requête** : `{"id", "method", "path", "query", "headers": {nom: valeur}, "body"}`, le corps en base64. **D'une réponse** : `{"status", "headers": {nom: valeur}, "body"}`, de même.
+- **Rien ne reste** : une requête retirée par l'app n'est plus dans la file, une réponse rendue est effacée, une requête que l'app n'a pas prise en `REPLY_TIMEOUT` aussi.
+- **Limites** : un corps de 1 Mo au plus dans chaque sens (413 au-delà), un nombre de requêtes par minute et par adresse, une file bornée (503 pleine).
+- **Pas de flux** : l'app répond toujours d'un bloc en `application/json` (MCP le permet) et refuse le `GET` d'un flux SSE par 405 ; le relais n'a jamais à faire passer de réponse en morceaux.
+- Le secret du relais se règle dans sa config (hors du dépôt) et dans l'app.
+
 ## L'accès ouvert
 
 - **À la main** : dans les réglages, ou par une tuile des réglages rapides d'Android. Un service au premier plan, sa notification qui dit l'état et le dernier appel, avec Fermer.
