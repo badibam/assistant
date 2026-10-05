@@ -250,7 +250,8 @@
     <string name="ai_error_command_invalid_params">Invalid or missing parameters</string>
     <string name="ai_error_command_transformation_null">The transformation produced no executable command</string>
     <string name="ai_error_command_unexpected">Unexpected error</string>
-    <string name="ai_error_tool_data_fields_missing">Mandatory \'fields\' parameter missing. A TOOL_DATA request must list explicitly the fields to retrieve. Example: \"fields\": [\"id\", \"timestamp\", \"data.value\", \"extra.notes\"]</string>
+    <string name="ai_error_param_missing">Missing required parameter \'%1$s\'.</string>
+    <string name="ai_error_param_type">The parameter \'%1$s\' must be of type %2$s.</string>
     <string name="ai_error_tool_data_fields_not_array">The \'fields\' parameter must be a non-empty array. Example: \"fields\": [\"id\", \"timestamp\", \"data.value\"]</string>
 
     <!-- AI Errors - Field grammar -->

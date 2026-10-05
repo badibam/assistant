@@ -69,7 +69,6 @@ object CommandTransformer {
                     "SCHEMA" -> transformSchemaCommand(command)
                     "TOOL_CONFIG" -> transformToolConfigCommand(command)
                     "TOOL_DATA" -> transformToolDataCommand(command, context, s, reference)
-                    "TOOL_DATA_SAMPLE" -> transformToolDataSampleCommand(command)
                     "ZONE_CONFIG" -> transformZoneConfigCommand(command)
                     "ZONES" -> transformZonesCommand(command)
                     "TOOL_INSTANCES" -> transformToolInstancesCommand(command)
@@ -259,16 +258,6 @@ object CommandTransformer {
     }
 
 
-    private fun transformToolDataSampleCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("transformToolDataSampleCommand() - STUB implementation", "DEBUG")
-
-        // TODO: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling
-        // - Add default limit for sampling (e.g., limit: 10)
-        // - Use recent data ordering (orderBy: timestamp DESC)
-        // - IMPORTANT: Convert its filters like TOOL_DATA's (FilterValues)
-
-        return null
-    }
 
     private fun transformZoneConfigCommand(command: DataCommand): ExecutableCommand? {
         LogManager.aiPrompt("transformZoneConfigCommand() - routing to zones.get", "VERBOSE")

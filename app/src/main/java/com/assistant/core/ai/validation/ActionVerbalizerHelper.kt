@@ -25,13 +25,7 @@ import com.assistant.core.utils.LogManager
 object ActionVerbalizerHelper {
 
     // Action command types that AICommandProcessor handles
-    private val ACTION_TYPES = setOf(
-        "CREATE_DATA", "UPDATE_DATA", "DELETE_DATA", "START_DURATION", "STOP_DURATION", "TOOL_OPERATION",
-        "CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL",
-        "CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE",
-        "CREATE_VARIABLE", "UPDATE_VARIABLE", "DELETE_VARIABLE",
-        "IMPORT_DATA"
-    )
+    private val ACTION_TYPES = com.assistant.core.ai.data.AICommands.actions.map { it.type }.toSet()
 
     /**
      * Verbalizes a single action command

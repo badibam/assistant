@@ -253,6 +253,8 @@ User: EnrichmentBlock → EnrichmentProcessor → CommandTransformer → Command
 AI: AIMessage → CommandTransformer → CommandExecutor
 ```
 
+**Catalogue des commandes** : chaque commande de l'IA est déclarée une fois dans `AICommands` : son type, requête ou action, ses paramètres (type JSON, obligatoire ou non), le texte qui la décrit au modèle (`ai_command_*` dans `ai_prompt_chunks.xml`) et si elle écrit dans les entrées. `AICommandProcessor` refuse, en les nommant, un type inconnu et un paramètre que la commande ne prend pas, manquant ou d'un autre type ; le schéma de réponse forcé, la liste des actions verbalisées et le L1 en sont tirés, ce dernier assemblant les textes dans l'ordre du catalogue. `AICommandsTest` tient chaque texte à sa déclaration.
+
 **Opérations d'un type d'outil** : `TOOL_OPERATION` (`tool_instance_id`, `operation`, `params`) devient `{tooltype}.{operation}` dans `AICommandProcessor`, le type lu depuis l'outil. Les paramètres passent en millisecondes puis sont vérifiés contre le schéma généré de leur déclaration (`ToolOperations.schema`) ; une opération inconnue est refusée avec la liste de celles que le type déclare. L'IA lit ces opérations après le schéma des entrées d'un outil (`CommandExecutor.operationsForModel`) : le prompt L1 ne décrit que la commande, jamais le catalogue.
 
 ## 5. Contrôle de session

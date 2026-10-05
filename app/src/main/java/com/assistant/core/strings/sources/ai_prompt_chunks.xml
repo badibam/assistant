@@ -228,8 +228,8 @@ The answer comes back as `{"zone": "zone_sport_2"}`.]]></string>
     <!-- PART C: AVAILABLE COMMANDS                                       -->
     <!-- ================================================================ -->
 
-    <!-- C.1 Query commands signatures [DEGREE 1] -->
-    <string name="ai_chunk_commands_queries_signatures"><![CDATA[## Query commands
+    <!-- C.1 Query commands: what they share; each command's own text is ai_command_*, assembled in the order of AICommands [DEGREE 1] -->
+    <string name="ai_chunk_commands_queries_intro"><![CDATA[## Query commands
 
 The query commands read the data without changing it.
 
@@ -237,9 +237,8 @@ The query commands read the data without changing it.
 
 Data the user attached (POINTER enrichments) is already in your context, as earlier system messages, complete for the tool, period and filters it names. Use it directly; query only what is missing, filtered differently, or changed since.
 
-A file the user joined (FILE enrichment) comes as a system message too: its `id`, `name`, `mime_type` and `line_count`, with its whole text, or only its first lines when the user chose a preview. Read the rest with FILE; import a table from it with IMPORT_PLAN then IMPORT_DATA, which read the file themselves: never copy its lines into CREATE_DATA.
-
-### TOOL_DATA
+A file the user joined (FILE enrichment) comes as a system message too: its `id`, `name`, `mime_type` and `line_count`, with its whole text, or only its first lines when the user chose a preview. Read the rest with FILE; import a table from it with IMPORT_PLAN then IMPORT_DATA, which read the file themselves: never copy its lines into CREATE_DATA.]]></string>
+    <string name="ai_command_tool_data"><![CDATA[### TOOL_DATA
 
 Retrieves the entries of one tool.
 
@@ -260,61 +259,54 @@ Retrieves the entries of one tool.
   - `right`: a value written as the field stores it, `{"constant": ...}`
   - Dates, relative dates and durations in Part E
   - No OR between two fields: make two queries
-- `limit` (number, optional): entries per page
-- `page` (number, optional): page number, starting at 1 (there is no `offset`)
+- `limit` (integer, optional): entries per page
+- `page` (integer, optional): page number, starting at 1 (there is no `offset`)
 - `running` (boolean, optional): `true` for the entries with a DURATION field running now, to find a stopwatch to stop
 
 **Reading the values**: the data schema of the tool (`SCHEMA` with `tool_instance_id`) says what each value means: its label (`title`), and in its description its unit, what the bounds of a scale or the two answers of a boolean mean, the options of a choice and whether others are accepted.
 
-**Ask only what the task needs**: to count entries → `["id"]`, to analyse values → `["id", "timestamp", "data.value"]`.
-
-### TOOL_CONFIG
+**Ask only what the task needs**: to count entries → `["id"]`, to analyse values → `["id", "timestamp", "data.value"]`.]]></string>
+    <string name="ai_command_tool_config"><![CDATA[### TOOL_CONFIG
 
 Retrieves the configuration of a tool.
 
 **Parameters**:
 
-- `id` (string, **required**): the tool_instance_id
-
-### TOOL_INSTANCES
+- `id` (string, **required**): the tool_instance_id]]></string>
+    <string name="ai_command_tool_instances"><![CDATA[### TOOL_INSTANCES
 
 Lists the tools.
 
 **Parameters**:
 
-- `zone_id` (string, optional): the tools of that zone alone
-
-### ZONE_CONFIG
+- `zone_id` (string, optional): the tools of that zone alone]]></string>
+    <string name="ai_command_zone_config"><![CDATA[### ZONE_CONFIG
 
 Retrieves the configuration of a zone.
 
 **Parameters**:
 
-- `id` (string, **required**): the zone_id
-
-### ZONES
+- `id` (string, **required**): the zone_id]]></string>
+    <string name="ai_command_zones"><![CDATA[### ZONES
 
 Lists every zone.
 
-**Parameters**: none
-
-### APP_STATE
+**Parameters**: none]]></string>
+    <string name="ai_command_app_state"><![CDATA[### APP_STATE
 
 Retrieves the whole structure of the application: the zones, the tools of each, and the variables.
 
 **Parameters**: none
 
-Use it to learn which zones exist and which tools and variables they hold. For the complete configuration of one tool, use TOOL_CONFIG.
-
-### VARIABLES
+Use it to learn which zones exist and which tools and variables they hold. For the complete configuration of one tool, use TOOL_CONFIG.]]></string>
+    <string name="ai_command_variables"><![CDATA[### VARIABLES
 
 Lists the variables: named values the app computes from the entries each time they are read (a daily calorie total, a balance, a goal written once). Each comes with its zone, its formula written with the names it reads, its terms and its `field` (type and settings of its value), never its value.
 
 **Parameters**:
 
-- `zone_id` (string, optional): the variables of that zone alone
-
-### READING
+- `zone_id` (string, optional): the variables of that zone alone]]></string>
+    <string name="ai_command_reading"><![CDATA[### READING
 
 Reads a variable\'s value at one or several instants, each of its terms read relative to that instant.
 
@@ -327,9 +319,8 @@ Returns `values`, one per instant in the same order: `{ "at", "value" }`, or `{ 
 
 ```json
 { "type": "READING", "params": { "variable": "kcal", "at": [{ "relative": "NOW" }, { "relative": { "unit": "DAY", "offset": -1, "edge": "END" } }] } }
-```
-
-### FILE
+```]]></string>
+    <string name="ai_command_file"><![CDATA[### FILE
 
 Reads a file the user joined to a message, by lines.
 
@@ -339,9 +330,8 @@ Reads a file the user joined to a message, by lines.
 - `start_line` (integer, optional): the first line to read, from 1; 1 by default
 - `lines` (integer, optional): how many lines; the rest of the file by default
 
-Returns `name`, `mime_type`, `line_count`, `start_line`, `lines` (how many were read) and `text`. A long file is read in parts: each answer is held to the same size threshold as any data.
-
-### IMPORT_PLAN
+Returns `name`, `mime_type`, `line_count`, `start_line`, `lines` (how many were read) and `text`. A long file is read in parts: each answer is held to the same size threshold as any data.]]></string>
+    <string name="ai_command_import_plan"><![CDATA[### IMPORT_PLAN
 
 Proposes how to import a joined file (a CSV) into a tool: what IMPORT_DATA will need, column by column.
 
@@ -350,32 +340,29 @@ Proposes how to import a joined file (a CSV) into a tool: what IMPORT_DATA will 
 - `file` (string, **required**): the file\'s id
 - `tool_instance_id` (string, **required**): the tool to import into
 
-Returns `lines` (the file\'s line count) and `columns`, one per column of the file: its `column` (its header), its proposed `target` — `KEY` (the entry\'s name, which recognises an entry already there), `FIELD` (an existing field, its path in `field`: `"extra.kcal"`, `"timestamp"`), `NEW` (a field to create, defined in `new_field` as a custom field is) or `IGNORE` —, its `writing` (how its cells are written: `DECIMAL_COMMA`, `DAY_MONTH_YEAR`…), an `example` read, the `ambiguous` writings you must choose between, and the `unreadable_lines`. Start from it, fix what is wrong or ambiguous, and send it to IMPORT_DATA.
-
-### CURRENT_DATETIME
+Returns `lines` (the file\'s line count) and `columns`, one per column of the file: its `column` (its header), its proposed `target` — `KEY` (the entry\'s name, which recognises an entry already there), `FIELD` (an existing field, its path in `field`: `"extra.kcal"`, `"timestamp"`), `NEW` (a field to create, defined in `new_field` as a custom field is) or `IGNORE` —, its `writing` (how its cells are written: `DECIMAL_COMMA`, `DAY_MONTH_YEAR`…), an `example` read, the `ambiguous` writings you must choose between, and the `unreadable_lines`. Start from it, fix what is wrong or ambiguous, and send it to IMPORT_DATA.]]></string>
+    <string name="ai_command_current_datetime"><![CDATA[### CURRENT_DATETIME
 
 Retrieves the current date and time.
 
 **Parameters**: none
 
-**Returns** `timestamp`: ISO 8601 with a timezone offset (e.g. `"2025-11-23T14:30:00+01:00"`). Use it before writing an entry dated "now" or "yesterday".
-
-### SCHEMA
+**Returns** `timestamp`: ISO 8601 with a timezone offset (e.g. `"2025-11-23T14:30:00+01:00"`). Use it before writing an entry dated "now" or "yesterday".]]></string>
+    <string name="ai_command_schema"><![CDATA[### SCHEMA
 
 Retrieves a JSON schema, asked for by what it describes. **Exactly one** parameter:
 
-- `tooltype` (string): the config of a tool of that type, with every variant (a tracking\'s `type` decides its settings)
-- `tool_instance_id` (string): the entries of that tool, its extra fields included
-- `id` (string): any other schema, by its name (`zone_config`, `field_type_TEXT`, `communication_module`)
-
-### ICONS
+- `tooltype` (string, optional): the config of a tool of that type, with every variant (a tracking\'s `type` decides its settings)
+- `tool_instance_id` (string, optional): the entries of that tool, its extra fields included
+- `id` (string, optional): any other schema, by its name (`zone_config`, `field_type_TEXT`, `communication_module`)]]></string>
+    <string name="ai_command_icons"><![CDATA[### ICONS
 
 Searches the icons a zone or a tool can take.
 
 **Parameters** (both optional):
 
-- `categories` (array of strings): category ids; an icon in any of them matches
-- `query` (array of strings): words searched in the icon names and tags, in English; an icon holding any of them matches, one holding several ranks higher. Give synonyms: `["weight", "scale", "balance"]`
+- `categories` (array, optional): category ids, as strings; an icon in any of them matches
+- `query` (array, optional): words, as strings, searched in the icon names and tags, in English; an icon holding any of them matches, one holding several ranks higher. Give synonyms: `["weight", "scale", "balance"]`
 
 **Returns**:
 
@@ -384,12 +371,14 @@ Searches the icons a zone or a tool can take.
 
 Both parameters together: an icon must match both.]]></string>
 
-    <!-- C.2 Action commands signatures [DEGREE 1] -->
-    <string name="ai_chunk_commands_actions_signatures"><![CDATA[## Action commands
+
+    <!-- C.2 Action commands: what they share; each command's own text is ai_command_*, assembled in the order of AICommands [DEGREE 1] -->
+    <string name="ai_chunk_commands_actions_intro"><![CDATA[## Action commands
 
 The action commands change the data. The entry commands take a **batch**: a list of entries.
 
-### CREATE_DATA
+**Values**: literal JSON only (strings, numbers, booleans, arrays, objects), never code or expressions. Dates and durations in ISO 8601 (Part E). The tool type is read from the tool: do not send it.]]></string>
+    <string name="ai_command_create_data"><![CDATA[### CREATE_DATA
 
 Creates entries in one tool.
 
@@ -399,9 +388,8 @@ Creates entries in one tool.
 - `entries` (array, **required**): the entries to create, each `{ name?, timestamp?, data?, extra? }`
   - `name` and `timestamp`: whether a tool\'s entries take them, and whether they are required, is in its data schema (a note has no name)
   - `data`: the tool type\'s fields; `extra`: the user\'s extra fields
-  - A field you leave out stays empty: the app never fills in a value you did not give
-
-### UPDATE_DATA
+  - A field you leave out stays empty: the app never fills in a value you did not give]]></string>
+    <string name="ai_command_update_data"><![CDATA[### UPDATE_DATA
 
 Changes entries of one tool.
 
@@ -410,20 +398,16 @@ Changes entries of one tool.
 - `tool_instance_id` (string, **required**)
 - `entries` (array, **required**): the entries to change, each `{ id, name?, timestamp?, data?, extra? }`
   - `id` is **required**: the entry to change
-  - Only what you give changes: the fields inside `data` and `extra` you leave out keep their values. Give just what changes
-
-### DELETE_DATA
+  - Only what you give changes: the fields inside `data` and `extra` you leave out keep their values. Give just what changes]]></string>
+    <string name="ai_command_delete_data"><![CDATA[### DELETE_DATA
 
 Deletes entries of one tool.
 
 **Parameters**:
 
 - `tool_instance_id` (string, **required**)
-- `ids` (array, **required**): the IDs of the entries to delete
-
-**Values**: literal JSON only (strings, numbers, booleans, arrays, objects), never code or expressions. Dates and durations in ISO 8601 (Part E). The tool type is read from the tool: do not send it.
-
-### START_DURATION / STOP_DURATION
+- `ids` (array, **required**): the IDs of the entries to delete]]></string>
+    <string name="ai_command_duration"><![CDATA[### START_DURATION / STOP_DURATION
 
 Starts or stops the stopwatch of a DURATION field of one entry. Starting writes the instant in the entry\'s `state.running`; stopping adds the time elapsed to the field\'s value. Starting again after a stop keeps counting. In a tracking tool, starting an activity stops the one running.
 
@@ -435,9 +419,8 @@ Starts or stops the stopwatch of a DURATION field of one entry. Starting writes 
 
 ```json
 { "type": "STOP_DURATION", "params": { "tool_instance_id": "tracking_work_123", "id": "entry_456", "field": "data.value" } }
-```
-
-### TOOL_OPERATION
+```]]></string>
+    <string name="ai_command_tool_operation"><![CDATA[### TOOL_OPERATION
 
 Runs an operation a tool type offers beside creating, changing and deleting entries: one that carries its own rule, such as sending a message now. A tool\'s operations come with its data schema (`SCHEMA` with `tool_instance_id`), each with what it does and the schema of its parameters. Use the operation rather than a plain write when there is one for what you want to do.
 
@@ -445,13 +428,12 @@ Runs an operation a tool type offers beside creating, changing and deleting entr
 
 - `tool_instance_id` (string, **required**)
 - `operation` (string, **required**): the operation\'s name, as its tool\'s data schema lists it
-- `params` (object): its parameters, held to the schema listed with it
+- `params` (object, optional): its parameters, held to the schema listed with it
 
 ```json
 { "type": "TOOL_OPERATION", "params": { "tool_instance_id": "messages_water_123", "operation": "execute", "params": { "title": "Drink a glass of water" } } }
-```
-
-### CREATE_TOOL
+```]]></string>
+    <string name="ai_command_create_tool"><![CDATA[### CREATE_TOOL
 
 Creates a tool in a zone.
 
@@ -459,9 +441,8 @@ Creates a tool in a zone.
 
 - `zone_id` (string, **required**)
 - `tooltype` (string, **required**)
-- `config` (object, **required**): its configuration, held to the config schema of its tool type (`SCHEMA` with `tooltype`)
-
-### UPDATE_TOOL
+- `config` (object, **required**): its configuration, held to the config schema of its tool type (`SCHEMA` with `tooltype`)]]></string>
+    <string name="ai_command_update_tool"><![CDATA[### UPDATE_TOOL
 
 Changes the configuration of a tool, or moves it to another zone.
 
@@ -473,17 +454,15 @@ Changes the configuration of a tool, or moves it to another zone.
 - `confirm_migration` (boolean, optional): `true` to agree to what the change erases in the entries
 - `fill_values` (object, optional): the values to give the entries a change leaves without a required value, `{"data": {"value": 3}}`
 
-A change that erases values or entries is **refused** with what it would lose: tell the user, and send it again with `"confirm_migration": true` only once they agree. A refusal naming `missing_values` is sent again with `fill_values`.
-
-### DELETE_TOOL
+A change that erases values or entries is **refused** with what it would lose: tell the user, and send it again with `"confirm_migration": true` only once they agree. A refusal naming `missing_values` is sent again with `fill_values`.]]></string>
+    <string name="ai_command_delete_tool"><![CDATA[### DELETE_TOOL
 
 Deletes a tool and its entries.
 
 **Parameters**:
 
-- `tool_instance_id` (string, **required**)
-
-### CREATE_ZONE
+- `tool_instance_id` (string, **required**)]]></string>
+    <string name="ai_command_create_zone"><![CDATA[### CREATE_ZONE
 
 Creates a zone.
 
@@ -494,9 +473,8 @@ Creates a zone.
 - `icon_name` (string, optional)
 
 **Validation schema**:
-{{SCHEMA:zone_config}}
-
-### UPDATE_ZONE
+{{SCHEMA:zone_config}}]]></string>
+    <string name="ai_command_update_zone"><![CDATA[### UPDATE_ZONE
 
 Changes a zone. Only what you give changes.
 
@@ -505,23 +483,23 @@ Changes a zone. Only what you give changes.
 - `zone_id` (string, **required**)
 - `name` (string, optional)
 - `description` (string, optional)
-- `icon_name` (string, optional)
-
-### DELETE_ZONE
+- `icon_name` (string, optional)]]></string>
+    <string name="ai_command_delete_zone"><![CDATA[### DELETE_ZONE
 
 Deletes a zone, with its tools and their entries.
 
 **Parameters**:
 
-- `zone_id` (string, **required**)
-
-### CREATE_VARIABLE
+- `zone_id` (string, **required**)]]></string>
+    <string name="ai_command_create_variable"><![CDATA[### CREATE_VARIABLE
 
 Creates a variable in a zone. Its name is unique in the app and can be written in a formula (letters, digits, `_`).
 
 **Parameters**:
 
-- `zone_id` (string, **required**), `name` (string, **required**), `group` (string, optional): a group of the zone
+- `zone_id` (string, **required**)
+- `name` (string, **required**)
+- `group` (string, optional): a group of the zone
 - `definition` (object, **required**), one of:
   - a constant: `{ "kind": "CONSTANT", "value": 2100, "field": { "type": "NUMERIC", "config": { "decimals": 0, "unit": "kcal" } } }`
   - a formula: `{ "kind": "FORMULA", "formula": "...", "terms": { ... }, "field"?: ... }`
@@ -559,26 +537,26 @@ A formula uses `+ - * /`, parentheses, numbers, `hours()`, `minutes()`, `seconds
     }
   }
 }
-```
-
-### UPDATE_VARIABLE
+```]]></string>
+    <string name="ai_command_update_variable"><![CDATA[### UPDATE_VARIABLE
 
 Changes a variable. Only what you give changes; a `definition` given replaces the whole of it.
 
 **Parameters**:
 
 - `variable_id` (string, **required**)
-- `name`, `definition`, `group`, `zone_id` (optional)
-
-### DELETE_VARIABLE
+- `name` (string, optional)
+- `definition` (object, optional)
+- `group` (string, optional)
+- `zone_id` (string, optional)]]></string>
+    <string name="ai_command_delete_variable"><![CDATA[### DELETE_VARIABLE
 
 Deletes a variable. A formula naming it no longer computes.
 
 **Parameters**:
 
-- `variable_id` (string, **required**)
-
-### IMPORT_DATA
+- `variable_id` (string, **required**)]]></string>
+    <string name="ai_command_import_data"><![CDATA[### IMPORT_DATA
 
 Imports a joined file into a tool, following a complete declaration: the new fields are created in the order of the columns, then each line is written, an entry found by its name updated when the tool\'s names are unique, the others created. A cell that does not read refuses its line alone; a name twice in the file refuses the whole import. The answer counts the lines created, updated and refused, each refusal with its reason.
 
@@ -589,6 +567,7 @@ Imports a joined file into a tool, following a complete declaration: the new fie
 - `columns` (array, **required**): one declaration per column of the file, in their order, as IMPORT_PLAN returns them (without `example`, `ambiguous` and `unreadable_lines`), each ambiguity settled
 
 A new table for a file: CREATE_TOOL first, then IMPORT_PLAN and IMPORT_DATA at the next turn, with the id it returned.]]></string>
+
 
     <!-- C.3 Response format [DEGREE 2] -->
     <string name="ai_chunk_commands_response_format"><![CDATA[## Format of the answers to the commands

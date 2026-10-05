@@ -1,6 +1,8 @@
 package com.assistant.core.ai.processing
 
 import android.content.Context
+import com.assistant.core.ai.data.AICommands
+import com.assistant.core.ai.data.CommandKind
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.ExecutableCommand
 import com.assistant.core.ai.prompts.ModelValues
@@ -48,44 +50,26 @@ class AICommandProcessor(private val context: Context) {
     suspend fun processDataCommands(commands: List<DataCommand>, reference: Long): TransformationResult {
         LogManager.aiService("AICommandProcessor processing ${commands.size} data commands from AI", "DEBUG")
 
-        // VALIDATION: Check that TOOL_DATA commands include 'fields' parameter
+        // Every command held to its declaration (AICommands), then what a declaration cannot say
         val validationErrors = mutableListOf<String>()
         for ((index, command) in commands.withIndex()) {
-            if (command.type == "TOOL_DATA") {
-                val fields = command.params["fields"]
-                if (fields == null) {
-                    val errorMsg = s.shared("ai_error_command_prefix")
-                        .format(index, command.type, s.shared("ai_error_tool_data_fields_missing"))
-                    validationErrors.add(errorMsg)
-                    LogManager.aiService(errorMsg, "WARN")
-                } else if (fields !is List<*> || fields.isEmpty()) {
-                    val errorMsg = s.shared("ai_error_command_prefix")
-                        .format(index, command.type, s.shared("ai_error_tool_data_fields_not_array"))
-                    validationErrors.add(errorMsg)
-                    LogManager.aiService(errorMsg, "WARN")
+            val problems = declarationProblems(command, CommandKind.QUERY)
+            if (problems.isEmpty() && command.type == "TOOL_DATA") {
+                val fields = command.params["fields"] as List<*>
+                if (fields.isEmpty()) {
+                    problems.add(s.shared("ai_error_tool_data_fields_not_array"))
                 } else {
                     // Field paths are read through the same grammar the filtering uses, so a path
                     // that passes here cannot be dropped in silence when the result is built.
-                    val invalid = FieldPatternGrammar.parse(fields.map { it.toString() }).invalid
-                    for (path in invalid) {
-                        val errorMsg = s.shared("ai_error_command_prefix")
-                            .format(index, command.type, s.shared("ai_error_field_invalid_pattern").format(path))
-                        validationErrors.add(errorMsg)
-                        LogManager.aiService(errorMsg, "WARN")
+                    for (path in FieldPatternGrammar.parse(fields.map { it.toString() }).invalid) {
+                        problems.add(s.shared("ai_error_field_invalid_pattern").format(path))
                     }
                 }
-
-                // A parameter the transformer does not read would be dropped in silence, and the
-                // query run without it: a period the AI believed set would read the whole history.
-                // So anything outside the documented ones is refused, named.
-                for (param in command.params.keys - TOOL_DATA_PARAMS) {
-                    val errorMsg = s.shared("ai_error_command_prefix").format(
-                        index, command.type,
-                        s.shared("service_error_param_unknown").format(param, TOOL_DATA_PARAMS.joinToString(", "))
-                    )
-                    validationErrors.add(errorMsg)
-                    LogManager.aiService(errorMsg, "WARN")
-                }
+            }
+            for (problem in problems) {
+                val errorMsg = s.shared("ai_error_command_prefix").format(index, command.type, problem)
+                validationErrors.add(errorMsg)
+                LogManager.aiService(errorMsg, "WARN")
             }
         }
 
@@ -143,6 +127,11 @@ class AICommandProcessor(private val context: Context) {
         val errors = mutableListOf<String>()
 
         for ((index, command) in commands.withIndex()) {
+            val problems = declarationProblems(command, CommandKind.ACTION)
+            if (problems.isNotEmpty()) {
+                problems.forEach { errors.add(s.shared("ai_error_command_prefix").format(index, command.type, it)) }
+                continue
+            }
             try {
                 // FIRST: Inject tooltype by deducing from toolInstanceId, for the validation to
                 // pick the tool's schemas. System-managed fields the AI may send are the service's
@@ -580,8 +569,13 @@ class AICommandProcessor(private val context: Context) {
         return command.copy(params = enrichedParams)
     }
 
-    companion object {
-        /** The parameters of a TOOL_DATA query, as the L1 prompt documents them. */
-        val TOOL_DATA_PARAMS = setOf("id", "fields", "filters", "limit", "page", "running")
+    /**
+     * What is wrong with [command] against its declaration (AICommands): a type that is not a
+     * command of [kind], or params it does not take, lacks, or types otherwise.
+     */
+    private fun declarationProblems(command: DataCommand, kind: CommandKind): MutableList<String> {
+        val declared = AICommands.find(command.type)?.takeIf { it.kind == kind }
+            ?: return mutableListOf(s.shared("ai_error_command_unknown_type").format(command.type))
+        return declared.problems(command.params) { key, args -> s.shared(key).format(*args) }.toMutableList()
     }
 }

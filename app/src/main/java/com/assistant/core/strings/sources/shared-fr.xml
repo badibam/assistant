@@ -250,7 +250,8 @@
     <string name="ai_error_command_invalid_params">Paramètres invalides ou manquants</string>
     <string name="ai_error_command_transformation_null">La transformation n\'a produit aucune commande exécutable</string>
     <string name="ai_error_command_unexpected">Erreur inattendue</string>
-    <string name="ai_error_tool_data_fields_missing">Paramètre \'fields\' obligatoire manquant. Une requête TOOL_DATA doit lister explicitement les champs à récupérer. Exemple : \"fields\": [\"id\", \"timestamp\", \"data.value\", \"extra.notes\"]</string>
+    <string name="ai_error_param_missing">Paramètre obligatoire \'%1$s\' manquant.</string>
+    <string name="ai_error_param_type">Le paramètre \'%1$s\' doit être de type %2$s.</string>
     <string name="ai_error_tool_data_fields_not_array">Le paramètre \'fields\' doit être un tableau non vide. Exemple : \"fields\": [\"id\", \"timestamp\", \"data.value\"]</string>
 
     <!-- AI Errors - Field grammar -->

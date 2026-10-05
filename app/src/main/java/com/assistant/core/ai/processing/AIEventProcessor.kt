@@ -20,7 +20,7 @@ import org.json.JSONObject
 import java.util.UUID
 
 /** The AI's commands that write values into a tool's entries, and so wait on its entries schema. */
-private val WRITES_READING_SCHEMA = setOf("CREATE_DATA", "UPDATE_DATA", "START_DURATION", "STOP_DURATION", "TOOL_OPERATION")
+private val WRITES_READING_SCHEMA = com.assistant.core.ai.data.AICommands.ALL.filter { it.writesEntries }.map { it.type }.toSet()
 
 /**
  * Event processor with side effects for AI execution.

@@ -1,6 +1,8 @@
 package com.assistant.core.ai.prompts
 
 import android.content.Context
+import com.assistant.core.ai.data.AICommand
+import com.assistant.core.ai.data.AICommands
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.coordinator.Coordinator
@@ -58,8 +60,8 @@ object PromptChunks {
         Chunk("response_examples", 3) { ctx, _ -> buildChunk("response_examples", ctx) },
 
         // PARTIE C : COMMANDES DISPONIBLES
-        Chunk("commands_queries_signatures", 1) { ctx, _ -> buildChunk("commands_queries_signatures", ctx) },
-        Chunk("commands_actions_signatures", 1) { ctx, _ -> buildChunk("commands_actions_signatures", ctx) },
+        Chunk("commands_queries", 1) { ctx, _ -> buildCommandsChunk("commands_queries_intro", AICommands.queries, ctx) },
+        Chunk("commands_actions", 1) { ctx, _ -> buildCommandsChunk("commands_actions_intro", AICommands.actions, ctx) },
         Chunk("commands_response_format", 2) { ctx, _ -> buildChunk("commands_response_format", ctx) },
         Chunk("extra", 1) { ctx, _ -> buildCustomFieldsChunk(ctx) },
         Chunk("commands_queries_examples", 3) { ctx, _ -> buildChunk("commands_queries_examples", ctx) },
@@ -195,6 +197,13 @@ object PromptChunks {
         val s = Strings.`for`(context = context)
         val content = s.shared("ai_chunk_$chunkName")
         return replacePlaceholders(content, context)
+    }
+
+    /** A family of commands: what they share, then each one's text in the order AICommands declares them. */
+    private suspend fun buildCommandsChunk(introName: String, commands: List<AICommand>, context: Context): String {
+        val s = Strings.`for`(context = context)
+        val texts = listOf(s.shared("ai_chunk_$introName")) + AICommands.docKeys(commands).map { s.shared(it) }
+        return replacePlaceholders(texts.joinToString("\n\n"), context)
     }
 
     /** The field types, each with the description its schema carries, listed for the prompt. */
