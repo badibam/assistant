@@ -66,6 +66,20 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Composeur en blocs : écrire, ajouter un pointeur puis « + Texte » — chaque bloc arrive après le bloc actif et le devient, le nouveau texte prend le clavier ; déplacer un bloc par sa poignée dans la zone qui défile ; supprimer le bloc actif (celui d'avant s'allume), puis le dernier (un texte vide reste) ; tourner l'écran avec un dialogue de pointeur ouvert en modification ; le message envoyé et sa relecture gardent l'ordre des blocs, sans les textes vides.
 - Images (`docs/design/message-images.md`) : « Photo » ouvre l'appareil photo sans demande d'autorisation, « Galerie » le sélecteur de photos ; la vignette arrive après le bloc actif, l'image entière au toucher, droite pour une photo prise en portrait ; avec Claude, la réponse parle de la photo, et une question au tour suivant sur un détail de la photo trouve sa réponse ; DeepSeek : `deepseek-flash` reçoit l'image, `deepseek-v4-pro` (sans images) : le bloc le dit, l'envoi est refusé ; rouvrir et enregistrer une config Claude montre « Lit les images : oui » ; supprimer la session efface ses fichiers (`files/attachments`) ; exporter une sauvegarde avec images, la réimporter, les vignettes reviennent ; un ancien `.json` s'importe encore.
 
+## Accès externe (serveur MCP)
+
+Avec le relais en place (son projet), son adresse et son secret dans Réglages › Accès externe.
+
+- « Ouvrir l'accès » sans adresse ni secret : refusé, le message le dit. Avec : la notification « Accès externe ouvert » paraît, l'écran dit « Ouvert ».
+- La tuile « Accès externe » ajoutée aux réglages rapides : un toucher ouvre, un autre ferme ; son état suit l'écran.
+- Un secret faux : l'accès se ferme, l'écran dit que le relais ne reconnaît pas l'app.
+- Ajouter le connecteur dans claude.ai avec l'adresse que l'écran donne (`…/mcp`) : la page montre un code à 4 chiffres ; le téléphone notifie la demande, sa fenêtre nomme le client et le domaine de retour ; le bon code autorise, la page revient à claude.ai, le connecteur est connecté et le client paraît dans la liste.
+- Trois codes faux : la demande est refusée, la page le dit. « Refuser » : de même.
+- Dans un chat claude.ai : le premier appel est `app_context` (ou un autre outil refusé, qui le renvoie à `app_context`) ; une lecture d'entrées avec une période passe ; une création d'entrée paraît dans l'app ; chaque réponse commence par la date et l'heure.
+- Ce que claude.ai fait des outils : les lectures marquées comme telles, l'autorisation outil par outil ; ce qu'il fait d'une session MCP d'une conversation à l'autre (instruit, pas exigé).
+- 30 minutes sans appel : l'accès se ferme seul, la notification part. « Fermer » dans la notification : de même.
+- Révoquer le client : l'appel suivant de claude.ai est refusé, il redemande l'autorisation.
+
 ## Automations
 
 - Rattrapage après la mise à jour : une automation programmée « sans limite » le reste, une fenêtre de 3 heures se relit « jusqu'à un délai » de 3 h. Dans l'éditeur : sans choix, l'enregistrement est refusé ; « jusqu'à un délai » demande la durée ; retirer la planification puis enregistrer retire aussi le rattrapage.
