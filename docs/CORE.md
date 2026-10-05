@@ -104,7 +104,7 @@ Aucune modification Core nécessaire.
 - Extension automatique par ajout au Scanner
 
 ### Data Consistency
-- Event sourcing obligatoire pour modifications
+- Pas de journal d'événements : l'état en base est la seule source (`docs/DATA.md`). L'historique d'annulation est conçu dans `docs/design/undo-history.md`
 - **Validation centralisée** : SchemaValidator pour config/data
 - Schémas JSON pour validation automatique
 - **Conversion récursive** : JsonUtils.toJSONObject() convertit Map/List Kotlin → JSONObject/JSONArray récursivement (Coordinator applique avant passage aux services)

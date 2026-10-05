@@ -29,7 +29,9 @@ import org.json.JSONObject
 /**
  * Edit/Create Note Dialog
  *
- * Simple dialog for creating or editing note content
+ * Simple dialog for creating or editing a note: its title when the tool's notes take one
+ * ([titles]), its content, its user's fields. [onConfirm] gets the title trimmed, empty when
+ * cleared, or null when the notes take no title.
  */
 @Composable
 fun EditNoteDialog(
@@ -37,10 +39,12 @@ fun EditNoteDialog(
     toolInstanceId: String,
     isCreating: Boolean = false,
     insertPosition: Int? = null,
+    titles: Boolean = false,
+    initialTitle: String = "",
     initialContent: String = "",
     initialNoteId: String? = null,
     initialCustomFields: Map<String, Any?> = emptyMap(),
-    onConfirm: suspend (content: String, position: Int?, customFields: Map<String, Any?>) -> Boolean,
+    onConfirm: suspend (title: String?, content: String, position: Int?, customFields: Map<String, Any?>) -> Boolean,
     onCancel: () -> Unit
 ) {
     // Get context and coordinator
@@ -48,6 +52,7 @@ fun EditNoteDialog(
     val coordinator = remember { Coordinator(context) }
 
     // State management
+    var title by rememberSaveable(isVisible) { mutableStateOf(initialTitle) }
     var content by rememberSaveable(isVisible) { mutableStateOf(initialContent) }
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -110,7 +115,7 @@ fun EditNoteDialog(
         val toolType = ToolTypeManager.getToolType("notes")
         if (toolType != null) {
             // Build data structure like service expects
-            val entryData = mapOf(
+            val entryData = mutableMapOf(
                 "tool_instance_id" to toolInstanceId,
                 "tooltype" to "notes",
                 "timestamp" to System.currentTimeMillis(),
@@ -121,6 +126,8 @@ fun EditNoteDialog(
                     "position" to (insertPosition ?: 0)
                 )
             )
+
+            if (titles && title.isNotBlank()) entryData["name"] = title.trim()
 
             validationResult = try {
                 SchemaValidator.validate(BaseSchemas.entrySchema(toolType, toolInstanceId, context), entryData, context)
@@ -156,7 +163,7 @@ fun EditNoteDialog(
                         // Use coroutine to call suspend function
                         coroutineScope.launch {
                             try {
-                                val success = onConfirm(content.trim(), insertPosition, customFieldsValues)
+                                val success = onConfirm(if (titles) title.trim() else null, content.trim(), insertPosition, customFieldsValues)
                                 if (success) {
                                     // Dialog will close automatically
                                 } else {
@@ -183,6 +190,16 @@ fun EditNoteDialog(
                 verticalArrangement = Arrangement.spacedBy(UI.Space.M)
             ) {
                 UI.Text(dialogTitle, TextType.SUBTITLE)
+
+                if (titles) {
+                    UI.FormField(
+                        label = s.tool("label_title"),
+                        value = title,
+                        onChange = { title = it },
+                        fieldType = FieldType.TEXT,
+                        required = false
+                    )
+                }
 
                 // Content field
                 UI.FormField(

@@ -164,6 +164,11 @@
         "display_mode": "MINIMAL",
         "group": "@course_group_training",
         "type": "occurrence",
+        "items": [
+          {
+            "name": "@strength_entry_name"
+          }
+        ],
         "show_field_labels": true,
         "extra_fields": [
           {
@@ -194,7 +199,12 @@
         "value": {
           "true_label": "@stretching_true",
           "false_label": "@stretching_false"
-        }
+        },
+        "items": [
+          {
+            "name": "@stretching_entry_name"
+          }
+        ]
       },
       "grid_x": 2,
       "grid_y": 2
@@ -215,6 +225,12 @@
         },
         "units": [
           "kg"
+        ],
+        "items": [
+          {
+            "name": "@weight_entry_name",
+            "unit": "kg"
+          }
         ],
         "show_field_labels": true,
         "extra_fields": [
@@ -244,6 +260,11 @@
         "value": {
           "precision": "MINUTE"
         },
+        "items": [
+          {
+            "name": "@sleep_entry_name"
+          }
+        ],
         "show_field_labels": true,
         "extra_fields": [
           {
@@ -278,7 +299,12 @@
           "max": 5,
           "min_label": "@mood_min",
           "max_label": "@mood_max"
-        }
+        },
+        "items": [
+          {
+            "name": "@mood_entry_name"
+          }
+        ]
       },
       "grid_x": 0,
       "grid_y": 0
@@ -906,6 +932,12 @@
           "unit": "@water_unit",
           "decimals": 0
         },
+        "items": [
+          {
+            "name": "@water_entry_name",
+            "value": 1
+          }
+        ],
         "allow_decrement": true
       },
       "grid_x": 0,
@@ -1408,6 +1440,12 @@
         "units": [
           "g"
         ],
+        "items": [
+          {
+            "name": "@harvests_entry_name",
+            "unit": "g"
+          }
+        ],
         "show_field_labels": true,
         "extra_fields": [
           {
@@ -1446,7 +1484,12 @@
         "type": "text",
         "value": {
           "length": "SHORT"
-        }
+        },
+        "items": [
+          {
+            "name": "@observations_entry_name"
+          }
+        ]
       },
       "grid_x": 0,
       "grid_y": 2
@@ -1460,7 +1503,12 @@
         "description": "@fed_description",
         "icon_name": "flask-conical",
         "display_mode": "MINIMAL",
-        "type": "occurrence"
+        "type": "occurrence",
+        "items": [
+          {
+            "name": "@fed_entry_name"
+          }
+        ]
       },
       "grid_x": 2,
       "grid_y": 2

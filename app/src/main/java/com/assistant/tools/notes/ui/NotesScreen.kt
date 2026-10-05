@@ -29,6 +29,7 @@ import org.json.JSONObject
  */
 data class NoteEntry(
     val id: String,
+    val title: String?, // The entry's name; shown only while the tool's notes take titles
     val content: String,
     val timestamp: Long,
     val position: Int = 0,
@@ -107,6 +108,7 @@ fun NotesScreen(
                         val parsedData = (map["data"] as? Map<String, Any>) ?: emptyMap()
 
                         val content = parsedData["content"] as? String ?: ""
+                        val title = (map["name"] as? String)?.takeIf { it.isNotBlank() }
                         @Suppress("UNCHECKED_CAST")
                         val state = (map["state"] as? Map<String, Any>) ?: emptyMap()
                         val position = (state["position"] as? Number)?.toInt() ?: 0
@@ -116,7 +118,7 @@ fun NotesScreen(
                         val customFields = (map["extra"] as? Map<String, Any?>) ?: emptyMap()
 
                         LogManager.ui("Parsing note: id=$id, timestamp=$timestamp, content=$content, position=$position, customFields=${customFields.size}")
-                        NoteEntry(id, content, timestamp, position, customFields)
+                        NoteEntry(id, title, content, timestamp, position, customFields)
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing note entry: ${e.message}", "ERROR")
                         null
@@ -152,6 +154,7 @@ fun NotesScreen(
     val config = remember(toolInstance) {
         JsonUtils.toJSONObject(toolInstance?.get("config") as? Map<String, Any?> ?: emptyMap())
     }
+    val titles = remember(config) { toolInstance != null && com.assistant.tools.notes.NotesToolType.hasTitles(config, context) }
 
     // Helper functions for dialog management
     fun openEditDialog(note: NoteEntry) {
@@ -273,6 +276,7 @@ fun NotesScreen(
                                 note = note,
                                 toolInstanceId = toolInstanceId,
                                 config = config,
+                                titles = titles,
                                 showContextMenu = contextMenuNoteId == note.id,
                                 contextMenuNoteId = contextMenuNoteId,
                                 onNoteClick = { openEditDialog(note) },
@@ -315,19 +319,21 @@ fun NotesScreen(
             toolInstanceId = toolInstanceId,
             isCreating = dialogNote == null,
             insertPosition = dialogPosition,
+            titles = titles,
+            initialTitle = dialogNote?.title ?: "",
             initialContent = dialogNote?.content ?: "",
             initialNoteId = dialogNote?.id,
             initialCustomFields = dialogNote?.extra ?: emptyMap(),
-            onConfirm = { content, position, customFields ->
+            onConfirm = { title, content, position, customFields ->
                 if (dialogNote == null) {
                     // Create new note
-                    createNote(coordinator, toolInstanceId, content, position ?: 0, customFields) {
+                    createNote(coordinator, toolInstanceId, title, content, position ?: 0, customFields) {
                         refreshTrigger++
                         showNoteDialog = false
                     }
                 } else {
                     // Update existing note
-                    updateNote(coordinator, dialogNote!!, content, customFields) { updatedNote ->
+                    updateNote(coordinator, dialogNote!!, title, content, customFields) { updatedNote ->
                         notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
                         showNoteDialog = false
                     }
@@ -360,6 +366,7 @@ private suspend fun moveNote(coordinator: Coordinator, note: NoteEntry, position
 private suspend fun createNote(
     coordinator: Coordinator,
     toolInstanceId: String,
+    title: String?,
     content: String,
     position: Int,
     customFields: Map<String, Any?>,
@@ -377,6 +384,8 @@ private suspend fun createNote(
         }
     )
 
+    title?.let { params["name"] = it }
+
     // Add custom fields if any
     if (customFields.isNotEmpty()) {
         params["extra"] = JSONObject(customFields)
@@ -389,11 +398,13 @@ private suspend fun createNote(
 }
 
 /**
- * Update an existing note
+ * Update an existing note. [title] is null when the notes take no title, its name then left as
+ * it is; a title emptied clears it.
  */
 private suspend fun updateNote(
     coordinator: Coordinator,
     note: NoteEntry,
+    title: String?,
     newContent: String,
     customFields: Map<String, Any?>,
     onSuccess: (NoteEntry) -> Unit
@@ -405,12 +416,14 @@ private suspend fun updateNote(
         }
     )
 
+    title?.let { params["name"] = it.ifEmpty { JSONObject.NULL } }
+
     // The user's fields, those emptied sent as null to be cleared
     params["extra"] = com.assistant.core.fields.extraForUpdate(note.extra, customFields)
 
     val result = coordinator.processUserAction("tool_data.update", params)
     if (result?.isSuccess == true) {
-        val updatedNote = note.copy(content = newContent.trim(), extra = customFields)
+        val updatedNote = note.copy(title = if (title == null) note.title else title.ifEmpty { null }, content = newContent.trim(), extra = customFields)
         onSuccess(updatedNote)
     }
 }

@@ -50,18 +50,35 @@ object NotesToolType : ToolTypeContract {
         }
     }
 
-    /** Notes have no setting of their own. */
-    override fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode> = emptyList()
+    /** The config key of whether notes take a title. */
+    const val TITLES = "titles"
+
+    /** Whether notes take a title, off unless the user turns it on. */
+    override fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode> {
+        val s = Strings.`for`(tool = "notes", context = context)
+        return listOf(
+            com.assistant.core.fields.settings.SettingNode.Field(
+                FieldDefinition(TITLES, s.tool("field_titles"), s.tool("schema_config_titles"), FieldType.BOOLEAN, false, null),
+                default = false
+            )
+        )
+    }
+
+    /** Whether the notes of a tool whose config is [config] take a title. */
+    fun hasTitles(config: JSONObject, context: Context): Boolean =
+        com.assistant.core.tools.ToolConfigSettings.read(this, config, context).boolean(TITLES)
 
     /**
-     * A note: a text, without a name (none would say anything the text does not), kept in a
-     * manual order. Its position is state: the app writes it when a note is moved, and the
-     * service keeps the order (ManualOrder).
+     * A note: a text, kept in a manual order, with a title when the config says so -- the
+     * entry's name, optional. Without titles the name is absent: the titles written while they
+     * were on stay stored, unseen, and show again when they are turned back on. Its position is
+     * state: the app writes it when a note is moved, and the service keeps the order
+     * (ManualOrder).
      */
     override fun getEntryFields(config: JSONObject, context: Context): EntryFields {
         val s = Strings.`for`(tool = "notes", context = context)
         return EntryFields(
-            name = CoreFieldUsage.ABSENT,
+            name = if (hasTitles(config, context)) CoreFieldUsage.OPTIONAL else CoreFieldUsage.ABSENT,
             timestamp = CoreFieldUsage.OPTIONAL,
             data = listOf(
                 FixedField(
