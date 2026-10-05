@@ -58,7 +58,7 @@ object ToolConfigSettings {
         val text: (String) -> String = Strings.`for`(context = context)::shared
         return listOf(
             field(SHOW_FIELD_LABELS, text("tools_config_label_show_field_labels"), FieldType.BOOLEAN,
-                text("tools_base_schema_config_show_field_labels"), required = true, default = toolType.getDefaultShowFieldLabels()),
+                text("tools_base_schema_config_show_field_labels"), default = toolType.getDefaultShowFieldLabels()),
             SettingNode.ListOf("extra_fields", text("custom_fields_section_title"),
                 SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true,
                 summary = listOf("display_name", "type"))
