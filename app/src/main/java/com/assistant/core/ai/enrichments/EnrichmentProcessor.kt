@@ -16,15 +16,9 @@ import org.json.JSONObject
  * 1. Preview text generation for user interface display
  * 2. DataCommand generation for AI prompt Level 4 inclusion
  *
- * Core logic:
- * - All enrichments generate textual summaries for AI orientation
- * - Only specific types generate DataCommands for Level 4 prompt inclusion:
- * * POINTER: Always generates query
- * * USE: Query for tool instance config
- * * MODIFY_CONFIG: Query for tool instance config
+ * Both types generate DataCommands for Level 4 prompt inclusion:
+ * * POINTER: the target's config and/or entries, as the pointer attaches them
  * * FILE: the file read, whole or its first lines
- * * CREATE: No query (just orientation)
- * * ORGANIZE: No query (just orientation)
  */
 class EnrichmentProcessor(
     private val context: Context,
@@ -45,9 +39,6 @@ class EnrichmentProcessor(
 
             val summary = when (type) {
                 EnrichmentType.POINTER -> throw IllegalArgumentException("a pointer's text is EnrichmentText's")
-                EnrichmentType.USE -> generateUseSummary(configJson)
-                EnrichmentType.CREATE -> generateCreateSummary(configJson)
-                EnrichmentType.MODIFY_CONFIG -> generateModifyConfigSummary(configJson)
                 EnrichmentType.FILE -> FileEnrichment.fromJson(configJson).summary(s)
             }
 
@@ -56,32 +47,6 @@ class EnrichmentProcessor(
         } catch (e: Exception) {
             LogManager.aiEnrichment("Failed to generate enrichment summary: ${e.message}", "ERROR", e)
             s.shared("ai_enrichment_invalid")
-        }
-    }
-
-    /**
-     * Check if enrichment should generate a DataCommand for Level 4 inclusion
-     */
-    fun shouldGenerateQuery(type: EnrichmentType, config: String): Boolean {
-        LogManager.aiEnrichment("EnrichmentProcessor.shouldGenerateQuery() called with type=$type", "DEBUG")
-
-        return try {
-            val shouldGenerate = when (type) {
-                EnrichmentType.POINTER, EnrichmentType.USE, EnrichmentType.MODIFY_CONFIG, EnrichmentType.FILE -> {
-                    LogManager.aiEnrichment("$type enrichment always generates query", "DEBUG")
-                    true
-                }
-                EnrichmentType.CREATE -> {
-                    LogManager.aiEnrichment("CREATE enrichment never generates query", "DEBUG")
-                    false
-                }
-            }
-
-            LogManager.aiEnrichment("shouldGenerateQuery($type) = $shouldGenerate", "DEBUG")
-            shouldGenerate
-        } catch (e: Exception) {
-            LogManager.aiEnrichment("Failed to check query generation: ${e.message}", "ERROR", e)
-            false
         }
     }
 
@@ -97,24 +62,12 @@ class EnrichmentProcessor(
     ): List<DataCommand> {
         LogManager.aiEnrichment("EnrichmentProcessor.generateCommands() called with type=$type, isRelative=$isRelative", "DEBUG")
 
-        if (!shouldGenerateQuery(type, config)) {
-            LogManager.aiEnrichment("Skipping query generation for $type (shouldGenerateQuery = false)", "DEBUG")
-            return emptyList()
-        }
-
         return try {
             val configJson = JSONObject(config)
 
             val queries = when (type) {
                 EnrichmentType.POINTER -> generatePointerQueries(configJson, isRelative)
-                EnrichmentType.USE -> generateUseQueries(configJson, isRelative)
-                EnrichmentType.CREATE -> generateCreateQueries(configJson, isRelative)
-                EnrichmentType.MODIFY_CONFIG -> generateModifyConfigQueries(configJson, isRelative)
                 EnrichmentType.FILE -> listOf(FileEnrichment.fromJson(configJson).query(isRelative))
-                else -> {
-                    LogManager.aiEnrichment("No query generator for type $type", "WARN")
-                    emptyList()
-                }
             }
 
             LogManager.aiEnrichment("Generated ${queries.size} DataCommands for $type", "DEBUG")
@@ -128,49 +81,6 @@ class EnrichmentProcessor(
             emptyList()
         }
     }
-
-    // ========================================================================================
-    // Summary Generation
-    // ========================================================================================
-
-    private fun generateUseSummary(config: JSONObject): String {
-        val toolInstanceId = config.optString("tool_instance_id", "")
-        val operation = config.optString("operation", "modifier")
-        // TODO: resolve tool instance name from ID for better readability
-        return "$operation entrées $toolInstanceId"
-    }
-
-    private fun generateCreateSummary(config: JSONObject): String {
-        val toolType = config.optString("tooltype", "outil")
-        val zoneName = config.optString("zone_name", "")
-        val suggestedName = config.optString("suggested_name", "")
-
-        val name = if (suggestedName.isNotEmpty()) suggestedName else toolType
-        val zone = if (zoneName.isNotEmpty()) " ${s.shared("ai_enrichment_zone_prefix")} $zoneName" else ""
-
-        return "créer $name$zone"
-    }
-
-    private fun generateModifyConfigSummary(config: JSONObject): String {
-        val toolInstanceId = config.optString("tool_instance_id", "")
-        val aspect = config.optString("aspect", "configuration")
-        // TODO: resolve tool instance name from ID for better readability
-        return "modifier $aspect de $toolInstanceId"
-    }
-
-    // TODO: Implement ORGANIZE enrichment type () - lower priority
-    // private fun generateOrganizeSummary(config: JSONObject): String {
-    // val action = config.optString("action", "organiser")
-    // val elementId = config.optString("element_id", "")
-    // return "$action $elementId"
-    // }
-
-    // TODO: Implement DOCUMENT enrichment type () - lower priority
-    // private fun generateDocumentSummary(config: JSONObject): String {
-    // val elementType = config.optString("element_type", "element")
-    // val docType = config.optString("doc_type", "documentation")
-    // return "$docType $elementType"
-    // }
 
     // ========================================================================================
     // Schema ID Resolution
@@ -297,74 +207,6 @@ class EnrichmentProcessor(
         if (!result.isSuccess) throw IllegalStateException("Tools of zone $zoneId not read: ${result.error}")
         return (result.data?.get("tool_instances") as? List<*> ?: emptyList<Any>())
             .filterIsInstance<Map<*, *>>().map { it["id"] as String }
-    }
-
-    private suspend fun generateUseQueries(
-        config: JSONObject,
-        isRelative: Boolean
-    ): List<DataCommand> {
-        LogManager.aiEnrichment("generateUseQueries() called with isRelative=$isRelative", "DEBUG")
-
-        val toolInstanceId = config.optString("tool_instance_id", "")
-        if (toolInstanceId.isEmpty()) return emptyList()
-
-        val queries = mutableListOf<DataCommand>()
-        val baseParams = mapOf("id" to toolInstanceId)
-
-        // USE enrichment: TOOL_CONFIG + SCHEMA(config) + SCHEMA(data) + TOOL_DATA_SAMPLE
-        queries.add(DataCommand(
-            id = buildQueryId("tool_config", baseParams),
-            type = "TOOL_CONFIG",
-            params = baseParams,
-            isRelative = isRelative
-        ))
-
-        queries.add(configSchemaQuery(resolveTooltype(toolInstanceId), isRelative))
-        queries.add(entriesSchemaQuery(toolInstanceId, isRelative))
-
-        queries.add(DataCommand(
-            id = buildQueryId("tool_data_sample", baseParams),
-            type = "TOOL_DATA_SAMPLE",
-            params = baseParams,
-            isRelative = isRelative
-        ))
-
-        LogManager.aiEnrichment("Generated ${queries.size} USE queries for toolInstanceId=$toolInstanceId", "DEBUG")
-        return queries
-    }
-
-    private fun generateCreateQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
-        LogManager.aiEnrichment("generateCreateQueries() called with isRelative=$isRelative", "DEBUG")
-
-        // TODO: Implement CREATE enrichment with schema-driven tooltype selection
-        // - UI provides the tooltype from the tooltype selection dialog
-        // - Generate SCHEMA(tooltype)
-
-        LogManager.aiEnrichment("CREATE enrichment - STUB implementation", "DEBUG")
-        return emptyList()
-    }
-
-    private suspend fun generateModifyConfigQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
-        LogManager.aiEnrichment("generateModifyConfigQueries() called with isRelative=$isRelative", "DEBUG")
-
-        val toolInstanceId = config.optString("tool_instance_id", "")
-        if (toolInstanceId.isEmpty()) return emptyList()
-
-        val queries = mutableListOf<DataCommand>()
-        val baseParams = mapOf("id" to toolInstanceId)
-
-        // MODIFY_CONFIG enrichment: SCHEMA(config) + TOOL_CONFIG
-        queries.add(configSchemaQuery(resolveTooltype(toolInstanceId), isRelative))
-
-        queries.add(DataCommand(
-            id = buildQueryId("tool_config", baseParams),
-            type = "TOOL_CONFIG",
-            params = baseParams,
-            isRelative = isRelative
-        ))
-
-        LogManager.aiEnrichment("Generated ${queries.size} MODIFY_CONFIG queries for toolInstanceId=$toolInstanceId", "DEBUG")
-        return queries
     }
 
     // ========================================================================================

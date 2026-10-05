@@ -599,9 +599,6 @@ private fun EnrichmentBlockPreview(
 private fun getEnrichmentButtonAction(type: EnrichmentType): ButtonAction {
     return when (type) {
         EnrichmentType.POINTER -> ButtonAction.SELECT
-        EnrichmentType.USE -> ButtonAction.EDIT
-        EnrichmentType.CREATE -> ButtonAction.ADD
-        EnrichmentType.MODIFY_CONFIG -> ButtonAction.CONFIGURE
         EnrichmentType.FILE -> ButtonAction.ATTACH
     }
 }
@@ -625,23 +622,12 @@ private fun EnrichmentConfigDialog(
             onDismiss = onDismiss,
             onConfirm = onConfirm
         )
-        EnrichmentType.POINTER -> {
-            PointerEnrichmentDialog(
-                existingConfig = existingConfig,
-                onDismiss = onDismiss,
-                onConfirm = onConfirm,
-                sessionType = sessionType
-            )
-        }
-        else -> {
-            // Placeholder for other enrichment types
-            PlaceholderEnrichmentDialog(
-                type = type,
-                existingConfig = existingConfig,
-                onDismiss = onDismiss,
-                onConfirm = onConfirm
-            )
-        }
+        EnrichmentType.POINTER -> PointerEnrichmentDialog(
+            existingConfig = existingConfig,
+            onDismiss = onDismiss,
+            onConfirm = onConfirm,
+            sessionType = sessionType
+        )
     }
 }
 
@@ -663,43 +649,3 @@ private fun PointerEnrichmentDialog(
         onConfirm = onConfirm
     )
 }
-
-/**
- * Placeholder dialog for other enrichment types
- */
-@Composable
-private fun PlaceholderEnrichmentDialog(
-    type: EnrichmentType,
-    existingConfig: String?,
-    onDismiss: () -> Unit,
-    onConfirm: (config: String) -> Unit
-) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-
-    var config by rememberSaveable { mutableStateOf(existingConfig ?: "{}") }
-
-    UI.Dialog(
-        type = DialogType.CONFIGURE,
-        onConfirm = {
-            onConfirm(config)
-        },
-        onCancel = onDismiss
-    ) {
-        Column(
-            modifier = Modifier.padding(UI.Space.L),
-            verticalArrangement = Arrangement.spacedBy(UI.Space.L)
-        ) {
-            UI.Text(
-                text = s.shared("ai_enrichment_config"),
-                type = TextType.TITLE
-            )
-
-            UI.Text(
-                text = s.shared("ai_enrichment_todo_implement").format(type.name),
-                type = TextType.BODY
-            )
-        }
-    }
-}
-

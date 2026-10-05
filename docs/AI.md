@@ -483,9 +483,6 @@ Event NetworkErrorOccurred:
 
 ### Types d'enrichissements
 - ** POINTER** - Référencer données (zones ou instances)
-- ** USE** - Utiliser données d'outils (config + schemas + data + stats)
-- ** CREATE** - Créer éléments (schemas pour tooltype)
-- ** MODIFY_CONFIG** - Modifier config outils (schema + config actuelle)
 - ** FILE** - Un fichier texte joint au message (`FileEnrichment` : `{"file_id", "name", "line_count", "whole"}`), gardé par le service `files` avec sa session (table `attached_files`). Le dialogue (`FileEnrichmentDialog`) ouvre le sélecteur du téléphone, lit le fichier une fois (UTF-8, refusé sinon), montre nom, type, taille, lignes et début, et « Inclure en entier dans le contexte », coché. Il part comme une lecture FILE, entière ou de ses 20 premières lignes, tenue au seuil de taille des données comme tout enrichissement. Retiré du composeur avant l'envoi, le fichier est supprimé ; hors d'une session (le message de départ d'une automation), il n'est pas proposé.
 
 ### Texte d'un bloc
@@ -515,7 +512,7 @@ class EnrichmentProcessor {
 **Transformations** : SCHEMA → schemas.get, TOOL_CONFIG → tools.get, TOOL_DATA → tool_data.get (sa `period` en filtres sur timestamp, les dates et durées de ses `filters` mises en forme stockée d'après le type du champ, `FilterValues`), ZONE_CONFIG → zones.get, ZONES → zones.list, TOOL_INSTANCES → tools.list, VARIABLES → variables.list ou list_all, READING → readings.read d'une variable (`at` en ISO ou en dates relatives, résolues sur la référence), ICONS → icons.overview (sans paramètre) ou icons.search (`categories` et/ou `query`), FILE → files.read (`start_line`, `lines`), IMPORT_PLAN → imports.detect d'un fichier joint. L'action IMPORT_DATA va à imports.apply, sous la validation des données de l'outil, sa carte nommant le fichier et l'outil. Les actions CREATE_VARIABLE, UPDATE_VARIABLE, DELETE_VARIABLE vont au service `variables`, sous leur propre réglage de validation (« Modifications des variables », `validate_variable_changes`) ; la définition s'écrit avec les noms, et le service la vérifie comme l'écran.
 
 ### User vs AI Commands
-**User** : Source EnrichmentBlocks, types POINTER/USE/CREATE/MODIFY_CONFIG/FILE uniquement, but données contextuelles, jamais d'actions.
+**User** : Source EnrichmentBlocks, types POINTER/FILE uniquement, but données contextuelles, jamais d'actions.
 **AI** : Source AIMessage.dataCommands + actionCommands, types queries + actions réelles, but demander données + exécuter actions.
 
 ## 10. Architecture prompts

@@ -55,7 +55,6 @@
     <string name="ai_composer_add_text">Texte</string>
     <string name="ai_composer_active_block">Actif</string>
     <string name="ai_composer_enrichments_label">Enrichissements :</string>
-    <string name="ai_enrichment_config">Configuration enrichissement</string>
     <string name="pointer_enrichment_selector_title">Sélectionner données</string>
     <string name="pointer_level_app">App</string>
     <string name="pointer_attach_config">Config</string>
@@ -98,31 +97,10 @@
     <string name="filter_op_present">avec réponse</string>
     <string name="filter_op_period">sur la période</string>
     <string name="pointer_enrichment_config">Configuration Pointer</string>
-    <string name="ai_enrichment_selection_label">Sélection:</string>
-    <string name="ai_enrichment_importance">Importance</string>
     <string name="ai_importance_optional">optionnel</string>
     <string name="ai_importance_important">important</string>
     <string name="ai_importance_essential">essentiel</string>
-    <string name="ai_enrichment_include_real_data">Inclure données réelles (en plus de l\'échantillon)</string>
-    <string name="ai_enrichment_description_optional">Description (optionnel)</string>
-    <string name="ai_enrichment_data_inclusion_title">Données à inclure</string>
-    <string name="ai_enrichment_selection_summary">Résumé de la sélection</string>
 
-    <!-- INSTANCE-level enrichment toggles -->
-    <string name="ai_enrichment_include_schema_config">Documentation configuration de l\'outil</string>
-    <string name="ai_enrichment_include_schema_data">Documentation données de l\'outil</string>
-    <string name="ai_enrichment_include_tool_config">Configuration de l\'outil</string>
-    <string name="ai_enrichment_include_data_sample">Échantillon de données</string>
-    <string name="ai_enrichment_include_stats">Statistiques</string>
-    <string name="ai_enrichment_include_data">Données</string>
-
-    <!-- ZONE-level enrichment toggles -->
-    <string name="ai_enrichment_include_zone_config">Configuration de la zone</string>
-    <string name="ai_enrichment_include_tools_list">Liste des outils</string>
-    <string name="ai_enrichment_include_tools_config">Configuration des outils</string>
-    <string name="ai_enrichment_include_tools_data">Données des outils</string>
-
-    <string name="ai_enrichment_todo_implement">TODO: Implémenter l\'interface de configuration %1$s</string>
     <string name="ai_enrichment_invalid">enrichissement invalide</string>
     <string name="ai_enrichment_unreadable">noms illisibles</string>
     <string name="ai_schema_already_included">Schéma %1$s déjà inclus précédemment</string>
@@ -303,14 +281,6 @@
     <string name="ai_values_filtered">valeurs filtrées</string>
     <string name="ai_period_specific">période spécifique</string>
     <string name="ai_period_extended">période étendue</string>
-
-    <!-- AI Enrichment Actions - Display labels -->
-    <string name="ai_enrichment_use">utiliser %1$s</string>
-    <string name="ai_enrichment_create">créer %1$s</string>
-    <string name="ai_enrichment_modify">modifier %1$s</string>
-    <string name="ai_enrichment_organize">organiser %1$s</string>
-    <string name="ai_enrichment_document">documenter %1$s</string>
-    <string name="ai_enrichment_zone_prefix">zone</string>
 
     <!-- AI Errors - Orchestration -->
     <string name="ai_error_store_user_message">Échec de la sauvegarde du message utilisateur: %1$s</string>
@@ -546,7 +516,6 @@
     <string name="confirm_delete">Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.</string>
     <string name="confirm_reset">Voulez-vous réinitialiser la configuration ? Les données actuelles seront perdues.</string>
 
-    
     <!-- The one date input (InstantPicker) and its period -->
     <string name="period_from">Depuis</string>
     <string name="period_until">Jusqu\'à</string>
@@ -1618,8 +1587,6 @@
     <string name="notification_error_send_failed">Échec de l\'envoi de la notification</string>
     <string name="notification_error_unknown_icon">Icône de notification inconnue : %1$s</string>
 
-
-    
     <!-- Logs Screen -->
     <string name="settings_logs">Logs d'erreurs</string>
     <string name="logs_count">logs</string>
@@ -1652,7 +1619,6 @@
     <string name="ai_enrichment_pointer_zone">Zone</string>
     <string name="ai_enrichment_pointer_tool">Outil</string>
     <string name="ai_enrichment_pointer_entry">Entrée</string>
-    <string name="ai_enrichment_pointer_generic">Données</string>
     <string name="ai_enrichment_pointer_context_config">configuration</string>
     <string name="ai_enrichment_pointer_context_data">données</string>
     <string name="ai_enrichment_pointer_period_range">entre %1$s et %2$s</string>
