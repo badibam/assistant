@@ -48,6 +48,9 @@
     <string name="create_note_title">Créer une note</string>
     <string name="edit_note_title">Modifier la note</string>
     <string name="label_content">Contenu</string>
+    <string name="label_title">Titre</string>
+    <string name="field_titles">Titres</string>
+    <string name="schema_config_titles">Si chaque note peut avoir un titre, au-dessus de son texte</string>
 
     <!-- ERROR MESSAGES - Messages d'erreur spécifiques -->
     <string name="error_validation">Erreur de validation</string>

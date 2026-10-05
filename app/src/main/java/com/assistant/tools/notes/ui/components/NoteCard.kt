@@ -23,6 +23,7 @@ fun NoteCard(
     note: NoteEntry? = null, // null = placeholder mode
     toolInstanceId: String,
     config: org.json.JSONObject, // The tool's config, for how its fields show
+    titles: Boolean = false, // Whether the tool's notes take a title, shown above the text
     showContextMenu: Boolean = false,
     contextMenuNoteId: String? = null,
     onNoteClick: () -> Unit = {}, // Opens edit dialog
@@ -37,6 +38,7 @@ fun NoteCard(
     // Determine card states
     val isPlaceholder = note == null
     val isMoving = false // Simplified - no complex moving state
+    val title = note?.title?.takeIf { titles }
 
     UI.Card(type = CardType.DEFAULT) {
         Box {
@@ -79,6 +81,11 @@ fun NoteCard(
                         }
 
                         else -> {
+                            title?.let {
+                                UI.Text(text = it, type = TextType.SUBTITLE)
+                                Spacer(modifier = Modifier.height(UI.Space.XS))
+                            }
+
                             // Note content display
                             val displayContent = note?.content?.trim() ?: ""
 
@@ -141,7 +148,7 @@ fun NoteCard(
                         size = Size.S,
                         requireConfirmation = true,
                         confirmMessage = s.tool("delete_confirm_template").format(
-                            note.content.take(30) + if (note.content.length > 30) "..." else ""
+                            title ?: (note.content.take(30) + if (note.content.length > 30) "..." else "")
                         ),
                         onClick = {
                             onContextMenuChanged(false)
