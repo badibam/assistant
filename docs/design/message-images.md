@@ -28,7 +28,7 @@ Conçu le 2026-10-05 : joindre une photo à un message, prise avec l'appareil ph
 
 - **Refusé, et dit** : le bloc porte « ce modèle ne lit pas les images » dès qu'on le joint, et l'envoi est refusé tant qu'il est là. Jamais de remplacement silencieux par un texte.
 - **Un historique qui contient des images** : le fournisseur d'une session est fixé (`provider_id`), son modèle peut changer dans les réglages. Si le nouveau modèle ne lit pas les images, l'envoi est refusé avec un message qui le dit. Jamais d'historique envoyé sans ses images.
-- **Comment l'app le sait** : par `/models` quand l'API le dit (Anthropic : `capabilities.image_input.supported` ; OpenRouter : `input_modalities`), sinon par un fait de `provider-facts`, nouveau type `input` (`images: true|false`), puisque ce fichier ne porte que ce que les API taisent.
+- **Comment l'app le sait** : par `/models` quand l'API le dit (Anthropic : `capabilities.image_input.supported` ; DeepSeek : `input_modalities` au premier niveau ; OpenRouter : `architecture.input_modalities`), gardé dans la config sous `reads_images` à son enregistrement, sinon par un fait de `provider-facts`, nouveau type `input` (`images: true|false`), puisque ce fichier ne porte que ce que les API taisent.
 - **Un modèle sur lequel rien n'est connu est refusé**, comme celui qui ne lit pas les images. Des serveurs compatibles OpenAI jettent sans rien dire une partie qu'ils ne comprennent pas : le modèle répondrait sur une photo qu'il n'a pas vue. La sortie est d'ajouter le fait dans `provider-facts`.
 - **Le nombre d'images d'une requête** : Claude refuse au-delà de 100. Une session dont l'historique dépasse la limite est refusée à l'envoi, en le disant.
 
@@ -41,6 +41,7 @@ Conçu le 2026-10-05 : joindre une photo à un message, prise avec l'appareil ph
 
 - **L'export produit toujours un zip** : `backup.json`, le JSON d'aujourd'hui, et `images/<id>.jpg`, copiées fichier par fichier sans passer par le JSON. Le JSON tenu en mémoire d'un seul bloc (`BackupService`) ne peut pas porter les images : 200 photos en base64 dépasseraient la limite de mémoire de 256 Mo.
 - **L'import accepte le zip et l'ancien `.json`** : une sauvegarde déjà faite reste lisible, comme l'import rejoue déjà les migrations des anciennes versions.
+- **Une image sans fichier ne bloque pas la sauvegarde** : l'export part quand même, la ligne sans fichier nommée dans `missing_images`, et dit combien ; l'import accepte une ligne sans fichier que la sauvegarde nomme ainsi, et refuse toute autre comme une sauvegarde abîmée.
 
 ## Hors du périmètre
 

@@ -40,7 +40,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Un filtre qui compare un champ à une variable ou à une lecture (« kcal > objectif_calorique ») : `EntryFilters.parse` le refuse, `ConditionPicker` n'offre qu'une valeur écrite — quand un pointeur ou une variable en a besoin ; le terme se lit alors une fois à la référence du contexte (`TermReader`).
 - Le nombre d'entrées en attente sur la tuile, au lieu du point (`WaitingMark`, décidé « pour le moment » le 2026-09-29) — si le point ne suffit pas.
 - D'autres sources de l'attente (`docs/BRICKS.md`) : une automation qui attend une validation, un message de l'IA arrivé dans une session pendant qu'on était ailleurs — à concevoir.
-- Joindre un fichier au message de départ d'une automation : son composeur n'a pas toujours de session, à laquelle un fichier joint appartient.
+- Joindre un fichier ou une image au message de départ d'une automation : son composeur n'a pas toujours de session, à laquelle un fichier joint et une image appartiennent.
 - La brique de planning ne sait pas dire « tous les N jours / N semaines à partir d'une date », ni plusieurs jours d'un mois (« le 1er et le 15 ») — au premier rythme qu'on ne peut pas saisir.
 - Une chose répétée dont on veut savoir qu'elle est faite (un médicament chaque jour) demande deux gestes : lire le message, cocher le suivi — un bouton « Fait » sur le message qui écrit dans un suivi (avec les automations directes), ou un type Rappels avec un champ planning par entrée ; quand ce double geste pèse.
 - Un outil Agenda, pour des événements qui ont une heure et passent d'eux-mêmes (un rendez-vous), distinct d'un élément de liste à échéance qu'on coche — à concevoir au premier événement qu'on voudra noter dans l'app.
