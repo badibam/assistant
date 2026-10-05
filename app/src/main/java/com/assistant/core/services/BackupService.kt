@@ -109,8 +109,12 @@ class BackupService(private val context: Context) : ExecutableService {
             val variables = database.variableDao().getAll()
             // The files joined to messages, with their session
             val attachedFiles = aiSessions.flatMap { database.attachedFileDao().getForSession(it.id) }
-            // The images joined to messages: their rows in the JSON, their files beside it
+            // The images joined to messages: their rows in the JSON, their files beside it. An
+            // image whose file is missing is an error the backup copies as it is, neither hidden
+            // nor repaired: its row goes, named in missing_images, and the export says how many
             val attachedImages = aiSessions.flatMap { database.attachedImageDao().getForSession(it.id) }
+            val missingImages = attachedImages.filter { !AttachedImages.file(context, it.id).exists() }
+            missingImages.forEach { LogManager.service("Backup export: the file of image ${it.id} (session ${it.sessionId}) is missing", "WARN") }
 
             // Check cancellation before building JSON
             if (token.isCancelled) {
@@ -330,6 +334,9 @@ class BackupService(private val context: Context) : ExecutableService {
                         }
                     })
 
+                    // The images whose file was missing at the export: their rows go without one
+                    put("missing_images", JSONArray(missingImages.map { it.id }))
+
                     // Images joined to messages: their files are entries of the zip
                     put("attached_images", JSONArray().apply {
                         attachedImages.forEach { image ->
@@ -349,27 +356,22 @@ class BackupService(private val context: Context) : ExecutableService {
 
             val jsonString = backupJson.toString(2) // Pretty print with 2-space indent
 
-            // An image without its file is an error, said rather than left out of the backup
-            attachedImages.firstOrNull { !AttachedImages.file(context, it.id).exists() }?.let {
-                return OperationResult.error(s.shared("backup_image_missing").format(it.id, it.sessionId))
-            }
-
             val output = context.contentResolver.openOutputStream(android.net.Uri.parse(uri))
                 ?: return OperationResult.error(s.shared("backup_export_failed"))
             java.util.zip.ZipOutputStream(output.buffered()).use { zip ->
                 zip.putNextEntry(java.util.zip.ZipEntry(BACKUP_JSON))
                 zip.write(jsonString.toByteArray(Charsets.UTF_8))
                 zip.closeEntry()
-                for (image in attachedImages) {
+                for (image in attachedImages - missingImages.toSet()) {
                     if (token.isCancelled) return OperationResult.error("Operation cancelled")
                     zip.putNextEntry(java.util.zip.ZipEntry("$IMAGES_DIR${image.id}.jpg"))
                     AttachedImages.file(context, image.id).inputStream().use { it.copyTo(zip) }
                     zip.closeEntry()
                 }
             }
-            LogManager.service("Backup export completed successfully: ${attachedImages.size} images")
+            LogManager.service("Backup export completed successfully: ${attachedImages.size} images, ${missingImages.size} without their file")
 
-            OperationResult.success()
+            OperationResult.success(mapOf("missing_images" to missingImages.size))
 
         } catch (e: Exception) {
             LogManager.service("Backup export failed: ${e.message}", "ERROR", e)
@@ -428,11 +430,14 @@ class BackupService(private val context: Context) : ExecutableService {
 
             val data = transformedData.getJSONObject("data")
 
-            // Every image the tables name has its file: the files come first, as everywhere
+            // Every image the tables name has its file, unless the export said it was missing
+            // then: a file absent otherwise is a damaged backup (a zip cut short), refused whole
+            val missingAtExport = data.optJSONArray("missing_images")?.let { ids -> (0 until ids.length()).map { ids.getString(it) }.toSet() } ?: emptySet()
             data.optJSONArray("attached_images")?.let { images ->
                 for (i in 0 until images.length()) {
                     val image = images.getJSONObject(i)
-                    if (!java.io.File(staging, "${image.getString("id")}.jpg").exists()) {
+                    val id = image.getString("id")
+                    if (id !in missingAtExport && !java.io.File(staging, "$id.jpg").exists()) {
                         return OperationResult.error(s.shared("backup_import_image_missing").format(image.getString("id"), image.getString("session_id")))
                     }
                 }

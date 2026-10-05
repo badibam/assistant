@@ -944,14 +944,14 @@
     <string name="backup_import">Importer un fichier de sauvegarde</string>
     <string name="backup_reset">Réinitialiser toutes les données</string>
     <string name="backup_export_success">Export réussi</string>
+    <string name="backup_export_success_missing_images">Sauvegarde faite ; %1$d images avaient perdu leur fichier et le restent dedans</string>
     <string name="backup_import_confirm">Toutes les données actuelles seront écrasées. Continuer ?</string>
     <string name="backup_reset_confirm">Toutes les données seront définitivement supprimées. Continuer ?</string>
     <string name="backup_import_success">Import réussi, redémarrage...</string>
     <string name="backup_reset_success">Réinitialisation réussie, redémarrage...</string>
     <string name="backup_version_too_recent">Ce fichier provient d\'une version plus récente de l\'application</string>
     <string name="backup_invalid_file">Fichier de sauvegarde invalide</string>
-    <string name="backup_image_missing">Le fichier de l\'image %1$s (session %2$s) est introuvable : la sauvegarde ne se fait pas avec un trou.</string>
-    <string name="backup_import_image_missing">La sauvegarde nomme l\'image %1$s (session %2$s) sans en contenir le fichier : rien n\'a été importé.</string>
+    <string name="backup_import_image_missing">La sauvegarde nomme l\'image %1$s (session %2$s) sans en contenir le fichier, qui ne manquait pas à l\'export : la sauvegarde est abîmée, rien n\'a été importé.</string>
     <string name="backup_export_failed">Échec de l\'export</string>
     <string name="backup_import_failed">Échec de l\'import</string>
     <string name="backup_reset_failed">Échec de la réinitialisation</string>

@@ -85,7 +85,10 @@ fun DataSettingsScreen(
                     )
 
                     if (result.status == CommandStatus.SUCCESS) {
-                        Toast.makeText(context, s.shared("backup_export_success"), Toast.LENGTH_SHORT).show()
+                        // Images whose file was missing went without it: said, not hidden
+                        val missing = (result.data?.get("missing_images") as? Number)?.toInt() ?: 0
+                        if (missing == 0) Toast.makeText(context, s.shared("backup_export_success"), Toast.LENGTH_SHORT).show()
+                        else Toast.makeText(context, s.shared("backup_export_success_missing_images").format(missing), Toast.LENGTH_LONG).show()
                     } else {
                         errorMessage = result.error ?: s.shared("backup_export_failed")
                     }

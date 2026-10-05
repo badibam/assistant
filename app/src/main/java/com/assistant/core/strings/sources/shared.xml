@@ -944,14 +944,14 @@
     <string name="backup_import">Import a backup file</string>
     <string name="backup_reset">Reset all the data</string>
     <string name="backup_export_success">Export succeeded</string>
+    <string name="backup_export_success_missing_images">Backup made; %1$d images had lost their file and stay so in it</string>
     <string name="backup_import_confirm">All the current data will be overwritten. Continue?</string>
     <string name="backup_reset_confirm">All the data will be deleted for good. Continue?</string>
     <string name="backup_import_success">Import succeeded, restarting...</string>
     <string name="backup_reset_success">Reset succeeded, restarting...</string>
     <string name="backup_version_too_recent">This file comes from a more recent version of the application</string>
     <string name="backup_invalid_file">Invalid backup file</string>
-    <string name="backup_image_missing">The file of image %1$s (session %2$s) is missing: the backup is not made with a hole in it.</string>
-    <string name="backup_import_image_missing">The backup names image %1$s (session %2$s) but does not hold its file: nothing was imported.</string>
+    <string name="backup_import_image_missing">The backup names image %1$s (session %2$s) but does not hold its file, and did not have it missing at the export: the backup is damaged, nothing was imported.</string>
     <string name="backup_export_failed">Export failed</string>
     <string name="backup_import_failed">Import failed</string>
     <string name="backup_reset_failed">Reset failed</string>
