@@ -175,7 +175,7 @@ class GoalService(private val context: Context) : ExecutableService {
 
     private suspend fun validate(attempt: Attempt): OperationResult {
         val origin = currentOrigin()
-        if (origin != Source.USER && origin != Source.AI) return OperationResult.error(s.tool("error_validate_origin"))
+        if (origin != Source.USER && origin != Source.AI && origin != Source.EXTERNAL) return OperationResult.error(s.tool("error_validate_origin"))
         if (attempt.locked) return OperationResult.error(s.tool("error_locked"))
         val judgement = judgementMap(attempt)
         if (judgement["verdict"] == Met.UNKNOWN.name) {
@@ -205,7 +205,7 @@ class GoalService(private val context: Context) : ExecutableService {
      */
     private suspend fun reopen(attempt: Attempt): OperationResult {
         val origin = currentOrigin()
-        if (origin != Source.USER && origin != Source.AI) return OperationResult.error(s.tool("error_validate_origin"))
+        if (origin != Source.USER && origin != Source.AI && origin != Source.EXTERNAL) return OperationResult.error(s.tool("error_validate_origin"))
         if (!attempt.locked) return OperationResult.error(s.tool("error_not_locked"))
         val dao = AppDatabase.getDatabase(context).toolDataDao()
         val entity = dao.getById(attempt.id) ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(attempt.id))

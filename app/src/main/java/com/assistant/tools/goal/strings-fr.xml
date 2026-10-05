@@ -46,6 +46,7 @@
     <string name="field_reopened_at">Rouverte le</string>
     <string name="field_notified">Prévenu</string>
     <string name="validated_by_user">par vous</string>
+    <string name="validated_by_external">par une IA extérieure</string>
     <string name="validated_by_ai">par l\'IA</string>
     <string name="field_attempt">Tentative</string>
     <string name="operation_validate">Valide une tentative : calcule et fige son verdict et les valeurs lues. Refusé tant qu\'un critère n\'a pas de valeur</string>
@@ -55,7 +56,7 @@
     <string name="verbalize_evaluate">Lecture d\'une tentative</string>
     <string name="error_locked">Cette tentative est validée ou expirée : rouvrez-la pour la modifier.</string>
     <string name="error_not_locked">Cette tentative n\'est pas validée : rien à rouvrir.</string>
-    <string name="error_validate_origin">Seule une personne ou l\'IA valide une tentative.</string>
+    <string name="error_validate_origin">Seule une personne ou une IA valide une tentative.</string>
     <string name="error_verdict_unknown">Le verdict ne peut pas encore se calculer : %1$s</string>
     <string name="notification_to_validate">Une tentative est à valider</string>
     <string name="no_attempt">Aucune tentative en cours</string>

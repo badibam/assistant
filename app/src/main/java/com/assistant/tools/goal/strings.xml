@@ -46,6 +46,7 @@
     <string name="field_reopened_at">Reopened on</string>
     <string name="field_notified">Notified</string>
     <string name="validated_by_user">by you</string>
+    <string name="validated_by_external">by an outside AI</string>
     <string name="validated_by_ai">by the AI</string>
     <string name="field_attempt">Attempt</string>
     <string name="operation_validate">Validates an attempt: computes and freezes its verdict and the values read. Refused while a criterion has no value</string>
@@ -55,7 +56,7 @@
     <string name="verbalize_evaluate">Reading an attempt</string>
     <string name="error_locked">This attempt is validated or expired: reopen it to change it.</string>
     <string name="error_not_locked">This attempt is not validated: there is nothing to reopen.</string>
-    <string name="error_validate_origin">Only a person or the AI validates an attempt.</string>
+    <string name="error_validate_origin">Only a person or an AI validates an attempt.</string>
     <string name="error_verdict_unknown">The verdict cannot be computed yet: %1$s</string>
     <string name="notification_to_validate">An attempt is to be validated</string>
     <string name="no_attempt">No attempt in progress</string>

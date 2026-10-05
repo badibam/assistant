@@ -42,10 +42,15 @@ class Coordinator(private val context: Context) {
         return execute(command)
     }
     
+    /** A command of an AI outside the app, come through its MCP server. */
+    suspend fun processExternalCommand(action: String, params: Map<String, Any?> = emptyMap()): CommandResult =
+        execute(convertToDispatchCommand(action, params, Source.EXTERNAL))
+
     /** A command of [source], for a caller that runs commands of several origins (CommandExecutor). */
     suspend fun process(source: Source, action: String, params: Map<String, Any?> = emptyMap()): CommandResult = when (source) {
         Source.USER -> processUserAction(action, params)
         Source.AI -> processAICommand(action, params)
+        Source.EXTERNAL -> processExternalCommand(action, params)
         Source.SCHEDULER -> processScheduledTask(action, params)
         Source.SYSTEM -> execute(convertToDispatchCommand(action, params, Source.SYSTEM, byTheApp = true))
     }
