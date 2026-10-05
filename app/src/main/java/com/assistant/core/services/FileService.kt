@@ -2,6 +2,8 @@ package com.assistant.core.services
 
 import android.content.Context
 import com.assistant.core.ai.database.AttachedFileEntity
+import com.assistant.core.ai.database.AttachedImageEntity
+import com.assistant.core.ai.enrichments.AttachedImages
 import com.assistant.core.ai.database.getById
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.database.AppDatabase
@@ -18,11 +20,18 @@ import java.util.UUID
  * - read: `id`, and `start_line` (from 1) and `lines` to read a part: that part's text, with the
  *   file's name, type, size and line count. Without them, the whole file.
  * - delete: `id`: a file taken off the composer before its message went.
+ *
+ * And the images joined to messages (docs/design/message-images.md), a reduced JPEG file each
+ * (AttachedImages), described by a row (AttachedImageEntity):
+ * - attach_image: `session_id`, `uri` (the photo taken or picked): the image prepared and kept,
+ *   its file written before its row; its `id`, `width`, `height` and `size_bytes`.
+ * - delete_image: `id`: an image taken off the composer; its row deleted before its file.
  */
 class FileService(private val context: Context) : ExecutableService {
 
     private val s = Strings.`for`(context = context)
     private val dao = AppDatabase.getDatabase(context).attachedFileDao()
+    private val imageDao = AppDatabase.getDatabase(context).attachedImageDao()
 
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -34,8 +43,38 @@ class FileService(private val context: Context) : ExecutableService {
                 dao.delete(id)
                 OperationResult.success()
             }
+            "attach_image" -> attachImage(params)
+            "delete_image" -> {
+                val id = params.optString("id").takeIf { it.isNotEmpty() } ?: return OperationResult.error(s.shared("service_error_missing_id"))
+                imageDao.delete(id)
+                AttachedImages.delete(context, id)
+                OperationResult.success()
+            }
             else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
         }
+    }
+
+    private suspend fun attachImage(params: JSONObject): OperationResult {
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() } ?: return OperationResult.error(s.shared("service_error_missing_required_params").format("session_id"))
+        val uri = params.optString("uri").takeIf { it.isNotEmpty() } ?: return OperationResult.error(s.shared("service_error_missing_required_params").format("uri"))
+        val prepared = try {
+            AttachedImages.prepare(context.contentResolver, android.net.Uri.parse(uri))
+        } catch (e: Exception) {
+            return OperationResult.error(s.shared("image_error_not_read").format(e.message ?: ""))
+        }
+        val image = AttachedImageEntity(
+            id = UUID.randomUUID().toString(),
+            sessionId = sessionId,
+            sizeBytes = prepared.bytes.size.toLong(),
+            width = prepared.width,
+            height = prepared.height,
+            createdAt = System.currentTimeMillis()
+        )
+        // The file first: an interruption between the two leaves a file no row names, which the
+        // startup sweep removes, never a row without its file
+        AttachedImages.write(context, image.id, prepared.bytes)
+        imageDao.insert(image)
+        return OperationResult.success(mapOf("id" to image.id, "width" to image.width, "height" to image.height, "size_bytes" to image.sizeBytes))
     }
 
     private suspend fun attach(params: JSONObject): OperationResult {
@@ -82,6 +121,8 @@ class FileService(private val context: Context) : ExecutableService {
             "attach" -> s.shared("action_verbalize_files_attach")
             "read" -> s.shared("action_verbalize_files_read")
             "delete" -> s.shared("action_verbalize_files_delete")
+            "attach_image" -> s.shared("action_verbalize_files_attach_image")
+            "delete_image" -> s.shared("action_verbalize_files_delete_image")
             else -> s.shared("action_verbalize_unknown")
         }
     }

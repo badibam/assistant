@@ -1147,6 +1147,7 @@
     <string name="action_verbalize_references_names">Reading the names of linked things</string>
     <string name="action_verbalize_references_choices">Listing what a link can point to</string>
     <string name="file_error_not_text">%1$s is not a text file: only text can be joined (CSV, plain text, Markdown, JSON).</string>
+    <string name="image_error_not_read">This image could not be read: %1$s</string>
     <string name="file_error_not_found">No joined file has the id %1$s.</string>
     <string name="file_error_range">Lines to read: start_line from 1 and lines from 1 (got %1$d and %2$d).</string>
     <string name="file_dialog_title">Join a file</string>
@@ -1167,6 +1168,8 @@
     <string name="action_verbalize_files_attach">Joining a file</string>
     <string name="action_verbalize_files_read">Reading a joined file</string>
     <string name="action_verbalize_files_delete">Removing a joined file</string>
+    <string name="action_verbalize_files_attach_image">Joining an image</string>
+    <string name="action_verbalize_files_delete_image">Removing a joined image</string>
     <string name="service_error_reading_param">A reading needs "%1$s".</string>
     <string name="service_error_reading_source">A reading reads the entries of one tool instance, not of a %1$s.</string>
     <string name="service_error_reading_source_unread">The tool read could not be read; nothing says it was deleted.</string>

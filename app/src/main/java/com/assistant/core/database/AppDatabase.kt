@@ -21,6 +21,8 @@ import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.database.SessionMessageEntity
 import com.assistant.core.ai.database.AttachedFileEntity
 import com.assistant.core.ai.database.AttachedFileDao
+import com.assistant.core.ai.database.AttachedImageEntity
+import com.assistant.core.ai.database.AttachedImageDao
 import com.assistant.core.ai.database.AIProviderConfigEntity
 import com.assistant.core.ai.database.AutomationEntity
 import com.assistant.core.ai.database.AITypeConverters
@@ -67,7 +69,8 @@ import com.assistant.core.ai.data.LegacyCatchUp
         AutomationEntity::class,
         LogEntry::class,
         VariableEntity::class,
-        AttachedFileEntity::class
+        AttachedFileEntity::class,
+        AttachedImageEntity::class
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
@@ -87,13 +90,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun logDao(): LogDao
     abstract fun variableDao(): VariableDao
     abstract fun attachedFileDao(): AttachedFileDao
+    abstract fun attachedImageDao(): AttachedImageDao
 
     companion object {
         /**
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 58
+        const val VERSION = 59
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1602,6 +1606,26 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Images joined to messages, kept with their session: see AttachedImageEntity. */
+        private val MIGRATION_58_59 = object : Migration(58, 59) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS attached_images (
+                        id TEXT NOT NULL,
+                        session_id TEXT NOT NULL,
+                        size_bytes INTEGER NOT NULL,
+                        width INTEGER NOT NULL,
+                        height INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        PRIMARY KEY(id),
+                        FOREIGN KEY(session_id) REFERENCES ai_sessions(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_attached_images_session_id ON attached_images(session_id)")
+                LogManager.database("MIGRATION 58->59: attached_images table created", "INFO")
+            }
+        }
+
         /** A theme's palette family gives way to a hue shift: see UiHueShiftAtV58. */
         private val MIGRATION_57_58 = object : Migration(57, 58) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2271,7 +2295,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_54_55,
                     MIGRATION_55_56,
                     MIGRATION_56_57,
-                    MIGRATION_57_58
+                    MIGRATION_57_58,
+                    MIGRATION_58_59
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
