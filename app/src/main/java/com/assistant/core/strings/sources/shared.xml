@@ -1804,4 +1804,14 @@
     <string name="settings_demo_description">A demo zone group, installed afresh at each update</string>
     <string name="settings_demo_install_on_update">Install the demo at each update</string>
     <string name="settings_demo_install_on_update_help">On, the demo is installed afresh at each update; off, it is left as it is. What you add to the demo goes at each reinstall.</string>
+
+    <!-- External access (MCP): the authorization page a client opens -->
+    <string name="mcp_authorize_title">Access to Assistant</string>
+    <string name="mcp_authorize_instruction">%1$s asks to read and write in your Assistant app. To allow it, type this code on your phone:</string>
+    <string name="mcp_authorize_waiting">Waiting for the code on the phone…</string>
+    <string name="mcp_authorize_approved">Access granted. Returning…</string>
+    <string name="mcp_authorize_refused">Access refused.</string>
+    <string name="mcp_authorize_expired">The request expired: start again from the client.</string>
+    <string name="mcp_authorize_busy">Another request is already waiting on the phone. Try again in a few minutes.</string>
+    <string name="mcp_authorize_invalid">This request cannot be accepted: %1$s</string>
 </resources>
