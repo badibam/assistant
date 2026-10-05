@@ -168,7 +168,9 @@ private fun transformTrackingConfig(json: JSONObject, version: Int): JSONObject 
 
 ### Format export/import
 
-**Metadata dans fichiers** :
+**Le fichier** : un zip, `backup.json` (les tables, ci-dessous) et `images/<id>.jpg`, les images jointes aux messages copiées fichier par fichier, jamais dans le JSON. `BackupService` écrit et lit lui-même le fichier choisi (son `uri`). L'import accepte aussi l'ancien `.json` seul ; il pose les images du zip à part (`files/attachments.import/`), refuse une sauvegarde qui nomme une image sans son fichier, et remplace le dossier des images dans le même geste que les tables.
+
+**Metadata dans `backup.json`** :
 ```json
 {
   "metadata": {
@@ -184,7 +186,7 @@ private fun transformTrackingConfig(json: JSONObject, version: Int): JSONObject 
 1. Vérifier `export_version` vs `BuildConfig.VERSION_CODE`
 2. Si `export_version > VERSION_CODE` → Erreur "version trop récente"
 3. Si `export_version < VERSION_CODE` → Appliquer JsonTransformers
-4. Insertion données transformées
+4. Insertion données transformées, puis le dossier des images remplacé par celui de la sauvegarde
 
 **En DB** : JSONs purs sans metadata (version dans fichiers export uniquement)
 
