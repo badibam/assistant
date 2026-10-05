@@ -129,8 +129,9 @@ object AppSettings {
             AppSettingCategories.EXTERNAL_ACCESS -> listOf(
                 field(RELAY_URL, text("settings_external_access_relay_url"), text("settings_external_access_relay_url_help"),
                     FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)),
+                // MEDIUM: the relay's secret runs past SHORT's 60 characters, 64 in hexadecimal
                 field(RELAY_SECRET, text("settings_external_access_relay_secret"), text("settings_external_access_relay_secret_help"),
-                    FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name))
+                    FieldType.TEXT, config = mapOf("length" to TextLength.MEDIUM.name), secret = true)
             )
             AppSettingCategories.DEMO -> listOf(
                 field(com.assistant.core.demo.DemoStartup.INSTALL_ON_UPDATE, text("settings_demo_install_on_update"),
@@ -185,8 +186,8 @@ object AppSettings {
         SettingValues(nodes(category, context), settings)
 
     private fun field(name: String, label: String, description: String?, type: FieldType, required: Boolean = false,
-                      config: Map<String, Any>? = null) =
-        SettingNode.Field(FieldDefinition(name, label, description, type, false, config), required = required)
+                      config: Map<String, Any>? = null, secret: Boolean = false) =
+        SettingNode.Field(FieldDefinition(name, label, description, type, false, config), required = required, secret = secret)
 
     private fun choice(name: String, label: String, description: String, values: List<String>,
                        labels: Map<String, String> = emptyMap(), required: Boolean = false) =
