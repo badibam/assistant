@@ -56,8 +56,11 @@ internal enum class MessagesApi(
         verifiesAnsweringModel = false
     ),
 
-    // Its model list says nothing of effort: the levels are facts (deepseek-effort-levels), and so
-    // is the default being unknown (deepseek-default-effort-unknown), hence an effort always chosen.
+    // Its effort levels are read from the facts (deepseek-effort-levels), and so is the default
+    // being unknown (deepseek-default-effort-unknown), hence an effort always chosen. Its model
+    // list now declares effort too (effort.supported_levels, effort.default_level), unread: the
+    // fate of those facts waits in provider-facts. It declares the images a model reads at the
+    // top level (input_modalities), where Anthropic's has capabilities.
     // Model substitution, measured 2026-09-19: an unknown ID gets an explicit error, but claude-*
     // names are answered by deepseek-flash, which the response "model" field reveals. Valid IDs
     // come back unchanged, so any mismatch is rejected rather than silently billed as another model.
@@ -70,6 +73,18 @@ internal enum class MessagesApi(
         effortRequired = true,
         verifiesAnsweringModel = true
     )
+}
+
+/**
+ * Whether the model list says the model reads images: Anthropic's by capabilities.image_input,
+ * DeepSeek's by input_modalities; null when it says nothing.
+ */
+internal fun MessagesApi.listedImageInput(model: JSONObject): Boolean? = when (this) {
+    MessagesApi.ANTHROPIC -> model.optJSONObject("capabilities")?.optJSONObject("image_input")
+        ?.takeIf { it.has("supported") }?.getBoolean("supported")
+    // An "image" among its input_modalities: DeepSeek's list, OpenAI's format
+    MessagesApi.DEEPSEEK -> model.optJSONArray("input_modalities")
+        ?.let { modalities -> (0 until modalities.length()).any { modalities.optString(it) == "image" } }
 }
 
 /**
@@ -140,7 +155,7 @@ internal class ClaudeProviderCore(
                 description = s.shared("${api.stringPrefix}_schema_model")), required = true),
             SettingNode.Field(FieldDefinition("max_tokens", s.shared("ai_provider_claude_max_tokens"), s.shared("ai_provider_claude_schema_max_tokens"),
                 FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS)
-        ) + ReasoningSettings.nodes(s, thinkingOff = true)
+        ) + ReasoningSettings.nodes(s, thinkingOff = true) + ImageInput.node(s)
     }
 
     /** Why [config] cannot be stored: its reasoning settings out of what the model allows. */
@@ -218,7 +233,8 @@ internal class ClaudeProviderCore(
                     val id = modelObj.optString("id", "")
                     val listedEfforts = if (api.effortsFromFacts) null else declaredEfforts(modelObj)
                     models.add(ProviderModel(id = id, label = modelObj.optString("display_name", "").ifEmpty { id },
-                        reasoning = ReasoningSettings.of(facts, api.factsProvider, id, listedEfforts, api.effortRequired)))
+                        reasoning = ReasoningSettings.of(facts, api.factsProvider, id, listedEfforts, api.effortRequired),
+                        readsImages = api.listedImageInput(modelObj)))
                 }
             }
 
@@ -231,6 +247,7 @@ internal class ClaudeProviderCore(
             ProviderModels(emptyList(), e.message ?: "Unknown error")
         }
     }
+
 
     /**
      * The effort levels Anthropic's model list declares for a model, in its order: the keys of
@@ -274,7 +291,8 @@ internal class ClaudeProviderCore(
                 effort = settings.string(ReasoningSettings.EFFORT),
                 thinking = ReasoningSettings.thinkingType(settings.boolean(ReasoningSettings.THINKING_OFF), ProviderFacts.of(context),
                     api.factsProvider, requestedModel),
-                datetimeText = promptData.buildDatetimeMessage(context)
+                datetimeText = promptData.buildDatetimeMessage(context),
+                imageData = { com.assistant.core.ai.enrichments.AttachedImages.base64(context, it) }
             )
             val requestBody = requestJson.toString()
 

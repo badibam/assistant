@@ -1,5 +1,6 @@
 package com.assistant.core.services
 
+import com.assistant.core.ai.enrichments.AttachedImages
 import android.content.Context
 import com.assistant.core.utils.LogManager
 import com.assistant.core.coordinator.CancellationToken
@@ -41,14 +42,14 @@ import com.assistant.core.ai.data.LegacyCatchUp
 /**
  * Backup service - handles export, import and reset operations
  *
- * Architecture:
- * - Pure logic, returns/accepts JSON strings
- * - No file I/O (handled by UI with SAF)
- * - No Android framework dependencies except Context for DB access
+ * A backup is a zip: `backup.json`, every table as JSON, and `images/<id>.jpg`, the images joined
+ * to messages, copied file by file without going through the JSON — 200 photos in base64 would
+ * not fit in memory beside it. The file is the one the user chose (SAF), given by its `uri`.
  *
  * Operations:
- * - export: Generate JSON backup of all data
- * - import: Restore data from JSON backup (with version migrations)
+ * - export: `uri`: the backup of all data written there
+ * - import: `uri`: data restored from a backup there (with version migrations): a zip, or the
+ *   `.json` of the backups made before images, still readable
  * - reset: Wipe all data and restore defaults
  */
 class BackupService(private val context: Context) : ExecutableService {
@@ -56,7 +57,12 @@ class BackupService(private val context: Context) : ExecutableService {
     private val s = Strings.`for`(context = context)
     private val database = AppDatabase.getDatabase(context)
 
-    // No companion object needed - use BuildConfig and AppDatabase.VERSION directly
+    private companion object {
+        /** The tables, in the zip */
+        const val BACKUP_JSON = "backup.json"
+        /** The images' folder, in the zip */
+        const val IMAGES_DIR = "images/"
+    }
 
     /** Both read or rewrite the whole base: never with another, the demo or an import. */
     override val longOperations = setOf("export", "import")
@@ -68,19 +74,16 @@ class BackupService(private val context: Context) : ExecutableService {
     ): OperationResult {
         return withContext(Dispatchers.IO) {
             when (operation) {
-                "export" -> performExport(token)
-                "import" -> performImport(params.optString("json_data"), token)
+                "export" -> performExport(params.optString("uri"), token)
+                "import" -> performImport(params.optString("uri"), token)
                 "reset" -> performReset(token)
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         }
     }
 
-    /**
-     * Export all database data to JSON string
-     * Returns OperationResult with "json_data" field containing the backup JSON
-     */
-    private suspend fun performExport(token: CancellationToken): OperationResult {
+    /** All data written as a backup zip to [uri]: the tables as JSON, then each image's file. */
+    private suspend fun performExport(uri: String, token: CancellationToken): OperationResult {
         return try {
             LogManager.service("Starting backup export")
 
@@ -106,6 +109,12 @@ class BackupService(private val context: Context) : ExecutableService {
             val variables = database.variableDao().getAll()
             // The files joined to messages, with their session
             val attachedFiles = aiSessions.flatMap { database.attachedFileDao().getForSession(it.id) }
+            // The images joined to messages: their rows in the JSON, their files beside it. An
+            // image whose file is missing is an error the backup copies as it is, neither hidden
+            // nor repaired: its row goes, named in missing_images, and the export says how many
+            val attachedImages = aiSessions.flatMap { database.attachedImageDao().getForSession(it.id) }
+            val missingImages = attachedImages.filter { !AttachedImages.file(context, it.id).exists() }
+            missingImages.forEach { LogManager.service("Backup export: the file of image ${it.id} (session ${it.sessionId}) is missing", "WARN") }
 
             // Check cancellation before building JSON
             if (token.isCancelled) {
@@ -325,13 +334,44 @@ class BackupService(private val context: Context) : ExecutableService {
                         }
                     })
 
+                    // The images whose file was missing at the export: their rows go without one
+                    put("missing_images", JSONArray(missingImages.map { it.id }))
+
+                    // Images joined to messages: their files are entries of the zip
+                    put("attached_images", JSONArray().apply {
+                        attachedImages.forEach { image ->
+                            put(JSONObject().apply {
+                                put("id", image.id)
+                                put("session_id", image.sessionId)
+                                put("size_bytes", image.sizeBytes)
+                                put("width", image.width)
+                                put("height", image.height)
+                                put("created_at", image.createdAt)
+                            })
+                        }
+                    })
+
                 })
             }
 
             val jsonString = backupJson.toString(2) // Pretty print with 2-space indent
-            LogManager.service("Backup export completed successfully")
 
-            OperationResult.success(mapOf("json_data" to jsonString))
+            val output = context.contentResolver.openOutputStream(android.net.Uri.parse(uri))
+                ?: return OperationResult.error(s.shared("backup_export_failed"))
+            java.util.zip.ZipOutputStream(output.buffered()).use { zip ->
+                zip.putNextEntry(java.util.zip.ZipEntry(BACKUP_JSON))
+                zip.write(jsonString.toByteArray(Charsets.UTF_8))
+                zip.closeEntry()
+                for (image in attachedImages - missingImages.toSet()) {
+                    if (token.isCancelled) return OperationResult.error("Operation cancelled")
+                    zip.putNextEntry(java.util.zip.ZipEntry("$IMAGES_DIR${image.id}.jpg"))
+                    AttachedImages.file(context, image.id).inputStream().use { it.copyTo(zip) }
+                    zip.closeEntry()
+                }
+            }
+            LogManager.service("Backup export completed successfully: ${attachedImages.size} images, ${missingImages.size} without their file")
+
+            OperationResult.success(mapOf("missing_images" to missingImages.size))
 
         } catch (e: Exception) {
             LogManager.service("Backup export failed: ${e.message}", "ERROR", e)
@@ -340,16 +380,18 @@ class BackupService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Import data from JSON backup string
+     * Import data from the backup at [uri]: a zip, whose images are set aside in a folder of their
+     * own until the tables are in, or the `.json` of an older backup, which has none.
      * Validates version and applies transformations if needed
      */
-    private suspend fun performImport(jsonData: String, token: CancellationToken): OperationResult {
+    private suspend fun performImport(uri: String, token: CancellationToken): OperationResult {
+        val staging = AttachedImages.importDir(context)
         return try {
             LogManager.service("Starting backup import")
 
-            if (jsonData.isEmpty()) {
-                return OperationResult.error(s.shared("backup_invalid_file"))
-            }
+            staging.deleteRecursively()
+            val jsonData = readBackup(android.net.Uri.parse(uri), staging)
+                ?: return OperationResult.error(s.shared("backup_invalid_file"))
 
             // Parse and validate JSON
             val backupJson = JSONObject(jsonData)
@@ -388,6 +430,19 @@ class BackupService(private val context: Context) : ExecutableService {
 
             val data = transformedData.getJSONObject("data")
 
+            // Every image the tables name has its file, unless the export said it was missing
+            // then: a file absent otherwise is a damaged backup (a zip cut short), refused whole
+            val missingAtExport = data.optJSONArray("missing_images")?.let { ids -> (0 until ids.length()).map { ids.getString(it) }.toSet() } ?: emptySet()
+            data.optJSONArray("attached_images")?.let { images ->
+                for (i in 0 until images.length()) {
+                    val image = images.getJSONObject(i)
+                    val id = image.getString("id")
+                    if (id !in missingAtExport && !java.io.File(staging, "$id.jpg").exists()) {
+                        return OperationResult.error(s.shared("backup_import_image_missing").format(image.getString("id"), image.getString("session_id")))
+                    }
+                }
+            }
+
             // Wipe all tables in reverse dependency order, then insert data
             // This operation is wrapped in a Room transaction for atomicity
             database.withTransaction {
@@ -401,6 +456,10 @@ class BackupService(private val context: Context) : ExecutableService {
 
                 // Insert data in dependency order (preserving original IDs)
                 insertImportedData(data)
+
+                // The images' folder emptied and given the backup's, in the same move as the
+                // tables: left to the next sweep, hundreds of files would be orphans
+                AttachedImages.replaceDir(context, staging)
             }
 
             LogManager.service("Backup import completed successfully")
@@ -409,6 +468,38 @@ class BackupService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             LogManager.service("Backup import failed: ${e.message}", "ERROR", e)
             OperationResult.error("Import failed: ${e.message}")
+        } finally {
+            staging.deleteRecursively()
+        }
+    }
+
+    /**
+     * The JSON of the backup at [uri], its images written into [staging]: a zip holds
+     * `backup.json` and `images/<id>.jpg`, anything else in it refuses it; a file that is not a zip
+     * is the JSON itself. Null when the file cannot be read or holds no JSON.
+     */
+    private fun readBackup(uri: android.net.Uri, staging: java.io.File): String? {
+        val input = context.contentResolver.openInputStream(uri)?.buffered() ?: return null
+        return input.use { stream ->
+            stream.mark(4)
+            val head = ByteArray(4).also { stream.read(it) }
+            stream.reset()
+            // A zip begins with its local file header, "PK\u0003\u0004"
+            if (!head.contentEquals(byteArrayOf(0x50, 0x4B, 0x03, 0x04))) return stream.bufferedReader(Charsets.UTF_8).readText()
+            var json: String? = null
+            staging.mkdirs()
+            java.util.zip.ZipInputStream(stream).use { zip ->
+                generateSequence { zip.nextEntry }.forEach { entry ->
+                    val name = entry.name
+                    when {
+                        name == BACKUP_JSON -> json = zip.readBytes().toString(Charsets.UTF_8)
+                        name.startsWith(IMAGES_DIR) && name.endsWith(".jpg") && '/' !in name.removePrefix(IMAGES_DIR) ->
+                            java.io.File(staging, name.removePrefix(IMAGES_DIR)).outputStream().use { zip.copyTo(it) }
+                        else -> throw IllegalArgumentException("Unexpected entry in the backup: $name")
+                    }
+                }
+            }
+            json
         }
     }
 
@@ -434,6 +525,9 @@ class BackupService(private val context: Context) : ExecutableService {
                 }
 
                 insertDefaultAppConfig()
+
+                // No session is left, so no image either
+                AttachedImages.replaceDir(context, null)
             }
 
             LogManager.service("Database reset completed successfully")
@@ -674,6 +768,24 @@ class BackupService(private val context: Context) : ExecutableService {
                         definitionJson = item.getString("definition_json"),
                         createdAt = item.getLong("created_at"),
                         updatedAt = item.getLong("updated_at")
+                    )
+                )
+            }
+        }
+
+        // Images joined to messages, after the sessions they belong to; absent before v59. Their
+        // files are already set aside (performImport)
+        data.optJSONArray("attached_images")?.let { array ->
+            for (i in 0 until array.length()) {
+                val item = array.getJSONObject(i)
+                database.attachedImageDao().insert(
+                    com.assistant.core.ai.database.AttachedImageEntity(
+                        id = item.getString("id"),
+                        sessionId = item.getString("session_id"),
+                        sizeBytes = item.getLong("size_bytes"),
+                        width = item.getInt("width"),
+                        height = item.getInt("height"),
+                        createdAt = item.getLong("created_at")
                     )
                 )
             }

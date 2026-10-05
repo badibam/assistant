@@ -84,7 +84,8 @@ internal class OpenAICompatibleProviderCore(
             SettingNode.Field(FieldDefinition("temperature", s.shared("ai_provider_openai_temperature"), s.shared("ai_provider_openai_schema_temperature"),
                 FieldType.NUMERIC, false, mapOf("min" to 0, "max" to 2, "decimals" to 1)), default = 1.0),
             SettingNode.Field(FieldDefinition("max_output_tokens", s.shared("ai_provider_openai_max_output_tokens"), s.shared("ai_provider_openai_schema_max_output_tokens"),
-                FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS)
+                FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS),
+            ImageInput.node(s)
         )
     }
 
@@ -127,9 +128,11 @@ internal class OpenAICompatibleProviderCore(
                 }
                 val data = Json.parseToJsonElement(body).jsonObject["data"] as? JsonArray
                     ?: return@withContext ProviderModels(emptyList(), "Invalid API response: no 'data' list")
-                // The list names models by their identifier alone
+                // The list names models by their identifier alone; OpenRouter's also says what
+                // each reads (architecture.input_modalities), a server of one's own nothing
                 val models = data.mapNotNull { element ->
-                    (element as? JsonObject)?.get("id")?.jsonPrimitive?.contentOrNull?.let { ProviderModel(id = it, label = it) }
+                    val model = element as? JsonObject ?: return@mapNotNull null
+                    model["id"]?.jsonPrimitive?.contentOrNull?.let { ProviderModel(id = it, label = it, readsImages = listedImageInput(model)) }
                 }
                 LogManager.aiService("Listed ${models.size} models from the compatible server")
                 ProviderModels(models)
@@ -140,6 +143,12 @@ internal class OpenAICompatibleProviderCore(
             LogManager.aiService("Failed to list the compatible server's models: ${e.message}", "ERROR", e)
             ProviderModels(emptyList(), e.message ?: "Unknown error")
         }
+    }
+
+    /** Whether a model of the list reads images, by its input_modalities; null when it has none. */
+    private fun listedImageInput(model: JsonObject): Boolean? {
+        val modalities = ((model["architecture"] as? JsonObject)?.get("input_modalities") as? JsonArray) ?: return null
+        return modalities.any { (it as? JsonPrimitive)?.contentOrNull == "image" }
     }
 
     // ========================================================================================
@@ -164,7 +173,8 @@ internal class OpenAICompatibleProviderCore(
                 maxTokens = settings.number("max_output_tokens")!!.toInt(),
                 forcing = forcing,
                 responseSchema = if (forcing == OutputForcing.SCHEMA) responseSchemaForModel() else null,
-                datetimeText = promptData.buildDatetimeMessage(context)
+                datetimeText = promptData.buildDatetimeMessage(context),
+                imageData = { com.assistant.core.ai.enrichments.AttachedImages.base64(context, it) }
             )
             val requestBody = requestJson.toString()
             LogManager.aiService("Built Chat Completions request: ${requestBody.length} characters")

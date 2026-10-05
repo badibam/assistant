@@ -171,16 +171,10 @@ coordinator.executeWithLoading(
 **Exemple** :
 ```kotlin
 try {
-    val result = coordinator.processUserAction("backup.export", emptyMap())
+    val result = coordinator.processUserAction("backup.export", mapOf("uri" to uri.toString()))
 
     if (result.status == CommandStatus.SUCCESS) {
-        val data = result.data?.get("json_data") as? String
-        if (data != null) {
-            // Success handling
-            Toast.makeText(context, s.shared("backup_export_success"), Toast.LENGTH_SHORT).show()
-        } else {
-            errorMessage = s.shared("backup_export_no_data")
-        }
+        Toast.makeText(context, s.shared("backup_export_success"), Toast.LENGTH_SHORT).show()
     } else {
         // Service error (priorité à result.error car déjà traduit)
         errorMessage = result.error ?: s.shared("backup_export_failed")

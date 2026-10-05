@@ -50,7 +50,7 @@ sealed class AIEvent {
     /**
      * User message enrichments executed successfully.
      *
-     * Enrichments are blocks added by user (POINTER, USE, CREATE, MODIFY_CONFIG)
+     * Enrichments are blocks added by user (POINTER, FILE)
      * that generate data commands executed before calling AI.
      *
      * @param results Results of enrichment command executions

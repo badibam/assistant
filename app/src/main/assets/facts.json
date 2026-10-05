@@ -34,6 +34,22 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "claude-sonnet-4-5-retired",
+    "provider": "anthropic",
+    "models": [
+      "claude-sonnet-4-5-20250929",
+      "claude-sonnet-4-5"
+    ],
+    "kind": "retired",
+    "effective": "2026-11-30",
+    "replacement": "claude-sonnet-5-5",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-09-30. Requests fail after the retirement date. The page names only the dated id; the alias claude-sonnet-4-5 points to it. Partner platforms (Bedrock, Google Cloud) set their own dates.",
+    "source": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+    "observed": "2026-10-04"
+  },
+  {
     "id": "claude-sonnet-5-5-effort-recalibrated",
     "provider": "anthropic",
     "models": [
@@ -121,6 +137,22 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "deepseek-chat-retired",
+    "provider": "deepseek",
+    "models": [
+      "deepseek-chat",
+      "deepseek-reasoner"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-24",
+    "replacement": "deepseek-flash",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Retired at 15:59 UTC. Until then the names routed to deepseek-v4-flash (non-thinking and thinking), itself retired on 2026-09-10 in favour of deepseek-flash. Gone from /models; refusal of the old name not measured.",
+    "source": "https://api-docs.deepseek.com/news/news260424",
+    "observed": "2026-10-04"
+  },
+  {
     "id": "deepseek-default-effort-unknown",
     "provider": "deepseek",
     "models": [
@@ -194,9 +226,9 @@
     "kind": "trap",
     "effective": "2026-09-14",
     "client": null,
-    "note": "Since 04:00 UTC on 2026-09-14, every deepseek-v4-pro request is served by V4.1-Flash at V4.1-Flash rates, until V4.1-Pro launches.",
-    "source": "https://api-docs.deepseek.com/news/news260910/",
-    "observed": "2026-10-02"
+    "note": "Announced on 2026-09-10 (news260910): from 04:00 UTC on 2026-09-14 every deepseek-v4-pro request served by V4.1-Flash at V4.1-Flash rates, until V4.1-Pro launches. Reversed on the change log under the same date: V4 Pro keeps being served after 2026-09-14, billing unchanged, until further notice. The news page still carries the original announcement.",
+    "source": "https://api-docs.deepseek.com/updates/",
+    "observed": "2026-10-04"
   },
   {
     "id": "kimi-k3-effort-levels",
@@ -252,6 +284,38 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-5-1-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.1",
+      "gpt-5.1-2025-11-13"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.1",
+    "observed": "2026-10-05"
+  },
+  {
+    "id": "gpt-5-1-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5.1"
+    ],
+    "kind": "retired",
+    "effective": "2027-04-01",
+    "replacement": "gpt-6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-10-01 with six months' notice.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-04"
+  },
+  {
     "id": "gpt-5-2-codex-effort-levels",
     "provider": "openai",
     "models": [
@@ -269,6 +333,37 @@
     "note": "The page does not state the default.",
     "source": "https://developers.openai.com/api/docs/models/gpt-5.2-codex",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-2-codex-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.2-codex"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.2-codex",
+    "observed": "2026-10-05"
+  },
+  {
+    "id": "gpt-5-2-codex-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5.2-codex"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "The deprecations page says access was shut down on 2026-07-23, yet GET /v1/models still listed gpt-5.2-codex on 2026-10-03. Not measured by a request.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-04"
   },
   {
     "id": "gpt-5-2-effort-levels",
@@ -292,6 +387,23 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-5-2-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.2",
+      "gpt-5.2-2025-12-11"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.2",
+    "observed": "2026-10-05"
+  },
+  {
     "id": "gpt-5-2-pro-effort-levels",
     "provider": "openai",
     "models": [
@@ -311,6 +423,39 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-5-2-pro-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.2-pro",
+      "gpt-5.2-pro-2025-12-11"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.2-pro",
+    "observed": "2026-10-05"
+  },
+  {
+    "id": "gpt-5-2025-snapshots-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5-2025-08-07",
+      "gpt-5-pro-2025-10-06"
+    ],
+    "kind": "retired",
+    "effective": "2026-12-11",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-06-11. For gpt-5-pro-2025-10-06 the replacement is gpt-5.6-sol with reasoning.mode: pro. Only the snapshots are named, not the gpt-5 and gpt-5-pro aliases.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-04"
+  },
+  {
     "id": "gpt-5-3-codex-effort-levels",
     "provider": "openai",
     "models": [
@@ -328,6 +473,37 @@
     "note": "The page does not state the default.",
     "source": "https://developers.openai.com/api/docs/models/gpt-5.3-codex",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-3-codex-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.3-codex"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.3-codex",
+    "observed": "2026-10-05"
+  },
+  {
+    "id": "gpt-5-3-codex-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5.3-codex"
+    ],
+    "kind": "retired",
+    "effective": "2027-04-01",
+    "replacement": "gpt-6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-10-01 with six months' notice.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-04"
   },
   {
     "id": "gpt-5-4-effort-levels",
@@ -351,6 +527,23 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-5-4-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4",
+      "gpt-5.4-2026-03-05"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4",
+    "observed": "2026-10-05"
+  },
+  {
     "id": "gpt-5-4-mini-effort-levels",
     "provider": "openai",
     "models": [
@@ -370,6 +563,23 @@
     "note": "Default when no effort is sent: none.",
     "source": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-4-mini-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4-mini",
+      "gpt-5.4-mini-2026-03-17"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+    "observed": "2026-10-05"
   },
   {
     "id": "gpt-5-4-nano-effort-levels",
@@ -393,6 +603,38 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-5-4-nano-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4-nano",
+      "gpt-5.4-nano-2026-03-17"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4-nano",
+    "observed": "2026-10-05"
+  },
+  {
+    "id": "gpt-5-4-nano-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4-nano"
+    ],
+    "kind": "retired",
+    "effective": "2027-04-01",
+    "replacement": "gpt-6-luna",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-10-01 with six months' notice.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-04"
+  },
+  {
     "id": "gpt-5-4-pro-effort-levels",
     "provider": "openai",
     "models": [
@@ -410,6 +652,23 @@
     "note": "Default when no effort is sent: medium.",
     "source": "https://developers.openai.com/api/docs/models/gpt-5.4-pro",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-4-pro-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4-pro",
+      "gpt-5.4-pro-2026-03-05"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.4-pro",
+    "observed": "2026-10-05"
   },
   {
     "id": "gpt-5-5-effort-levels",
@@ -433,6 +692,23 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-5-5-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.5",
+      "gpt-5.5-2026-04-23"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.5",
+    "observed": "2026-10-05"
+  },
+  {
     "id": "gpt-5-5-pro-effort-levels",
     "provider": "openai",
     "models": [
@@ -450,6 +726,23 @@
     "note": "Default when no effort is sent: high.",
     "source": "https://developers.openai.com/api/docs/models/gpt-5.5-pro",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-5-pro-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.5-pro",
+      "gpt-5.5-pro-2026-04-23"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.5-pro",
+    "observed": "2026-10-05"
   },
   {
     "id": "gpt-5-6-luna-effort-levels",
@@ -471,6 +764,22 @@
     "note": "Default when no effort is sent: medium.",
     "source": "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-6-luna-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.6-luna"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+    "observed": "2026-10-05"
   },
   {
     "id": "gpt-5-6-sol-effort-levels",
@@ -495,6 +804,23 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-5-6-sol-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.6-sol",
+      "gpt-5.6"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+    "observed": "2026-10-05"
+  },
+  {
     "id": "gpt-5-6-terra-effort-levels",
     "provider": "openai",
     "models": [
@@ -514,6 +840,22 @@
     "note": "Default when no effort is sent: medium.",
     "source": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-6-terra-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5.6-terra"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+    "observed": "2026-10-05"
   },
   {
     "id": "gpt-5-effort-levels",
@@ -536,6 +878,23 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-5-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5",
+      "gpt-5-2025-08-07"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5",
+    "observed": "2026-10-05"
+  },
+  {
     "id": "gpt-5-pro-effort-levels",
     "provider": "openai",
     "models": [
@@ -551,6 +910,23 @@
     "note": "Default when no effort is sent: high.",
     "source": "https://developers.openai.com/api/docs/models/gpt-5-pro",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-5-pro-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5-pro",
+      "gpt-5-pro-2025-10-06"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-5-pro",
+    "observed": "2026-10-05"
   },
   {
     "id": "gpt-6-1-sol-effort-levels",
@@ -573,6 +949,22 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-6-1-sol-input",
+    "provider": "openai",
+    "models": [
+      "gpt-6.1-sol"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+    "observed": "2026-10-05"
+  },
+  {
     "id": "gpt-6-astra-effort-levels",
     "provider": "openai",
     "models": [
@@ -591,6 +983,22 @@
     "note": "The page does not state the default. none returns HTTP 400 (reasoning guide).",
     "source": "https://developers.openai.com/api/docs/models/gpt-6-astra",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-6-astra-input",
+    "provider": "openai",
+    "models": [
+      "gpt-6-astra"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+    "observed": "2026-10-05"
   },
   {
     "id": "gpt-6-luna-effort-levels",
@@ -614,6 +1022,22 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "gpt-6-luna-input",
+    "provider": "openai",
+    "models": [
+      "gpt-6-luna"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+    "observed": "2026-10-05"
+  },
+  {
     "id": "gpt-6-sol-effort-levels",
     "provider": "openai",
     "models": [
@@ -633,5 +1057,68 @@
     "note": "Default when no effort is sent: medium. Chat Completions accepts function calling only at none.",
     "source": "https://developers.openai.com/api/docs/models/gpt-6-sol",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "gpt-6-sol-input",
+    "provider": "openai",
+    "models": [
+      "gpt-6-sol"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": true,
+    "audio": false,
+    "pdf": null,
+    "client": null,
+    "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-sol",
+    "observed": "2026-10-05"
+  },
+  {
+    "id": "openai-pdf-input",
+    "provider": "openai",
+    "models": [
+      "gpt-5",
+      "gpt-5-2025-08-07",
+      "gpt-5-pro",
+      "gpt-5-pro-2025-10-06",
+      "gpt-5.1",
+      "gpt-5.1-2025-11-13",
+      "gpt-5.2",
+      "gpt-5.2-2025-12-11",
+      "gpt-5.2-codex",
+      "gpt-5.2-pro",
+      "gpt-5.2-pro-2025-12-11",
+      "gpt-5.3-codex",
+      "gpt-5.4",
+      "gpt-5.4-2026-03-05",
+      "gpt-5.4-mini",
+      "gpt-5.4-mini-2026-03-17",
+      "gpt-5.4-nano",
+      "gpt-5.4-nano-2026-03-17",
+      "gpt-5.4-pro",
+      "gpt-5.4-pro-2026-03-05",
+      "gpt-5.5",
+      "gpt-5.5-2026-04-23",
+      "gpt-5.5-pro",
+      "gpt-5.5-pro-2026-04-23",
+      "gpt-5.6",
+      "gpt-5.6-luna",
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+      "gpt-6-astra",
+      "gpt-6-luna",
+      "gpt-6-sol",
+      "gpt-6.1-sol"
+    ],
+    "kind": "input",
+    "effective": null,
+    "images": null,
+    "audio": null,
+    "pdf": true,
+    "client": null,
+    "note": "PDF files are read by models with vision capabilities: the API sends the model both the extracted text and an image of each page. Chat Completions takes a PDF as a file content part; models without Chat Completions (Pro, Codex) take it through the Responses API as input_file. The model pages do not list PDF among input modalities, and their file_uploads feature is present on some models and absent on others without saying what it means for PDF.",
+    "source": "https://developers.openai.com/api/docs/guides/file-inputs",
+    "observed": "2026-10-05"
   }
 ]

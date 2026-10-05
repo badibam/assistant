@@ -33,7 +33,7 @@ fun ButtonAction.signal(): UISignal = when (this) {
     ButtonAction.BACK -> UISignal.BACK
     ButtonAction.CANCEL -> UISignal.CLOSE
     ButtonAction.CONFIGURE, ButtonAction.VIEW -> UISignal.ENTER
-    ButtonAction.AI_CHAT, ButtonAction.ATTACH -> UISignal.OPEN
+    ButtonAction.AI_CHAT, ButtonAction.ATTACH, ButtonAction.PHOTO, ButtonAction.GALLERY -> UISignal.OPEN
     ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.UP, ButtonAction.DOWN -> UISignal.STEP
     else -> UISignal.CONFIRM
 }

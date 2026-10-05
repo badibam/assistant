@@ -27,6 +27,8 @@ class DeepSeekStandardProvider(private val context: Context) : AIProvider {
 
     override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
+    override fun factsProvider(): String = core.api.factsProvider
+
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
     override fun configError(config: JSONObject, context: Context): String? = core.configError(config, context)
@@ -53,6 +55,8 @@ class DeepSeekEconomicProvider(private val context: Context) : AIProvider {
     override fun getDisplayName(): String = "DeepSeek (économique)"
 
     override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
+
+    override fun factsProvider(): String = core.api.factsProvider
 
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
 

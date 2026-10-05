@@ -483,10 +483,14 @@ Event NetworkErrorOccurred:
 
 ### Types d'enrichissements
 - ** POINTER** - Référencer données (zones ou instances)
-- ** USE** - Utiliser données d'outils (config + schemas + data + stats)
-- ** CREATE** - Créer éléments (schemas pour tooltype)
-- ** MODIFY_CONFIG** - Modifier config outils (schema + config actuelle)
 - ** FILE** - Un fichier texte joint au message (`FileEnrichment` : `{"file_id", "name", "line_count", "whole"}`), gardé par le service `files` avec sa session (table `attached_files`). Le dialogue (`FileEnrichmentDialog`) ouvre le sélecteur du téléphone, lit le fichier une fois (UTF-8, refusé sinon), montre nom, type, taille, lignes et début, et « Inclure en entier dans le contexte », coché. Il part comme une lecture FILE, entière ou de ses 20 premières lignes, tenue au seuil de taille des données comme tout enrichissement. Retiré du composeur avant l'envoi, le fichier est supprimé ; hors d'une session (le message de départ d'une automation), il n'est pas proposé.
+
+### Images
+Une image (`MessageSegment.Image(image_id)`, `{"type": "image", "image_id"}`) est un bloc du composeur à part, pas un enrichissement : elle ne devient jamais du texte. Prise avec l'appareil photo du téléphone (`TakePicture`, vers un fichier du cache passé par le `FileProvider`, sans autorisation `CAMERA`) ou choisie par le sélecteur de photos (`PickVisualMedia`), seulement dans une session.
+- **Gardée réduite** (`AttachedImages`) : tournée d'après l'EXIF, 1 568 px sur le grand côté, JPEG 85, sans métadonnées ; un fichier par image, `files/attachments/<id>.jpg`, écrit en `.part` puis renommé, décrit par une ligne de `attached_images` (service `files` : `attach_image`, `delete_image`). Le fichier est écrit avant la ligne et supprimé après elle : un orphelin ne peut être qu'un fichier, que le ménage du démarrage supprime en le journalisant (INFO pour un `.part`, WARN pour un `.jpg`). Supprimer une session supprime les fichiers de ses images.
+- **Vers le modèle** : `PromptManager` prépare un message avec images en morceaux (`SessionMessage.promptParts` : `PromptPart.Text`, `PromptPart.Image`), chaque image à sa place ; le fichier est lu à la construction de la requête — bloc `image` base64 chez Claude, `input_image` en `data:` chez OpenAI, `image_url` en `data:` chez les serveurs compatibles. Renvoyée à chaque tour comme le reste de l'historique.
+- **Le modèle qui ne lit pas les images** (`ImageInput`) : ce que sa liste a dit (`capabilities.image_input` chez Anthropic, `input_modalities` chez DeepSeek, `architecture.input_modalities` chez OpenRouter), gardé dans la config sous `reads_images` à l'enregistrement, sinon un fait `input` de provider-facts (`ProviderFacts.readsImages`). Un modèle qui ne les lit pas ou dont rien n'est connu est refusé : le bloc le dit, le composeur refuse l'envoi, et `AIClient` refuse avant toute requête un historique avec images, de plus de 100 images, ou dont un fichier manque.
+- **À l'écran** : une vignette dans le composeur et dans le message, l'image entière au toucher.
 
 ### Texte d'un bloc
 Un bloc ne stocke que son type et sa config ; son texte s'écrit à chaque lecture du message (`EnrichmentText`), qui relit en deux lectures toutes les zones et tous les outils. Un pointeur nomme donc sa cible comme elle s'appelle aujourd'hui, et une cible supprimée se lit « supprimé » ; un échec de lecture s'affiche comme tel, jamais comme une suppression.
@@ -515,7 +519,7 @@ class EnrichmentProcessor {
 **Transformations** : SCHEMA → schemas.get, TOOL_CONFIG → tools.get, TOOL_DATA → tool_data.get (sa `period` en filtres sur timestamp, les dates et durées de ses `filters` mises en forme stockée d'après le type du champ, `FilterValues`), ZONE_CONFIG → zones.get, ZONES → zones.list, TOOL_INSTANCES → tools.list, VARIABLES → variables.list ou list_all, READING → readings.read d'une variable (`at` en ISO ou en dates relatives, résolues sur la référence), ICONS → icons.overview (sans paramètre) ou icons.search (`categories` et/ou `query`), FILE → files.read (`start_line`, `lines`), IMPORT_PLAN → imports.detect d'un fichier joint. L'action IMPORT_DATA va à imports.apply, sous la validation des données de l'outil, sa carte nommant le fichier et l'outil. Les actions CREATE_VARIABLE, UPDATE_VARIABLE, DELETE_VARIABLE vont au service `variables`, sous leur propre réglage de validation (« Modifications des variables », `validate_variable_changes`) ; la définition s'écrit avec les noms, et le service la vérifie comme l'écran.
 
 ### User vs AI Commands
-**User** : Source EnrichmentBlocks, types POINTER/USE/CREATE/MODIFY_CONFIG/FILE uniquement, but données contextuelles, jamais d'actions.
+**User** : Source EnrichmentBlocks, types POINTER/FILE uniquement, but données contextuelles, jamais d'actions.
 **AI** : Source AIMessage.dataCommands + actionCommands, types queries + actions réelles, but demander données + exécuter actions.
 
 ## 10. Architecture prompts
@@ -526,7 +530,7 @@ class EnrichmentProcessor {
 
 **APP_STATE** : zones, instances d'outils et variables (zones.list, tools.list_all, variables.list_all), envoyé d'office au premier message.
 **Enrichments** : Stockés comme SessionMessage sender=SYSTEM, inclus dans l'historique.
-**RichComposer UI** : Architecture multi-blocs (TextBlock = texte + enrichments), navigation focus-based avec highlight visuel.
+**RichComposer UI** : le message est une suite de blocs typés, un par segment (texte, pointeur, fichier), dans l'ordre où ils partent. Un nouveau bloc s'insère après le bloc actif et devient actif ; les blocs se réordonnent par leur poignée (`UI.ReorderableColumn`) ; la liste n'est jamais vide, et un texte vide ne part pas. Les règles vivent dans `ComposerBlocks`, testées par `ComposerBlocksTest`.
 
 ### Le L1 est un contrat, vérifié sur ce qui change
 

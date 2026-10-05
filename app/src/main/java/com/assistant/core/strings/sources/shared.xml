@@ -53,9 +53,11 @@
     <!-- AI Interface - Composer and Enrichments -->
     <string name="ai_composer_placeholder">Write your message...</string>
     <string name="ai_composer_add_text">Text</string>
-    <string name="ai_composer_active_block">Active</string>
-    <string name="ai_composer_enrichments_label">Enrichments:</string>
-    <string name="ai_enrichment_config">Enrichment configuration</string>
+    <string name="ai_image_block">Image</string>
+    <string name="ai_image_missing">The file of this image is missing</string>
+    <string name="ai_image_no_camera">No camera app on this phone takes a photo for another app</string>
+    <string name="ai_image_model_does_not_read">This model does not read images: the message will not go with it</string>
+    <string name="ai_image_model_unknown">Nothing says whether this model reads images: the message will not go with it</string>
     <string name="pointer_enrichment_selector_title">Select data</string>
     <string name="pointer_level_app">App</string>
     <string name="pointer_attach_config">Config</string>
@@ -98,31 +100,10 @@
     <string name="filter_op_present">answered</string>
     <string name="filter_op_period">on the period</string>
     <string name="pointer_enrichment_config">Pointer configuration</string>
-    <string name="ai_enrichment_selection_label">Selection:</string>
-    <string name="ai_enrichment_importance">Importance</string>
     <string name="ai_importance_optional">optional</string>
     <string name="ai_importance_important">important</string>
     <string name="ai_importance_essential">essential</string>
-    <string name="ai_enrichment_include_real_data">Include real data (on top of the sample)</string>
-    <string name="ai_enrichment_description_optional">Description (optional)</string>
-    <string name="ai_enrichment_data_inclusion_title">Data to include</string>
-    <string name="ai_enrichment_selection_summary">Summary of the selection</string>
 
-    <!-- INSTANCE-level enrichment toggles -->
-    <string name="ai_enrichment_include_schema_config">Documentation of the tool\'s configuration</string>
-    <string name="ai_enrichment_include_schema_data">Documentation of the tool\'s data</string>
-    <string name="ai_enrichment_include_tool_config">Configuration of the tool</string>
-    <string name="ai_enrichment_include_data_sample">Data sample</string>
-    <string name="ai_enrichment_include_stats">Statistics</string>
-    <string name="ai_enrichment_include_data">Data</string>
-
-    <!-- ZONE-level enrichment toggles -->
-    <string name="ai_enrichment_include_zone_config">Configuration of the zone</string>
-    <string name="ai_enrichment_include_tools_list">List of the tools</string>
-    <string name="ai_enrichment_include_tools_config">Configuration of the tools</string>
-    <string name="ai_enrichment_include_tools_data">Data of the tools</string>
-
-    <string name="ai_enrichment_todo_implement">TODO: implement the %1$s configuration interface</string>
     <string name="ai_enrichment_invalid">invalid enrichment</string>
     <string name="ai_enrichment_unreadable">names not readable</string>
     <string name="ai_schema_already_included">Schema %1$s already included earlier</string>
@@ -303,14 +284,6 @@
     <string name="ai_values_filtered">filtered values</string>
     <string name="ai_period_specific">specific period</string>
     <string name="ai_period_extended">extended period</string>
-
-    <!-- AI Enrichment Actions - Display labels -->
-    <string name="ai_enrichment_use">use %1$s</string>
-    <string name="ai_enrichment_create">create %1$s</string>
-    <string name="ai_enrichment_modify">modify %1$s</string>
-    <string name="ai_enrichment_organize">organise %1$s</string>
-    <string name="ai_enrichment_document">document %1$s</string>
-    <string name="ai_enrichment_zone_prefix">zone</string>
 
     <!-- AI Errors - Orchestration -->
     <string name="ai_error_store_user_message">Failed to save the user message: %1$s</string>
@@ -546,7 +519,6 @@
     <string name="confirm_delete">Do you really want to delete this item? This action cannot be undone.</string>
     <string name="confirm_reset">Do you want to reset the configuration? The current data will be lost.</string>
 
-    
     <!-- The one date input (InstantPicker) and its period -->
     <string name="period_from">From</string>
     <string name="period_until">Until</string>
@@ -972,16 +944,16 @@
     <string name="backup_import">Import a backup file</string>
     <string name="backup_reset">Reset all the data</string>
     <string name="backup_export_success">Export succeeded</string>
+    <string name="backup_export_success_missing_images">Backup made; %1$d images had lost their file and stay so in it</string>
     <string name="backup_import_confirm">All the current data will be overwritten. Continue?</string>
     <string name="backup_reset_confirm">All the data will be deleted for good. Continue?</string>
     <string name="backup_import_success">Import succeeded, restarting...</string>
     <string name="backup_reset_success">Reset succeeded, restarting...</string>
     <string name="backup_version_too_recent">This file comes from a more recent version of the application</string>
     <string name="backup_invalid_file">Invalid backup file</string>
+    <string name="backup_import_image_missing">The backup names image %1$s (session %2$s) but does not hold its file, and did not have it missing at the export: the backup is damaged, nothing was imported.</string>
     <string name="backup_export_failed">Export failed</string>
-    <string name="backup_export_no_data">Export failed: no data returned</string>
     <string name="backup_import_failed">Import failed</string>
-    <string name="backup_import_read_failed">Unable to read the backup file</string>
     <string name="backup_reset_failed">Reset failed</string>
 
     <!-- AI PROVIDERS - Provider management -->
@@ -1008,6 +980,11 @@
     <string name="ai_provider_effort_default">Model\'s default</string>
     <string name="ai_provider_thinking_off">No thinking</string>
     <string name="ai_provider_schema_thinking_off">Turns the model\'s thinking off, where it can be</string>
+    <string name="ai_provider_reads_images">Reads images</string>
+    <string name="ai_provider_schema_reads_images">Whether the model reads images, as the provider\'s model list said when the config was saved; set by the app, never by hand.</string>
+    <string name="ai_provider_reads_images_yes">yes</string>
+    <string name="ai_provider_reads_images_no">no</string>
+    <string name="ai_provider_reads_images_unknown">unknown: images are refused</string>
     <string name="ai_provider_no_reasoning">No known reasoning setting for this model</string>
     <string name="ai_provider_error_thinking_off">%1$s cannot turn its thinking off</string>
     <string name="ai_provider_error_effort_with_thinking_off">Without thinking, a reasoning effort must be chosen</string>
@@ -1180,6 +1157,11 @@
     <string name="action_verbalize_references_names">Reading the names of linked things</string>
     <string name="action_verbalize_references_choices">Listing what a link can point to</string>
     <string name="file_error_not_text">%1$s is not a text file: only text can be joined (CSV, plain text, Markdown, JSON).</string>
+    <string name="image_error_not_read">This image could not be read: %1$s</string>
+    <string name="ai_image_error_model_does_not_read">This model does not read images: take them off the message, or choose a model that reads them.</string>
+    <string name="ai_image_error_model_unknown">Nothing says whether this model reads images, so they are not sent: open the provider\'s config and save it again, or choose another model.</string>
+    <string name="ai_image_error_too_many">This conversation holds %1$d images; a request carries %2$d at most.</string>
+    <string name="ai_image_error_missing">The file of an image of this conversation is missing: it cannot be sent.</string>
     <string name="file_error_not_found">No joined file has the id %1$s.</string>
     <string name="file_error_range">Lines to read: start_line from 1 and lines from 1 (got %1$d and %2$d).</string>
     <string name="file_dialog_title">Join a file</string>
@@ -1190,6 +1172,8 @@
     <string name="file_summary_preview">File: %1$s (%2$d lines), preview only</string>
     <string name="file_error_encoding">%1$s is not readable text (UTF-8 expected).</string>
     <string name="action_attach">Join a file</string>
+    <string name="action_photo">Photo</string>
+    <string name="action_gallery">Gallery</string>
     <string name="action_arrange">Arrange</string>
     <string name="grid_leave_title">Leave the zone?</string>
     <string name="grid_leave_message">The move in progress will be cancelled.</string>
@@ -1200,6 +1184,8 @@
     <string name="action_verbalize_files_attach">Joining a file</string>
     <string name="action_verbalize_files_read">Reading a joined file</string>
     <string name="action_verbalize_files_delete">Removing a joined file</string>
+    <string name="action_verbalize_files_attach_image">Joining an image</string>
+    <string name="action_verbalize_files_delete_image">Removing a joined image</string>
     <string name="service_error_reading_param">A reading needs "%1$s".</string>
     <string name="service_error_reading_source">A reading reads the entries of one tool instance, not of a %1$s.</string>
     <string name="service_error_reading_source_unread">The tool read could not be read; nothing says it was deleted.</string>
@@ -1618,8 +1604,6 @@
     <string name="notification_error_send_failed">Failed to send the notification</string>
     <string name="notification_error_unknown_icon">Notification icon unknown: %1$s</string>
 
-
-    
     <!-- Logs Screen -->
     <string name="settings_logs">Error logs</string>
     <string name="logs_count">logs</string>
@@ -1652,7 +1636,6 @@
     <string name="ai_enrichment_pointer_zone">Zone</string>
     <string name="ai_enrichment_pointer_tool">Tool</string>
     <string name="ai_enrichment_pointer_entry">Entry</string>
-    <string name="ai_enrichment_pointer_generic">Data</string>
     <string name="ai_enrichment_pointer_context_config">configuration</string>
     <string name="ai_enrichment_pointer_context_data">data</string>
     <string name="ai_enrichment_pointer_period_range">between %1$s and %2$s</string>

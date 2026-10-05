@@ -101,11 +101,13 @@ fun ChatMessageBubble(
                     // Message content
                     when {
                         message.richContent != null -> {
-                            // Rich message with segments (use UI-friendly version without IDs)
-                            UI.Text(
+                            // Rich message with segments (use UI-friendly version without IDs);
+                            // one with images shows each where the user put it
+                            if (message.richContent.imageIds.isEmpty()) UI.Text(
                                 text = richText ?: "",
                                 type = TextType.BODY
                             )
+                            else com.assistant.core.ai.ui.components.RichMessageWithImages(message.richContent)
                         }
                         message.textContent != null -> {
                             // Check if this is a communication module response

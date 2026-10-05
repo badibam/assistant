@@ -41,6 +41,8 @@ class OpenAIStandardProvider(private val context: Context) : AIProvider {
 
     override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
+    override fun factsProvider(): String = OpenAIProviderCore.FACTS_PROVIDER
+
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
     override fun configError(config: JSONObject, context: Context): String? = core.configError(config, context)
@@ -91,6 +93,8 @@ class OpenAIEconomicProvider(private val context: Context) : AIProvider {
     override fun getDisplayName(): String = "OpenAI (économique)"
 
     override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
+
+    override fun factsProvider(): String = OpenAIProviderCore.FACTS_PROVIDER
 
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
 

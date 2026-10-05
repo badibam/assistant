@@ -20,6 +20,9 @@ data class SessionMessage(
     val systemMessage: SystemMessage?, // System messages for AI operation results
     val executionMetadata: ExecutionMetadata? = null, // For automation executions only
     val excludeFromPrompt: Boolean = false, // Exclude from prompt generation (e.g., postText success messages)
+    // A user message with images, as PromptManager prepares it for the model: its text and its
+    // images in order. Null for any other message, whose text is textContent
+    val promptParts: List<PromptPart>? = null,
 
     // Token usage metrics (for AI messages only, 0 for USER/SYSTEM)
     // Note: API providers return inputTokens as UNCACHED only. Total input = inputTokens + cacheWriteTokens + cacheReadTokens
@@ -83,3 +86,9 @@ data class AISession(
     val lastNetworkErrorTime: Long? = null,             // Last network error timestamp (for inactivity calculation)
     val endReason: SessionEndReason? = null             // Why session ended (for audit)
 )
+
+/** A part of what a user message says to the model: some text, or an image where the user put it. */
+sealed class PromptPart {
+    data class Text(val text: String) : PromptPart()
+    data class Image(val imageId: String) : PromptPart()
+}

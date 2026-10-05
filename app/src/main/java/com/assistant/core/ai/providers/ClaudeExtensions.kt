@@ -15,11 +15,12 @@ import kotlinx.serialization.json.*
 
 /**
  * Fused message structure for Claude API
- * Represents a message with potentially multiple content blocks
+ * Represents a message with potentially multiple content blocks: texts, and images where the
+ * user put them
  */
 internal data class FusedMessage(
-    val role: String,              // "user" or "assistant"
-    val contentBlocks: List<String> // List of text content blocks
+    val role: String,                    // "user" or "assistant"
+    val contentBlocks: List<PromptPart>
 )
 
 /**
@@ -38,9 +39,17 @@ internal data class FusedMessage(
  *   "disabled", "between_tools"); null keeps it on, as the model has it with no thinking field
  * @param datetimeText The dated closing message (buildDatetimeMessage), built by the caller:
  *   it reads the clock and the strings, which keeps this function pure and testable
+ * @param imageData The JPEG of each image the messages carry, as base64 (AttachedImages)
  * @return JsonObject ready for Claude API /v1/messages endpoint
  */
-internal fun PromptData.toClaudeJson(model: String, maxTokens: Int, effort: String?, thinking: String?, datetimeText: String): JsonObject {
+internal fun PromptData.toClaudeJson(
+    model: String,
+    maxTokens: Int,
+    effort: String?,
+    thinking: String?,
+    datetimeText: String,
+    imageData: ImageData = { error("Image $it in a prompt built without image data") }
+): JsonObject {
     return buildJsonObject {
         put("model", model)
         put("max_tokens", maxTokens)
@@ -102,16 +111,30 @@ internal fun PromptData.toClaudeJson(model: String, maxTokens: Int, effort: Stri
                     val isLastMessage = index == fusedMessages.lastIndex
 
                     // Last message must use array format to support cache_control
-                    if (msg.contentBlocks.size == 1 && !isLastMessage) {
-                        // Single block message (not last) - use string content for simplicity
-                        put("content", msg.contentBlocks[0])
+                    val single = msg.contentBlocks.singleOrNull() as? PromptPart.Text
+                    if (single != null && !isLastMessage) {
+                        // Single text message (not last) - use string content for simplicity
+                        put("content", single.text)
                     } else {
-                        // Multi-block message OR last message - use array of text objects
+                        // Multi-block message, one with an image, OR last message - use an array
+                        // of blocks; an image goes as base64, where the user put it
                         putJsonArray("content") {
                             msg.contentBlocks.forEachIndexed { blockIndex, block ->
                                 addJsonObject {
-                                    put("type", "text")
-                                    put("text", block)
+                                    when (block) {
+                                        is PromptPart.Text -> {
+                                            put("type", "text")
+                                            put("text", block.text)
+                                        }
+                                        is PromptPart.Image -> {
+                                            put("type", "image")
+                                            putJsonObject("source") {
+                                                put("type", "base64")
+                                                put("media_type", IMAGE_MEDIA_TYPE)
+                                                put("data", imageData(block.imageId))
+                                            }
+                                        }
+                                    }
 
                                     // Cache control on last block of last message (4th breakpoint)
                                     if (isLastMessage && blockIndex == msg.contentBlocks.lastIndex) {
@@ -148,21 +171,17 @@ internal fun PromptData.toClaudeJson(model: String, maxTokens: Int, effort: Stri
  *
  * Example:
  * INPUT:  [USER "q1", USER "data", AI "resp", USER "q2"]
- * OUTPUT: [FusedMessage("user", ["q1", "data"]), FusedMessage("assistant", ["resp"]), FusedMessage("user", ["q2"])]
+ * OUTPUT: [FusedMessage("user", [q1, data]), FusedMessage("assistant", [resp]), FusedMessage("user", [q2])], each a text part
  */
 internal fun fuseConsecutiveUserMessages(messages: List<SessionMessage>): List<FusedMessage> {
     val result = mutableListOf<FusedMessage>()
-    val currentUserBlocks = mutableListOf<String>()
+    val currentUserBlocks = mutableListOf<PromptPart>()
 
     messages.forEach { msg ->
         when (msg.sender) {
             MessageSender.USER -> {
-                // Accumulate USER content blocks (filter empty/blank blocks)
-                extractTextContent(msg)?.let { text ->
-                    if (text.isNotBlank()) {
-                        currentUserBlocks.add(text)
-                    }
-                }
+                // Accumulate USER content blocks, images in their place (blank texts left out)
+                currentUserBlocks.addAll(msg.userParts(extractTextContent(msg)))
             }
             MessageSender.AI -> {
                 // An empty AI message is left out (the API refuses an empty block), and it
@@ -174,17 +193,13 @@ internal fun fuseConsecutiveUserMessages(messages: List<SessionMessage>): List<F
                         result.add(FusedMessage("user", currentUserBlocks.toList()))
                         currentUserBlocks.clear()
                     }
-                    result.add(FusedMessage("assistant", listOf(aiContent)))
+                    result.add(FusedMessage("assistant", listOf(PromptPart.Text(aiContent))))
                 }
             }
             MessageSender.SYSTEM -> {
                 // Should never happen after transformSystemMessagesToUser
                 // But handle gracefully by treating as USER (filter empty/blank blocks)
-                extractTextContent(msg)?.let { text ->
-                    if (text.isNotBlank()) {
-                        currentUserBlocks.add(text)
-                    }
-                }
+                currentUserBlocks.addAll(msg.userParts(extractTextContent(msg)))
             }
         }
     }

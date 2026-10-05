@@ -395,11 +395,15 @@ class AISessionService(private val context: Context) : ExecutableService {
                 return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
             }
 
+            // Its images, whose rows go with it by cascade and whose files go after them
+            val imageIds = database.attachedImageDao().getForSession(sessionId).map { it.id }
+
             // Delete all messages for this session first
             database.aiDao().deleteMessagesForSession(sessionId)
 
             // Delete the session
             database.aiDao().deleteSession(sessionEntity)
+            imageIds.forEach { com.assistant.core.ai.enrichments.AttachedImages.delete(context, it) }
 
             LogManager.aiSession("Successfully deleted session: $sessionId", "INFO")
 
@@ -1052,8 +1056,12 @@ class AISessionService(private val context: Context) : ExecutableService {
                 return OperationResult.error("Cannot delete non-CHAT session")
             }
 
+            // Its images, whose rows go with it by cascade and whose files go after them
+            val imageIds = database.attachedImageDao().getForSession(sessionId).map { it.id }
+
             // Delete session (CASCADE DELETE will handle messages automatically)
             dao.deleteSessionById(sessionId)
+            imageIds.forEach { com.assistant.core.ai.enrichments.AttachedImages.delete(context, it) }
 
             LogManager.aiSession("Successfully deleted CHAT session: $sessionId", "INFO")
 

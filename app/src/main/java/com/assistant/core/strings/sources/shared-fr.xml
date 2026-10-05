@@ -53,9 +53,11 @@
     <!-- AI Interface - Composer and Enrichments -->
     <string name="ai_composer_placeholder">Écris ton message...</string>
     <string name="ai_composer_add_text">Texte</string>
-    <string name="ai_composer_active_block">Actif</string>
-    <string name="ai_composer_enrichments_label">Enrichissements :</string>
-    <string name="ai_enrichment_config">Configuration enrichissement</string>
+    <string name="ai_image_block">Image</string>
+    <string name="ai_image_missing">Le fichier de cette image est introuvable</string>
+    <string name="ai_image_no_camera">Aucune application de ce téléphone ne prend de photo pour une autre</string>
+    <string name="ai_image_model_does_not_read">Ce modèle ne lit pas les images : le message ne partira pas avec elle</string>
+    <string name="ai_image_model_unknown">Rien ne dit si ce modèle lit les images : le message ne partira pas avec elle</string>
     <string name="pointer_enrichment_selector_title">Sélectionner données</string>
     <string name="pointer_level_app">App</string>
     <string name="pointer_attach_config">Config</string>
@@ -98,31 +100,10 @@
     <string name="filter_op_present">avec réponse</string>
     <string name="filter_op_period">sur la période</string>
     <string name="pointer_enrichment_config">Configuration Pointer</string>
-    <string name="ai_enrichment_selection_label">Sélection:</string>
-    <string name="ai_enrichment_importance">Importance</string>
     <string name="ai_importance_optional">optionnel</string>
     <string name="ai_importance_important">important</string>
     <string name="ai_importance_essential">essentiel</string>
-    <string name="ai_enrichment_include_real_data">Inclure données réelles (en plus de l\'échantillon)</string>
-    <string name="ai_enrichment_description_optional">Description (optionnel)</string>
-    <string name="ai_enrichment_data_inclusion_title">Données à inclure</string>
-    <string name="ai_enrichment_selection_summary">Résumé de la sélection</string>
 
-    <!-- INSTANCE-level enrichment toggles -->
-    <string name="ai_enrichment_include_schema_config">Documentation configuration de l\'outil</string>
-    <string name="ai_enrichment_include_schema_data">Documentation données de l\'outil</string>
-    <string name="ai_enrichment_include_tool_config">Configuration de l\'outil</string>
-    <string name="ai_enrichment_include_data_sample">Échantillon de données</string>
-    <string name="ai_enrichment_include_stats">Statistiques</string>
-    <string name="ai_enrichment_include_data">Données</string>
-
-    <!-- ZONE-level enrichment toggles -->
-    <string name="ai_enrichment_include_zone_config">Configuration de la zone</string>
-    <string name="ai_enrichment_include_tools_list">Liste des outils</string>
-    <string name="ai_enrichment_include_tools_config">Configuration des outils</string>
-    <string name="ai_enrichment_include_tools_data">Données des outils</string>
-
-    <string name="ai_enrichment_todo_implement">TODO: Implémenter l\'interface de configuration %1$s</string>
     <string name="ai_enrichment_invalid">enrichissement invalide</string>
     <string name="ai_enrichment_unreadable">noms illisibles</string>
     <string name="ai_schema_already_included">Schéma %1$s déjà inclus précédemment</string>
@@ -303,14 +284,6 @@
     <string name="ai_values_filtered">valeurs filtrées</string>
     <string name="ai_period_specific">période spécifique</string>
     <string name="ai_period_extended">période étendue</string>
-
-    <!-- AI Enrichment Actions - Display labels -->
-    <string name="ai_enrichment_use">utiliser %1$s</string>
-    <string name="ai_enrichment_create">créer %1$s</string>
-    <string name="ai_enrichment_modify">modifier %1$s</string>
-    <string name="ai_enrichment_organize">organiser %1$s</string>
-    <string name="ai_enrichment_document">documenter %1$s</string>
-    <string name="ai_enrichment_zone_prefix">zone</string>
 
     <!-- AI Errors - Orchestration -->
     <string name="ai_error_store_user_message">Échec de la sauvegarde du message utilisateur: %1$s</string>
@@ -546,7 +519,6 @@
     <string name="confirm_delete">Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.</string>
     <string name="confirm_reset">Voulez-vous réinitialiser la configuration ? Les données actuelles seront perdues.</string>
 
-    
     <!-- The one date input (InstantPicker) and its period -->
     <string name="period_from">Depuis</string>
     <string name="period_until">Jusqu\'à</string>
@@ -972,16 +944,16 @@
     <string name="backup_import">Importer un fichier de sauvegarde</string>
     <string name="backup_reset">Réinitialiser toutes les données</string>
     <string name="backup_export_success">Export réussi</string>
+    <string name="backup_export_success_missing_images">Sauvegarde faite ; %1$d images avaient perdu leur fichier et le restent dedans</string>
     <string name="backup_import_confirm">Toutes les données actuelles seront écrasées. Continuer ?</string>
     <string name="backup_reset_confirm">Toutes les données seront définitivement supprimées. Continuer ?</string>
     <string name="backup_import_success">Import réussi, redémarrage...</string>
     <string name="backup_reset_success">Réinitialisation réussie, redémarrage...</string>
     <string name="backup_version_too_recent">Ce fichier provient d\'une version plus récente de l\'application</string>
     <string name="backup_invalid_file">Fichier de sauvegarde invalide</string>
+    <string name="backup_import_image_missing">La sauvegarde nomme l\'image %1$s (session %2$s) sans en contenir le fichier, qui ne manquait pas à l\'export : la sauvegarde est abîmée, rien n\'a été importé.</string>
     <string name="backup_export_failed">Échec de l\'export</string>
-    <string name="backup_export_no_data">Échec de l\'export: aucune donnée retournée</string>
     <string name="backup_import_failed">Échec de l\'import</string>
-    <string name="backup_import_read_failed">Impossible de lire le fichier de sauvegarde</string>
     <string name="backup_reset_failed">Échec de la réinitialisation</string>
 
     <!-- AI PROVIDERS - Provider management -->
@@ -1008,6 +980,11 @@
     <string name="ai_provider_effort_default">Défaut du modèle</string>
     <string name="ai_provider_thinking_off">Sans réflexion</string>
     <string name="ai_provider_schema_thinking_off">Coupe la réflexion du modèle, là où elle peut l\'être</string>
+    <string name="ai_provider_reads_images">Lit les images</string>
+    <string name="ai_provider_schema_reads_images">Si le modèle lit les images, comme l\'a dit la liste des modèles du fournisseur à l\'enregistrement de la config ; posé par l\'app, jamais à la main.</string>
+    <string name="ai_provider_reads_images_yes">oui</string>
+    <string name="ai_provider_reads_images_no">non</string>
+    <string name="ai_provider_reads_images_unknown">inconnu : les images sont refusées</string>
     <string name="ai_provider_no_reasoning">Aucun réglage de réflexion connu pour ce modèle</string>
     <string name="ai_provider_error_thinking_off">%1$s ne peut pas couper sa réflexion</string>
     <string name="ai_provider_error_effort_with_thinking_off">Sans réflexion, un effort de raisonnement doit être choisi</string>
@@ -1180,6 +1157,11 @@
     <string name="action_verbalize_references_names">Lecture des noms des choses liées</string>
     <string name="action_verbalize_references_choices">Liste de ce qu\'un lien peut désigner</string>
     <string name="file_error_not_text">%1$s n\'est pas un fichier texte : seul du texte se joint (CSV, texte brut, Markdown, JSON).</string>
+    <string name="image_error_not_read">Cette image n\'a pas pu être lue : %1$s</string>
+    <string name="ai_image_error_model_does_not_read">Ce modèle ne lit pas les images : retirez-les du message, ou choisissez un modèle qui les lit.</string>
+    <string name="ai_image_error_model_unknown">Rien ne dit si ce modèle lit les images, elles ne partent donc pas : rouvrez la config du fournisseur et enregistrez-la, ou choisissez un autre modèle.</string>
+    <string name="ai_image_error_too_many">Cette conversation compte %1$d images ; une requête en porte %2$d au plus.</string>
+    <string name="ai_image_error_missing">Le fichier d\'une image de cette conversation est introuvable : elle ne peut pas partir.</string>
     <string name="file_error_not_found">Aucun fichier joint n\'a l\'id %1$s.</string>
     <string name="file_error_range">Lignes à lire : start_line à partir de 1 et lines à partir de 1 (reçu %1$d et %2$d).</string>
     <string name="file_dialog_title">Joindre un fichier</string>
@@ -1190,6 +1172,8 @@
     <string name="file_summary_preview">Fichier : %1$s (%2$d lignes), aperçu seulement</string>
     <string name="file_error_encoding">%1$s n\'est pas un texte lisible (UTF-8 attendu).</string>
     <string name="action_attach">Joindre un fichier</string>
+    <string name="action_photo">Photo</string>
+    <string name="action_gallery">Galerie</string>
     <string name="action_arrange">Disposer</string>
     <string name="grid_leave_title">Quitter la zone ?</string>
     <string name="grid_leave_message">Le déplacement en cours sera annulé.</string>
@@ -1200,6 +1184,8 @@
     <string name="action_verbalize_files_attach">Ajout d\'un fichier joint</string>
     <string name="action_verbalize_files_read">Lecture d\'un fichier joint</string>
     <string name="action_verbalize_files_delete">Retrait d\'un fichier joint</string>
+    <string name="action_verbalize_files_attach_image">Ajout d\'une image</string>
+    <string name="action_verbalize_files_delete_image">Retrait d\'une image jointe</string>
     <string name="service_error_reading_param">Une lecture demande "%1$s".</string>
     <string name="service_error_reading_source">Une lecture lit les entrées d\'une instance d\'outil, pas d\'un %1$s.</string>
     <string name="service_error_reading_source_unread">L\'outil lu n\'a pas pu être lu ; rien ne dit qu\'il a été supprimé.</string>
@@ -1618,8 +1604,6 @@
     <string name="notification_error_send_failed">Échec de l\'envoi de la notification</string>
     <string name="notification_error_unknown_icon">Icône de notification inconnue : %1$s</string>
 
-
-    
     <!-- Logs Screen -->
     <string name="settings_logs">Logs d'erreurs</string>
     <string name="logs_count">logs</string>
@@ -1652,7 +1636,6 @@
     <string name="ai_enrichment_pointer_zone">Zone</string>
     <string name="ai_enrichment_pointer_tool">Outil</string>
     <string name="ai_enrichment_pointer_entry">Entrée</string>
-    <string name="ai_enrichment_pointer_generic">Données</string>
     <string name="ai_enrichment_pointer_context_config">configuration</string>
     <string name="ai_enrichment_pointer_context_data">données</string>
     <string name="ai_enrichment_pointer_period_range">entre %1$s et %2$s</string>

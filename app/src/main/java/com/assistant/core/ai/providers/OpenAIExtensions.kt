@@ -33,9 +33,17 @@ import com.assistant.core.utils.LogManager
  *   the model's default
  * @param datetimeText The dated closing message (buildDatetimeMessage), built by the caller:
  *   it reads the clock and the strings, which keeps this function pure and testable
+ * @param imageData The JPEG of each image the messages carry, as base64 (AttachedImages)
  * @return JsonObject ready for OpenAI API /v1/responses endpoint
  */
-internal fun PromptData.toOpenAIJson(model: String, temperature: Double, maxOutputTokens: Int, effort: String?, datetimeText: String): JsonObject {
+internal fun PromptData.toOpenAIJson(
+    model: String,
+    temperature: Double,
+    maxOutputTokens: Int,
+    effort: String?,
+    datetimeText: String,
+    imageData: ImageData = { error("Image $it in a prompt built without image data") }
+): JsonObject {
     return buildJsonObject {
         put("model", model)
         put("temperature", temperature)
@@ -71,25 +79,62 @@ internal fun PromptData.toOpenAIJson(model: String, temperature: Double, maxOutp
             }
 
             // The conversation, then the dated message
-            conversationMessages(datetimeText).forEach { add(it) }
+            conversationMessages(datetimeText, ImageParts.RESPONSES, imageData).forEach { add(it) }
         }
+    }
+}
+
+/**
+ * How a message with images is written: the Responses API and Chat Completions name their parts
+ * differently, an image going as a `data:` URL in both.
+ */
+internal enum class ImageParts(val textType: String) {
+    /** `{"type": "input_text", "text"}`, `{"type": "input_image", "image_url": "data:…"}` */
+    RESPONSES("input_text"),
+
+    /** `{"type": "text", "text"}`, `{"type": "image_url", "image_url": {"url": "data:…"}}` */
+    CHAT_COMPLETIONS("text");
+
+    fun image(dataUrl: String): JsonObject = when (this) {
+        RESPONSES -> buildJsonObject { put("type", "input_image"); put("image_url", dataUrl) }
+        CHAT_COMPLETIONS -> buildJsonObject { put("type", "image_url"); putJsonObject("image_url") { put("url", dataUrl) } }
     }
 }
 
 /**
  * The session's messages as OpenAI role messages, the dated closing message last: SYSTEM messages
  * fused into the user's turn (transformSystemMessagesToUser), an AI message sent as the JSON it
- * answered, an empty message left out. Shared by the Responses API (toOpenAIJson) and Chat
- * Completions (toChatCompletionsJson), whose messages have this same form.
+ * answered, an empty message left out. A message with images goes as a list of parts, each image
+ * where the user put it; any other as its text. Shared by the Responses API (toOpenAIJson) and
+ * Chat Completions (toChatCompletionsJson), whose messages have this same form but for the names
+ * of their parts ([format]).
  *
  * @param datetimeText The dated closing message, built by the caller (buildDatetimeMessage)
+ * @param imageData The JPEG of each image the messages carry, as base64 (AttachedImages)
  */
-internal fun PromptData.conversationMessages(datetimeText: String): List<JsonObject> {
+internal fun PromptData.conversationMessages(
+    datetimeText: String,
+    format: ImageParts,
+    imageData: ImageData
+): List<JsonObject> {
     val messages = transformSystemMessagesToUser(sessionMessages).mapNotNull { msg ->
         val role = when (msg.sender) {
             MessageSender.USER -> "user"
             MessageSender.AI -> "assistant"
             MessageSender.SYSTEM -> "user"  // Should not happen after normalization
+        }
+        if (msg.promptParts != null) {
+            return@mapNotNull buildJsonObject {
+                put("role", role)
+                putJsonArray("content") {
+                    msg.userParts(null).forEach { part ->
+                        when (part) {
+                            is PromptPart.Text -> addJsonObject { put("type", format.textType); put("text", part.text) }
+                            is PromptPart.Image -> add(format.image("data:$IMAGE_MEDIA_TYPE;base64,${imageData(part.imageId)}"))
+                        }
+                    }
+                }
+            }
         }
         val content = when {
             msg.sender == MessageSender.AI && msg.aiMessageJson != null -> msg.aiMessageJson

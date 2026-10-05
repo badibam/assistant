@@ -79,6 +79,16 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // The images' folder confronted with their table, once per process, before any screen:
+        // nothing can be joining an image yet
+        kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+            try {
+                com.assistant.core.ai.enrichments.AttachedImages.sweepOnce(this@MainActivity)
+            } catch (e: Exception) {
+                LogManager.aiEnrichment("Startup sweep of the images failed: ${e.message}", "ERROR", e)
+            }
+        }
+
         // Initialize app config cache
         AppConfigManager.initialize(this)
 

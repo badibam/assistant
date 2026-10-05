@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.assistant.core.ai.providers.AIProvider
+import com.assistant.core.ai.providers.ImageInput
 import com.assistant.core.ai.providers.ProviderModel
 import com.assistant.core.ai.providers.ReasoningSettings
 import com.assistant.core.fields.settings.SettingEditor
@@ -87,6 +88,8 @@ fun AIProviderConfigScreen(
             listed.error?.let { UI.Toast(context, s.shared("ai_provider_fetch_error").format(it), Duration.LONG) }
             // A config without a model takes the first one listed
             if (!settings.has("model")) listed.models.firstOrNull()?.let { settings = JSONObject(settings.toString()).put("model", it.id) }
+            // What the list says of the model's images, kept with the config once it is saved
+            if (listed.models.isNotEmpty()) settings = withListedImageInput(JSONObject(settings.toString()), listed.models)
         }
     }
 
@@ -122,6 +125,17 @@ fun AIProviderConfigScreen(
                     required = true
                 )
             }
+        }
+    }, ImageInput.READS_IMAGES to object : SettingEditor {
+        // Shown, never edited: what the list said, else what a fact says, else unknown
+        @Composable
+        override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+            val reads = provider.readsImages(settings, context)
+            UI.Text(s.shared("label_value").format(s.shared("ai_provider_reads_images"), s.shared(when (reads) {
+                true -> "ai_provider_reads_images_yes"
+                false -> "ai_provider_reads_images_no"
+                null -> "ai_provider_reads_images_unknown"
+            })), TextType.CAPTION)
         }
     }, ReasoningSettings.THINKING_OFF to object : SettingEditor {
         @Composable
@@ -182,10 +196,12 @@ fun AIProviderConfigScreen(
                 // A new key or address lists other models: the ones listed before no longer hold
                 SettingsForm(nodes, settings, { next ->
                     if (listingSettings.any { next.optString(it) != settings.optString(it) }) models = emptyList()
-                    // Another model: the reasoning chosen for the previous one may not hold
+                    // Another model: the reasoning chosen for the previous one may not hold, and
+                    // whether it reads images is what the list says of the new one
                     if (next.optString("model") != settings.optString("model")) {
                         next.remove(ReasoningSettings.EFFORT)
                         next.remove(ReasoningSettings.THINKING_OFF)
+                        withListedImageInput(next, models)
                     }
                     settings = next
                 }, context, editors)
@@ -201,4 +217,14 @@ fun AIProviderConfigScreen(
             }
         }
     }
+}
+
+/**
+ * [settings] given what [models], the list, says of its model's images: stored when the list says,
+ * removed when it says nothing or does not hold the model, a fact then deciding (ImageInput).
+ */
+private fun withListedImageInput(settings: JSONObject, models: List<ProviderModel>): JSONObject {
+    val listed = models.find { it.id == settings.optString("model") }?.readsImages
+    if (listed != null) settings.put(ImageInput.READS_IMAGES, listed) else settings.remove(ImageInput.READS_IMAGES)
+    return settings
 }

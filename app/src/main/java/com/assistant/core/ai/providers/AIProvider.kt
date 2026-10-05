@@ -43,6 +43,16 @@ interface AIProvider {
      */
     fun modelListingSettings(): List<String> = listOf("api_key")
 
+    /**
+     * This provider's name in the providers' facts (ProviderFacts: "anthropic", "openai"…), null
+     * when no fact can name its models: a server of the user's.
+     */
+    fun factsProvider(): String?
+
+    /** Whether [config]'s model reads images; null when nothing says (ImageInput). */
+    fun readsImages(config: JSONObject, context: Context): Boolean? =
+        ImageInput.readsImages(config, ProviderFacts.of(context), factsProvider())
+
     /** The models [config] gives access to, for the config screen to offer them. */
     suspend fun listModels(config: JSONObject): ProviderModels
 
@@ -70,10 +80,11 @@ interface AIProvider {
 }
 
 /**
- * A model a provider offers: its identifier, the name it is shown under, and what its config may
- * set of its reasoning (null: nothing, no fact nor list saying it).
+ * A model a provider offers: its identifier, the name it is shown under, what its config may set
+ * of its reasoning (null: nothing, no fact nor list saying it), and whether it reads images as the
+ * list says (null: the list says nothing; ImageInput).
  */
-data class ProviderModel(val id: String, val label: String, val reasoning: Reasoning? = null)
+data class ProviderModel(val id: String, val label: String, val reasoning: Reasoning? = null, val readsImages: Boolean? = null)
 
 /**
  * What a model's config may set of its reasoning, as its provider's list or the facts say.
