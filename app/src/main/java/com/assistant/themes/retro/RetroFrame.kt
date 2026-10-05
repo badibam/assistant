@@ -45,7 +45,11 @@ internal fun dividerRow(columns: Int, dark: Boolean): String = piece(Piece.TOP, 
  * it, its fill that surface's ground.
  *
  * Its size falls on whole cells both ways. A size the caller imposes is rounded down to whole
- * cells, the frame centred in it; otherwise the content decides. Across, the content is inset by a whole cell each side;
+ * cells, the frame centred in it; otherwise the content decides. A [fillContent] frame given its
+ * height takes all of it, in whole drawing pixels: the grid's rows are free of the cells
+ * (RetroTheme.gridRowGapPx), and a tile two rows high would otherwise lose most of a cell, half
+ * above and half below. Its bottom row goes to the bottom, and one more hollow row drawn under
+ * the others closes the gap: a side piece is the same all the way down, so nothing shows the joint. Across, the content is inset by a whole cell each side;
  * down, it is centred in what the frame leaves, the frame keeping [air] around it: the border
  * alone for a [compact] frame (a field, one line in two rows), a whole cell otherwise. A frame
  * takes at least [minRows] rows: a button's word keeps air above and below it in three.
@@ -88,21 +92,29 @@ internal fun Framed(
         // under them gets the frame overflowing its place, never a row of a negative count of pieces
         val columns = (size.width / tile).toInt().coerceAtLeast(2)
         val rows = (size.height / tile).toInt().coerceAtLeast(2)
+        // A tile's frame stretched down to its whole height, in whole drawing pixels; another
+        // frame whole cells high
+        val height = if (fillContent) maxOf(size.height.toInt() / grid.scale * grid.scale, rows * tile) else rows * tile
+        val extra = height - rows * tile
         // What is left past the whole cells, shared on both sides in whole drawing pixels
         val origin = Offset(centring(size.width.toInt(), columns * tile, grid.scale).toFloat(),
-            centring(size.height.toInt(), rows * tile, grid.scale).toFloat())
-        val layers = (0 until rows).map { row ->
-            listOf(false, true).map { dark ->
-                measurer.measure(frameRow(columns, row, rows, dark), style.copy(color = if (dark) inner else outer), softWrap = false)
-            }
+            centring(size.height.toInt(), height, grid.scale).toFloat())
+        fun layersOf(row: Int, of: Int) = listOf(false, true).map { dark ->
+            measurer.measure(frameRow(columns, row, of, dark), style.copy(color = if (dark) inner else outer), softWrap = false)
         }
+        val layers = (0 until rows).map { row -> layersOf(row, rows) }
+        // The hollow row closing a stretched frame's gap, just above its bottom row
+        val joint = if (extra > 0) layersOf(1, 3) else null
         onDrawBehind {
             drawRect(fill, topLeft = origin + Offset(border.toFloat(), border.toFloat()),
-                size = Size(columns * tile - 2f * border, rows * tile - 2f * border))
-            layers.forEachIndexed { row, both ->
-                // A piece fills the eleven rows above its baseline: the row's cell ends there.
-                for (layout in both) drawText(layout, topLeft = origin + Offset(0f, (row + 1) * tile - layout.firstBaseline))
+                size = Size(columns * tile - 2f * border, height - 2f * border))
+            // A piece fills the eleven rows above its baseline: the row's cell ends there.
+            fun draw(both: List<androidx.compose.ui.text.TextLayoutResult>, bottom: Int) {
+                for (layout in both) drawText(layout, topLeft = origin + Offset(0f, bottom - layout.firstBaseline))
             }
+            // Under the others, so that the corners stay on top of it
+            joint?.let { draw(it, height - tile) }
+            layers.forEachIndexed { row, both -> draw(both, if (row == rows - 1) height else (row + 1) * tile) }
         }
     }
 
@@ -122,11 +134,13 @@ internal fun Framed(
             else -> Constraints.Infinity
         }
         if (fillContent && givenColumns != null && givenRows != null) {
-            val inside = Constraints.fixed(room, ((givenRows - 2) * tile).coerceAtLeast(0))
+            // The frame's whole height, as it is drawn above
+            val height = maxOf(constraints.maxHeight / grid.scale * grid.scale, givenRows * tile)
+            val inside = Constraints.fixed(room, (height - 2 * tile).coerceAtLeast(0))
             val placeable = measurables.single().measure(inside)
             return@Layout layout(constraints.maxWidth, constraints.maxHeight) {
                 placeable.place(centring(constraints.maxWidth, givenColumns * tile, grid.scale) + tile,
-                    centring(constraints.maxHeight, givenRows * tile, grid.scale) + tile)
+                    centring(constraints.maxHeight, height, grid.scale) + tile)
             }
         }
         val placeable = measurables.single().measure(
