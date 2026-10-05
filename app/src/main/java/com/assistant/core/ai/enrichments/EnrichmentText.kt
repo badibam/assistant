@@ -3,6 +3,7 @@ package com.assistant.core.ai.enrichments
 import android.content.Context
 import com.assistant.core.ai.data.EnrichmentType
 import com.assistant.core.ai.data.MessageSegment
+import com.assistant.core.ai.data.PromptPart
 import com.assistant.core.ai.data.RichMessage
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -35,21 +36,37 @@ class EnrichmentText private constructor(
 ) {
     private val s = Strings.`for`(context = context)
 
-    /** What the user reads of [message]: its text, each block in brackets. */
+    /** What the user reads of [message]: its text, each block in brackets, an image as its name. */
     fun display(message: RichMessage): String = message.segments.joinToString("\n") { segment ->
         when (segment) {
             is MessageSegment.Text -> segment.content
             is MessageSegment.EnrichmentBlock -> "[${display(segment)}]"
+            is MessageSegment.Image -> "[${s.shared("ai_image_block")}]"
         }
     }.trim()
 
-    /** What the AI reads of [message]: its text, each block in brackets with its ids. */
-    suspend fun prompt(message: RichMessage): String = message.segments.map { segment ->
-        when (segment) {
-            is MessageSegment.Text -> segment.content
-            is MessageSegment.EnrichmentBlock -> "[${prompt(segment)}]"
+    /**
+     * What the AI reads of [message], in parts: its text, each block in brackets with its ids,
+     * and each image as a part of its own, where the user put it. A message without images is
+     * a single text part.
+     */
+    suspend fun promptParts(message: RichMessage): List<PromptPart> {
+        val parts = mutableListOf<PromptPart>()
+        val run = mutableListOf<String>()
+        fun closeRun() {
+            run.joinToString("\n").trim().takeIf { it.isNotEmpty() }?.let { parts.add(PromptPart.Text(it)) }
+            run.clear()
         }
-    }.joinToString("\n").trim()
+        for (segment in message.segments) {
+            when (segment) {
+                is MessageSegment.Text -> run.add(segment.content)
+                is MessageSegment.EnrichmentBlock -> run.add("[${prompt(segment)}]")
+                is MessageSegment.Image -> { closeRun(); parts.add(PromptPart.Image(segment.imageId)) }
+            }
+        }
+        closeRun()
+        return parts
+    }
 
     /** A block's text for the screen. */
     fun display(block: MessageSegment.EnrichmentBlock): String = when (block.type) {

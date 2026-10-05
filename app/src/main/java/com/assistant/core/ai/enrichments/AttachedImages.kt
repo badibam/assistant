@@ -47,6 +47,17 @@ object AttachedImages {
         check(part.renameTo(file(context, id))) { "Image $id: ${part.name} not renamed" }
     }
 
+    /**
+     * The JPEG of image [id] as base64, for a request to the model.
+     *
+     * @throws IllegalStateException if its file is missing: a row without its file is an error
+     */
+    fun base64(context: Context, id: String): String {
+        val file = file(context, id)
+        check(file.exists()) { "Image $id: its file is missing" }
+        return java.util.Base64.getEncoder().encodeToString(file.readBytes())
+    }
+
     /** The file of image [id] deleted; one already gone is no error. */
     fun delete(context: Context, id: String) {
         val file = file(context, id)

@@ -2,6 +2,7 @@ package com.assistant.core.ai.providers
 
 import com.assistant.core.ai.data.MessageSender
 import com.assistant.core.ai.data.PromptData
+import com.assistant.core.ai.data.PromptPart
 import com.assistant.core.ai.data.SessionMessage
 import com.assistant.core.ai.data.SystemMessage
 import com.assistant.core.ai.data.CommandStatus
@@ -97,3 +98,16 @@ fun SystemMessage.toPromptText(): String = buildString {
         append(formattedData)
     }
 }
+
+/**
+ * What a message from the user's side says to the model, in parts: the parts PromptManager
+ * prepared for a message with images, otherwise its [text] alone; nothing for a blank text.
+ */
+internal fun SessionMessage.userParts(text: String?): List<PromptPart> =
+    promptParts ?: listOfNotNull(text?.takeIf { it.isNotBlank() }?.let { PromptPart.Text(it) })
+
+/** The JPEG of an image as base64, by its id: read from its file when the request is built. */
+typealias ImageData = (imageId: String) -> String
+
+/** The media type every kept image has: AttachedImages writes JPEG only. */
+internal const val IMAGE_MEDIA_TYPE = "image/jpeg"

@@ -21,6 +21,9 @@ class OpenAICompatibleStandardProvider(private val context: Context) : AIProvide
 
     override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
+    // A server of the user's: no fact names its models, only its own list may say
+    override fun factsProvider(): String? = null
+
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
     // The address is the user's, so listing needs it; the key only if the server asks for one
@@ -48,6 +51,9 @@ class OpenAICompatibleEconomicProvider(private val context: Context) : AIProvide
     override fun getDisplayName(): String = "Compatible OpenAI (économique)"
 
     override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
+
+    // A server of the user's: no fact names its models, only its own list may say
+    override fun factsProvider(): String? = null
 
     override fun getConfigHelp(context: Context): String = core.configHelp(context)
 

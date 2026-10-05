@@ -53,6 +53,11 @@
     <!-- AI Interface - Composer and Enrichments -->
     <string name="ai_composer_placeholder">Write your message...</string>
     <string name="ai_composer_add_text">Text</string>
+    <string name="ai_image_block">Image</string>
+    <string name="ai_image_missing">The file of this image is missing</string>
+    <string name="ai_image_no_camera">No camera app on this phone takes a photo for another app</string>
+    <string name="ai_image_model_does_not_read">This model does not read images: the message will not go with it</string>
+    <string name="ai_image_model_unknown">Nothing says whether this model reads images: the message will not go with it</string>
     <string name="pointer_enrichment_selector_title">Select data</string>
     <string name="pointer_level_app">App</string>
     <string name="pointer_attach_config">Config</string>
@@ -975,6 +980,11 @@
     <string name="ai_provider_effort_default">Model\'s default</string>
     <string name="ai_provider_thinking_off">No thinking</string>
     <string name="ai_provider_schema_thinking_off">Turns the model\'s thinking off, where it can be</string>
+    <string name="ai_provider_reads_images">Reads images</string>
+    <string name="ai_provider_schema_reads_images">Whether the model reads images, as the provider\'s model list said when the config was saved; set by the app, never by hand.</string>
+    <string name="ai_provider_reads_images_yes">yes</string>
+    <string name="ai_provider_reads_images_no">no</string>
+    <string name="ai_provider_reads_images_unknown">unknown: images are refused</string>
     <string name="ai_provider_no_reasoning">No known reasoning setting for this model</string>
     <string name="ai_provider_error_thinking_off">%1$s cannot turn its thinking off</string>
     <string name="ai_provider_error_effort_with_thinking_off">Without thinking, a reasoning effort must be chosen</string>
@@ -1148,6 +1158,10 @@
     <string name="action_verbalize_references_choices">Listing what a link can point to</string>
     <string name="file_error_not_text">%1$s is not a text file: only text can be joined (CSV, plain text, Markdown, JSON).</string>
     <string name="image_error_not_read">This image could not be read: %1$s</string>
+    <string name="ai_image_error_model_does_not_read">This model does not read images: take them off the message, or choose a model that reads them.</string>
+    <string name="ai_image_error_model_unknown">Nothing says whether this model reads images, so they are not sent: open the provider\'s config and save it again, or choose another model.</string>
+    <string name="ai_image_error_too_many">This conversation holds %1$d images; a request carries %2$d at most.</string>
+    <string name="ai_image_error_missing">The file of an image of this conversation is missing: it cannot be sent.</string>
     <string name="file_error_not_found">No joined file has the id %1$s.</string>
     <string name="file_error_range">Lines to read: start_line from 1 and lines from 1 (got %1$d and %2$d).</string>
     <string name="file_dialog_title">Join a file</string>
@@ -1158,6 +1172,8 @@
     <string name="file_summary_preview">File: %1$s (%2$d lines), preview only</string>
     <string name="file_error_encoding">%1$s is not readable text (UTF-8 expected).</string>
     <string name="action_attach">Join a file</string>
+    <string name="action_photo">Photo</string>
+    <string name="action_gallery">Gallery</string>
     <string name="action_arrange">Arrange</string>
     <string name="grid_leave_title">Leave the zone?</string>
     <string name="grid_leave_message">The move in progress will be cancelled.</string>

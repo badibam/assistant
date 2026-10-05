@@ -1,5 +1,7 @@
 package com.assistant.core.ai.providers
 
+import org.json.JSONObject
+
 import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.ai.data.*
@@ -128,6 +130,19 @@ class AIClient(private val context: Context) {
                         errorMessage = s.shared("ai_error_provider_not_configured").format(effectiveProviderId),
                         failure = AIFailure.CONFIG
                     )
+                }
+
+                // A history with images goes whole or not at all: refused, and said, when the
+                // model does not read them, when nothing says it does, when there are too many,
+                // or when an image's file is missing; never sent without them
+                val imageIds = promptData.sessionMessages.flatMap { it.promptParts.orEmpty() }
+                    .filterIsInstance<com.assistant.core.ai.data.PromptPart.Image>().map { it.imageId }
+                val imageRefusal = ImageInput.refusal(imageIds.size, provider.readsImages(JSONObject(providerConfig), context)) { s.shared(it) }
+                    ?: imageIds.firstOrNull { !com.assistant.core.ai.enrichments.AttachedImages.file(context, it).exists() }
+                        ?.let { s.shared("ai_image_error_missing") }
+                if (imageRefusal != null) {
+                    LogManager.aiService("Request with ${imageIds.size} images refused: $imageRefusal", "WARN")
+                    return@withContext AIResponse(success = false, content = "", errorMessage = imageRefusal, failure = AIFailure.CONFIG)
                 }
 
                 // Send query to provider with PromptData

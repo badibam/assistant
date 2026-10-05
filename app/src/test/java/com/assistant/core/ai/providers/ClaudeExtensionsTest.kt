@@ -2,6 +2,7 @@ package com.assistant.core.ai.providers
 
 import com.assistant.core.ai.data.MessageSender
 import com.assistant.core.ai.data.PromptData
+import com.assistant.core.ai.data.PromptPart
 import com.assistant.core.ai.data.SessionMessage
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -139,7 +140,7 @@ class ClaudeExtensionsTest {
     fun blankMessages_areDropped() {
         val fused = fuseConsecutiveUserMessages(listOf(user("q1"), user("  "), ai(""), user("q2")))
 
-        assertEquals(listOf(FusedMessage("user", listOf("q1", "q2"))), fused)
+        assertEquals(listOf(FusedMessage("user", listOf(PromptPart.Text("q1"), PromptPart.Text("q2")))), fused)
     }
 
     // ==================== Options ====================

@@ -2,6 +2,9 @@ package com.assistant.core.ai.ui.components
 
 import com.assistant.core.ai.data.RichMessage
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -78,6 +81,9 @@ private val NullableEnrichmentDialogStateSaver: Saver<EnrichmentDialogState?, St
  * - Deleting the active block activates the one before it (the one after when it was the
  *   first); the list is never empty: an empty text replaces the last block deleted.
  * - An empty text does not go with the message.
+ * - An image, taken with the phone's camera or picked in its photos, is a block of its own, kept
+ *   with the session; with none, none can be joined. The block says when the model does not
+ *   read images, and the message is refused while it holds one then.
  * The rules live in [ComposerBlocks]; this composable shows the blocks and wires the gestures.
  */
 @Composable
@@ -100,14 +106,18 @@ fun UI.RichComposer(
     // A file is kept with its session: without one, none can be joined
     val offeredTypes = enrichmentTypes.filter { it != EnrichmentType.FILE || sessionId != null }
 
-    /** The file of [block], if it is one, deleted: taken off the composer, it will never go. */
+    /** The file or the image of [block], if it is one, deleted: taken off the composer, it will never go. */
     fun deleteFile(block: ComposerBlock) {
-        val enrichment = block.segment as? MessageSegment.EnrichmentBlock ?: return
-        if (enrichment.type != EnrichmentType.FILE) return
-        val id = com.assistant.core.ai.enrichments.FileEnrichment.fromJson(enrichment.config).fileId
+        val (operation, id) = when (val segment = block.segment) {
+            is MessageSegment.Image -> "files.delete_image" to segment.imageId
+            is MessageSegment.EnrichmentBlock ->
+                if (segment.type == EnrichmentType.FILE) "files.delete" to com.assistant.core.ai.enrichments.FileEnrichment.fromJson(segment.config).fileId
+                else return
+            is MessageSegment.Text -> return
+        }
         scope.launch {
-            val result = Coordinator(context).processUserAction("files.delete", mapOf("id" to id))
-            if (!result.isSuccess) LogManager.aiEnrichment("File $id not deleted: ${result.error}", "ERROR")
+            val result = Coordinator(context).processUserAction(operation, mapOf("id" to id))
+            if (!result.isSuccess) LogManager.aiEnrichment("$operation $id failed: ${result.error}", "ERROR")
         }
     }
     val s = remember { Strings.`for`(context = context) }
@@ -155,6 +165,38 @@ fun UI.RichComposer(
         activeBlockId = block.id
     }
 
+    // Whether the model the message would go to reads images: read once an image is in the
+    // composer (null until then, or when nothing says)
+    val hasImages = blocks.any { it.segment is MessageSegment.Image }
+    var readsImages by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(hasImages) {
+        if (hasImages) readsImages = com.assistant.core.ai.providers.ImageInput.activeModelReadsImages(context)
+    }
+
+    /** The photo at [uri] prepared and kept with the session, then added as a block. */
+    fun attachImage(uri: android.net.Uri, afterwards: () -> Unit = {}) {
+        val session = checkNotNull(sessionId) { "an image is joined within a session" }
+        scope.launch {
+            val result = Coordinator(context).processUserAction("files.attach_image", mapOf("session_id" to session, "uri" to uri.toString()))
+            afterwards()
+            if (result.isSuccess) add(ComposerBlock(MessageSegment.Image(result.data!!["id"] as String)))
+            else UI.Toast(context, result.error ?: "", Duration.LONG)
+        }
+    }
+
+    // The camera writes into a file of the app's cache, handed to it by the FileProvider; the
+    // file is kept until the photo is prepared, then deleted. Its path survives the app being
+    // stopped while the camera is open.
+    var capturePath by rememberSaveable { mutableStateOf<String?>(null) }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+        val file = capturePath?.let { java.io.File(it) } ?: return@rememberLauncherForActivityResult
+        capturePath = null
+        if (taken) attachImage(android.net.Uri.fromFile(file)) { file.delete() } else file.delete()
+    }
+    val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) attachImage(uri)
+    }
+
     val blocksScrollState = rememberScrollState()
 
     Column(
@@ -190,7 +232,11 @@ fun UI.RichComposer(
                             keyboardController?.hide()
 
                             LogManager.aiEnrichment("RichComposer Send button clicked with ${blocks.size} blocks")
-                            onSend(RichMessage(ComposerBlocks.toSegments(blocks)))
+                            // A message with images waits for a model that reads them
+                            val imageCount = blocks.count { it.segment is MessageSegment.Image }
+                            val refusal = com.assistant.core.ai.providers.ImageInput.refusal(imageCount, readsImages) { s.shared(it) }
+                            if (refusal != null) UI.Toast(context, refusal, Duration.LONG)
+                            else onSend(RichMessage(ComposerBlocks.toSegments(blocks)))
                         }
                     ) {
                         UI.Text(
@@ -239,6 +285,7 @@ fun UI.RichComposer(
                                 update(ComposerBlocks.replace(blocks, block.id, MessageSegment.Text(newText)))
                             }
                         )
+                        is MessageSegment.Image -> ImageBlockContent(imageId = segment.imageId, readsImages = readsImages)
                         is MessageSegment.EnrichmentBlock -> EnrichmentBlockContent(
                             block = segment,
                             onEdit = {
@@ -269,6 +316,32 @@ fun UI.RichComposer(
                         }
                     )
                 }
+            }
+
+            // Images: the phone's camera and its photo picker, within a session alone
+            if (showEnrichmentButtons && sessionId != null) {
+                UI.ActionButton(
+                    action = ButtonAction.PHOTO,
+                    display = ButtonDisplay.ICON,
+                    size = Size.M,
+                    onClick = {
+                        val file = java.io.File(context.cacheDir, "camera/${java.util.UUID.randomUUID()}.jpg").apply { parentFile?.mkdirs() }
+                        capturePath = file.path
+                        try {
+                            camera.launch(androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            capturePath = null
+                            file.delete()
+                            UI.Toast(context, s.shared("ai_image_no_camera"), Duration.LONG)
+                        }
+                    }
+                )
+                UI.ActionButton(
+                    action = ButtonAction.GALLERY,
+                    display = ButtonDisplay.ICON,
+                    size = Size.M,
+                    onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                )
             }
 
             // Add Text button: a new text block after the active one, which takes the focus
@@ -397,6 +470,24 @@ private fun TextBlockContent(
             }
         )
     )
+}
+
+/**
+ * An image's content: its thumbnail, and what keeps it from going when the model does not read
+ * images or nothing says it does.
+ */
+@Composable
+private fun ImageBlockContent(imageId: String, readsImages: Boolean?) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+        AttachedImageThumbnail(imageId)
+        when (readsImages) {
+            true -> {}
+            false -> UI.Text(s.shared("ai_image_model_does_not_read"), TextType.WARNING)
+            null -> UI.Text(s.shared("ai_image_model_unknown"), TextType.WARNING)
+        }
+    }
 }
 
 /**

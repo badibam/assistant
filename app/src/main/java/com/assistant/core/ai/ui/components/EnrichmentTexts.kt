@@ -24,6 +24,7 @@ fun rememberDisplayText(message: RichMessage): String {
         when (segment) {
             is MessageSegment.Text -> segment.content
             is MessageSegment.EnrichmentBlock -> "[$text]"
+            is MessageSegment.Image -> "[${s.shared("ai_image_block")}]"
         }
     }.trim()
     val text by produceState(initialValue = withBlocks("…"), message) {

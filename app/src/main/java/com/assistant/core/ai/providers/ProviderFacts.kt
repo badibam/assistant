@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonPrimitive
 data class ThinkingOff(val thinking: String?, val efforts: List<String>?)
 
 /**
- * What the providers' facts say of a model's reasoning, read from the app's copy of the
+ * What the providers' facts say of a model's reasoning and of the images it reads, read from the app's copy of the
  * provider-facts project (assets/facts.json, checked by `./run provider-facts`). A provider's
  * model list says nothing of most of it: OpenAI's lists no effort level, Anthropic's declares
  * no way to turn thinking off. A model no fact covers has no such setting.
@@ -38,6 +38,21 @@ class ProviderFacts(private val facts: List<JsonObject>) {
                 efforts = fact["efforts"]?.takeIf { it !is JsonNull }?.let { strings(it) }
             )
         }
+
+    /**
+     * Whether [model] at [provider] reads images, null when no fact says. A model may be named by
+     * several input facts, each on what it says (images, PDF): the copy holds at most one saying
+     * anything of images.
+     */
+    fun readsImages(provider: String, model: String): Boolean? {
+        val found = facts.filter { fact ->
+            fact.string("provider") == provider && fact.string("kind") == "input" &&
+                fact["images"].let { it != null && it !is JsonNull } &&
+                fact["models"]!!.jsonArray.any { it.jsonPrimitive.content == model }
+        }
+        check(found.size <= 1) { "facts.json: ${found.size} input facts say whether $provider/$model reads images" }
+        return found.firstOrNull()?.get("images")?.jsonPrimitive?.content?.toBooleanStrict()
+    }
 
     /** The fact of [kind] naming [model] at [provider]: the copy holds at most one per model and kind. */
     private fun fact(provider: String, model: String, kind: String): JsonObject? {

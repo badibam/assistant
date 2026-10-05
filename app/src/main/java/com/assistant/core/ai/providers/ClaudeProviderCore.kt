@@ -140,7 +140,7 @@ internal class ClaudeProviderCore(
                 description = s.shared("${api.stringPrefix}_schema_model")), required = true),
             SettingNode.Field(FieldDefinition("max_tokens", s.shared("ai_provider_claude_max_tokens"), s.shared("ai_provider_claude_schema_max_tokens"),
                 FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS)
-        ) + ReasoningSettings.nodes(s, thinkingOff = true)
+        ) + ReasoningSettings.nodes(s, thinkingOff = true) + ImageInput.node(s)
     }
 
     /** Why [config] cannot be stored: its reasoning settings out of what the model allows. */
@@ -218,7 +218,8 @@ internal class ClaudeProviderCore(
                     val id = modelObj.optString("id", "")
                     val listedEfforts = if (api.effortsFromFacts) null else declaredEfforts(modelObj)
                     models.add(ProviderModel(id = id, label = modelObj.optString("display_name", "").ifEmpty { id },
-                        reasoning = ReasoningSettings.of(facts, api.factsProvider, id, listedEfforts, api.effortRequired)))
+                        reasoning = ReasoningSettings.of(facts, api.factsProvider, id, listedEfforts, api.effortRequired),
+                        readsImages = declaredImageInput(modelObj)))
                 }
             }
 
@@ -230,6 +231,15 @@ internal class ClaudeProviderCore(
             LogManager.aiService("Failed to fetch Claude models: ${e.message}", "ERROR", e)
             ProviderModels(emptyList(), e.message ?: "Unknown error")
         }
+    }
+
+    /**
+     * Whether Anthropic's model list says the model reads images (capabilities.image_input);
+     * null when it says nothing, as DeepSeek's list never does.
+     */
+    private fun declaredImageInput(model: JSONObject): Boolean? {
+        val imageInput = model.optJSONObject("capabilities")?.optJSONObject("image_input") ?: return null
+        return if (imageInput.has("supported")) imageInput.getBoolean("supported") else null
     }
 
     /**
@@ -274,7 +284,8 @@ internal class ClaudeProviderCore(
                 effort = settings.string(ReasoningSettings.EFFORT),
                 thinking = ReasoningSettings.thinkingType(settings.boolean(ReasoningSettings.THINKING_OFF), ProviderFacts.of(context),
                     api.factsProvider, requestedModel),
-                datetimeText = promptData.buildDatetimeMessage(context)
+                datetimeText = promptData.buildDatetimeMessage(context),
+                imageData = { com.assistant.core.ai.enrichments.AttachedImages.base64(context, it) }
             )
             val requestBody = requestJson.toString()
 

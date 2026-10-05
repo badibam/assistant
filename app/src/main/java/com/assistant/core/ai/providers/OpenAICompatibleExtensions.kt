@@ -48,6 +48,7 @@ internal fun endpointOf(address: String, path: String): String = address.trimEnd
  * @param responseSchema The schema of the AI's answer as the model reads it (SchemaModelView),
  *   required when [forcing] is SCHEMA
  * @param datetimeText The dated closing message, built by the caller (buildDatetimeMessage)
+ * @param imageData The JPEG of each image the messages carry, as base64 (AttachedImages)
  */
 internal fun PromptData.toChatCompletionsJson(
     model: String,
@@ -55,7 +56,8 @@ internal fun PromptData.toChatCompletionsJson(
     maxTokens: Int,
     forcing: OutputForcing,
     responseSchema: JsonObject?,
-    datetimeText: String
+    datetimeText: String,
+    imageData: ImageData = { error("Image $it in a prompt built without image data") }
 ): JsonObject = buildJsonObject {
     put("model", model)
     put("temperature", temperature)
@@ -76,7 +78,7 @@ internal fun PromptData.toChatCompletionsJson(
             put("role", "system")
             put("content", listOf(level1Content, level2Content, level3Content).filter { it.isNotBlank() }.joinToString("\n\n"))
         }
-        conversationMessages(datetimeText).forEach { add(it) }
+        conversationMessages(datetimeText, ImageParts.CHAT_COMPLETIONS, imageData).forEach { add(it) }
     }
 }
 

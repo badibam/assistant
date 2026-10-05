@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What the app's FileProvider may hand to another app: the folder of the cache the camera
+     writes a photo into, before the app prepares and keeps it (RichComposer). -->
+<paths>
+    <cache-path name="camera" path="camera/" />
+</paths>

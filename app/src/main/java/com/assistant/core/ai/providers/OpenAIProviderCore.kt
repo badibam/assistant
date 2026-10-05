@@ -46,7 +46,7 @@ internal class OpenAIProviderCore(
     companion object {
         private const val OPENAI_API_BASE_URL = "https://api.openai.com"
         // Its name in the providers' facts (ProviderFacts)
-        private const val FACTS_PROVIDER = "openai"
+        const val FACTS_PROVIDER = "openai"
         // Failing to connect means nothing was sent: the sooner it is known, the sooner an
         // automation waits for the network, at no cost
         private const val CONNECT_TIMEOUT_SECONDS = 15L
@@ -90,7 +90,7 @@ internal class OpenAIProviderCore(
                 FieldType.NUMERIC, false, mapOf("min" to 0, "max" to 2, "decimals" to 1)), default = 1.0),
             SettingNode.Field(FieldDefinition("max_output_tokens", s.shared("ai_provider_openai_max_output_tokens"), s.shared("ai_provider_openai_schema_max_output_tokens"),
                 FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS)
-        ) + ReasoningSettings.nodes(s, thinkingOff = false)
+        ) + ReasoningSettings.nodes(s, thinkingOff = false) + ImageInput.node(s)
     }
 
     /** Why [config] cannot be stored: an effort the model does not have. */
@@ -207,7 +207,8 @@ internal class OpenAIProviderCore(
                 temperature = settings.number("temperature")!!.toDouble(),
                 maxOutputTokens = settings.number("max_output_tokens")!!.toInt(),
                 effort = settings.string(ReasoningSettings.EFFORT),
-                datetimeText = promptData.buildDatetimeMessage(context)
+                datetimeText = promptData.buildDatetimeMessage(context),
+                imageData = { com.assistant.core.ai.enrichments.AttachedImages.base64(context, it) }
             )
             val requestBody = requestJson.toString()
 

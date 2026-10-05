@@ -127,11 +127,17 @@ object PromptManager {
         }
 
         // 7. A user message reaches the AI as text, its pointers naming their targets as they are
-        //    now, with their ids: a message only stores what the user chose (EnrichmentText)
+        //    now, with their ids: a message only stores what the user chose (EnrichmentText). One
+        //    with images reaches it in parts, each image where the user put it
         val enrichmentText = com.assistant.core.ai.enrichments.EnrichmentText.load(context,
             com.assistant.core.ai.enrichments.EnrichmentText.blocksOf(sessionMessages.mapNotNull { it.richContent }))
         val promptMessages = sessionMessages.map { message ->
-            message.richContent?.let { rich -> message.copy(richContent = null, textContent = enrichmentText.prompt(rich)) }
+            message.richContent?.let { rich ->
+                val parts = enrichmentText.promptParts(rich)
+                if (parts.none { it is com.assistant.core.ai.data.PromptPart.Image })
+                    message.copy(richContent = null, textContent = (parts.singleOrNull() as? com.assistant.core.ai.data.PromptPart.Text)?.text ?: "")
+                else message.copy(richContent = null, textContent = null, promptParts = parts)
+            }
                 // Text the AI wrote around its JSON reaches it only as the notice that it was set
                 // aside: quoted back, it would read as part of what it said
                 ?: message.systemMessage?.takeIf { it.type == SystemMessageType.TEXT_OUTSIDE_JSON }?.let { system ->

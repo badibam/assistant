@@ -13,9 +13,13 @@ import org.json.JSONObject
 data class RichMessage(
     val segments: List<MessageSegment>
 ) {
-    /** Whether the message says nothing: no text, no enrichment. */
+    /** Whether the message says nothing: no text, no enrichment, no image. */
     val isEmpty: Boolean
-        get() = segments.none { it is MessageSegment.EnrichmentBlock || (it is MessageSegment.Text && it.content.isNotBlank()) }
+        get() = segments.none { it !is MessageSegment.Text || it.content.isNotBlank() }
+
+    /** The ids of the images it carries, in order. */
+    val imageIds: List<String>
+        get() = segments.filterIsInstance<MessageSegment.Image>().map { it.imageId }
 
     /**
      * Serialize RichMessage to JSON string for storage
@@ -28,6 +32,10 @@ data class RichMessage(
                 is MessageSegment.Text -> {
                     segmentJson.put("type", "text")
                     segmentJson.put("content", segment.content)
+                }
+                is MessageSegment.Image -> {
+                    segmentJson.put("type", "image")
+                    segmentJson.put("image_id", segment.imageId)
                 }
                 is MessageSegment.EnrichmentBlock -> {
                     segmentJson.put("type", "enrichment")
@@ -52,6 +60,7 @@ data class RichMessage(
                     val segmentJson = segmentsArray.getJSONObject(i)
                     when (segmentJson.getString("type")) {
                         "text" -> MessageSegment.Text(content = segmentJson.getString("content"))
+                        "image" -> MessageSegment.Image(imageId = segmentJson.getString("image_id"))
                         "enrichment" -> MessageSegment.EnrichmentBlock(
                             type = EnrichmentType.valueOf(segmentJson.getString("enrichment_type")),
                             config = segmentJson.getString("config")
@@ -79,4 +88,11 @@ sealed class MessageSegment {
         val type: EnrichmentType,
         val config: String
     ) : MessageSegment()
+
+    /**
+     * An image the user joined, where they put it: « this one [photo] costs less than that one
+     * [photo] » depends on the order. Its file is kept with the session (AttachedImages); it goes
+     * to the model as an image, never as text.
+     */
+    data class Image(val imageId: String) : MessageSegment()
 }
