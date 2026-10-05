@@ -21,7 +21,8 @@ object AppSettingsDefaults {
         AppSettingCategories.VALIDATION_CONFIG,
         AppSettingCategories.MAIN_SCREEN,
         AppSettingCategories.DEMO,
-        AppSettingCategories.UI
+        AppSettingCategories.UI,
+        AppSettingCategories.EXTERNAL_ACCESS
     )
 
     /** The default settings JSON of [category]; format takes the phone's 24h and date habits */
@@ -37,6 +38,8 @@ object AppSettingsDefaults {
             .put(AppSettings.UI_MODE, com.assistant.core.themes.AppearanceMode.SYSTEM.name)
             .put(AppSettings.UI_HUE_SHIFT, 0)
             .put(AppSettings.UI_SIZE_STEP, 0).toString()
+        // No relay until the user gives one
+        AppSettingCategories.EXTERNAL_ACCESS -> JSONObject().toString()
         else -> throw IllegalArgumentException("No defaults for settings category '$category'")
     }
 

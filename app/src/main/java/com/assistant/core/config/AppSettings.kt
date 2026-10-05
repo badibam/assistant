@@ -48,8 +48,15 @@ object AppSettings {
         AppSettingCategories.VALIDATION_CONFIG,
         AppSettingCategories.MAIN_SCREEN,
         AppSettingCategories.DEMO,
-        AppSettingCategories.UI
+        AppSettingCategories.UI,
+        AppSettingCategories.EXTERNAL_ACCESS
     )
+
+    /** The relay's public address, under which an outside AI reaches the app (https). */
+    const val RELAY_URL = "relay_url"
+
+    /** The secret the relay knows the app by. */
+    const val RELAY_SECRET = "relay_secret"
 
     /** The setting under which the theme's interface sounds play. */
     const val UI_SOUNDS = "sounds"
@@ -119,6 +126,12 @@ object AppSettings {
                         FieldType.TEXT, false, mapOf("length" to TextLength.SHORT.name))),
                     required = true, distinct = true)
             )
+            AppSettingCategories.EXTERNAL_ACCESS -> listOf(
+                field(RELAY_URL, text("settings_external_access_relay_url"), text("settings_external_access_relay_url_help"),
+                    FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)),
+                field(RELAY_SECRET, text("settings_external_access_relay_secret"), text("settings_external_access_relay_secret_help"),
+                    FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name))
+            )
             AppSettingCategories.DEMO -> listOf(
                 field(com.assistant.core.demo.DemoStartup.INSTALL_ON_UPDATE, text("settings_demo_install_on_update"),
                     text("settings_demo_install_on_update_help"), FieldType.BOOLEAN, required = true)
@@ -162,6 +175,7 @@ object AppSettings {
             AppSettingCategories.MAIN_SCREEN -> s.shared("label_main_screen_config")
             AppSettingCategories.DEMO -> s.shared("settings_demo")
             AppSettingCategories.UI -> s.shared("settings_ui")
+            AppSettingCategories.EXTERNAL_ACCESS -> s.shared("settings_external_access")
             else -> throw IllegalArgumentException("No declaration for settings category '$category'")
         }
     }

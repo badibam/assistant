@@ -1814,4 +1814,42 @@
     <string name="mcp_authorize_expired">La demande a expiré : recommencez depuis le client.</string>
     <string name="mcp_authorize_busy">Une autre demande attend déjà sur le téléphone. Réessayez dans quelques minutes.</string>
     <string name="mcp_authorize_invalid">Cette demande ne peut pas être acceptée : %1$s</string>
+
+    <!-- External access (MCP): settings, the access, the phone's approval -->
+    <string name="settings_external_access">Accès externe</string>
+    <string name="settings_external_access_description">Laisser une IA extérieure lire et écrire dans l\'app, par un relais</string>
+    <string name="settings_external_access_relay_url">Adresse du relais</string>
+    <string name="settings_external_access_relay_url_help">L\'adresse publique du relais, https://… L\'adresse à donner à l\'IA extérieure est celle-ci suivie de /mcp.</string>
+    <string name="settings_external_access_relay_secret">Secret du relais</string>
+    <string name="settings_external_access_relay_secret_help">Le secret écrit dans la configuration du relais, par lequel il reconnaît l\'app.</string>
+    <string name="external_access_open">Ouvrir l\'accès</string>
+    <string name="external_access_close">Fermer l\'accès</string>
+    <string name="external_access_state_closed">Fermé : aucune IA extérieure ne peut joindre l\'app.</string>
+    <string name="external_access_state_open">Ouvert. Se ferme seul après 30 minutes sans appel.</string>
+    <string name="external_access_state_open_last">Ouvert, dernier appel %1$s. Se ferme seul après 30 minutes sans appel.</string>
+    <string name="external_access_state_failed">Fermé après un échec : %1$s</string>
+    <string name="external_access_no_relay">Donnez d\'abord l\'adresse du relais (https) et son secret.</string>
+    <string name="external_access_relay_refused">le relais ne reconnaît pas l\'app : vérifiez son adresse et son secret.</string>
+    <string name="external_access_mcp_address">Adresse à donner à l\'IA extérieure : %1$s</string>
+    <string name="external_access_clients">Clients autorisés</string>
+    <string name="external_access_clients_none">Aucun pour l\'instant.</string>
+    <string name="external_access_client_line">%1$s, autorisé %2$s, dernier usage %3$s</string>
+    <string name="external_access_client_never">jamais</string>
+    <string name="external_access_revoke">Révoquer</string>
+    <string name="external_access_revoke_confirm">Révoquer %1$s ? Il faudra l\'autoriser à nouveau, avec un nouveau code.</string>
+    <string name="external_access_notification_title">Accès externe ouvert</string>
+    <string name="external_access_notification_text">Une IA extérieure peut lire et écrire dans l\'app.</string>
+    <string name="external_access_notification_last">Dernier appel %1$s</string>
+    <string name="external_access_channel">Accès externe</string>
+    <string name="external_access_tile">Accès externe</string>
+    <string name="external_access_request_title">Demande d\'accès</string>
+    <string name="external_access_request_text">%1$s demande l\'accès. Tapez le code que sa page affiche.</string>
+    <string name="external_access_request_declared">Déclaré par le client : son nom, %1$s ; la réponse part vers %2$s. Rien ne prouve ni l\'un ni l\'autre.</string>
+    <string name="external_access_request_not_me">Si vous n\'avez pas lancé cette demande, refusez-la.</string>
+    <string name="external_access_request_code">Code affiché sur la page</string>
+    <string name="external_access_request_allow">Autoriser</string>
+    <string name="external_access_request_refuse">Refuser</string>
+    <string name="external_access_request_wrong">Code faux : encore %1$d essais.</string>
+    <string name="external_access_request_allowed">Accès autorisé.</string>
+    <string name="external_access_request_ended">La demande est terminée.</string>
 </resources>

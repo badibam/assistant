@@ -73,6 +73,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
     var showAILimits by rememberSaveable { mutableStateOf(false) }
     var showValidation by rememberSaveable { mutableStateOf(false) }
     var showDemo by rememberSaveable { mutableStateOf(false) }
+    var showExternalAccess by rememberSaveable { mutableStateOf(false) }
     var showUI by rememberSaveable { mutableStateOf(false) }
     var showData by rememberSaveable { mutableStateOf(false) }
     var showLogs by rememberSaveable { mutableStateOf(false) }
@@ -261,6 +262,11 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
 
     if (showDemo) {
         com.assistant.core.ui.screens.settings.DemoSettingsScreen(onBack = { showDemo = false })
+        return
+    }
+
+    if (showExternalAccess) {
+        com.assistant.core.mcp.ui.ExternalAccessSettingsScreen(onBack = { showExternalAccess = false })
         return
     }
 
@@ -490,6 +496,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                     "ai_limits" -> showAILimits = true
                     "validation" -> showValidation = true
                     "demo" -> showDemo = true
+                    "external_access" -> showExternalAccess = true
                     "ui" -> showUI = true
                     "data" -> showData = true
                     "logs" -> showLogs = true

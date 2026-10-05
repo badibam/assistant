@@ -1814,4 +1814,42 @@
     <string name="mcp_authorize_expired">The request expired: start again from the client.</string>
     <string name="mcp_authorize_busy">Another request is already waiting on the phone. Try again in a few minutes.</string>
     <string name="mcp_authorize_invalid">This request cannot be accepted: %1$s</string>
+
+    <!-- External access (MCP): settings, the access, the phone's approval -->
+    <string name="settings_external_access">External access</string>
+    <string name="settings_external_access_description">Let an outside AI read and write in the app, through a relay</string>
+    <string name="settings_external_access_relay_url">Relay address</string>
+    <string name="settings_external_access_relay_url_help">The relay\'s public address, https://… The address to give the outside AI is this one followed by /mcp.</string>
+    <string name="settings_external_access_relay_secret">Relay secret</string>
+    <string name="settings_external_access_relay_secret_help">The secret written in the relay\'s configuration, by which it knows the app.</string>
+    <string name="external_access_open">Open the access</string>
+    <string name="external_access_close">Close the access</string>
+    <string name="external_access_state_closed">Closed: no outside AI can reach the app.</string>
+    <string name="external_access_state_open">Open. Closes by itself after 30 minutes without a call.</string>
+    <string name="external_access_state_open_last">Open, last call %1$s. Closes by itself after 30 minutes without a call.</string>
+    <string name="external_access_state_failed">Closed after a failure: %1$s</string>
+    <string name="external_access_no_relay">Give the relay\'s address (https) and its secret first.</string>
+    <string name="external_access_relay_refused">the relay does not recognize the app: check its address and its secret.</string>
+    <string name="external_access_mcp_address">Address to give the outside AI: %1$s</string>
+    <string name="external_access_clients">Authorized clients</string>
+    <string name="external_access_clients_none">None yet.</string>
+    <string name="external_access_client_line">%1$s, authorized %2$s, last used %3$s</string>
+    <string name="external_access_client_never">never</string>
+    <string name="external_access_revoke">Revoke</string>
+    <string name="external_access_revoke_confirm">Revoke %1$s? It will have to be authorized again, with a new code.</string>
+    <string name="external_access_notification_title">External access open</string>
+    <string name="external_access_notification_text">An outside AI can read and write in the app.</string>
+    <string name="external_access_notification_last">Last call %1$s</string>
+    <string name="external_access_channel">External access</string>
+    <string name="external_access_tile">External access</string>
+    <string name="external_access_request_title">Request for access</string>
+    <string name="external_access_request_text">%1$s asks for access. Type the code its page shows.</string>
+    <string name="external_access_request_declared">Declared by the client: its name, %1$s; the answer goes to %2$s. Nothing proves either.</string>
+    <string name="external_access_request_not_me">If you did not start this request, refuse it.</string>
+    <string name="external_access_request_code">Code shown on the page</string>
+    <string name="external_access_request_allow">Allow</string>
+    <string name="external_access_request_refuse">Refuse</string>
+    <string name="external_access_request_wrong">Wrong code: %1$d attempts left.</string>
+    <string name="external_access_request_allowed">Access allowed.</string>
+    <string name="external_access_request_ended">The request is over.</string>
 </resources>

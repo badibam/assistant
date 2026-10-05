@@ -163,6 +163,8 @@ class MainActivity : ComponentActivity() {
                             com.assistant.core.ui.components.LongOperationBar()
                             androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.weight(1f)) {
                                 MainScreen(openToolId = openToolId, onToolOpened = { openToolId = null })
+                                // A request for external access waiting for its code, over any screen
+                                com.assistant.core.mcp.ui.McpApprovalDialog()
                             }
                         }
                     }

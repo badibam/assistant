@@ -25,6 +25,8 @@ object AppSettingCategories {
     const val MAIN_SCREEN = "main_screen"
     const val DEMO = "demo"
     const val UI = "ui"
+    /** The MCP server's relay (docs/design/mcp-server.md) */
+    const val EXTERNAL_ACCESS = "external_access"
 
     // Future categories:
     // const val DATA = "data"
