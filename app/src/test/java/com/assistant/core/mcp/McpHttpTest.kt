@@ -100,10 +100,12 @@ class McpHttpTest {
     @Test
     fun theCodeTypedOnThePhoneOpensMcp() {
         val (_, tokens) = authorized()
+        // The page opened and the tokens handed out were activity too
+        assertEquals(2, calls)
         val answer = request("POST", "/mcp", headers = mapOf("Authorization" to "Bearer ${tokens.getString("access_token")}"), body = """{"jsonrpc":"2.0","id":1,"method":"ping"}""")
         assertEquals(200, answer.status)
         assertEquals(1, JSONObject(answer.text).getInt("id"))
-        assertEquals(1, calls)
+        assertEquals(3, calls)
     }
 
     @Test

@@ -64,7 +64,8 @@ data class HttpResponse(val status: Int, val headers: Map<String, String> = empt
  * endpoint, and /mcp, which only an access token opens. Nothing else exists.
  *
  * @param text A text for the person, on the authorization page (the strings system)
- * @param onCall Told of each call /mcp lets through, which keeps the access open
+ * @param onCall Told of each call that does something: /mcp let through, an authorization page
+ *   opened, tokens handed out. It keeps the access open; a stranger's knocking does not
  */
 class McpHttp(
     private val base: String,
@@ -124,6 +125,7 @@ class McpHttp(
             val message = if (e.error == "temporarily_unavailable") text("mcp_authorize_busy") else text("mcp_authorize_invalid").format(e.description)
             return HttpResponse.html(400, page(message, null))
         }
+        onCall()
         return HttpResponse.html(200, page(text("mcp_authorize_instruction").format(pending.client.name), pending))
     }
 
@@ -153,6 +155,7 @@ class McpHttp(
             "refresh_token" -> oauth.refresh(clientId, secret, form["refresh_token"])
             else -> throw OAuthServer.OAuthError("unsupported_grant_type", "grant_type must be authorization_code or refresh_token")
         }
+        onCall()
         return HttpResponse.json(200, JSONObject()
             .put("access_token", tokens.access)
             .put("token_type", "Bearer")
