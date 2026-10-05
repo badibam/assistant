@@ -70,7 +70,9 @@ import com.assistant.core.ai.data.LegacyCatchUp
         LogEntry::class,
         VariableEntity::class,
         AttachedFileEntity::class,
-        AttachedImageEntity::class
+        AttachedImageEntity::class,
+        com.assistant.core.mcp.McpClientEntity::class,
+        com.assistant.core.mcp.McpTokenEntity::class
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
@@ -91,13 +93,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun variableDao(): VariableDao
     abstract fun attachedFileDao(): AttachedFileDao
     abstract fun attachedImageDao(): AttachedImageDao
+    abstract fun mcpDao(): com.assistant.core.mcp.McpDao
 
     companion object {
         /**
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 59
+        const val VERSION = 60
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1626,6 +1629,35 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** The MCP server's OAuth clients and tokens (docs/design/mcp-server.md): two new tables, empty. */
+        private val MIGRATION_59_60 = object : Migration(59, 60) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS mcp_clients (
+                        id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        redirect_uris TEXT NOT NULL,
+                        secret_hash TEXT,
+                        created_at INTEGER NOT NULL,
+                        last_used_at INTEGER,
+                        PRIMARY KEY(id)
+                    )
+                """.trimIndent())
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS mcp_tokens (
+                        hash TEXT NOT NULL,
+                        client_id TEXT NOT NULL,
+                        kind TEXT NOT NULL,
+                        expires_at INTEGER NOT NULL,
+                        PRIMARY KEY(hash),
+                        FOREIGN KEY(client_id) REFERENCES mcp_clients(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_mcp_tokens_client_id ON mcp_tokens(client_id)")
+                LogManager.database("MIGRATION 59->60: mcp_clients and mcp_tokens tables created", "INFO")
+            }
+        }
+
         /** A theme's palette family gives way to a hue shift: see UiHueShiftAtV58. */
         private val MIGRATION_57_58 = object : Migration(57, 58) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2296,7 +2328,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_55_56,
                     MIGRATION_56_57,
                     MIGRATION_57_58,
-                    MIGRATION_58_59
+                    MIGRATION_58_59,
+                    MIGRATION_59_60
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

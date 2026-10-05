@@ -4,6 +4,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Mise à jour et démarrage
 
+- Après la migration 60 (tables `mcp_clients` et `mcp_tokens`) : l'app démarre, sans erreur de Room dans le journal.
 - Importer une sauvegarde faite avant la mise à jour (base 52 ou plus ancienne) : chaque zone montre ses outils dans le même ordre, l'accueil ses zones de même ; les récurrences et les pointeurs se relisent. Juste après, l'écran des journaux filtré sur « Error » ne montre aucune ligne `MIGRATION`.
 - Un pointeur qui filtrait un instant par « = » (avant la migration 52) est refusé en le disant : rien ne part en silence.
 
