@@ -318,6 +318,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val entryId = params.optString("id")
         val name = params.optString("name", null)
+        // A name sent as null is cleared, as a key of data, extra or state is
+        val clearName = params.has("name") && params.isNull("name")
 
         if (entryId.isEmpty()) {
             return OperationResult.error(s.shared("service_error_missing_id"))
@@ -364,7 +366,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             extra = NumericPrecision.roundAll(mergedExtra, userFields(target)),
             state = mergedState,
             timestamp = timestamp ?: existingEntity.timestamp,
-            name = name ?: existingEntity.name,
+            name = if (clearName) null else name ?: existingEntity.name,
             updatedAt = System.currentTimeMillis()
         )
 
