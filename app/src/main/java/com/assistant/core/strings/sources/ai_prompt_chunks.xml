@@ -1269,4 +1269,15 @@ The schemas of a tool are asked for by its tool type or its tool_instance_id (Pa
     <!-- Header of the operations a tool's entries schema comes with (CommandExecutor) -->
     <string name="ai_chunk_tool_operations_header">Operations (TOOL_OPERATION)</string>
 
+    <!-- ================================================================ -->
+    <!-- MCP SERVER: what an AI outside the app reads (docs/design/mcp-server.md) -->
+    <!-- ================================================================ -->
+
+    <string name="ai_mcp_app_context_description"><![CDATA[What the app is and holds now: its zones, tools and their ids, the data always shared, how fields, schemas and dates work. Call it once, at the start of a conversation, before any other tool: it hands out the context_token they require. Afterwards, read what changed with the other read tools, not with this one.]]></string>
+    <string name="ai_mcp_context_token_description"><![CDATA[The token app_context handed out in this conversation.]]></string>
+    <string name="ai_mcp_context_token_missing"><![CDATA[Refused: no valid context_token. Call app_context first: it describes the app, gives the ids every command needs, and hands out the token to pass to every other tool. A token is valid 24 hours.]]></string>
+    <string name="ai_mcp_context_token_line"><![CDATA[context_token, to pass to every other tool (valid 24 hours): %1$s]]></string>
+    <string name="ai_mcp_context_intro"><![CDATA[# The app
+
+A personal life management application. Each of its commands is one of your tools, named by the command in lower case: an example written `{ "type": "SCHEMA", "params": { ... } }` is a call of the tool `schema` with those parameters. What a tool does and takes is in its own description.]]></string>
 </resources>

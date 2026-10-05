@@ -136,6 +136,10 @@ object PromptChunks {
     }
 
 
+    /** A command's own text (AICommand.docKey), its placeholders filled: what an outside AI reads of it as a tool. */
+    suspend fun commandText(context: Context, command: AICommand): String =
+        replacePlaceholders(Strings.`for`(context = context).shared(command.docKey), context)
+
     /**
      * What the app is, for an AI that works in it from outside (app_context): the shared chunks
      * at the degrees [config] enables, in the L1's order. The commands are not in it: an outside

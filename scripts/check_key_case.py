@@ -30,7 +30,7 @@ BASELINE = Path(__file__).resolve().parent / "key_case_baseline.txt"
 # camelCase strings are history, not keys anything reads.
 EXCLUDED = {"core/versioning/KeyCaseRenames.kt"}
 
-# JSON Schema and Vega-Lite keywords. Not ours to rename, so not violations.
+# JSON Schema, Vega-Lite and MCP keywords. Not ours to rename, so not violations.
 FOREIGN = {
     "additionalProperties", "allOf", "anyOf", "contentEncoding", "contentMediaType",
     "exclusiveMaximum", "exclusiveMinimum", "maxItems", "maxLength", "maxProperties",
@@ -38,6 +38,8 @@ FOREIGN = {
     "propertyNames", "uniqueItems",
     # Vega-Lite's, which a chart's config speaks so that the AI writes it as it knows it
     "strokeDash", "strokeWidth",
+    # MCP's, which the app's MCP server speaks to its clients (core/mcp)
+    "protocolVersion", "serverInfo", "inputSchema", "readOnlyHint", "isError",
 }
 
 # A string literal holding a single identifier with an inner capital: "toolInstanceId".
