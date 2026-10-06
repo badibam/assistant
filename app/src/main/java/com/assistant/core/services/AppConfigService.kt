@@ -3,6 +3,7 @@ package com.assistant.core.services
 import androidx.room.withTransaction
 import android.content.Context
 import com.assistant.core.config.DateTimeConfig
+import com.assistant.core.grid.Groups
 import com.assistant.core.ai.domain.AILimitsConfig
 import com.assistant.core.config.ValidationConfig
 import com.assistant.core.database.AppDatabase
@@ -97,23 +98,36 @@ class AppConfigService(private val context: Context) : ExecutableService {
      * schema generated from the category's declaration (AppSettings). The cached settings are
      * read again, so what is stored is what the app uses.
      *
+     * The home screen's groups are held by the zones: a group renamed in [renames] (former name →
+     * new name) is renamed in the zones that hold it, a group removed while a zone holds it is
+     * refused (docs/design/group-integrity.md).
+     *
      * @return The error to hand back, or null once stored
      */
-    suspend fun setSettings(category: String, settings: JSONObject): String? {
+    suspend fun setSettings(category: String, settings: JSONObject, renames: Map<String, String> = emptyMap()): String? {
         if (category !in AppSettings.CATEGORIES) return s.shared("service_error_unknown_category").format(category)
         val validation = SchemaValidator.validate(AppSettings.schema(category, context), JsonUtils.toMap(settings), context)
         if (!validation.isValid) return validation.errorMessage ?: s.shared("message_validation_error_simple")
 
         val previous = readSettings(category) // a category never written gets its row first
-        // A zone whose group the home screen gains or loses changes section, and so grid: the
-        // settings and the places they change are one write
+        fun groups(json: JSONObject) = json.optJSONArray("zone_groups")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList()
+        val change = Groups.Change(groups(previous), groups(settings), renames)
+        if (category != AppSettingCategories.MAIN_SCREEN && renames.isNotEmpty()) return s.shared("service_error_group_renames")
+        if (category == AppSettingCategories.MAIN_SCREEN) {
+            Groups.changeRefusal(change, database.zoneDao().getAllZones().map { it.name to it.group }, s)?.let { return it }
+        }
+
+        // A zone whose group is renamed takes the new name; one whose group the home screen gains
+        // or loses changes section, and so grid: the settings, the names and the places they
+        // change are one write
         val regrouped = database.withTransaction {
             val moved = if (category != AppSettingCategories.MAIN_SCREEN) emptyList() else {
-                fun groups(json: JSONObject) = json.optJSONArray("zone_groups")?.let { a -> (0 until a.length()).map { a.getString(it) } } ?: emptyList()
-                val before = groups(previous)
-                val after = groups(settings)
-                if (before == after) emptyList()
-                else com.assistant.core.grid.ZonePositions.regroup(database.zoneDao().getAllZones(), before, after)
+                val zones = database.zoneDao().getAllZones().map { zone ->
+                    val group = change.held(zone.group)
+                    if (group == zone.group) zone else zone.copy(group = group).also { database.zoneDao().updateZone(it) }
+                }
+                if (change.beforeRenamed == change.after) emptyList()
+                else com.assistant.core.grid.ZonePositions.regroup(zones, change.beforeRenamed, change.after)
             }
             moved.forEach { database.zoneDao().updatePosition(it.id, it.grid_x, it.grid_y) }
             settingsDao.updateSettings(category, settings.toString())
@@ -121,7 +135,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
         }
         AppConfigManager.refresh(context)
         DataChangeNotifier.notifyAppConfigChanged()
-        if (regrouped.isNotEmpty()) DataChangeNotifier.notifyZonesChanged()
+        if (regrouped.isNotEmpty() || renames.isNotEmpty()) DataChangeNotifier.notifyZonesChanged()
         LogManager.service("Updated settings of category $category")
         return null
     }
@@ -156,7 +170,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
                 val category = params.optString("category")
                 val settings = params.optJSONObject("settings")
                     ?: return OperationResult.error(s.shared("ai_error_param_config_required"))
-                setSettings(category, settings)?.let { return OperationResult.error(it) }
+                setSettings(category, settings, Groups.renames(params, "zone_groups"))?.let { return OperationResult.error(it) }
                 OperationResult.success(mapOf("category" to category))
             }
             "get_current_datetime" -> {

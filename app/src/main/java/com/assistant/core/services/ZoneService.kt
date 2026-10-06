@@ -289,15 +289,33 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         checkZone(updatedZone)?.let { return OperationResult.error(it) }
 
-        // A tool whose group the zone gains or loses changes section, and so grid: the zone
-        // and the places it changes are one write
+        // The zone's tool groups are held by its tools, automations and variables: a group
+        // renamed is renamed in them, a group removed while one holds it is refused
         val toolDao = database.toolInstanceDao()
+        val automationDao = database.aiDao()
+        val variableDao = database.variableDao()
+        val change = Groups.Change(ToolPositions.zoneGroups(existingZone.tool_groups), ToolPositions.zoneGroups(updatedZone.tool_groups), Groups.renames(params, "tool_groups"))
+        val tools = toolDao.getToolInstancesByZone(zoneId)
+        val automations = automationDao.getAutomationsByZone(zoneId)
+        val variables = variableDao.getByZone(zoneId)
+        Groups.changeRefusal(change,
+            tools.map { JSONObject(it.config_json).optString("name") to Groups.held(JSONObject(it.config_json)) } +
+                automations.map { it.name to it.group } + variables.map { it.name to it.group },
+            s
+        )?.let { return OperationResult.error(it) }
+
+        // A tool whose group the zone gains or loses changes section, and so grid: the zone,
+        // the names it changes and the places it changes are one write
         val regrouped = database.withTransaction {
-            val moved = if (updatedZone.tool_groups == existingZone.tool_groups) emptyList() else ToolPositions.regroup(
-                toolDao.getToolInstancesByZone(zoneId),
-                ToolPositions.zoneGroups(existingZone.tool_groups),
-                ToolPositions.zoneGroups(updatedZone.tool_groups)
-            )
+            val renamedTools = tools.map { tool ->
+                val config = JSONObject(tool.config_json)
+                val group = change.held(Groups.held(config))
+                if (group == Groups.held(config)) tool
+                else tool.copy(config_json = config.put("group", group).toString()).also { toolDao.updateToolInstance(it) }
+            }
+            automations.filter { change.held(it.group) != it.group }.forEach { automationDao.updateAutomation(it.copy(group = change.held(it.group))) }
+            variables.filter { change.held(it.group) != it.group }.forEach { variableDao.update(it.copy(group = change.held(it.group))) }
+            val moved = if (change.beforeRenamed == change.after) emptyList() else ToolPositions.regroup(renamedTools, change.beforeRenamed, change.after)
             moved.forEach { toolDao.updatePosition(it.id, it.grid_x, it.grid_y) }
             zoneDao.updateZone(move(existingZone, updatedZone))
             moved
@@ -305,7 +323,8 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         // Notify UI of zones change
         DataChangeNotifier.notifyZonesChanged()
-        if (regrouped.isNotEmpty()) DataChangeNotifier.notifyToolsChanged(zoneId)
+        if (regrouped.isNotEmpty() || change.renames.isNotEmpty()) DataChangeNotifier.notifyToolsChanged(zoneId)
+        if (change.renames.isNotEmpty()) DataChangeNotifier.notifyVariablesChanged()
 
         return OperationResult.success(mapOf(
             "zone_id" to updatedZone.id,
