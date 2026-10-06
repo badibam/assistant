@@ -9,5 +9,4 @@
 ## fdroid @ bf72ce6
 ! b2320db  no fastlane store listing yet; en-US text and screenshots come with the English default, before the first submission
 ## pixel-ui @ 0db9979
-! 8542e364  the grid's edit mode fades the other tiles by transparency (FADED in GridLayout), in the retro theme too: to be said by the theme (docs/design/retro-theme.md)
 ## ia-service-distant @ 85554e4
