@@ -104,7 +104,6 @@ import com.assistant.core.ui.sound.UISignal
 import com.assistant.core.ui.sound.scrollEndSound
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.DateUtils
-import com.assistant.themes.default.DefaultDrawing
 import kotlinx.coroutines.delay
 import java.time.DayOfWeek
 import java.time.Instant
@@ -363,15 +362,17 @@ object RetroTheme : ThemeContract {
     @Composable
     override fun drawingTextStyle(): TextStyle = retroGrid().thin.copy(color = retroSurface.dim.srgb)
 
+    /** The grid's factor: a drawing's pixel is the theme's own. */
+    @Composable
+    override fun drawingUnit(): Float = retroGrid().scale.toFloat()
+
     /**
-     * The default theme's strokes for now, in this theme's text and colours (RetroColors.drawing,
-     * a series keeping its tag's hue whatever the hue shift): the chart's scene in pixels and
-     * screens of dots is still to be drawn (retro-theme.md).
+     * In this theme's pixels, screens of dots and colours (RetroDrawing; a series keeping its
+     * tag's hue whatever the hue shift, RetroColors.drawing).
      */
     @Composable
     override fun Drawing(drawing: com.assistant.core.drawing.Drawing, modifier: Modifier) {
-        val colors = retroColors
-        DefaultDrawing.Draw(drawing, drawingTextStyle(), { colors.drawing(it).srgb }, modifier)
+        RetroDrawing.Draw(drawing, drawingTextStyle(), modifier)
     }
 
     /** The top edge of a frame across the width, both tones. */

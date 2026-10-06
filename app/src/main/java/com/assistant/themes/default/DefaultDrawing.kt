@@ -51,12 +51,10 @@ internal object DefaultDrawing {
         TagColor.GREY -> if (dark) Color(0xFFB8B2C2) else Color(0xFF8C8699)
     }
 
-    /**
-     * [drawing] on a Canvas, the palette's names in the colours [palette] gives them: this theme's
-     * (color), or another theme's drawing with this one's strokes.
-     */
+    /** [drawing] on a Canvas, the palette's names in this theme's colours for them ([color]), deep or light as the page is [dark]. */
     @Composable
-    fun Draw(drawing: Drawing, style: TextStyle, palette: (TagColor) -> Color, modifier: Modifier) {
+    fun Draw(drawing: Drawing, style: TextStyle, dark: Boolean, modifier: Modifier) {
+        val palette = { tag: TagColor -> color(tag, dark) }
         val measurer = rememberTextMeasurer()
         val density = LocalDensity.current
         val strong = MaterialTheme.colorScheme.onSurface

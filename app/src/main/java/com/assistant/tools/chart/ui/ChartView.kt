@@ -65,13 +65,14 @@ fun ChartView(spec: ChartSpec, tables: List<ChartTable>, period: Pair<Long?, Lon
     val context = LocalContext.current
     val density = LocalDensity.current.density
     val style = UI.drawingTextStyle()
+    val unit = UI.drawingUnit()
     val measurer = rememberTextMeasurer()
     val text = remember(style, measurer) { AppChartText(context, measurer, style) }
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val width = constraints.maxWidth.toFloat()
         val height = if (detail == ChartDetail.WHOLE) null else constraints.maxHeight.toFloat()
-        val metrics = remember(density) { ChartMetrics(density) }
-        val layout = remember(spec, tables, period, width, height, detail, text) {
+        val metrics = remember(density, unit) { ChartMetrics(density, unit) }
+        val layout = remember(spec, tables, period, width, height, detail, text, metrics) {
             val calendar = com.assistant.core.utils.AppConfigManager
             val start = System.currentTimeMillis()
             ChartSceneBuilder(metrics, text, calendar.getDateTimeConfig().getZoneId(), calendar.getWeekStartDay(), now)

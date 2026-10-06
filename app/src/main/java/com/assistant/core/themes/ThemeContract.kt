@@ -186,6 +186,14 @@ interface ThemeContract {
     fun drawingTextStyle(): androidx.compose.ui.text.TextStyle
 
     /**
+     * The screen pixels one pixel of the theme's drawings takes: whoever lays a drawing out gives
+     * a bar a width that is a whole number of them, so bars of one width are drawn equal. One for
+     * a theme drawn smooth; a retro theme's whole factor.
+     */
+    @Composable
+    fun drawingUnit(): Float
+
+    /**
      * A drawing laid out by whoever made it (Drawing: a chart, a preview), drawn [modifier] sized
      * to it: every shape at its place, the palette's names and their mixes in the theme's colors
      * for them, its inks at their level, what is missing marked as such (hatched here, a screen

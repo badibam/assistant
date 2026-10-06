@@ -203,6 +203,10 @@ object UI {
     @Composable
     fun drawingTextStyle(): androidx.compose.ui.text.TextStyle = CurrentTheme.current.drawingTextStyle()
 
+    /** The screen pixels one pixel of the theme's drawings takes (ThemeContract.drawingUnit). */
+    @Composable
+    fun drawingUnit(): Float = CurrentTheme.current.drawingUnit()
+
     /** A horizontal line parting two parts of a screen or a card, drawn by the theme. */
     @Composable
     fun Divider() = CurrentTheme.current.Divider()

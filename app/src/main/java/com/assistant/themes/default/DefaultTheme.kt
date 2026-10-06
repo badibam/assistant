@@ -747,9 +747,12 @@ object DefaultTheme : ThemeContract {
         MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
 
     @Composable
+    override fun drawingUnit(): Float = 1f
+
+    @Composable
     override fun Drawing(drawing: com.assistant.core.drawing.Drawing, modifier: Modifier) {
         val dark = com.assistant.core.themes.CurrentTheme.isDark
-        DefaultDrawing.Draw(drawing, drawingTextStyle(), { DefaultDrawing.color(it, dark) }, modifier)
+        DefaultDrawing.Draw(drawing, drawingTextStyle(), dark, modifier)
     }
 
     @Composable

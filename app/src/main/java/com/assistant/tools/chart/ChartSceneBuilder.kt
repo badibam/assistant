@@ -57,9 +57,23 @@ interface ChartText {
  */
 enum class ChartDetail { WHOLE, REDUCED, STRIP }
 
-/** The sizes of a chart's drawing, in pixels. */
-data class ChartMetrics(val density: Float) {
+/**
+ * The sizes of a chart's drawing, in pixels. [unit] is the screen pixels one pixel of the theme's
+ * drawings takes (ThemeContract.drawingUnit): a bar's width is a whole number of them.
+ */
+data class ChartMetrics(val density: Float, val unit: Float = 1f) {
     fun dp(value: Float) = value * density
+
+    /**
+     * [from]..[to] across a bar, its width a whole number of units (one at least) and its start on
+     * one, about the same middle: bars of one width in floats are drawn equal, which rounding
+     * each side apart would not give.
+     */
+    fun across(from: Float, to: Float): Pair<Float, Float> {
+        val width = (Math.round((to - from) / unit).coerceAtLeast(1)) * unit
+        val start = Math.round(((from + to) / 2 - width / 2) / unit) * unit
+        return start to start + width
+    }
     val gap get() = dp(4f)
     val tickLength get() = dp(4f)
     val cellGap get() = dp(16f)
@@ -572,20 +586,20 @@ class ChartSceneBuilder(
         axis.kind == AxisKind.BAND -> {
             val band = axis.band ?: return null
             val key = (pos as? Pos.Cat)?.key ?: band.categories.firstOrNull() ?: return null
-            band.bandStart(key)?.let { it to it + band.bandwidth }
+            band.bandStart(key)?.let { metrics.across(it, it + band.bandwidth) }
         }
         span != null && axis.kind == AxisKind.TIME -> {
             val a = axis.number(span.first.toDouble()) ?: return null
             val b = axis.number((span.second + 1).toDouble()) ?: return null
             val inset = min(abs(b - a) * 0.1f, metrics.dp(2f))
-            min(a, b) + inset to max(a, b) - inset
+            metrics.across(min(a, b) + inset, max(a, b) - inset)
         }
         second != null && pos is Pos.Num -> {
             val a = axis.number(pos.value) ?: return null
             val b = axis.number(second) ?: return null
             min(a, b) to max(a, b)
         }
-        pos is Pos.Num -> axis.number(pos.value)?.let { it - free / 2 to it + free / 2 }
+        pos is Pos.Num -> axis.number(pos.value)?.let { metrics.across(it - free / 2, it + free / 2) }
         else -> null
     }
 
