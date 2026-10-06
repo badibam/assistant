@@ -791,7 +791,7 @@ object UI {
                     }
                 }
                 DisplayMode.FULL -> {
-                    // As tall as the body needs; the grid rounds its row up to whole cells. The header
+                    // As tall as the body needs, to a whole pixel of the theme (GridLayout). The header
                     // and the summary as tall as in EXTENDED: a row less the tile's frame
                     Column(modifier = Modifier.fillMaxSize()) {
                         HeaderAndSummary(Modifier.fillMaxWidth().height(com.assistant.core.ui.components.LocalGridRow.current - CurrentTheme.current.tileFrame(DisplayMode.FULL)))
