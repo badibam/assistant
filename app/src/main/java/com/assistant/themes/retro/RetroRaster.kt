@@ -5,6 +5,7 @@ import com.assistant.core.drawing.DrawPoint
 import com.assistant.core.drawing.DrawRect
 import com.assistant.core.drawing.DrawShape
 import com.assistant.core.drawing.Drawing
+import com.assistant.core.drawing.InkLevel
 import com.assistant.core.drawing.PathStep
 import com.assistant.core.drawing.SymbolShape
 import kotlin.math.abs
@@ -26,6 +27,8 @@ import kotlin.math.sin
  *   as the opacity says, the others left as they were.
  * - What is missing is a hatch of dots, its edge dotted.
  * - A stroke is one or two pixels thick, in steps; its dashes are counted in pixels.
+ * - A straight stroke in the faint ink (a chart's graduations, behind the marks) is dotted, a
+ *   pixel in every two: the ground weighs less than the marks on it.
  * - A symbol is drawn on an odd number of pixels round a middle one, the same shape at every place.
  * - A slice of a ring leaves a pixel of ground along the side it starts from.
  *
@@ -49,7 +52,8 @@ internal class RetroRaster(drawing: Drawing, private val scale: Int, private val
                     else polygons(shape.steps).forEach { stroke(it, color(shape.color), shape.opacity, shape.strokeWidth, shape.dash) }
                 is DrawShape.Symbol -> symbol(shape.center, shape.size, shape.shape, shape.filled, color(shape.color), shape.opacity)
                 is DrawShape.Arc -> arc(shape, color(shape.color))
-                is DrawShape.Segment -> stroke(listOf(px(shape.from), px(shape.to)), color(shape.color), 1f, shape.strokeWidth, shape.dash)
+                is DrawShape.Segment -> stroke(listOf(px(shape.from), px(shape.to)), color(shape.color), 1f, shape.strokeWidth, shape.dash,
+                    dots = shape.dash == null && shape.color == DrawColor.Ink(InkLevel.FAINT))
                 is DrawShape.Arrowhead -> arrowhead(shape.at, shape.size, shape.up, color(shape.color))
                 is DrawShape.Label -> Unit
             }
@@ -133,11 +137,12 @@ internal class RetroRaster(drawing: Drawing, private val scale: Int, private val
 
     /**
      * A broken line through [points], [strokeWidth] as whole pixels thick, in steps from pixel to
-     * pixel; [dash] counted in pixels along it, the count going on from one piece to the next.
+     * pixel; [dash] counted in pixels along it, the count going on from one piece to the next;
+     * [dots], a pixel in every two.
      */
-    private fun stroke(points: List<DrawPoint>, argb: Int, opacity: Float, strokeWidth: Float, dash: List<Float>?) {
+    private fun stroke(points: List<DrawPoint>, argb: Int, opacity: Float, strokeWidth: Float, dash: List<Float>?, dots: Boolean = false) {
         val thickness = whole(strokeWidth)
-        val pattern = dash?.map { whole(it) }?.takeIf { it.isNotEmpty() }
+        val pattern = if (dots) DOTS else dash?.map { whole(it) }?.takeIf { it.isNotEmpty() }
         var walked = 0
         var last: Pair<Int, Int>? = null
         points.zipWithNext { a, b ->
@@ -263,6 +268,9 @@ internal class RetroRaster(drawing: Drawing, private val scale: Int, private val
     }
 
     companion object {
+        /** A dotted stroke's pattern, in pixels: one on, one off. */
+        private val DOTS = listOf(1, 1)
+
         /**
          * The order a four-by-four screen lights its pixels in (Bayer's): any count of them is
          * spread evenly, never in a clump.
