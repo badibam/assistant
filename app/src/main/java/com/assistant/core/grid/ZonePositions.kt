@@ -15,11 +15,16 @@ object ZonePositions {
 
     /**
      * The zone group section a zone with [group] is shown in, among the home screen's
-     * [zoneGroups]: its own, or the ungrouped one (null) when it has none or names a group the
-     * home screen does not have.
+     * [zoneGroups]: its own, or the ungrouped one (null) when it has none. A group the home screen
+     * does not have cannot be held (docs/design/group-integrity.md): one that is anyway is a bug,
+     * logged, and its zone shown among the ungrouped rather than lost from the screen.
      */
-    fun section(group: String?, zoneGroups: List<String>): String? =
-        group?.takeIf { it.isNotEmpty() && it in zoneGroups }
+    fun section(group: String?, zoneGroups: List<String>): String? {
+        if (group.isNullOrEmpty()) return null
+        if (group in zoneGroups) return group
+        com.assistant.core.utils.LogManager.ui("A zone holds the group '$group', which the home screen does not have", "ERROR")
+        return null
+    }
 
     fun size(zone: Zone): Grid.Size = Grid.size(DisplayMode.valueOf(zone.display_mode))
 

@@ -14,10 +14,16 @@ object ToolPositions {
 
     /**
      * The group section a tool with [group] is shown in, among the zone's [zoneGroups]: its own,
-     * or the ungrouped one (null) when it has none or names a group the zone does not have.
+     * or the ungrouped one (null) when it has none. A group the zone does not have cannot be held
+     * (docs/design/group-integrity.md): one that is anyway is a bug, logged, and its tool shown
+     * among the ungrouped rather than lost from the screen.
      */
-    fun section(group: String?, zoneGroups: List<String>): String? =
-        group?.takeIf { it.isNotEmpty() && it in zoneGroups }
+    fun section(group: String?, zoneGroups: List<String>): String? {
+        if (group.isNullOrEmpty()) return null
+        if (group in zoneGroups) return group
+        com.assistant.core.utils.LogManager.ui("A tool holds the group '$group', which its zone does not have", "ERROR")
+        return null
+    }
 
     fun section(tool: ToolInstance, zoneGroups: List<String>): String? =
         section(JSONObject(tool.config_json).optString("group").takeIf { it.isNotEmpty() }, zoneGroups)
