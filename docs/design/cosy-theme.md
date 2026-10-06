@@ -14,10 +14,13 @@ Maquettes (écran d'une zone, à côté des autres pistes de thème écartées) 
 - La marque « en attente » est une bulle orange avec un « ! », sur sa propre ombre.
 - Une police ronde et grasse (Baloo 2 dans la maquette).
 
+## Ce qui est décidé
+
+- **Le thème dessine tout lui-même**, comme le rétro : chaque composant du contrat, dialogues et sélecteurs de date et d'heure compris, rien repris du thème par défaut ni de Material (2026-10-06).
+
 ## Ce qui reste ouvert
 
-- La part redessinée : tout, comme le rétro, ou les composants du thème par défaut repris là où la maquette ne change rien (dialogues, sélecteurs de date et d'heure, champs).
-- La police : Baloo 2 ou une autre ronde sous licence libre, embarquée dans l'app ; et ce qui la porte jusqu'aux composants Material que le thème reprendrait (aujourd'hui `MainActivity` ne passe au `MaterialTheme` que les couleurs du thème).
+- La police : Baloo 2 ou une autre ronde sous licence libre, embarquée dans l'app.
 - La palette sombre : la maquette n'a que la claire.
 - Le mouvement : l'écrasement au toucher, le rebond au lâcher, l'arrivée d'une fenêtre ; leurs durées.
 - Les sons : quelle source libre, pour quels signaux.
