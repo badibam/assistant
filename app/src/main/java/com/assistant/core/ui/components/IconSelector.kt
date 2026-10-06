@@ -1,5 +1,7 @@
 package com.assistant.core.ui.components
 
+import com.assistant.core.themes.IconColor
+import com.assistant.core.themes.TagColor
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +24,53 @@ private const val SEARCH_RESULTS_SHOWN = 60
 /** Icons per row of the picker's grids. */
 private const val ICONS_PER_ROW = 3
 
+/** Choices per row of the icon colour's: none and the eight colours on two rows. */
+private const val COLORS_PER_ROW = 5
+
+/** The icon a colour is shown on while the thing has none. */
+private const val COLOR_SAMPLE_ICON = "circle"
+
+/**
+ * An icon's colour (docs/design/icon-colors.md): none, then each of IconColor.NAMES, every
+ * choice showing [iconName] as the theme draws it in that colour, the chosen one marked. It
+ * sits under the IconSelector of the same thing.
+ *
+ * @param current The stored colour name; null for none
+ * @param iconName The thing's icon; blank while it has none
+ * @param onChange The name chosen, null for none
+ */
+@Composable
+fun IconColorSelector(current: String?, iconName: String, onChange: (String?) -> Unit) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    val shown = iconName.ifBlank { COLOR_SAMPLE_ICON }
+    val choices = listOf<String?>(null) + IconColor.NAMES
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+        UI.Text(s.shared("label_icon_color"), TextType.LABEL)
+        choices.chunked(COLORS_PER_ROW).forEach { row ->
+            // The row shared in equal parts, as the icon grid's are
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+                row.forEach { name ->
+                    Box(modifier = Modifier.weight(1f)) {
+                        UI.Button(
+                            type = if (current == name) ButtonType.PRIMARY else ButtonType.DEFAULT,
+                            size = Size.S,
+                            onClick = { onChange(name) }
+                        ) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(UI.Space.XS), contentAlignment = Alignment.Center) {
+                                UI.ItemIcon(iconName = shown, color = IconColor.of(name), size = 20.dp)
+                            }
+                        }
+                    }
+                }
+                repeat(COLORS_PER_ROW - row.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
 /**
  * Reusable icon selector: the current icon and a button opening the picker.
  *
@@ -31,12 +80,14 @@ private const val ICONS_PER_ROW = 3
  * words find the same icons on both sides. Tags are Lucide's, in English.
  *
  * @param current Currently selected icon
+ * @param color Its colour, which it is shown in; null for a neutral icon
  * @param suggested Icons offered first: the tooltype's, or a starting set for a zone
  * @param onChange Callback called when an icon is selected
  */
 @Composable
 fun IconSelector(
     current: String,
+    color: TagColor? = null,
     suggested: List<String> = emptyList(),
     onChange: (String) -> Unit
 ) {
@@ -50,7 +101,7 @@ fun IconSelector(
         horizontalArrangement = Arrangement.spacedBy(UI.Space.M)
     ) {
         UI.Text(s.shared("tools_config_label_icon"), TextType.LABEL)
-        UI.Icon(iconName = current, size = 32.dp)
+        UI.ItemIcon(iconName = current, color = color, size = 32.dp)
         UI.ActionButton(
             action = ButtonAction.SELECT,
             onClick = { showDialog = true }

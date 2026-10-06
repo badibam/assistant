@@ -779,14 +779,6 @@ object UI {
     // =====================================
     
     
-    @Composable
-    fun IconSelector(
-        current: String,
-        suggested: List<String> = emptyList(),
-        onChange: (String) -> Unit
-    ) = com.assistant.core.ui.components.IconSelector(current, suggested, onChange)
-    
-    
     /** A column whose items are reordered by dragging their handle; see [com.assistant.core.ui.components.ReorderableColumn]. */
     @Composable
     fun <T> ReorderableColumn(
