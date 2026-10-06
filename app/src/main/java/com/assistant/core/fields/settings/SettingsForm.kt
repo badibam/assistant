@@ -127,6 +127,9 @@ private class Pages(val trail: List<Step>, private val go: (List<Step>) -> Unit)
 
 private val LocalPages = androidx.compose.runtime.compositionLocalOf<Pages?> { null }
 
+/** The names the elements of the form's lists of values came with, when its screen follows them. */
+private val LocalListOrigins = androidx.compose.runtime.compositionLocalOf<ListOrigins?> { null }
+
 /**
  * Whether settings hold more than values — a group, a list, or a brick drawn by its selector —
  * which makes the object holding them a page of its own (docs/design/settings-pages.md). A
@@ -232,6 +235,7 @@ fun SettingsForm(
     editors: Map<String, SettingEditor> = emptyMap(),
     rows: RowFields? = null,
     scroll: androidx.compose.foundation.ScrollState? = null,
+    origins: ListOrigins? = null,
     root: (@Composable () -> Unit)? = null
 ) {
     var trail by rememberSaveable(stateSaver = TrailSaver) { mutableStateOf(emptyList<Step>()) }
@@ -253,7 +257,8 @@ fun SettingsForm(
     val page = pages.lastOrNull()
     androidx.compose.runtime.CompositionLocalProvider(
         LocalPages provides Pages(shown) { trail = it },
-        LocalPlace provides rows?.let { Place(config, keys, it) }
+        LocalPlace provides rows?.let { Place(config, keys, it) },
+        LocalListOrigins provides origins
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             if (page == null) {
@@ -631,6 +636,9 @@ private fun ListForm(
 ) {
     val values = (0 until items.length()).map { items.get(it) }
     fun publish(next: List<Any>) = onChange(JSONArray(next))
+    // The name each value came with, followed through moves, removals and additions
+    val origins = LocalListOrigins.current?.takeIf { list.item is SettingNode.Item.Value }
+    origins?.start(list.name, values)
 
     // The elements open, by position: every one starts closed, a new one opens, and several may
     // be open at once. Screen state only, never stored.
@@ -646,12 +654,14 @@ private fun ListForm(
             // An element keeps its open state where it lands
             val order = values.indices.toMutableList().apply { add(to, removeAt(from)) }
             open = order.indices.filter { order[it] in open }.toIntArray()
+            origins?.moved(list.name, order)
             publish(order.map { values[it] })
         },
         spacing = UI.Space.S
     ) { _, (index, item) ->
         fun remove() {
             open = open.filter { it != index }.map { if (it > index) it - 1 else it }.toIntArray()
+            origins?.removed(list.name, index)
             publish(values.toMutableList().also { it.removeAt(index) })
         }
         when (val shape = list.item) {
@@ -725,6 +735,7 @@ private fun ListForm(
             is SettingNode.Item.Of -> SettingDefaults.of(shape.nodes)
             is SettingNode.Item.Value -> JSONObject.NULL
         }
+        origins?.added(list.name)
         publish(values + fresh)
         if (pages != null && shape is SettingNode.Item.Of && shape.nodes.isPage()) pages.open(Step.Element(list.name, values.size))
         else open = open + values.size

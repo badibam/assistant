@@ -86,6 +86,10 @@ fun CreateZoneScreen(
         }
     )
 
+    // The names the zone's tool groups came with: a group renamed here is renamed in its tools,
+    // automations and variables
+    val origins = remember(existingZone) { com.assistant.core.fields.settings.ListOrigins() }
+
     fun save() {
         coroutineScope.launch {
             val given = JsonUtils.toMap(settings)
@@ -93,6 +97,7 @@ fun CreateZoneScreen(
                 // Every setting is sent: an absent one is sent as null, which empties it
                 val params = mutableMapOf<String, Any?>("zone_id" to existingZone.id)
                 listOf("name", "description", "icon_name", "group", "tool_groups", "display_mode").forEach { params[it] = given[it] ?: JSONObject.NULL }
+                params["renames"] = mapOf("tool_groups" to origins.renames("tool_groups", settings.optJSONArray("tool_groups")))
                 coordinator.processUserAction("zones.update", params)
             } else {
                 coordinator.processUserAction("zones.create", given)
@@ -120,7 +125,7 @@ fun CreateZoneScreen(
 
         Spacer(modifier = Modifier.height(UI.Space.S))
 
-        SettingsForm(nodes, settings, { settings = it }, context, editors)
+        SettingsForm(nodes, settings, { settings = it }, context, editors, origins = origins)
 
         UI.FormActions {
             UI.ActionButton(

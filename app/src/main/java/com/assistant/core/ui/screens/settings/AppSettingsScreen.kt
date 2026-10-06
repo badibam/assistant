@@ -95,10 +95,15 @@ fun AppSettingsScreen(
         }
     }
 
+    // The names the home screen's groups came with: a group renamed here is renamed in its zones
+    val origins = remember(category) { com.assistant.core.fields.settings.ListOrigins() }
+
     fun save() {
         isSaving = true
         scope.launch {
-            val result = coordinator.processUserAction("app_config.set", mapOf("category" to category, "settings" to JsonUtils.toMap(settings)))
+            val renames = if (category != AppSettingCategories.MAIN_SCREEN) emptyMap()
+                else mapOf("zone_groups" to origins.renames("zone_groups", settings.optJSONArray("zone_groups")))
+            val result = coordinator.processUserAction("app_config.set", mapOf("category" to category, "settings" to JsonUtils.toMap(settings), "renames" to renames))
             isSaving = false
             if (result.isSuccess) {
                 saved = true
@@ -130,7 +135,7 @@ fun AppSettingsScreen(
 
         UI.Card(type = CardType.DEFAULT) {
             Column(modifier = Modifier.fillMaxWidth().padding(UI.Space.L)) {
-                SettingsForm(nodes, settings, { settings = it }, context)
+                SettingsForm(nodes, settings, { settings = it }, context, origins = origins)
             }
         }
 
