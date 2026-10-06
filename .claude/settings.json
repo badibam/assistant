@@ -1,4 +1,7 @@
 {
+  "worktree": {
+    "baseRef": "head"
+  },
   "sandbox": {
     "filesystem": {
       "allowRead": ["/home/simon/.gradle", "/home/simon/.android", "/home/simon/android-sdk"],
