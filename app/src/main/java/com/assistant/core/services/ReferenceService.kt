@@ -1,5 +1,6 @@
 package com.assistant.core.services
 
+import com.assistant.core.themes.IconColor
 import android.content.Context
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.database.AppDatabase
@@ -77,9 +78,12 @@ class ReferenceService(private val context: Context) : ExecutableService {
         // A tool leads somewhere when it is taken itself, or when its entries are
         fun leads(tool: ToolInstance) = ReferenceKind.TOOL_INSTANCE in kinds ||
             (ReferenceKind.ENTRY in kinds && (restricted.isEmpty() || tool.id in restricted))
+        // Each with its icon in its colour, which the screen shows it by
         fun toolRows(shown: List<ToolInstance>, groups: List<String> = emptyList()) = shown.map { tool ->
+            val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
             mapOf("id" to tool.id, "name" to toolName(tool), "tooltype" to tool.tooltype, "zone_id" to tool.zone_id, "zone_name" to zoneNames[tool.zone_id],
-                "group" to JSONObject(tool.config_json).optString("group").takeIf { it in groups })
+                "group" to JSONObject(tool.config_json).optString("group").takeIf { it in groups },
+                "icon_name" to settings.string("icon_name"), IconColor.KEY to settings.string(IconColor.KEY))
         }
 
         return OperationResult.success(when {
@@ -109,7 +113,7 @@ class ReferenceService(private val context: Context) : ExecutableService {
             kinds == setOf(ReferenceKind.ENTRY) && restricted.isNotEmpty() -> mapOf("tool_instances" to toolRows(tools.filter { it.id in restricted }))
             else -> mapOf("zones" to zones
                 .filter { zone -> ReferenceKind.ZONE in kinds || tools.any { it.zone_id == zone.id && leads(it) } || variables.any { it.zoneId == zone.id } }
-                .map { mapOf("id" to it.id, "name" to it.name) })
+                .map { mapOf("id" to it.id, "name" to it.name, "icon_name" to it.icon_name, IconColor.KEY to it.icon_color) })
         })
     }
 
