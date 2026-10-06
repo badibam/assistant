@@ -1787,6 +1787,7 @@
     <string name="demo_phase_automations">Automations</string>
     <string name="demo_error_refused">The demo could not be built: %1$s</string>
     <string name="service_error_id_not_given">An id is made by the app, it cannot be given: %1$s</string>
+    <string name="service_error_group_unknown">The group \'%1$s\' does not exist. Groups: %2$s</string>
     <string name="demo_texts_file">texts-en.json</string>
     <string name="demo_error_unreadable">The demo could not be read: %1$s</string>
     <string name="demo_installed">Demo installed</string>

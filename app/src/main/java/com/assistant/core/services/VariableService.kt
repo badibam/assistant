@@ -10,6 +10,8 @@ import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.ToolFields
 import com.assistant.core.fields.toFieldDefinition
 import com.assistant.core.fields.toFieldDefinitions
+import com.assistant.core.grid.Groups
+import com.assistant.core.grid.ToolPositions
 import com.assistant.core.reading.FieldReading
 import com.assistant.core.reading.Reduction
 import com.assistant.core.selection.EntrySelection
@@ -75,7 +77,10 @@ class VariableService(private val context: Context) : ExecutableService {
 
     private suspend fun create(params: JSONObject): OperationResult {
         val zoneId = params.optString("zone_id").takeIf { it.isNotEmpty() } ?: throw Refused(s.shared("variable_error_param").format("zone_id"))
-        if (AppDatabase.getDatabase(context).zoneDao().getZoneById(zoneId) == null) throw Refused(s.shared("service_error_zone_not_found"))
+        val zone = AppDatabase.getDatabase(context).zoneDao().getZoneById(zoneId) ?: throw Refused(s.shared("service_error_zone_not_found"))
+        // One of its zone's tool groups, or none
+        val group = Groups.held(params)
+        Groups.refusal(group, ToolPositions.zoneGroups(zone.tool_groups), s)?.let { throw Refused(it) }
         // The app's own demo gives its ids; every other caller gets one made here
         val id = when (val given = com.assistant.core.coordinator.GivenId.read(params)) {
             com.assistant.core.coordinator.GivenId.Read.None -> UUID.randomUUID().toString()
@@ -87,7 +92,7 @@ class VariableService(private val context: Context) : ExecutableService {
         val now = System.currentTimeMillis()
         dao.insert(VariableEntity(
             id = id, zoneId = zoneId, name = name,
-            group = params.optString("group").takeIf { it.isNotEmpty() },
+            group = group,
             orderIndex = dao.getByZone(zoneId).size,
             definitionJson = definition.toJson().toString(),
             createdAt = now, updatedAt = now
@@ -101,13 +106,21 @@ class VariableService(private val context: Context) : ExecutableService {
         val name = if (params.has("name")) checkName(params.optString("name"), existing.id) else existing.name
         val definition = params.optJSONObject("definition")?.let { checkDefinition(it, name, existing.id) }
         val zoneId = params.optString("zone_id").takeIf { it.isNotEmpty() } ?: existing.zoneId
-        if (zoneId != existing.zoneId && AppDatabase.getDatabase(context).zoneDao().getZoneById(zoneId) == null) {
-            throw Refused(s.shared("service_error_zone_not_found"))
+        val zone = AppDatabase.getDatabase(context).zoneDao().getZoneById(zoneId) ?: throw Refused(s.shared("service_error_zone_not_found"))
+        // One of its zone's tool groups, or none. A variable changing zone without a group given
+        // leaves its group behind.
+        val moved = zoneId != existing.zoneId
+        val group = when {
+            params.has("group") -> Groups.held(params)
+            moved -> null
+            else -> existing.group
         }
+        val emptiedGroup = existing.group?.takeIf { moved && !params.has("group") }
+        Groups.refusal(group, ToolPositions.zoneGroups(zone.tool_groups), s)?.let { throw Refused(it) }
         dao.update(existing.copy(
             name = name,
             zoneId = zoneId,
-            group = if (params.has("group")) params.optString("group").takeIf { it.isNotEmpty() } else existing.group,
+            group = group,
             orderIndex = if (params.has("order_index")) params.getInt("order_index") else existing.orderIndex,
             definitionJson = definition?.toJson()?.toString()
                 // A rename alone leaves the definition, whose field carries the name
@@ -115,7 +128,8 @@ class VariableService(private val context: Context) : ExecutableService {
             updatedAt = System.currentTimeMillis()
         ))
         DataChangeNotifier.notifyVariablesChanged()
-        return OperationResult.success(mapOf("variable_id" to existing.id, "name" to name))
+        return OperationResult.success(mapOf("variable_id" to existing.id, "name" to name)
+            + (emptiedGroup?.let { mapOf("group_emptied" to it) } ?: emptyMap()))
     }
 
     private suspend fun delete(params: JSONObject): OperationResult {

@@ -187,7 +187,13 @@ fun ToolConfigScreen(
                     label = s.shared("label_zone"),
                     options = zones.map { it.second },
                     selected = zones.find { it.first == currentZoneId }?.second ?: "",
-                    onSelect = { name -> zones.find { it.second == name }?.let { currentZoneId = it.first } }
+                    onSelect = { name ->
+                        zones.find { it.second == name }?.takeIf { it.first != currentZoneId }?.let {
+                            currentZoneId = it.first
+                            // Its group stays in the zone it leaves: the selector offers the new zone's
+                            config = JSONObject(config.toString()).apply { remove("group") }
+                        }
+                    }
                 )
             }
         }

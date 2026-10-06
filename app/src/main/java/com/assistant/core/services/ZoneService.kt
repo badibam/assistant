@@ -16,6 +16,7 @@ import org.json.JSONArray
 import com.assistant.core.utils.LogManager
 import com.assistant.core.grid.ToolPositions
 import com.assistant.core.grid.Grid
+import com.assistant.core.grid.Groups
 import com.assistant.core.grid.ZonePositions
 import com.assistant.core.database.entities.Zone as ZoneEntity
 import androidx.room.withTransaction
@@ -80,10 +81,9 @@ class ZoneService(private val context: Context) : ExecutableService {
             null
         }
 
-        // Parse group if provided (zone group assignment for MainScreen organization)
-        val group = params.optString("group").takeIf { it.isNotBlank() }
-
-        LogManager.service("ZoneService.handleCreate - params has group: ${params.has("group")}, group value: '$group'", "DEBUG")
+        // One of the home screen's groups, or none
+        val group = Groups.held(params)
+        Groups.refusal(group, zoneGroups(), s)?.let { return OperationResult.error(it) }
 
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -254,19 +254,9 @@ class ZoneService(private val context: Context) : ExecutableService {
             existingZone.tool_groups // Keep existing value if not provided
         }
 
-        // Parse group if provided (zone group assignment for MainScreen organization)
-        val group = if (params.has("group")) {
-            val groupValue = params.opt("group")
-            when {
-                groupValue == null || groupValue == JSONObject.NULL -> null
-                groupValue is String && groupValue.isNotBlank() -> groupValue
-                else -> existingZone.group
-            }
-        } else {
-            existingZone.group // Keep existing value if not provided
-        }
-
-        LogManager.service("ZoneService.handleUpdate - params has group: ${params.has("group")}, group value: '$group', existing group: '${existingZone.group}'", "DEBUG")
+        // One of the home screen's groups, or none: null or empty removes it
+        val group = if (params.has("group")) Groups.held(params) else existingZone.group
+        Groups.refusal(group, zoneGroups(), s)?.let { return OperationResult.error(it) }
 
         // A partial update: a field left out keeps its value, a field given replaces it, and a
         // field given as null or empty is emptied -- except the name, which a zone must have.

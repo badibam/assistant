@@ -34,6 +34,7 @@ import com.assistant.core.selection.ReferenceKind
 import org.json.JSONObject
 import com.assistant.core.icons.Icons
 import com.assistant.core.grid.Grid
+import com.assistant.core.grid.Groups
 import com.assistant.core.grid.ToolPositions
 
 /**
@@ -138,6 +139,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         val zone = zoneDao.getZoneById(zoneId)
             ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
+        // One of its zone's tool groups, or none
+        Groups.refusal(Groups.held(JSONObject(storedConfigJson)), ToolPositions.zoneGroups(zone.tool_groups), s)?.let { return OperationResult.error(it) }
 
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -231,15 +234,23 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // Store old zone_id for notification
         val oldZoneId = existingTool.zone_id
 
-        val changedTool = existingTool.copy(
-            config_json = configJson.takeIf { it.isNotBlank() } ?: existingTool.config_json,
-            zone_id = newZoneId ?: existingTool.zone_id, // Update zone if provided
-            updated_at = System.currentTimeMillis()
-        )
         val oldZone = zoneDao.getZoneById(existingTool.zone_id)
             ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
-        val newZone = if (changedTool.zone_id == oldZone.id) oldZone else zoneDao.getZoneById(changedTool.zone_id)
+        val newZone = if (newZoneId == null || newZoneId == oldZone.id) oldZone else zoneDao.getZoneById(newZoneId)
             ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
+
+        // Its group is one of its zone's tool groups. A tool changing zone without a config
+        // leaves its group behind; a config given with the move names one of the new zone's.
+        val storedConfig = JSONObject(configJson.takeIf { it.isNotBlank() } ?: existingTool.config_json)
+        val emptiedGroup = Groups.held(storedConfig)?.takeIf { newZone.id != oldZone.id && configJson.isBlank() }
+        if (emptiedGroup != null) storedConfig.remove("group")
+        Groups.refusal(Groups.held(storedConfig), ToolPositions.zoneGroups(newZone.tool_groups), s)?.let { return OperationResult.error(it) }
+
+        val changedTool = existingTool.copy(
+            config_json = if (configJson.isBlank() && emptiedGroup == null) existingTool.config_json else storedConfig.toString(),
+            zone_id = newZone.id,
+            updated_at = System.currentTimeMillis()
+        )
 
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -270,7 +281,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             "tool_instance_id" to updatedTool.id,
             "zone_id" to updatedTool.zone_id,
             "updated_at" to updatedTool.updated_at
-        ) + iconCheck.report() + (migration?.let { report(it) } ?: emptyMap()))
+        ) + iconCheck.report() + (migration?.let { report(it) } ?: emptyMap())
+            + (emptiedGroup?.let { mapOf("group_emptied" to it) } ?: emptyMap()))
     }
 
     /** The values given for fields a config change makes required, or why they are refused. */
@@ -534,15 +546,18 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         }
         sourceConfig.put("name", newName)
 
-        // Update group if specified
-        if (targetGroup != null) {
-            sourceConfig.put("group", targetGroup)
-        }
-
-        if (token.isCancelled) return OperationResult.cancelled()
-
         val targetZone = zoneDao.getZoneById(targetZoneId)
             ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
+
+        // The group given, one of the target zone's tool groups; none given, the copy keeps its
+        // source's group in the same zone and has none in another
+        when {
+            targetGroup != null -> sourceConfig.put("group", targetGroup)
+            targetZoneId != sourceTool.zone_id -> sourceConfig.remove("group")
+        }
+        Groups.refusal(Groups.held(sourceConfig), ToolPositions.zoneGroups(targetZone.tool_groups), s)?.let { return OperationResult.error(it) }
+
+        if (token.isCancelled) return OperationResult.cancelled()
 
         // Create new tool instance in target zone, at the bottom of its section's grid
         val newToolInstance = database.withTransaction {

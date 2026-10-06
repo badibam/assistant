@@ -8,6 +8,8 @@ import com.assistant.core.ai.database.AutomationEntity
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.grid.Groups
+import com.assistant.core.grid.ToolPositions
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
@@ -136,6 +138,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             lastExecutionId = null,
             executionHistoryJson = json.encodeToString(emptyList<String>())
         ), settingsGiven(params, null)).getOrElse { return OperationResult.error(it.message ?: s.shared("message_validation_error_simple")) }
+        groupRefusal(entity.group, zoneId)?.let { return OperationResult.error(it) }
 
         LogManager.service("Creating automation: name=${entity.name}, zoneId=$zoneId", "DEBUG")
         dao.insertAutomation(entity)
@@ -173,11 +176,17 @@ class AutomationService(private val context: Context) : ExecutableService {
         val triggerIdsJson = triggerIdsArray?.let { array -> json.encodeToString((0 until array.length()).map { array.getString(it) }) }
             ?: entity.triggerIdsJson
 
+        // An automation changing zone without a group given leaves its group behind
+        val settings = settingsGiven(params, settingsOf(entity))
+        val emptiedGroup = entity.group?.takeIf { newZoneId != null && newZoneId != entity.zoneId && !params.has("group") }
+        if (emptiedGroup != null) settings.remove("group")
+
         val updatedEntity = withSettings(entity.copy(
             zoneId = newZoneId ?: entity.zoneId,
             triggerIdsJson = triggerIdsJson,
             updatedAt = System.currentTimeMillis()
-        ), settingsGiven(params, settingsOf(entity))).getOrElse { return OperationResult.error(it.message ?: s.shared("message_validation_error_simple")) }
+        ), settings).getOrElse { return OperationResult.error(it.message ?: s.shared("message_validation_error_simple")) }
+        groupRefusal(updatedEntity.group, updatedEntity.zoneId)?.let { return OperationResult.error(it) }
 
         dao.updateAutomation(updatedEntity)
 
@@ -194,7 +203,17 @@ class AutomationService(private val context: Context) : ExecutableService {
             "name" to updatedEntity.name,
             "zone_id" to updatedEntity.zoneId,
             "updated" to true
-        ))
+        ) + (emptiedGroup?.let { mapOf("group_emptied" to it) } ?: emptyMap()))
+    }
+
+    /**
+     * Why [group] cannot be held by an automation of the zone [zoneId], whose tool groups it
+     * names; null when it can (none, or one of them).
+     */
+    private suspend fun groupRefusal(group: String?, zoneId: String): String? {
+        val zone = AppDatabase.getDatabase(context).zoneDao().getZoneById(zoneId)
+            ?: return s.shared("service_error_zone_not_found")
+        return Groups.refusal(group, ToolPositions.zoneGroups(zone.tool_groups), s)
     }
 
     /** The settings an automation stores, as its declaration describes them (AutomationSettings). */
@@ -304,6 +323,7 @@ class AutomationService(private val context: Context) : ExecutableService {
         val targetGroup = params.optString("target_group").takeIf { it.isNotBlank() }
 
         LogManager.service("Duplicating automation: $automationId to zone $targetZoneId", "DEBUG")
+        groupRefusal(targetGroup, targetZoneId)?.let { return OperationResult.error(it) }
 
         // Load source automation
         val sourceEntity = dao.getAutomationById(automationId)
