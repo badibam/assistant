@@ -4,7 +4,7 @@
 
     <!-- Métadonnées -->
     <string name="display_name">Journal</string>
-    <string name="description">Entrées de journal horodatées avec support audio et organisation chronologique</string>
+    <string name="description">Entrées de journal horodatées, dans l\'ordre chronologique</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
     <string name="schema_config_display_name">Configuration Journal</string>
