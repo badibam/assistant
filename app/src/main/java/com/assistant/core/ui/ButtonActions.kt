@@ -11,13 +11,13 @@ import androidx.compose.runtime.Composable
 fun ButtonAction.defaultType(): ButtonType {
     return when (this) {
         // PRIMARY: Actions critiques/importantes
-        ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START, ButtonAction.ATTACH, ButtonAction.PHOTO, ButtonAction.GALLERY, ButtonAction.REPEAT -> ButtonType.PRIMARY
+        ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START, ButtonAction.ATTACH, ButtonAction.PHOTO, ButtonAction.GALLERY, ButtonAction.REPEAT, ButtonAction.SETTINGS -> ButtonType.PRIMARY
 
         // DANGER: destructive actions, behind a confirmation
         ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
 
         // DEFAULT: Actions neutres/navigation standard
-        ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.ARRANGE, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW -> ButtonType.DEFAULT
+        ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.ARRANGE, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW, ButtonAction.HISTORY -> ButtonType.DEFAULT
     }
 }
 
@@ -57,6 +57,8 @@ fun ButtonAction.label(): String {
         ButtonAction.ARRANGE -> s.shared("action_arrange")
         ButtonAction.UP -> s.shared("action_up")
         ButtonAction.DOWN -> s.shared("action_down")
+        ButtonAction.SETTINGS -> s.shared("settings_title")
+        ButtonAction.HISTORY -> s.shared("settings_history")
     }
 }
 

@@ -44,14 +44,23 @@ fun AIFloatingChat(
 
     // State for errors
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    // The past chats, opened over the chat: resuming one shows it here, leaving comes back
+    var showHistory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     FullScreenDialog(onDismiss = onDismiss) {
         when {
+            showHistory -> {
+                com.assistant.core.ui.screens.HistoryScreen(
+                    onNavigateBack = { showHistory = false },
+                    onResumeSession = { showHistory = false }
+                )
+            }
             // CHAT or AUTOMATION: Session active → Use AIScreen
             aiState.sessionId != null -> {
                 AIScreen(
                     sessionId = aiState.sessionId!!,
-                    onClose = onDismiss
+                    onClose = onDismiss,
+                    onOpenHistory = { showHistory = true }
                 )
             }
             // IDLE: No active session
@@ -66,6 +75,7 @@ fun AIFloatingChat(
                             }
                         }
                     },
+                    onOpenHistory = { showHistory = true },
                     onClose = onDismiss
                 )
             }
@@ -92,6 +102,7 @@ fun AIFloatingChat(
 @Composable
 private fun NoActiveSessionView(
     onStartChat: () -> Unit,
+    onOpenHistory: () -> Unit,
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
@@ -106,6 +117,12 @@ private fun NoActiveSessionView(
                     type = TextType.TITLE
                 )
             }
+            UI.ActionButton(
+                action = ButtonAction.HISTORY,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onOpenHistory
+            )
             UI.ActionButton(
                 action = ButtonAction.CANCEL,
                 display = ButtonDisplay.ICON,

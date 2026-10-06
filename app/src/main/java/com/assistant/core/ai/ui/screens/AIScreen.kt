@@ -68,7 +68,8 @@ private fun getPhaseLabel(phase: Phase, s: com.assistant.core.strings.StringsCon
 @Composable
 fun AIScreen(
     sessionId: String,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onOpenHistory: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -191,7 +192,8 @@ fun AIScreen(
         SessionType.CHAT -> {
             ChatMode(
                 session = session!!,
-                onClose = onClose
+                onClose = onClose,
+                onOpenHistory = onOpenHistory
             )
         }
         SessionType.SEED -> {
@@ -215,7 +217,8 @@ fun AIScreen(
 @Composable
 private fun ChatMode(
     session: AISession,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onOpenHistory: (() -> Unit)?
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -290,6 +293,7 @@ private fun ChatMode(
             session = session,
             phase = aiState.phase,
             onClose = onClose,
+            onOpenHistory = onOpenHistory,
             onShowStats = { showStats = true },
             onStopSession = {
                 scope.launch {
@@ -1036,6 +1040,7 @@ private fun ChatHeader(
     session: AISession,
     phase: Phase,
     onClose: () -> Unit,
+    onOpenHistory: (() -> Unit)?,
     onShowStats: () -> Unit,
     onStopSession: () -> Unit
 ) {
@@ -1126,6 +1131,16 @@ private fun ChatHeader(
             UI.Text(
                 text = getPhaseLabel(phase, s),
                 type = TextType.CAPTION
+            )
+        }
+
+        // The past chats, to resume one
+        onOpenHistory?.let {
+            UI.ActionButton(
+                action = ButtonAction.HISTORY,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = it
             )
         }
 
