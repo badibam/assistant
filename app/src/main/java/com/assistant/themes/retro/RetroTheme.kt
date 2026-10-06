@@ -465,6 +465,12 @@ object RetroTheme : ThemeContract {
         )
     }
 
+    /** The icon's own pixels in its colour, which read on the surface it is drawn on; no badge, a frame in a frame. */
+    @Composable
+    override fun ItemIcon(resourceId: Int, size: Dp, color: TagColor?) {
+        Icon(resourceId, size, null, color?.takeIf { it != TagColor.GREY }?.let { retroColors.icon(it, retroSurface).srgb }, null)
+    }
+
     @Composable
     override fun Dialog(type: DialogType, onConfirm: () -> Unit, onCancel: () -> Unit, confirmEnabled: Boolean, content: @Composable () -> Unit) {
         val s = Strings.`for`(context = LocalContext.current)
@@ -670,6 +676,7 @@ object RetroTheme : ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
+        iconColor: com.assistant.core.themes.TagColor?,
         leftButton: ButtonAction?,
         rightButton: ButtonAction?,
         onLeftClick: (() -> Unit)?,
@@ -685,7 +692,7 @@ object RetroTheme : ThemeContract {
                 // The page's icon and title a size up, as a heading is (HEADING)
                 val up = retroGridUp()
                 Row(horizontalArrangement = Arrangement.spacedBy(grid.cells(1)), verticalAlignment = Alignment.CenterVertically) {
-                    icon?.let { NamedIcon(it, null, up) }
+                    icon?.let { NamedIcon(it, null, up, iconColor?.takeIf { color -> color != TagColor.GREY }?.let { color -> retroColors.icon(color, retroSurface).srgb }) }
                     Line(title, up.text, LocalRetroInk.current ?: retroSurface.strong.srgb, align = TextAlign.Center)
                 }
                 subtitle?.let { Text(it, TextType.CAPTION, false, TextAlign.Center) }
@@ -1119,13 +1126,13 @@ object RetroTheme : ThemeContract {
 
     /** A Lucide icon by name, in the register's icon box. */
     @Composable
-    private fun NamedIcon(name: String, description: String?, grid: RetroGrid = retroGrid()) {
+    private fun NamedIcon(name: String, description: String?, grid: RetroGrid = retroGrid(), tint: Color? = null) {
         val resource = requireNotNull(Icons.drawable(LocalContext.current, name)) { "No drawable for the icon $name" }
         // Its box once, at [grid]'s scale: drawn here rather than by Icon, which counts in the screen's grid
         Image(
             painter = painterResource(resource),
             contentDescription = description,
-            colorFilter = ColorFilter.tint(LocalRetroInk.current ?: retroSurface.ink.srgb),
+            colorFilter = ColorFilter.tint(tint ?: LocalRetroInk.current ?: retroSurface.ink.srgb),
             modifier = Modifier.size(grid.dp(RetroGrid.ICON))
         )
     }

@@ -210,6 +210,7 @@ fun StructuredScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfi
             title = if (openId == null) settings.string("name")!! else if (openId == "") s.tool("new_sheet") else openSheet?.name ?: "",
             subtitle = settings.string("description")?.takeIf { it.isNotBlank() && openId == null },
             icon = settings.string("icon_name"),
+            iconColor = com.assistant.core.themes.IconColor.of(settings.string(com.assistant.core.themes.IconColor.KEY)),
             leftButton = ButtonAction.BACK,
             rightButton = if (openId == null) ButtonAction.CONFIGURE else null,
             onLeftClick = { if (openId != null) close() else onNavigateBack() },

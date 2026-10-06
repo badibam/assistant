@@ -119,6 +119,7 @@ fun TrackingScreen(
                 title = toolName,
                 subtitle = toolDescription.takeIf { it.isNotBlank() },
                 icon = iconName,
+                iconColor = com.assistant.core.themes.IconColor.of(settings.string(com.assistant.core.themes.IconColor.KEY)),
                 leftButton = ButtonAction.BACK,
                 rightButton = ButtonAction.CONFIGURE,
                 onLeftClick = onNavigateBack,

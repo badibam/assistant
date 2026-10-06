@@ -271,6 +271,15 @@ interface ThemeContract {
         background: androidx.compose.ui.graphics.Color?
     )
     
+    /**
+     * The icon a zone or a tool is shown by, drawn [size] across, in its [color]: null for a
+     * neutral icon (docs/design/icon-colors.md). How a colour shows is the theme's, and it may
+     * set the icon on a badge larger than [size]: a neutral icon then takes the same room, so
+     * the names beside icons line up whatever their colours.
+     */
+    @Composable
+    fun ItemIcon(resourceId: Int, size: Dp, color: TagColor?)
+
     @Composable
     fun Dialog(
         type: DialogType,
@@ -346,6 +355,8 @@ interface ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
+        /** The icon's colour, for a zone's or a tool's page; null for a neutral icon. */
+        iconColor: TagColor?,
         leftButton: ButtonAction?,
         rightButton: ButtonAction?,
         onLeftClick: (() -> Unit)?,

@@ -130,6 +130,12 @@ class RetroColors(val numbers: PaletteNumbers) {
         else -> Lch(numbers.panelStatusLightness, numbers.statusChroma, TAG_HUES.getValue(color))
     }
 
+    /**
+     * An item's icon colour (docs/design/icon-colors.md) on [surface]: its tag's hue at the
+     * lightness of the states there, which read on it, and at their chroma.
+     */
+    fun icon(color: TagColor, surface: Surface): Lch = Lch(surface.success.l, numbers.statusChroma, TAG_HUES.getValue(color))
+
     /** A tag's name on its colour: dark letters on a light tag, light ones on a dark tag. */
     val tagText: Lch =
         if (numbers.tagLightness >= 0.6f) Lch(0.25f, STRONG_CHROMA, numbers.hue)

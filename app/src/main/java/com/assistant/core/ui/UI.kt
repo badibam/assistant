@@ -1,5 +1,7 @@
 package com.assistant.core.ui
 
+import com.assistant.core.themes.IconColor
+import com.assistant.core.themes.TagColor
 import com.assistant.core.ui.sound.UISignal
 import com.assistant.core.ui.sound.rememberUISound
 import com.assistant.core.ui.sound.signal
@@ -307,6 +309,18 @@ object UI {
         }
     }
     
+    /**
+     * The icon a zone or a tool is shown by, in its colour (null for a neutral one), as the theme
+     * draws it (ThemeContract.ItemIcon); a name without a drawing shows its first two letters, as [Icon] does.
+     */
+    @Composable
+    fun ItemIcon(iconName: String, color: TagColor?, size: Dp = 24.dp) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val iconResource = com.assistant.core.icons.Icons.drawable(context, iconName)
+        if (iconResource != null) CurrentTheme.current.ItemIcon(iconResource, size, color)
+        else Text(text = iconName.take(2).uppercase(), type = TextType.CAPTION, fillMaxWidth = false)
+    }
+
     @Composable
     fun Dialog(
         type: DialogType,
@@ -556,11 +570,11 @@ object UI {
      * A tile's icon with its two marks: half the height of the space it stands in, square.
      */
     @Composable
-    fun TileIcon(iconName: String?, waiting: Boolean, running: Boolean) {
+    fun TileIcon(iconName: String?, iconColor: TagColor?, waiting: Boolean, running: Boolean) {
         // Measured by the height it is given, never asked its intrinsic size: a tile's header and
         // its icon always have a height of their own
         BoxWithConstraints(modifier = Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
-            MarkedIcon(iconName, waiting, running, maxHeight / 2)
+            MarkedIcon(iconName, iconColor, waiting, running, maxHeight / 2)
         }
     }
 
@@ -570,10 +584,10 @@ object UI {
      * Without an icon or a mark to show, the name is centered in the whole width.
      */
     @Composable
-    fun TileHeader(iconName: String?, name: String, waiting: Boolean, running: Boolean, textType: TextType, subtitle: String? = null) {
+    fun TileHeader(iconName: String?, iconColor: TagColor?, name: String, waiting: Boolean, running: Boolean, textType: TextType, subtitle: String? = null) {
         val iconShown = !iconName.isNullOrBlank() || waiting || running
         Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            if (iconShown) TileIcon(iconName, waiting, running)
+            if (iconShown) TileIcon(iconName, iconColor, waiting, running)
             Column(modifier = Modifier.weight(1f).padding(start = if (iconShown) Space.M else 0.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(name, textType, maxLines = 2, fillMaxWidth = true, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 if (subtitle != null) Text(subtitle, TextType.CAPTION, maxLines = 1, fillMaxWidth = true, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -582,13 +596,14 @@ object UI {
     }
 
     /**
-     * A tool's or a zone's icon with its two marks, each in its corner: something waiting at the
-     * top, a stopwatch running at the bottom. The marks show without an icon too.
+     * A tool's or a zone's icon in its colour, with its two marks, each in its corner: something
+     * waiting at the top, a stopwatch running at the bottom. The marks show without an icon too.
+     * The theme may set the icon on a badge larger than [size] (ItemIcon), which the marks follow.
      */
     @Composable
-    fun MarkedIcon(iconName: String?, waiting: Boolean, running: Boolean, size: Dp = 24.dp) {
-        Box(modifier = Modifier.size(size)) {
-            if (!iconName.isNullOrBlank()) Icon(iconName = iconName, size = size, contentDescription = null)
+    fun MarkedIcon(iconName: String?, iconColor: TagColor?, waiting: Boolean, running: Boolean, size: Dp = 24.dp) {
+        Box(modifier = Modifier.defaultMinSize(minWidth = size, minHeight = size)) {
+            if (!iconName.isNullOrBlank()) ItemIcon(iconName, iconColor, size)
             if (waiting) Box(modifier = Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp)) { WaitingMark() }
             if (running) Box(modifier = Modifier.align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp)) { RunningMark() }
         }
@@ -609,14 +624,14 @@ object UI {
         val running = LocalRunning.current.zone(zone.id)
         val mode = DisplayMode.valueOf(zone.display_mode)
         @Composable
-        fun Header() = TileHeader(zone.icon_name, zone.name, waiting, running, TextType.HEADING)
+        fun Header() = TileHeader(zone.icon_name, IconColor.of(zone.icon_color), zone.name, waiting, running, TextType.HEADING)
         @Composable
         fun Description() = zone.description?.let { Text(it, TextType.BODY, maxLines = 2) }
         val sound = rememberUISound()
         CurrentTheme.current.ZoneCardContainer(onClick = { sound(UISignal.ENTER); onClick() }, onLongClick = onLongClick) {
             when (mode) {
                 DisplayMode.ICON -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    TileIcon(zone.icon_name, waiting, running)
+                    TileIcon(zone.icon_name, IconColor.of(zone.icon_color), waiting, running)
                 }
                 DisplayMode.MINIMAL -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Header() }
                 // The smallest space between the two halves, so that their texts never touch
@@ -638,6 +653,7 @@ object UI {
         title: String,
         subtitle: String? = null,
         icon: String? = null,
+        iconColor: TagColor? = null,
         leftButton: ButtonAction? = null,
         rightButton: ButtonAction? = null,
         onLeftClick: (() -> Unit)? = null,
@@ -650,7 +666,7 @@ object UI {
             val sound = rememberUISound()
             BackHandler(onBack = { sound(UISignal.BACK); onLeftClick() })
         }
-        CurrentTheme.current.PageHeader(title, subtitle, icon, leftButton, rightButton, onLeftClick, onRightClick)
+        CurrentTheme.current.PageHeader(title, subtitle, icon, iconColor, leftButton, rightButton, onLeftClick, onRightClick)
     }
     
     /** The header of a tool's tile: its icon with its marks, and its name. */
@@ -663,7 +679,7 @@ object UI {
     ) {
         val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
         // The name a size up, its tool type under it
-        TileHeader(settings.string("icon_name"), settings.string("name")!!, waiting, running, TextType.HEADING,
+        TileHeader(settings.string("icon_name"), IconColor.of(settings.string(IconColor.KEY)), settings.string("name")!!, waiting, running, TextType.HEADING,
             subtitle = com.assistant.core.tools.ToolTypeManager.getToolTypeName(tool.tooltype, context))
     }
 
@@ -708,7 +724,8 @@ object UI {
                 DisplayMode.ICON -> {
                     // The icon alone, centered in its cell
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        TileIcon(com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context).string("icon_name"), waiting, running)
+                        val settings = com.assistant.core.tools.ToolConfigSettings.read(tool.tooltype, JSONObject(tool.config_json), context)
+                        TileIcon(settings.string("icon_name"), IconColor.of(settings.string(IconColor.KEY)), waiting, running)
                     }
                 }
                 DisplayMode.MINIMAL -> {

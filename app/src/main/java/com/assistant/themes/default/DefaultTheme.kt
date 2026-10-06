@@ -953,6 +953,50 @@ object DefaultTheme : ThemeContract {
         )
     }
     
+    /**
+     * The icon on a rounded badge half again its size: a coloured one on its tag's colour, in a
+     * deep tone of the same hue (a light one in the dark palette, on that deep tone); a neutral
+     * one on the pale surface, in its ink.
+     */
+    @Composable
+    override fun ItemIcon(resourceId: Int, size: Dp, color: com.assistant.core.themes.TagColor?) {
+        val scheme = CurrentTheme.getCurrentColorScheme()
+        val mode = CurrentTheme.paletteMode
+        val (badge, ink) = when {
+            color == null || color == com.assistant.core.themes.TagColor.GREY -> scheme.surfaceVariant to scheme.onSurfaceVariant
+            mode == PaletteMode.DARK -> itemIconDeepTone(color, mode) to getTagColor(color, mode)
+            else -> getTagColor(color, mode) to itemIconDeepTone(color, mode)
+        }
+        Box(
+            modifier = Modifier.size(size * ITEM_BADGE_SCALE).background(badge, RoundedCornerShape(size * 0.4f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(painter = painterResource(id = resourceId), contentDescription = null, modifier = Modifier.size(size), tint = ink)
+        }
+    }
+
+    /** A badge's size against its icon's. */
+    private const val ITEM_BADGE_SCALE = 1.5f
+
+    /**
+     * The deep tone of a tag's hue an item's icon takes: its ink on the tag's colour in the light
+     * palette (OKLCH lightness 0.42, chroma 0.11), its badge in the dark one (0.36, 0.06).
+     */
+    fun itemIconDeepTone(color: com.assistant.core.themes.TagColor, mode: PaletteMode): Color {
+        val dark = mode == PaletteMode.DARK
+        return when (color) {
+            com.assistant.core.themes.TagColor.RED -> if (dark) Color(0xFF592F31) else Color(0xFF7E2F35)
+            com.assistant.core.themes.TagColor.ORANGE -> if (dark) Color(0xFF55341C) else Color(0xFF763B00)
+            com.assistant.core.themes.TagColor.YELLOW -> if (dark) Color(0xFF463D14) else Color(0xFF5B4C00)
+            com.assistant.core.themes.TagColor.GREEN -> if (dark) Color(0xFF2C4525) else Color(0xFF295B19)
+            com.assistant.core.themes.TagColor.TEAL -> if (dark) Color(0xFF074742) else Color(0xFF005A53)
+            com.assistant.core.themes.TagColor.BLUE -> if (dark) Color(0xFF2B3D5D) else Color(0xFF284B88)
+            com.assistant.core.themes.TagColor.PURPLE -> if (dark) Color(0xFF463455) else Color(0xFF5E3A7B)
+            com.assistant.core.themes.TagColor.PINK -> if (dark) Color(0xFF543044) else Color(0xFF75305A)
+            com.assistant.core.themes.TagColor.GREY -> error("A grey icon is a neutral one")
+        }
+    }
+
     @Composable
     override fun Dialog(
         type: DialogType,
@@ -1487,6 +1531,7 @@ object DefaultTheme : ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
+        iconColor: com.assistant.core.themes.TagColor?,
         leftButton: ButtonAction?,
         rightButton: ButtonAction?,
         onLeftClick: (() -> Unit)?,
@@ -1521,15 +1566,11 @@ object DefaultTheme : ThemeContract {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // A zone's or a tool's icon, on its badge like on its tile
                     icon?.let { iconName ->
                         val context = LocalContext.current
                         com.assistant.core.icons.Icons.drawable(context, iconName)?.let { iconResource ->
-                            Icon(
-                                painter = painterResource(iconResource),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = CurrentTheme.getCurrentColorScheme().onSurface
-                            )
+                            ItemIcon(iconResource, 24.dp, iconColor)
                         }
                     }
                     Text(title, TextType.TITLE, false, TextAlign.Center)
