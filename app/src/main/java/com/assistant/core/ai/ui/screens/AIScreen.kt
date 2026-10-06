@@ -205,7 +205,8 @@ fun AIScreen(
         SessionType.AUTOMATION -> {
             AutomationMode(
                 session = session!!,
-                onClose = onClose
+                onClose = onClose,
+                onOpenHistory = onOpenHistory
             )
         }
     }
@@ -872,7 +873,8 @@ private fun SeedMode(
 @Composable
 private fun AutomationMode(
     session: AISession,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onOpenHistory: (() -> Unit)?
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -915,6 +917,7 @@ private fun AutomationMode(
             aiState = aiState,
             isActiveSession = isActiveSession,
             onClose = onClose,
+            onOpenHistory = onOpenHistory,
             onChatRequest = { showChatOptionsDialog = true },
             onStop = {
                 scope.launch {
@@ -1224,6 +1227,7 @@ private fun AutomationHeader(
     aiState: com.assistant.core.ai.domain.AIState,
     isActiveSession: Boolean,
     onClose: () -> Unit,
+    onOpenHistory: (() -> Unit)?,
     onChatRequest: () -> Unit,
     onStop: () -> Unit
 ) {
@@ -1236,6 +1240,16 @@ private fun AutomationHeader(
             UI.Text(
                 text = s.shared("ai_automation_running"),
                 type = TextType.TITLE
+            )
+        }
+
+        // The past chats, to resume one
+        onOpenHistory?.let {
+            UI.ActionButton(
+                action = ButtonAction.HISTORY,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = it
             )
         }
 
