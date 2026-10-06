@@ -448,6 +448,7 @@ object UI {
         label = label,
         options = options,
         sections = emptyList(),
+        icons = emptyList(),
         selected = options.indexOf(selected).takeIf { it >= 0 },
         shown = selected,
         onSelect = { onSelect(options[it]) },
@@ -456,7 +457,8 @@ object UI {
 
     /**
      * A choice among [options] sorted into sections, [sections] the title of each option's (null
-     * for none): chosen by position, so two options written alike stay two.
+     * for none), [icons] empty or the icon each is shown by: chosen by position, so two options
+     * written alike stay two.
      */
     @Composable
     fun SectionedSelection(
@@ -465,11 +467,13 @@ object UI {
         sections: List<String?>,
         selected: Int?,
         onSelect: (Int) -> Unit,
-        required: Boolean
+        required: Boolean,
+        icons: List<com.assistant.core.themes.OptionIcon?> = emptyList()
     ) = CurrentTheme.current.FormSelection(
         label = label,
         options = options,
         sections = sections,
+        icons = icons,
         selected = selected,
         shown = selected?.let { options.getOrNull(it) } ?: "",
         onSelect = onSelect,

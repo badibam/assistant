@@ -1203,12 +1203,17 @@ object DefaultTheme : ThemeContract {
         label: String,
         options: List<String>,
         sections: List<String?>,
+        icons: List<com.assistant.core.themes.OptionIcon?>,
         selected: Int?,
         shown: String,
         onSelect: (Int) -> Unit,
         required: Boolean
     ) {
         var expanded by remember { mutableStateOf(false) }
+        // An option's icon, as its item's is drawn
+        val optionIcon: (Int?) -> (@Composable () -> Unit)? = { index ->
+            index?.let { icons.getOrNull(it) }?.let { icon -> { com.assistant.core.ui.UI.ItemIcon(icon.name, icon.color, 20.dp) } }
+        }
         
         Column {
             FieldLabel(label, required)
@@ -1221,6 +1226,7 @@ object DefaultTheme : ThemeContract {
                     value = shown,
                     onValueChange = { },
                     readOnly = true,
+                    leadingIcon = optionIcon(selected),
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                     },
@@ -1245,6 +1251,7 @@ object DefaultTheme : ThemeContract {
                         }
                         DropdownMenuItem(
                             text = { androidx.compose.material3.Text(option) },
+                            leadingIcon = optionIcon(index),
                             onClick = {
                                 onSelect(index)
                                 expanded = false

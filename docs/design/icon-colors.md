@@ -23,7 +23,7 @@ Le thème dessine l'icône d'une chose, sa couleur avec (`ThemeContract.ItemIcon
 
 Les tons de la pastille du thème par défaut (`itemIconDeepTone`) sont montrés sur son banc (`./run themes`) et tenus à ceux du thème par `DefaultColorsBenchTest`.
 
-La couleur s'affiche sur les tuiles (`TileHeader`, `TileIcon`) et dans l'en-tête de l'écran d'une zone ou d'un outil. Pas sur une notification, qui garde le dessin Lucide sans couleur (`docs/reference.md`, « Icônes »).
+La couleur s'affiche sur les tuiles (`TileHeader`, `TileIcon`), dans l'en-tête de l'écran d'une zone ou d'un outil, et partout où l'on choisit une zone ou un outil, l'icône devant le nom : le navigateur des choses (pointeur, champ RÉFÉRENCE, que `references.choices` nourrit des icônes), la duplication, le choix de la zone d'un outil ou d'une automation. Ce dernier est la liste déroulante du thème (`FormSelection`), qui prend une icône par option (`OptionIcon`) et la dessine aussi devant la valeur choisie. Pas sur une notification, qui garde le dessin Lucide sans couleur (`docs/reference.md`, « Icônes »).
 
 ## Le choix
 

@@ -402,13 +402,15 @@ interface ThemeContract {
      * A choice among [options], [shown] written in its field. [selected] is the index of the
      * option chosen, null for none. [sections] is empty, or gives each option the title of its
      * section (null for none): a title is drawn, not chosen, above the first option of each run
-     * of options sharing it.
+     * of options sharing it. [icons] is empty, or gives each option the icon it is shown by (null
+     * for none), drawn as an item's (UI.ItemIcon) before it, and before [shown] for the one chosen.
      */
     @Composable
     fun FormSelection(
         label: String,
         options: List<String>,
         sections: List<String?>,
+        icons: List<OptionIcon?>,
         selected: Int?,
         shown: String,
         onSelect: (Int) -> Unit,

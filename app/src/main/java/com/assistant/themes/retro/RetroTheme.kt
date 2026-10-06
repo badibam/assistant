@@ -776,15 +776,24 @@ object RetroTheme : ThemeContract {
 
     /** The choice shown in an input's frame, an arrow at its end; the options in a window. */
     @Composable
-    override fun FormSelection(label: String, options: List<String>, sections: List<String?>, selected: Int?, shown: String, onSelect: (Int) -> Unit, required: Boolean) {
+    override fun FormSelection(label: String, options: List<String>, sections: List<String?>, icons: List<com.assistant.core.themes.OptionIcon?>, selected: Int?, shown: String, onSelect: (Int) -> Unit, required: Boolean) {
         var open by remember { mutableStateOf(false) }
         val grid = retroGrid()
         val s = retroSurface
+        // An option's icon, as its item's is drawn, a cell before its name
+        @Composable
+        fun OptionIconOf(index: Int?) {
+            val icon = index?.let { icons.getOrNull(it) } ?: return
+            Box(modifier = Modifier.padding(end = grid.cells(1))) {
+                com.assistant.core.ui.UI.ItemIcon(icon.name, icon.color, grid.dp(RetroGrid.ICON))
+            }
+        }
         Column(verticalArrangement = Arrangement.spacedBy(grid.dp(3))) {
             FieldLabel(label, required)
             Pressable(onClick = { open = true }) { pressed ->
                 Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, minRows = touchRows, pressed = pressed) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        OptionIconOf(selected)
                         Box(modifier = Modifier.weight(1f)) { Line(shown, grid.text, s.ink.srgb, maxLines = 1) }
                         Line(ARROW_DOWN.toString(), grid.text, s.dim.srgb)
                     }
@@ -803,11 +812,12 @@ object RetroTheme : ThemeContract {
                                 Line(section, grid.text, panel.dim.srgb)
                             }
                         }
-                        Box(
+                        Row(
                             modifier = Modifier.fillMaxWidth().heightIn(min = grid.cells(grid.touch))
                                 .combinedClickable(onClick = { onSelect(index); open = false }),
-                            contentAlignment = Alignment.CenterStart
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+                            OptionIconOf(index)
                             Line(option, grid.text, (if (index == selected) panel.strong else panel.ink).srgb)
                         }
                     }

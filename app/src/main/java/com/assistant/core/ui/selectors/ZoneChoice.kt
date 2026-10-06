@@ -12,6 +12,8 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.entities.AppSettingCategories
 import com.assistant.core.grid.ZonePositions
 import com.assistant.core.strings.Strings
+import com.assistant.core.themes.IconColor
+import com.assistant.core.themes.OptionIcon
 import com.assistant.core.ui.UI
 
 /**
@@ -20,8 +22,8 @@ import com.assistant.core.ui.UI
  */
 object ZoneOrder {
 
-    /** A zone as the choice reads it. */
-    data class Zone(val id: String, val name: String, val group: String?, val row: Int, val column: Int)
+    /** A zone as the choice reads it, with the icon it is shown by. */
+    data class Zone(val id: String, val name: String, val group: String?, val row: Int, val column: Int, val icon: OptionIcon? = null)
 
     /**
      * [zones] in the home screen's order, each with the title of its section: the group's name, or
@@ -64,7 +66,8 @@ fun ZoneChoice(label: String, selected: String?, onSelect: (String) -> Unit, req
                 name = map["name"] as String,
                 group = map["group"] as? String,
                 row = (map["grid_y"] as Number).toInt(),
-                column = (map["grid_x"] as Number).toInt()
+                column = (map["grid_x"] as Number).toInt(),
+                icon = (map["icon_name"] as? String)?.takeIf { it.isNotBlank() }?.let { OptionIcon(it, IconColor.of(map[IconColor.KEY] as? String)) }
             )
         }
         zones = ZoneOrder.sorted(read, groups, s.shared("label_ungrouped"))
@@ -75,6 +78,7 @@ fun ZoneChoice(label: String, selected: String?, onSelect: (String) -> Unit, req
         sections = zones.map { it.second },
         selected = zones.indexOfFirst { it.first.id == selected }.takeIf { it >= 0 },
         onSelect = { onSelect(zones[it].first.id) },
-        required = required
+        required = required,
+        icons = zones.map { it.first.icon }
     )
 }
