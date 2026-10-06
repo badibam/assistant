@@ -54,6 +54,7 @@ fun CreateZoneScreen(
                 put("name", zone.name)
                 zone.description?.let { put("description", it) }
                 zone.icon_name?.let { put("icon_name", it) }
+                zone.icon_color?.let { put(com.assistant.core.themes.IconColor.KEY, it) }
                 zone.tool_groups?.let { put("tool_groups", JSONArray(it)) }
                 put("display_mode", zone.display_mode)
             }
@@ -74,7 +75,15 @@ fun CreateZoneScreen(
         "icon_name" to object : SettingEditor {
             @Composable
             override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
-                com.assistant.core.ui.components.IconSelector(current = value as? String ?: "", suggested = ZoneSettings.SUGGESTED_ICONS, onChange = { onChange(it) })
+                com.assistant.core.ui.components.IconSelector(current = value as? String ?: "",
+                    color = com.assistant.core.themes.IconColor.of(settings.optString(com.assistant.core.themes.IconColor.KEY)),
+                    suggested = ZoneSettings.SUGGESTED_ICONS, onChange = { onChange(it) })
+            }
+        },
+        com.assistant.core.themes.IconColor.KEY to object : SettingEditor {
+            @Composable
+            override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+                com.assistant.core.ui.components.IconColorSelector(current = value as? String, iconName = settings.optString("icon_name"), onChange = { onChange(it) })
             }
         },
         "group" to object : SettingEditor {
@@ -96,7 +105,7 @@ fun CreateZoneScreen(
             val result = if (existingZone != null) {
                 // Every setting is sent: an absent one is sent as null, which empties it
                 val params = mutableMapOf<String, Any?>("zone_id" to existingZone.id)
-                listOf("name", "description", "icon_name", "group", "tool_groups", "display_mode").forEach { params[it] = given[it] ?: JSONObject.NULL }
+                listOf("name", "description", "icon_name", com.assistant.core.themes.IconColor.KEY, "group", "tool_groups", "display_mode").forEach { params[it] = given[it] ?: JSONObject.NULL }
                 params["renames"] = mapOf("tool_groups" to origins.renames("tool_groups", settings.optJSONArray("tool_groups")))
                 coordinator.processUserAction("zones.update", params)
             } else {

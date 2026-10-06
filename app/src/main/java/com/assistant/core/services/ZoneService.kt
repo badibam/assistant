@@ -1,5 +1,6 @@
 package com.assistant.core.services
 
+import com.assistant.core.themes.IconColor
 import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.icons.Icons
@@ -74,6 +75,9 @@ class ZoneService(private val context: Context) : ExecutableService {
         if (icon is StoredIcon.Refused) return OperationResult.error(icon.message)
         icon as StoredIcon.Kept
 
+        val iconColor = params.givenText(IconColor.KEY)
+        iconColorRefusal(iconColor)?.let { return OperationResult.error(it) }
+
         // Parse tool_groups if provided (checked with the rest, checkZone)
         val toolGroupsJson = if (params.has("tool_groups")) {
             params.optJSONArray("tool_groups")?.toString()
@@ -92,6 +96,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             name = name,
             description = description,
             icon_name = icon.name,
+            icon_color = iconColor,
             display_mode = params.givenText("display_mode") ?: "LINE",
             grid_x = 0,
             grid_y = 0,
@@ -145,6 +150,11 @@ class ZoneService(private val context: Context) : ExecutableService {
         return StoredIcon.Kept(stored, renamedFrom = given.takeIf { it != stored })
     }
 
+    /** An icon colour is one of IconColor.NAMES, or none: any other name is refused with them. */
+    private fun iconColorRefusal(given: String?): String? =
+        if (IconColor.accepts(given)) null
+        else s.shared("service_error_icon_color_unknown").format(given, IconColor.NAMES.joinToString(", "))
+
     /**
      * Check a zone's settings exactly as they are about to be stored, against the schema
      * generated from their declaration (ZoneSettings). Every write goes through here, whoever
@@ -157,6 +167,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             put("name", zone.name)
             zone.description?.let { put("description", it) }
             zone.icon_name?.let { put("icon_name", it) }
+            zone.icon_color?.let { put(IconColor.KEY, it) }
             zone.group?.let { put("group", it) }
             put("display_mode", zone.display_mode)
             zone.tool_groups?.let { put("tool_groups", JsonUtils.toList(it)) }
@@ -274,11 +285,15 @@ class ZoneService(private val context: Context) : ExecutableService {
         if (icon is StoredIcon.Refused) return OperationResult.error(icon.message)
         icon as StoredIcon.Kept
 
+        val iconColor = if (params.has(IconColor.KEY)) params.givenText(IconColor.KEY) else existingZone.icon_color
+        iconColorRefusal(iconColor)?.let { return OperationResult.error(it) }
+
         val displayMode = if (params.has("display_mode")) params.givenText("display_mode") ?: existingZone.display_mode else existingZone.display_mode
         val updatedZone = existingZone.copy(
             name = name,
             description = description,
             icon_name = icon.name,
+            icon_color = iconColor,
             display_mode = displayMode,
             tool_groups = toolGroupsJson,
             group = group,
@@ -386,6 +401,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             "name" to zone.name,
             "description" to zone.description,
             "icon_name" to zone.icon_name,
+            IconColor.KEY to zone.icon_color,
             "display_mode" to zone.display_mode,
             "created_at" to zone.created_at,
             "updated_at" to zone.updated_at
@@ -420,6 +436,7 @@ class ZoneService(private val context: Context) : ExecutableService {
                 "name" to zone.name,
                 "description" to zone.description,
                 "icon_name" to zone.icon_name,
+                IconColor.KEY to zone.icon_color,
                 "display_mode" to zone.display_mode,
                 "created_at" to zone.created_at,
                 "updated_at" to zone.updated_at

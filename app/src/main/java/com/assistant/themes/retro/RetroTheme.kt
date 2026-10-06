@@ -465,6 +465,12 @@ object RetroTheme : ThemeContract {
         )
     }
 
+    /** The icon's own pixels in its colour, which read on the surface it is drawn on; no badge, a frame in a frame. */
+    @Composable
+    override fun ItemIcon(resourceId: Int, size: Dp, color: TagColor?) {
+        Icon(resourceId, size, null, color?.takeIf { it != TagColor.GREY }?.let { retroColors.icon(it, retroSurface).srgb }, null)
+    }
+
     @Composable
     override fun Dialog(type: DialogType, onConfirm: () -> Unit, onCancel: () -> Unit, confirmEnabled: Boolean, content: @Composable () -> Unit) {
         val s = Strings.`for`(context = LocalContext.current)
@@ -670,6 +676,7 @@ object RetroTheme : ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
+        iconColor: com.assistant.core.themes.TagColor?,
         leftButton: ButtonAction?,
         rightButton: ButtonAction?,
         onLeftClick: (() -> Unit)?,
@@ -685,7 +692,7 @@ object RetroTheme : ThemeContract {
                 // The page's icon and title a size up, as a heading is (HEADING)
                 val up = retroGridUp()
                 Row(horizontalArrangement = Arrangement.spacedBy(grid.cells(1)), verticalAlignment = Alignment.CenterVertically) {
-                    icon?.let { NamedIcon(it, null, up) }
+                    icon?.let { NamedIcon(it, null, up, iconColor?.takeIf { color -> color != TagColor.GREY }?.let { color -> retroColors.icon(color, retroSurface).srgb }) }
                     Line(title, up.text, LocalRetroInk.current ?: retroSurface.strong.srgb, align = TextAlign.Center)
                 }
                 subtitle?.let { Text(it, TextType.CAPTION, false, TextAlign.Center) }
@@ -769,15 +776,24 @@ object RetroTheme : ThemeContract {
 
     /** The choice shown in an input's frame, an arrow at its end; the options in a window. */
     @Composable
-    override fun FormSelection(label: String, options: List<String>, sections: List<String?>, selected: Int?, shown: String, onSelect: (Int) -> Unit, required: Boolean) {
+    override fun FormSelection(label: String, options: List<String>, sections: List<String?>, icons: List<com.assistant.core.themes.OptionIcon?>, selected: Int?, shown: String, onSelect: (Int) -> Unit, required: Boolean) {
         var open by remember { mutableStateOf(false) }
         val grid = retroGrid()
         val s = retroSurface
+        // An option's icon, as its item's is drawn, a cell before its name
+        @Composable
+        fun OptionIconOf(index: Int?) {
+            val icon = index?.let { icons.getOrNull(it) } ?: return
+            Box(modifier = Modifier.padding(end = grid.cells(1))) {
+                com.assistant.core.ui.UI.ItemIcon(icon.name, icon.color, grid.dp(RetroGrid.ICON))
+            }
+        }
         Column(verticalArrangement = Arrangement.spacedBy(grid.dp(3))) {
             FieldLabel(label, required)
             Pressable(onClick = { open = true }) { pressed ->
                 Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, minRows = touchRows, pressed = pressed) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        OptionIconOf(selected)
                         Box(modifier = Modifier.weight(1f)) { Line(shown, grid.text, s.ink.srgb, maxLines = 1) }
                         Line(ARROW_DOWN.toString(), grid.text, s.dim.srgb)
                     }
@@ -796,11 +812,12 @@ object RetroTheme : ThemeContract {
                                 Line(section, grid.text, panel.dim.srgb)
                             }
                         }
-                        Box(
+                        Row(
                             modifier = Modifier.fillMaxWidth().heightIn(min = grid.cells(grid.touch))
                                 .combinedClickable(onClick = { onSelect(index); open = false }),
-                            contentAlignment = Alignment.CenterStart
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+                            OptionIconOf(index)
                             Line(option, grid.text, (if (index == selected) panel.strong else panel.ink).srgb)
                         }
                     }
@@ -1126,13 +1143,13 @@ object RetroTheme : ThemeContract {
 
     /** A Lucide icon by name, in the register's icon box. */
     @Composable
-    private fun NamedIcon(name: String, description: String?, grid: RetroGrid = retroGrid()) {
+    private fun NamedIcon(name: String, description: String?, grid: RetroGrid = retroGrid(), tint: Color? = null) {
         val resource = requireNotNull(Icons.drawable(LocalContext.current, name)) { "No drawable for the icon $name" }
         // Its box once, at [grid]'s scale: drawn here rather than by Icon, which counts in the screen's grid
         Image(
             painter = painterResource(resource),
             contentDescription = description,
-            colorFilter = ColorFilter.tint(LocalRetroInk.current ?: retroSurface.ink.srgb),
+            colorFilter = ColorFilter.tint(tint ?: LocalRetroInk.current ?: retroSurface.ink.srgb),
             modifier = Modifier.size(grid.dp(RetroGrid.ICON))
         )
     }

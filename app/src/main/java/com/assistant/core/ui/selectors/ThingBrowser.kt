@@ -20,9 +20,16 @@ import com.assistant.core.utils.LogManager
 
 /**
  * One place one level down: where it leads, what situates it (a tool's zone, that it is a
- * variable), and in a zone the group it sits in, null outside the zone's groups.
+ * variable), in a zone the group it sits in, null outside the zone's groups, and for a zone or a
+ * tool the icon it is shown by, in its colour.
  */
-private data class Place(val path: ThingPath, val detail: String? = null, val group: String? = null)
+private data class Place(
+    val path: ThingPath,
+    val detail: String? = null,
+    val group: String? = null,
+    val icon: String? = null,
+    val iconColor: com.assistant.core.themes.TagColor? = null
+)
 
 /**
  * The one way to reach a thing of the app (the Chose brick, docs/BRICKS.md), for the pointer and
@@ -69,11 +76,14 @@ fun ThingBrowser(path: ThingPath, onPath: (ThingPath) -> Unit, target: Reference
         groups = (result.data?.get("groups") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
         fun named(row: Map<*, *>, tooltype: Boolean = false) =
             Named(row["id"] as String, row["name"] as? String ?: "", if (tooltype) row["tooltype"] as? String else null)
-        places = rows("zones").map { Place(ThingPath(named(it))) } +
+        fun icon(row: Map<*, *>) = row["icon_name"] as? String
+        fun iconColor(row: Map<*, *>) = com.assistant.core.themes.IconColor.of(row[com.assistant.core.themes.IconColor.KEY] as? String)
+        places = rows("zones").map { Place(ThingPath(named(it)), icon = icon(it), iconColor = iconColor(it)) } +
             rows("tool_instances").map { row ->
                 // A tool listed at the app, without its zone reached first, says which it is in
                 val zone = path.zone ?: Named(row["zone_id"] as String, row["zone_name"] as? String ?: "")
-                Place(ThingPath(zone, named(row, tooltype = true)), (row["zone_name"] as? String).takeIf { path.zone == null }, row["group"] as? String)
+                Place(ThingPath(zone, named(row, tooltype = true)), (row["zone_name"] as? String).takeIf { path.zone == null }, row["group"] as? String,
+                    icon(row), iconColor(row))
             } +
             rows("variables").map { row -> Place(ThingPath(path.zone, variable = named(row)), s.shared("reference_kind_variable"), row["group"] as? String) } +
             rows("entries").map { Place(path.copy(entry = named(it))) }
@@ -105,14 +115,15 @@ fun ThingBrowser(path: ThingPath, onPath: (ThingPath) -> Unit, target: Reference
     }
 }
 
-/** A place, its detail under it, and the button that goes to it. */
+/** A place, its icon before it and its detail under it, and the button that goes to it. */
 @Composable
 private fun PlaceRow(place: Place, onPath: (ThingPath) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.M),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        place.icon?.takeIf { it.isNotBlank() }?.let { UI.ItemIcon(iconName = it, color = place.iconColor) }
         Column(modifier = Modifier.weight(1f)) {
             UI.Text(text = place.path.entry?.name ?: place.path.variable?.name ?: place.path.tool?.name ?: place.path.zone!!.name, type = TextType.BODY)
             place.detail?.let { UI.Text(text = it, type = TextType.CAPTION) }

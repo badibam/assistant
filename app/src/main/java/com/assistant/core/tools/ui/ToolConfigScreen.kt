@@ -149,7 +149,8 @@ fun ToolConfigScreen(
     }
 
     val editors = mapOf(
-        "icon_name" to iconEditor(toolType.getSuggestedIcons(), toolType.getDefaultIconName()),
+        "icon_name" to iconEditor(toolType.getSuggestedIcons(), toolType.getDefaultIconName(), com.assistant.core.themes.IconColor.of(config.optString(com.assistant.core.themes.IconColor.KEY))),
+        com.assistant.core.themes.IconColor.KEY to iconColorEditor(config.optString("icon_name").ifBlank { toolType.getDefaultIconName() }),
         "group" to groupEditor(groups, s.shared("label_group"))
     )
 
@@ -258,11 +259,19 @@ fun ToolConfigScreen(
     }
 }
 
-/** The icon picker, the type's suggestions first; an absent icon shows the type's own. */
-private fun iconEditor(suggested: List<String>, default: String) = object : SettingEditor {
+/** The icon picker, the type's suggestions first; an absent icon shows the type's own, in [color]. */
+private fun iconEditor(suggested: List<String>, default: String, color: com.assistant.core.themes.TagColor?) = object : SettingEditor {
     @Composable
     override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
-        IconSelector(current = value as? String ?: default, suggested = suggested, onChange = { onChange(it) })
+        IconSelector(current = value as? String ?: default, color = color, suggested = suggested, onChange = { onChange(it) })
+    }
+}
+
+/** The icon's colour, each choice shown on [iconName]. */
+private fun iconColorEditor(iconName: String) = object : SettingEditor {
+    @Composable
+    override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+        com.assistant.core.ui.components.IconColorSelector(current = value as? String, iconName = iconName, onChange = { onChange(it) })
     }
 }
 

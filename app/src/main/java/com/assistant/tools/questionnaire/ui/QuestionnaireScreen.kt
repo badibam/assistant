@@ -163,6 +163,7 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
             title = name,
             subtitle = settings.string("description")?.takeIf { it.isNotBlank() },
             icon = settings.string("icon_name"),
+            iconColor = com.assistant.core.themes.IconColor.of(settings.string(com.assistant.core.themes.IconColor.KEY)),
             leftButton = ButtonAction.BACK,
             rightButton = ButtonAction.CONFIGURE,
             onLeftClick = { if (openId != null) openId = null else onNavigateBack() },

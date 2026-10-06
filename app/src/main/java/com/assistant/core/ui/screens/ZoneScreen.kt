@@ -311,6 +311,7 @@ fun ZoneScreen(
             title = zone.name,
             subtitle = zone.description?.takeIf { it.isNotBlank() },
             icon = zone.icon_name,
+            iconColor = com.assistant.core.themes.IconColor.of(zone.icon_color),
             leftButton = ButtonAction.BACK,
             rightButton = ButtonAction.CONFIGURE,
             onLeftClick = leave,

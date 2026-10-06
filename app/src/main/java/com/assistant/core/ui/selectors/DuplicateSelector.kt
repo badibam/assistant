@@ -73,7 +73,9 @@ fun DuplicateSelector(
             zones = result.mapData("zones") { map ->
                 ZoneItem(
                     id = map["id"] as String,
-                    name = map["name"] as String
+                    name = map["name"] as String,
+                    icon = map["icon_name"] as? String,
+                    iconColor = com.assistant.core.themes.IconColor.of(map[com.assistant.core.themes.IconColor.KEY] as? String)
                 )
             }
             // Set selected zone name
@@ -92,17 +94,23 @@ fun DuplicateSelector(
 
             coordinator.executeWithLoading(
                 operation = operation,
-                params = mapOf("zone_id" to selectedZoneId),
+                // A tool's config, for the icon it is shown by
+                params = mapOf("zone_id" to selectedZoneId, "include_config" to (type == DuplicateType.TOOL)),
                 onLoading = { isLoading = it },
                 onError = { error -> errorMessage = error }
             )?.let { result ->
                 instances = result.mapData(dataKey) { map ->
+                    val settings = if (type == DuplicateType.TOOL) {
+                        com.assistant.core.tools.ToolConfigSettings.read(map["tooltype"] as String, org.json.JSONObject(map["config"] as Map<*, *>), context)
+                    } else null
                     InstanceItem(
                         id = map["id"] as String,
                         name = map["name"] as String,
                         toolType = if (type == DuplicateType.TOOL) {
                             map["tooltype"] as? String
-                        } else null
+                        } else null,
+                        icon = settings?.string("icon_name"),
+                        iconColor = com.assistant.core.themes.IconColor.of(settings?.string(com.assistant.core.themes.IconColor.KEY))
                     )
                 }
 
@@ -279,9 +287,10 @@ private fun ZoneList(
                         .fillMaxWidth()
                         .clickable { onZoneSelected(zone) }
                         .padding(UI.Space.L),
-                    horizontalArrangement = Arrangement.Start,
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.M),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    zone.icon?.takeIf { it.isNotBlank() }?.let { UI.ItemIcon(iconName = it, color = zone.iconColor) }
                     UI.Text(
                         text = zone.name,
                         type = TextType.BODY
@@ -307,22 +316,26 @@ private fun InstanceList(
     ) {
         items(instances) { instance ->
             UI.Card(type = CardType.DEFAULT, highlight = instance.id == selectedInstanceId) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onInstanceSelected(instance) }
                         .padding(UI.Space.L),
-                    verticalArrangement = Arrangement.spacedBy(UI.Space.XS)
+                    horizontalArrangement = Arrangement.spacedBy(UI.Space.M),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    UI.Text(
-                        text = instance.name,
-                        type = TextType.BODY
-                    )
-                    instance.toolType?.let { toolType ->
+                    instance.icon?.takeIf { it.isNotBlank() }?.let { UI.ItemIcon(iconName = it, color = instance.iconColor) }
+                    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
                         UI.Text(
-                            text = toolType,
-                            type = TextType.CAPTION
+                            text = instance.name,
+                            type = TextType.BODY
                         )
+                        instance.toolType?.let { toolType ->
+                            UI.Text(
+                                text = toolType,
+                                type = TextType.CAPTION
+                            )
+                        }
                     }
                 }
             }
@@ -349,13 +362,19 @@ private enum class DuplicateStep {
 /**
  * Data classes
  */
+/** A zone, with the icon it is shown by in its colour. */
 private data class ZoneItem(
     val id: String,
-    val name: String
+    val name: String,
+    val icon: String? = null,
+    val iconColor: com.assistant.core.themes.TagColor? = null
 )
 
+/** A tool or an automation; a tool with its icon in its colour, an automation having none. */
 private data class InstanceItem(
     val id: String,
     val name: String,
-    val toolType: String? = null
+    val toolType: String? = null,
+    val icon: String? = null,
+    val iconColor: com.assistant.core.themes.TagColor? = null
 )

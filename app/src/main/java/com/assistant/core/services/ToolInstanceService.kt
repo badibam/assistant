@@ -1,5 +1,6 @@
 package com.assistant.core.services
 
+import com.assistant.core.themes.IconColor
 import android.content.Context
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaValidator
@@ -129,7 +130,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             type.completeConfig(com.assistant.core.tools.ToolConfigSettings.withDefaults(type, JSONObject(assignMissingFieldNames(configJson)), context), null).toString()
         } ?: assignMissingFieldNames(configJson)
 
-        val iconCheck = checkIconName(namedConfigJson)
+        iconColorRefusal(namedConfigJson)?.let { return OperationResult.error(it) }
+        val iconCheck = checkIconName(withoutEmptyIconColor(namedConfigJson))
         val storedConfigJson = when (iconCheck) {
             is IconCheck.Refused -> return OperationResult.error(iconCheck.message)
             is IconCheck.Kept -> iconCheck.configJson
@@ -210,6 +212,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             is IconCheck.Kept -> configJson = iconCheck.configJson
         }
         if (configJson.isNotBlank()) {
+            iconColorRefusal(configJson)?.let { return OperationResult.error(it) }
+            configJson = withoutEmptyIconColor(configJson)
             ToolTypeManager.getToolType(existingTool.tooltype)?.let { type ->
                 configJson = type.completeConfig(JSONObject(configJson), JSONObject(existingTool.config_json)).toString()
             }
@@ -893,6 +897,23 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 field
             }
         }
+    }
+
+    /** A config's icon colour is one of IconColor.NAMES, or none: any other name is refused with them. */
+    private fun iconColorRefusal(configJson: String): String? {
+        val config = JSONObject(configJson)
+        val given = if (config.isNull(IconColor.KEY)) null else config.optString(IconColor.KEY).trim()
+        return if (IconColor.accepts(given)) null
+        else s.shared("service_error_icon_color_unknown").format(given, IconColor.NAMES.joinToString(", "))
+    }
+
+    /** The config without its icon colour when it is given as null or empty, which is how a command removes it. */
+    private fun withoutEmptyIconColor(configJson: String): String {
+        val config = JSONObject(configJson)
+        if (!config.has(IconColor.KEY)) return configJson
+        if (!config.isNull(IconColor.KEY) && config.optString(IconColor.KEY).isNotBlank()) return configJson
+        config.remove(IconColor.KEY)
+        return config.toString()
     }
 
     /** What storing a config's icon name comes to: kept, maybe under its current name, or refused. */

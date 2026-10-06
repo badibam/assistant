@@ -236,6 +236,7 @@ fun JournalScreen(
                         title = toolName,
                         subtitle = toolDescription.takeIf { it.isNotBlank() },
                         icon = settings.string("icon_name")!!,
+                        iconColor = com.assistant.core.themes.IconColor.of(settings.string(com.assistant.core.themes.IconColor.KEY)),
                         leftButton = ButtonAction.BACK,
                         rightButton = ButtonAction.CONFIGURE,
                         onLeftClick = onNavigateBack,

@@ -7,6 +7,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Après la migration 60 (tables `mcp_clients` et `mcp_tokens`) : l'app démarre, sans erreur de Room dans le journal.
 - Après la migration 61 : Bilan quotidien, Journal de rêves et Histoire personnelle s'ouvrent, leur champ de texte supplémentaire en place, et l'IA les lit (TOOL_DATA, SCHEMA).
 - Après la migration 62 : rien ne bouge à l'accueil ni dans les zones ; le journal dit combien de groupes perdus ont été vidés.
+- Après la migration 63 : les zones s'ouvrent, leurs icônes neutres ; une sauvegarde faite avant s'importe de même.
 - Importer une sauvegarde faite avant la mise à jour (base 52 ou plus ancienne) : chaque zone montre ses outils dans le même ordre, l'accueil ses zones de même ; les récurrences et les pointeurs se relisent. Juste après, l'écran des journaux filtré sur « Error » ne montre aucune ligne `MIGRATION`.
 - Un pointeur qui filtrait un instant par « = » (avant la migration 52) est refusé en le disant : rien ne part en silence.
 
@@ -23,6 +24,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Chat IA
 
 - Champs supplémentaires : « Ajoute une note dans Dev › Assistant » — l'IA remplit Catégorie et Portée sans lire le schéma (l'aperçu les nomme) ; une note créée sans eux, le résultat le dit (`extra_left_empty`) et l'IA le signale. Un outil changé de zone par l'IA : elle dit que son groupe est resté derrière.
+- Couleurs d'icônes par l'IA : « Mets l'icône de la zone Santé en rose et celle du Poids en bleu » — CREATE/UPDATE_ZONE prend `icon_color`, l'outil la reçoit dans sa config ; « en gris » ou « en cyan » est refusé avec les huit noms.
 - Zones par l'IA : « Crée une zone Voyages dans le groupe X, affichage minimal, avec les groupes d'outils A et B » — la zone arrive rangée et réglée ; un groupe de l'accueil inventé est refusé avec la liste des groupes, et l'IA se reprend. « Renomme le groupe d'outils A en C » passe par UPDATE_ZONE avec `renames`, et ses outils le suivent.
 - Après le catalogue des commandes (`AICommands`) : « Combien de pesées cette semaine ? » passe par `TOOL_DATA` avec `period`, sans refus ; une commande à un paramètre inventé est refusée en le nommant, et l'IA la corrige au tour suivant ; le L1 (journal `Prompt data built`) garde sa taille d'avant, à quelques tokens près.
 - Réglages d'une session de chat : l'interrupteur de validation, à droite de son libellé, bascule et la validation suit.
@@ -130,6 +132,7 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 
 ## Réglages et affichage
 
+- Couleurs d'icônes (`icon-colors.md`), dans les deux thèmes et les deux modes : dans la config d'une zone et d'un outil, la rangée de choix sous l'icône, l'icône à côté de son sélecteur qui change aussitôt ; à l'enregistrement, la tuile et l'en-tête de la page dans la couleur ; « aucune » rend l'icône neutre. Thème par défaut : une icône neutre a sa pastille grise, les titres des tuiles alignés ; les marques (attente, chrono) au coin de la pastille. Les icônes, dans leur couleur, devant chaque zone et chaque outil du choix d'un pointeur ou d'un champ RÉFÉRENCE, de la duplication, et de la liste des zones dans la config d'un outil ou d'une automation (et devant la zone choisie dans le champ).
 - Choix de la zone dans la config d'un outil et dans une automation, dans les deux thèmes : les zones dans l'ordre de l'accueil, sous le titre de leur groupe puis « Sans groupe » ; un titre ne se choisit pas ; deux zones de même nom se choisissent chacune.
 - Groupes de l'accueil (Réglages › Écran principal) : renommer un groupe qui a des zones, enregistrer — ses zones restent dedans sous le nouveau nom. Échanger deux noms : chaque zone garde sa section. Supprimer un groupe qui a des zones : refusé, en nommant ces zones. Supprimer puis rajouter le même nom : refusé de même s'il a des zones.
 - Groupes d'outils d'une zone (modifier la zone) : renommer un groupe — ses outils, automations et variables le suivent ; supprimer un groupe utilisé : refusé, en nommant ce qui l'utilise.
