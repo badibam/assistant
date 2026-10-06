@@ -105,7 +105,9 @@ object Grid {
      * Left and right keep its row and go a quarter at a time to the next column where it fits.
      * Up and down keep its column and stop at the first row where it fits or the first
      * interstice, whichever comes first: at an interstice, rows open for it and the ones after
-     * move down. A row it leaves empty closes. A place that changes nothing is passed over, and so
+     * move down, only as many as it lacks when it can stand across the opened rows, its other
+     * part above them going down and below them going up, on free cells. A row it leaves empty
+     * closes. A place that changes nothing is passed over, and so
      * is one that does not take the tile further in [direction] from the other tiles: lower than
      * at least one of them for down and higher than none, the other way round for up. Without it,
      * rows opened under the top of a tall tile push the others down while the tile stays: down
@@ -148,7 +150,15 @@ object Grid {
                     } else {
                         val boundary = place / 2
                         if (isInterstice(others, boundary)) {
-                            changed(others.map { if (it.row >= boundary) it.copy(row = it.row + tile.height) else it } + tile.copy(row = boundary))?.takeIf { goes(it) }
+                            // [opened] rows at the boundary, the fewest that make room: going down
+                            // the tile ends at their bottom, going up it starts at their top
+                            (1..tile.height).asSequence().mapNotNull { opened ->
+                                val row = if (direction == Direction.DOWN) boundary + opened - tile.height else boundary
+                                val shifted = others.map { if (it.row >= boundary) it.copy(row = it.row + opened) else it }
+                                val placed = tile.copy(row = row)
+                                if (row < 0 || shifted.any { it.overlaps(placed) }) null
+                                else changed(shifted + placed)?.takeIf { goes(it) }
+                            }.firstOrNull()
                         } else null
                     }
                 }.firstOrNull()

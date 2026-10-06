@@ -181,6 +181,32 @@ class GridTest {
     }
 
     @Test
+    fun down_opensOnlyTheRowsTheTileLacks() {
+        // Seen on the phone: Travail beside Course, both two rows high, Cuisine under them. Down
+        // goes one row: one row opens over Cuisine, Travail standing across it
+        val tiles = listOf(
+            Tile("course", 0, 0, 2, 2), Tile("travail", 2, 0, 2, 2), Tile("cuisine", 0, 2, 4, 1),
+            Tile("balcon", 0, 3, 2, 1), Tile("x", 2, 3, 1, 1)
+        )
+        val once = Grid.move(tiles, "travail", Grid.Direction.DOWN)!!
+        assertEquals(
+            mapOf("course" to (0 to 0), "travail" to (2 to 1), "cuisine" to (0 to 3), "balcon" to (0 to 4), "x" to (2 to 4)),
+            places(once)
+        )
+        assertLaidOut(once)
+        assertEquals("up comes back", places(tiles), move(once, "travail", Grid.Direction.UP))
+    }
+
+    @Test
+    fun up_opensOnlyTheRowsTheTileLacks() {
+        // A, two rows high, beside B under a full row: up opens one row, A standing across it
+        val tiles = listOf(Tile("t", 0, 0, 4, 1), Tile("a", 0, 1, 1, 2), Tile("b", 1, 1, 3, 1))
+        val once = Grid.move(tiles, "a", Grid.Direction.UP)!!
+        assertEquals(mapOf("t" to (0 to 0), "a" to (0 to 1), "b" to (1 to 2)), places(once))
+        assertLaidOut(once)
+    }
+
+    @Test
     fun anArrowWithNowhereToGo_isGreyed() {
         assertEquals(null, move(listOf(Tile("a", 0, 0, 4, 1)), "a", Grid.Direction.DOWN))
         assertEquals(null, move(listOf(Tile("a", 0, 0, 4, 1)), "a", Grid.Direction.UP))
