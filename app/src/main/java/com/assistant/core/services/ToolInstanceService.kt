@@ -509,7 +509,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     /**
      * Duplicate an existing tool instance
      *
-     * Creates a copy of the source tool with modified name (adds " (copie)")
+     * Creates a copy of the source tool, its name marked as a copy (copy_name)
      * in the specified target zone and group.
      */
     private suspend fun handleDuplicate(params: JSONObject, token: CancellationToken): OperationResult {
@@ -544,7 +544,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // Modify name to indicate it's a copy
         val originalName = sourceConfig.optString("name", "")
         val newName = if (originalName.isNotBlank()) {
-            "$originalName (copie)"
+            s.shared("copy_name").format(originalName)
         } else {
             s.shared("action_duplicate") // Fallback if name is empty
         }

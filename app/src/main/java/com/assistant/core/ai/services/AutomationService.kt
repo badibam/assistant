@@ -310,7 +310,7 @@ class AutomationService(private val context: Context) : ExecutableService {
      * Creates a copy of the source automation with:
      * - A new SEED session (duplicated from source)
      * - All messages from source SEED copied to new SEED
-     * - Modified name (adds " (copie)")
+     * - Its name marked as a copy (copy_name)
      * - Created in the specified target zone and group
      */
     private suspend fun duplicateAutomation(params: JSONObject, token: CancellationToken): OperationResult {
@@ -350,7 +350,7 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         val newSeedSession = sourceSeedSession.copy(
             id = newSeedSessionId,
-            name = "${sourceEntity.name} (copie)", // Name the SEED session with same pattern
+            name = s.shared("copy_name").format(sourceEntity.name), // Named as the automation
             createdAt = now,
             lastActivity = now,
             isActive = false, // SEED sessions are never active
@@ -384,7 +384,7 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         // Create new automation
         val newAutomationId = UUID.randomUUID().toString()
-        val newName = "${sourceEntity.name} (copie)"
+        val newName = s.shared("copy_name").format(sourceEntity.name)
 
         val newAutomation = sourceEntity.copy(
             id = newAutomationId,

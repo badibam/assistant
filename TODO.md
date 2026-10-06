@@ -29,7 +29,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## Bugs du téléphone
 
 - L'écran Réglages (`docs/design/settings-screen.md`) et l'historique dans le chat sont codés, rien n'a tourné sur un téléphone : passer leurs lignes de `docs/design/device-checks.md`, puis élaguer la spec.
-- La copie d'un outil et d'une automation prend « (copie) » écrit en dur dans le code (`ToolInstanceService`, `AutomationService`) : à passer par le système de strings.
 
 ## En attente d'un déclencheur
 
