@@ -208,4 +208,5 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 - Mettre le poids du même côté que les kcal : l'enregistrement est refusé et propose l'autre côté.
 - Dans le formulaire, le choix d'une colonne d'un canal ne propose que celles de sa couche (après ses transformations) ; les colonnes d'un `fold` proposent celles d'avant lui.
 - Ajouter une entrée au suivi que lit le graphique, revenir : le graphique l'a prise. Recréer l'écran : le graphique se redessine à l'identique.
+- Thème rétro, aux crans de taille 0 et 2, sur l'outil et sur sa tuile : les barres d'un même graphique toutes de la même largeur, au même pied ; une aire et une opacité en trame de points, sans transparence ; un trou en damier de points au bord pointillé ; un point rond, un triangle et un losange qu'on distingue ; les parts d'un camembert séparées d'un pixel de fond ; une couleur continue en paliers ; les textes nets, sur la grille. Thème par défaut : rien de changé à l'œil.
 
