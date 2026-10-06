@@ -472,19 +472,27 @@ Creates a zone.
 - `name` (string, **required**)
 - `description` (string, optional)
 - `icon_name` (string, optional)
+- `group` (string, optional): the zone group of the home screen it is shown in
+- `display_mode` (string, optional): how its tile shows on the home screen, `LINE` when left out
+- `tool_groups` (array, optional): the groups its tools are sorted into
 
 **Validation schema**:
 {{SCHEMA:zone_config}}]]></string>
     <string name="ai_command_update_zone"><![CDATA[### UPDATE_ZONE
 
-Changes a zone. Only what you give changes.
+Changes a zone. Only what you give changes; `null` empties a field, except the name.
 
 **Parameters**:
 
 - `zone_id` (string, **required**)
 - `name` (string, optional)
 - `description` (string, optional)
-- `icon_name` (string, optional)]]></string>
+- `icon_name` (string, optional)
+- `group` (string, optional)
+- `display_mode` (string, optional)
+- `tool_groups` (array, optional): the **whole** list, which replaces the old one; a tool whose group the zone loses shows among its ungrouped tools
+
+The zone is held to the schema given with CREATE_ZONE.]]></string>
     <string name="ai_command_delete_zone"><![CDATA[### DELETE_ZONE
 
 Deletes a zone, with its tools and their entries.
