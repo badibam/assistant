@@ -776,7 +776,7 @@ object RetroTheme : ThemeContract {
 
     /** The choice shown in an input's frame, an arrow at its end; the options in a window. */
     @Composable
-    override fun FormSelection(label: String, options: List<String>, selected: String, onSelect: (String) -> Unit, required: Boolean) {
+    override fun FormSelection(label: String, options: List<String>, sections: List<String?>, selected: Int?, shown: String, onSelect: (Int) -> Unit, required: Boolean) {
         var open by remember { mutableStateOf(false) }
         val grid = retroGrid()
         val s = retroSurface
@@ -785,7 +785,7 @@ object RetroTheme : ThemeContract {
             Pressable(onClick = { open = true }) { pressed ->
                 Framed(modifier = Modifier.fillMaxWidth(), input = true, compact = true, minRows = touchRows, pressed = pressed) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.weight(1f)) { Line(selected, grid.text, s.ink.srgb, maxLines = 1) }
+                        Box(modifier = Modifier.weight(1f)) { Line(shown, grid.text, s.ink.srgb, maxLines = 1) }
                         Line(ARROW_DOWN.toString(), grid.text, s.dim.srgb)
                     }
                 }
@@ -795,13 +795,20 @@ object RetroTheme : ThemeContract {
             DialogFrame(onDismiss = { open = false }, actions = {}) {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     val panel = retroColors.panel
-                    options.forEach { option ->
+                    options.forEachIndexed { index, option ->
+                        // A section's title above its first option, in the dim ink, not chosen
+                        val section = sections.getOrNull(index)
+                        if (section != null && section != sections.getOrNull(index - 1)) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(top = grid.cells(1)), contentAlignment = Alignment.CenterStart) {
+                                Line(section, grid.text, panel.dim.srgb)
+                            }
+                        }
                         Box(
                             modifier = Modifier.fillMaxWidth().heightIn(min = grid.cells(grid.touch))
-                                .combinedClickable(onClick = { onSelect(option); open = false }),
+                                .combinedClickable(onClick = { onSelect(index); open = false }),
                             contentAlignment = Alignment.CenterStart
                         ) {
-                            Line(option, grid.text, (if (option == selected) panel.strong else panel.ink).srgb)
+                            Line(option, grid.text, (if (index == selected) panel.strong else panel.ink).srgb)
                         }
                     }
                 }

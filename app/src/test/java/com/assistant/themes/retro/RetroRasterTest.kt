@@ -25,6 +25,7 @@ class RetroRasterTest {
         DrawColor.Palette(TagColor.BLUE) to 0xFF0000FF.toInt(),
         DrawColor.Palette(TagColor.RED) to 0xFFFF0000.toInt(),
         DrawColor.Ink(InkLevel.MEDIUM) to 0xFF808080.toInt(),
+        DrawColor.Ink(InkLevel.FAINT) to 0xFFC0C0C0.toInt(),
     )
     private val blue = DrawColor.Palette(TagColor.BLUE)
     private val red = DrawColor.Palette(TagColor.RED)
@@ -111,5 +112,14 @@ class RetroRasterTest {
         assertEquals(listOf(7), first.runs(10))
         assertEquals(first.pixels.count { it != 0 }, second.pixels.count { it != 0 })
         for (y in 7..13) for (dx in -3..3) assertEquals(first.at(10 + dx, y) != 0, second.at(30 + dx, y) != 0)
+    }
+
+    @Test
+    fun `a graduation in the faint ink is dotted, an axis in the medium one is not`() {
+        val r = raster(20f * scale, 10f * scale,
+            DrawShape.Segment(DrawPoint(0f, 2f * scale), DrawPoint(20f * scale, 2f * scale), DrawColor.Ink(InkLevel.FAINT), 3.5f, null),
+            DrawShape.Segment(DrawPoint(0f, 6f * scale), DrawPoint(20f * scale, 6f * scale), DrawColor.Ink(InkLevel.MEDIUM), 3.5f, null))
+        assertEquals(List(10) { 1 }, r.runs(2))
+        assertEquals(listOf(20), r.runs(6))
     }
 }

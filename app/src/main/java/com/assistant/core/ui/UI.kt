@@ -447,7 +447,31 @@ object UI {
     ) = CurrentTheme.current.FormSelection(
         label = label,
         options = options,
-        selected = selected, 
+        sections = emptyList(),
+        selected = options.indexOf(selected).takeIf { it >= 0 },
+        shown = selected,
+        onSelect = { onSelect(options[it]) },
+        required = required
+    )
+
+    /**
+     * A choice among [options] sorted into sections, [sections] the title of each option's (null
+     * for none): chosen by position, so two options written alike stay two.
+     */
+    @Composable
+    fun SectionedSelection(
+        label: String,
+        options: List<String>,
+        sections: List<String?>,
+        selected: Int?,
+        onSelect: (Int) -> Unit,
+        required: Boolean
+    ) = CurrentTheme.current.FormSelection(
+        label = label,
+        options = options,
+        sections = sections,
+        selected = selected,
+        shown = selected?.let { options.getOrNull(it) } ?: "",
         onSelect = onSelect,
         required = required
     )

@@ -161,7 +161,7 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 **Données** : Aucune entrée à lui (`keepsEntries`). `ChartSources` lit une table par couche : les entrées par `tool_data.get`, une grille pas à pas (`GridSteps`, le pas en cours lu à maintenant) par `variables.evaluate` et `readings.read` avec `at`, une colonne par appel ; une valeur en échec est une cellule marquée, dessinée en trou. L'outil met le graphique en page (`ChartSceneBuilder` : échelles, graduations, empilement, légende) en un dessin de formes du cœur (`core/drawing`), que le thème dessine. L'écran : le graphique, sa légende, et ce que touche le doigt (toutes les colonnes de la ligne, ou la cause d'un trou et ses entrées, qui s'ouvrent dans leur outil) ; relu quand une entrée ou un outil change. La tuile (`rememberChartTile`) : en résumé la période et la dernière valeur de la première série ; en corps ses marques en bandeau (EXTENDED), le graphique réduit (SQUARE) ou entier (FULL) (`ChartDetail`) ; un toucher ouvre l'outil
 
 ### Journal (Journal)
-**Usage** : Entrées textuelles/audio libres avec dates
+**Usage** : Entrées textuelles libres avec dates
 **Configuration** : Template d'entrée, fréquence suggérée
 
 ### Liste (List)

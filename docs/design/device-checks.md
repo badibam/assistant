@@ -133,7 +133,7 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 ## Réglages et affichage
 
 - Couleurs d'icônes (`icon-colors.md`), dans les deux thèmes et les deux modes : dans la config d'une zone et d'un outil, la rangée de choix sous l'icône, l'icône à côté de son sélecteur qui change aussitôt ; à l'enregistrement, la tuile et l'en-tête de la page dans la couleur ; « aucune » rend l'icône neutre. Thème par défaut : une icône neutre a sa pastille grise, les titres des tuiles alignés ; les marques (attente, chrono) au coin de la pastille.
-
+- Choix de la zone dans la config d'un outil et dans une automation, dans les deux thèmes : les zones dans l'ordre de l'accueil, sous le titre de leur groupe puis « Sans groupe » ; un titre ne se choisit pas ; deux zones de même nom se choisissent chacune.
 - Groupes de l'accueil (Réglages › Écran principal) : renommer un groupe qui a des zones, enregistrer — ses zones restent dedans sous le nouveau nom. Échanger deux noms : chaque zone garde sa section. Supprimer un groupe qui a des zones : refusé, en nommant ces zones. Supprimer puis rajouter le même nom : refusé de même s'il a des zones.
 - Groupes d'outils d'une zone (modifier la zone) : renommer un groupe — ses outils, automations et variables le suivent ; supprimer un groupe utilisé : refusé, en nommant ce qui l'utilise.
 - Changer un outil de zone dans sa config : le groupe se vide aussitôt, le sélecteur propose ceux de la zone choisie ; enregistré, l'outil est dans ce groupe-là ou hors groupe.
@@ -212,5 +212,5 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 - Mettre le poids du même côté que les kcal : l'enregistrement est refusé et propose l'autre côté.
 - Dans le formulaire, le choix d'une colonne d'un canal ne propose que celles de sa couche (après ses transformations) ; les colonnes d'un `fold` proposent celles d'avant lui.
 - Ajouter une entrée au suivi que lit le graphique, revenir : le graphique l'a prise. Recréer l'écran : le graphique se redessine à l'identique.
-- Thème rétro, aux crans de taille 0 et 2, sur l'outil et sur sa tuile : les barres d'un même graphique toutes de la même largeur, au même pied ; une aire et une opacité en trame de points, sans transparence ; un trou en damier de points au bord pointillé ; un point rond, un triangle et un losange qu'on distingue ; les parts d'un camembert séparées d'un pixel de fond ; une couleur continue en paliers ; les textes nets, sur la grille. Thème par défaut : rien de changé à l'œil.
+- Thème rétro, aux crans de taille 0 et 2, sur l'outil et sur sa tuile : les barres d'un même graphique toutes de la même largeur, au même pied ; une aire et une opacité en trame de points, sans transparence ; un trou en damier de points au bord pointillé ; un point rond, un triangle et un losange qu'on distingue ; les parts d'un camembert séparées d'un pixel de fond ; une couleur continue en paliers ; les textes nets, sur la grille ; les graduations en pointillé d'un pixel sur deux, les axes pleins. Thème par défaut : rien de changé à l'œil.
 

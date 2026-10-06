@@ -1202,8 +1202,10 @@ object DefaultTheme : ThemeContract {
     override fun FormSelection(
         label: String,
         options: List<String>,
-        selected: String,
-        onSelect: (String) -> Unit,
+        sections: List<String?>,
+        selected: Int?,
+        shown: String,
+        onSelect: (Int) -> Unit,
         required: Boolean
     ) {
         var expanded by remember { mutableStateOf(false) }
@@ -1216,7 +1218,7 @@ object DefaultTheme : ThemeContract {
                 onExpandedChange = { expanded = !expanded }
             ) {
                 TextField(
-                    value = selected,
+                    value = shown,
                     onValueChange = { },
                     readOnly = true,
                     trailingIcon = {
@@ -1230,11 +1232,21 @@ object DefaultTheme : ThemeContract {
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    options.forEach { option ->
+                    options.forEachIndexed { index, option ->
+                        // A section's title above its first option, drawn and not chosen
+                        val section = sections.getOrNull(index)
+                        if (section != null && section != sections.getOrNull(index - 1)) {
+                            androidx.compose.material3.Text(
+                                text = section,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp)
+                            )
+                        }
                         DropdownMenuItem(
                             text = { androidx.compose.material3.Text(option) },
                             onClick = {
-                                onSelect(option)
+                                onSelect(index)
                                 expanded = false
                             }
                         )
