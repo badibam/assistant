@@ -888,6 +888,10 @@
 
     <!-- SETTINGS - Configuration screens -->
     <string name="settings_title">Settings</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_section_ai">AI</string>
+    <string name="settings_section_data">Data</string>
+    <string name="settings_section_system">System</string>
     <string name="settings_ai_providers">AI providers</string>
     <string name="settings_ai_providers_description">Configure the artificial intelligence providers</string>
     <string name="settings_ai_providers_config">Provider configuration</string>
@@ -1692,7 +1696,6 @@
     <string name="history_delete_confirm">This action cannot be undone. Delete the conversation \'%1$s\'?</string>
     <string name="history_session_messages">%1$d messages</string>
     <string name="settings_history">History of the conversations</string>
-    <string name="settings_history_description">Read, rename and resume your past conversations</string>
 
     <!-- Icon picker: Lucide's categories -->
     <string name="icon_category_accessibility">Accessibility</string>

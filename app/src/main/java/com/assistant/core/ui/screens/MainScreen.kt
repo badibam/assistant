@@ -20,7 +20,6 @@ import com.assistant.core.coordinator.mapData
 import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
-import com.assistant.core.ui.dialogs.SettingsDialog
 import com.assistant.core.ui.screens.settings.*
 import com.assistant.core.ai.ui.screens.AIProvidersScreen
 import com.assistant.core.ai.ui.chat.AIFloatingChat
@@ -118,7 +117,6 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
             selectedZoneId = zoneId
         }
     }
-    var showHistory by rememberSaveable { mutableStateOf(false) }
     var showExitConfirm by remember { mutableStateOf(false) }
     
     // Derived states from IDs (recomputed after orientation change)
@@ -209,20 +207,6 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         return // Exit MainScreen composition when showing config
     }
 
-    // Show History screen when requested
-    if (showHistory) {
-        HistoryScreen(
-            onNavigateBack = {
-                showHistory = false
-            },
-            onResumeSession = { sessionId ->
-                showHistory = false
-                showAIChat = true
-            }
-        )
-        return // Exit MainScreen composition when showing History
-    }
-
     // Show AI Providers screen when requested
     if (showAIProviders) {
         AIProvidersScreen(
@@ -297,6 +281,27 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
             }
         )
         return // Exit MainScreen composition when showing Logs screen
+    }
+
+    // The settings, under the screens they open: leaving one comes back to them
+    if (showSettings) {
+        SettingsScreen(
+            onBack = { showSettings = false },
+            onOpen = { id ->
+                when (id) {
+                    "ai_providers" -> showAIProviders = true
+                    "format" -> showFormat = true
+                    "ai_limits" -> showAILimits = true
+                    "validation" -> showValidation = true
+                    "demo" -> showDemo = true
+                    "external_access" -> showExternalAccess = true
+                    "ui" -> showUI = true
+                    "data" -> showData = true
+                    "logs" -> showLogs = true
+                }
+            }
+        )
+        return
     }
 
     // Show AIScreen for SEED session editing when requested
@@ -420,7 +425,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                 title = s.shared("app_name"),
                 subtitle = null,
                 icon = null,
-                leftButton = ButtonAction.CONFIGURE,
+                leftButton = ButtonAction.SETTINGS,
                 rightButton = ButtonAction.CONFIGURE,
                 onLeftClick = { showSettings = true },
                 onRightClick = { showMainScreenConfig = true }
@@ -484,28 +489,6 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         }
     }
     
-    // Show Settings dialog when requested
-    if (showSettings) {
-        SettingsDialog(
-            onDismiss = { showSettings = false },
-            onOptionSelected = { optionId ->
-                when (optionId) {
-                    "history" -> showHistory = true
-                    "ai_providers" -> showAIProviders = true
-                    "format" -> showFormat = true
-                    "ai_limits" -> showAILimits = true
-                    "validation" -> showValidation = true
-                    "demo" -> showDemo = true
-                    "external_access" -> showExternalAccess = true
-                    "ui" -> showUI = true
-                    "data" -> showData = true
-                    "logs" -> showLogs = true
-                }
-                showSettings = false
-            }
-        )
-    }
-
     if (showExitConfirm) {
         UI.ConfirmDialog(
             title = s.shared("action_quit"),

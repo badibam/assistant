@@ -888,6 +888,10 @@
 
     <!-- SETTINGS - Configuration screens -->
     <string name="settings_title">Paramètres</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_section_ai">IA</string>
+    <string name="settings_section_data">Données</string>
+    <string name="settings_section_system">Système</string>
     <string name="settings_ai_providers">Fournisseurs IA</string>
     <string name="settings_ai_providers_description">Configurer les fournisseurs d\'intelligence artificielle</string>
     <string name="settings_ai_providers_config">Configuration du fournisseur</string>
@@ -1692,7 +1696,6 @@
     <string name="history_delete_confirm">Cette action est irréversible. Supprimer la discussion \'%1$s\' ?</string>
     <string name="history_session_messages">%1$d messages</string>
     <string name="settings_history">Historique des discussions</string>
-    <string name="settings_history_description">Consulter, renommer et reprendre vos discussions passées</string>
 
     <!-- Icon picker: Lucide's categories -->
     <string name="icon_category_accessibility">Accessibilité</string>

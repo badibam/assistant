@@ -181,6 +181,20 @@ object AppSettings {
         }
     }
 
+    /** What a category's screen is for, said under its title; null for the home screen's, opened from the home screen itself. */
+    fun description(category: String, context: Context): String? {
+        val s = Strings.`for`(context = context)
+        return when (category) {
+            AppSettingCategories.FORMAT -> s.shared("settings_format_description")
+            AppSettingCategories.AI_LIMITS -> s.shared("settings_ai_limits_description")
+            AppSettingCategories.VALIDATION_CONFIG -> s.shared("settings_validation_description")
+            AppSettingCategories.DEMO -> s.shared("settings_demo_description")
+            AppSettingCategories.UI -> s.shared("settings_ui_description")
+            AppSettingCategories.EXTERNAL_ACCESS -> s.shared("settings_external_access_description")
+            else -> null
+        }
+    }
+
     /** A category's stored [settings], read through its declaration. */
     fun read(category: String, settings: JSONObject, context: Context): SettingValues =
         SettingValues(nodes(category, context), settings)

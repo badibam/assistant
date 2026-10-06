@@ -23,12 +23,12 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 - Essayer sur le téléphone les réglages de réflexion de chaque fournisseur, en envoyant une requête : Claude (Sonnet 5.5 sans réflexion par `between_tools`, Opus 5.5 sans « Sans réflexion », Haiku 4.5 sans effort), OpenAI (un modèle à `none`, un modèle qu'aucun fait ne couvre), DeepSeek (effort obligatoire, sans réflexion) ; le changement de modèle qui vide les deux réglages, l'enregistrement d'une combinaison refusée.
 - Thème rétro, Suivi : le texte « il y a… » est coupé alors qu'il y a la place pour deux lignes.
-- Un vrai écran de Réglages : des titres de catégories et des tuiles bien rangées.
 - Les boutons copier / coller sur un texte sélectionné sont ceux d'Android, hors du thème (la barre d'outils du texte, `TextToolbar` en Compose).
 - Voir sur le téléphone ce qui n'y est pas passé le 2026-10-02 : la conversion du réglage d'apparence en v58 (une famille devient une teinte), les titres de section du thème par défaut, la tuile sans icône centrée.
 
 ## Bugs du téléphone
 
+- L'écran Réglages (`docs/design/settings-screen.md`) et l'historique dans le chat sont codés, rien n'a tourné sur un téléphone : passer leurs lignes de `docs/design/device-checks.md`, puis élaguer la spec.
 - La copie d'un outil et d'une automation prend « (copie) » écrit en dur dans le code (`ToolInstanceService`, `AutomationService`) : à passer par le système de strings.
 
 ## En attente d'un déclencheur

@@ -124,6 +124,7 @@ fun AppSettingsScreen(
     ) {
         UI.PageHeader(
             title = AppSettings.title(category, context),
+            subtitle = AppSettings.description(category, context),
             leftButton = ButtonAction.BACK,
             onLeftClick = onBack
         )

@@ -224,7 +224,7 @@ fun AIProvidersScreen(
         // Header
         UI.PageHeader(
             title = s.shared("settings_ai_providers"),
-            subtitle = null,
+            subtitle = s.shared("settings_ai_providers_description"),
             icon = null,
             leftButton = ButtonAction.BACK,
             rightButton = null,

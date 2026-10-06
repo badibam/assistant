@@ -122,7 +122,7 @@ fun DataSettingsScreen(
         // Header
         UI.PageHeader(
             title = s.shared("settings_backup"),
-            subtitle = null,
+            subtitle = s.shared("settings_data_description"),
             icon = null,
             leftButton = ButtonAction.BACK,
             rightButton = null,
