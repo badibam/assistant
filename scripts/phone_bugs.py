@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Bring the bugs noted on the phone into TODO.md, then delete them from the phone.
 
-The bugs are the entries of the tool "Assistant" in the zone "Dev" of the app. They are read and
-deleted through the app's MCP server, as Claude reaches it: the claude.ai connector "Assistant",
-whose tools Claude Code names mcp__claude_ai_Assistant__<command>. So the phone's external access
-must be open (docs/design/mcp-server.md) and the connector authorised once.
+The bugs are the entries of the tool "Assistant" in the zone "Dev" of the release build, where
+they are noted. They are read and deleted through the app's MCP server, as Claude reaches it: the
+claude.ai connector "Assistant", whose tools Claude Code names mcp__claude_ai_Assistant__<command>.
+The relay hands each request to whichever build polls it, so the external access must be open in
+the release alone (docs/design/mcp-server.md), and the connector authorised once against it.
 
 Claude only reads and deletes, and answers in JSON; this script shows the list, asks once, writes
 TODO.md, and checks that every entry it wrote is the one Claude deleted. TODO.md is written before
