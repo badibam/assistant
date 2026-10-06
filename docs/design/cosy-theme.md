@@ -17,10 +17,10 @@ Maquettes (écran d'une zone, à côté des autres pistes de thème écartées) 
 ## Ce qui est décidé
 
 - **Le thème dessine tout lui-même**, comme le rétro : chaque composant du contrat, dialogues et sélecteurs de date et d'heure compris, rien repris du thème par défaut ni de Material (2026-10-06).
+- **La police est Baloo 2, seule, pour tout le thème** (SIL Open Font License, embarquée dans l'app), du 400 du texte courant au 800 des titres et des chiffres (2026-10-06).
 
 ## Ce qui reste ouvert
 
-- La police : Baloo 2 ou une autre ronde sous licence libre, embarquée dans l'app.
 - La palette sombre : la maquette n'a que la claire.
 - Le mouvement : l'écrasement au toucher, le rebond au lâcher, l'arrivée d'une fenêtre ; leurs durées.
 - Les sons : quelle source libre, pour quels signaux.
