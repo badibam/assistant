@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 /**
  * Brings the groups to their v62 form, where a group held is null or one that exists
- * (docs/design/group-integrity.md):
+ * (Groups):
  * - a zone's group is one of the home screen's groups ("zone_groups" of the main_screen settings);
  * - the group of a tool (its config's "group"), an automation or a variable is one of its zone's
  *   tool groups.

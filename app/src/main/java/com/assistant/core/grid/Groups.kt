@@ -4,7 +4,7 @@ import com.assistant.core.strings.StringsContext
 import org.json.JSONObject
 
 /**
- * The groups an element holds (docs/design/group-integrity.md): null or one that exists. A zone
+ * The groups an element holds: null or one that exists. A zone
  * holds one of the home screen's groups; a tool, an automation or a variable one of its zone's
  * tool groups. Every service writing a group checks it here.
  */

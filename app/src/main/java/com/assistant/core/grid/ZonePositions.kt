@@ -16,7 +16,7 @@ object ZonePositions {
     /**
      * The zone group section a zone with [group] is shown in, among the home screen's
      * [zoneGroups]: its own, or the ungrouped one (null) when it has none. A group the home screen
-     * does not have cannot be held (docs/design/group-integrity.md): one that is anyway is a bug,
+     * does not have cannot be held (Groups): one that is anyway is a bug,
      * logged, and its zone shown among the ungrouped rather than lost from the screen.
      */
     fun section(group: String?, zoneGroups: List<String>): String? {

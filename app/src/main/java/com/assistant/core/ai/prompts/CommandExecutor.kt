@@ -419,7 +419,7 @@ class CommandExecutor(private val context: Context) {
                 data["name"]?.let { filtered["name"] = it }
                 data["tooltype"]?.let { filtered["tooltype"] = it }
 
-                // A group left behind by a change of zone (docs/design/group-integrity.md)
+                // A group left behind by a change of zone (Groups)
                 data["group_emptied"]?.let { filtered["group_emptied"] = it }
 
                 if (filtered.isEmpty()) null else filtered

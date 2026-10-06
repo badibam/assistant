@@ -12,7 +12,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Ce que la campagne 1 a trouvé dans l'app (`docs/design/bench-campaign-1.md`, « Ce qui ne vient pas des modèles ») : `completed` absent du schéma de réponse forcé, qu'une automation demande pourtant ; `"validation_request": false` refusé sans action ; une lecture de variable au début d'un jour qui vaut 0, que le prompt ne signale pas ; une écriture dans un outil inexistant qui reçoit une erreur de `SchemaNotation` ; « Failed to parse custom field » brut de `ToolInstanceService`.
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 - Les images dans un message (`docs/design/message-images.md`) sont codées, rien n'a tourné sur un téléphone : passer la ligne « Images » de `docs/design/device-checks.md`, puis élaguer la spec.
-- Des groupes qui existent (`docs/design/group-integrity.md`) est codé, rien n'a tourné sur un téléphone : passer ses lignes de `docs/design/device-checks.md`, puis élaguer la spec.
 - Les conditions typées à l'écriture, conçues dans `docs/design/typed-conditions.md` : le type de chaque côté d'une condition connu sans lire de données, les constantes de l'IA traduites à l'entrée, la vérification au service, et le refus d'un changement dont dépend une condition ailleurs.
 - L'historique des écritures et leur annulation, conçu dans `docs/design/undo-history.md` : un pas par opération demandée de l'extérieur, la ligne entière avant et après, écrite par une seule classe que garde un script, 30 jours, le service `history` ouvert à l'IA, son écran.
 - Les couleurs des icônes (`docs/design/icon-colors.md`) sont codées, rien n'a tourné sur un téléphone : passer leurs lignes de `docs/design/device-checks.md`, puis élaguer la spec.
@@ -28,7 +27,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Bugs du téléphone
 
-- L'écran Réglages (`docs/design/settings-screen.md`) et l'historique dans le chat sont codés, rien n'a tourné sur un téléphone : passer leurs lignes de `docs/design/device-checks.md`, puis élaguer la spec.
 
 ## En attente d'un déclencheur
 

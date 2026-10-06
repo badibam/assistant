@@ -5,7 +5,7 @@ import org.json.JSONArray
 /**
  * The name each element of a list of values had when the screen read it, followed as the list is
  * edited: the only place a rename can be told from a removal followed by an addition
- * (docs/design/group-integrity.md). An element moved keeps its own, one removed takes its away,
+ * (Groups.Change). An element moved keeps its own, one removed takes its away,
  * one added has none, and one whose text is edited keeps the name it came with. Screen state,
  * never stored; the screen hands [renames] to the service with the list.
  */

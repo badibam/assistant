@@ -15,7 +15,7 @@ import com.assistant.core.ui.sound.UISignal
 import com.assistant.core.ui.sound.rememberUISound
 
 /**
- * The app's settings (docs/design/settings-screen.md): four sections, App, AI, Data and System,
+ * The app's settings: four sections, App, AI, Data and System,
  * each a grid of tiles, an icon and a name, two cells wide. A tile opens its screen through
  * [onOpen], by its id; what the screen is for is said at its top, not on the tile.
  */

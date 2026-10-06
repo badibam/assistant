@@ -15,7 +15,7 @@ object ToolPositions {
     /**
      * The group section a tool with [group] is shown in, among the zone's [zoneGroups]: its own,
      * or the ungrouped one (null) when it has none. A group the zone does not have cannot be held
-     * (docs/design/group-integrity.md): one that is anyway is a bug, logged, and its tool shown
+     * (Groups): one that is anyway is a bug, logged, and its tool shown
      * among the ungrouped rather than lost from the screen.
      */
     fun section(group: String?, zoneGroups: List<String>): String? {

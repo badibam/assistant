@@ -100,7 +100,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
      *
      * The home screen's groups are held by the zones: a group renamed in [renames] (former name →
      * new name) is renamed in the zones that hold it, a group removed while a zone holds it is
-     * refused (docs/design/group-integrity.md).
+     * refused (Groups).
      *
      * @return The error to hand back, or null once stored
      */
