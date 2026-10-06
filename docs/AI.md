@@ -534,7 +534,7 @@ class EnrichmentProcessor {
 **Level 1: DOC** - Généré par PromptChunks avec degrés d'importance configurables. Inclut rôle IA, documentation API, **limites IA dynamiques** selon SessionType, la légende de la notation des schémas, la définition d'un champ et les schémas de la réponse de l'IA et d'une zone, écrits dans cette notation (`SchemaNotation`, voir `docs/DATA.md`). Pour AUTOMATION : documentation flag `completed: true` obligatoire + continuation automatique après succès actions.
 **Level 2: USER DATA** - Données tool instances avec `always_send: true`.
 
-**APP_STATE** : zones, instances d'outils et variables (zones.list, tools.list_all, variables.list_all), envoyé d'office au premier message.
+**APP_STATE** : les groupes de l'écran d'accueil, les zones, les instances d'outils avec les champs supplémentaires de chacune (nom, libellé, type) et les variables (zones.list, tools.list_all, variables.list_all), envoyé d'office au premier message.
 **Enrichments** : Stockés comme SessionMessage sender=SYSTEM, inclus dans l'historique.
 **RichComposer UI** : le message est une suite de blocs typés, un par segment (texte, pointeur, fichier), dans l'ordre où ils partent. Un nouveau bloc s'insère après le bloc actif et devient actif ; les blocs se réordonnent par leur poignée (`UI.ReorderableColumn`) ; la liste n'est jamais vide, et un texte vide ne part pas. Les règles vivent dans `ComposerBlocks`, testées par `ComposerBlocksTest`.
 
