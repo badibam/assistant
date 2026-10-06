@@ -446,6 +446,7 @@
     <string name="label_zone_name">Name of the zone</string>
     <string name="label_description">Description</string>
     <string name="label_icon">Icon</string>
+    <string name="label_icon_color">Icon colour</string>
     <string name="label_page_info">Page %1$d of %2$d</string>
     <string name="label_disabled">Disabled</string>
     <string name="label_field_generic">Field</string>
@@ -749,6 +750,7 @@
     <string name="tools_base_schema_config_management">Who manages the tool: the user (manual) or the AI (ai)</string>
     <string name="tools_base_schema_config_display_mode">How the tool is drawn in its zone, from the smallest (ICON) to the largest (FULL)</string>
     <string name="tools_base_schema_config_icon_name">Name of the tool\'s icon (a Lucide icon name)</string>
+    <string name="tools_base_schema_config_icon_color">Colour of the tool\'s icon, one of RED, ORANGE, YELLOW, GREEN, TEAL, BLUE, PURPLE, PINK; null or absent for a neutral icon. Each theme draws it its own way</string>
     <string name="tools_base_schema_config_always_send">Always send the data to the AI (Level 2)</string>
     <string name="tools_base_schema_config_show_field_labels">Whether the user\'s fields show their names beside their values, wherever they are shown</string>
     <string name="tools_base_schema_config_validate_config">Requires user validation before a configuration change</string>
@@ -1676,6 +1678,7 @@
     <string name="tools_base_schema_config_group">Organisation group of the tool</string>
     <string name="zone_schema_tool_groups">List of the tool groups available in this zone</string>
     <string name="zone_schema_display_mode">How the zone shows on the main screen: ICON (its icon), MINIMAL (icon and name), LINE (with its description beside), CONDENSED (its description below); it gives the cells the zone takes</string>
+    <string name="zone_schema_icon_color">Colour of the zone\'s icon, one of RED, ORANGE, YELLOW, GREEN, TEAL, BLUE, PURPLE, PINK; null or absent for a neutral icon. A zone\'s tools do not take it</string>
     <string name="zone_schema_group">Organisation group of the zone</string>
 
     <!-- Groups - Service errors -->
@@ -1739,6 +1742,7 @@
     <string name="service_error_icons_param_not_list">\'%1$s\' is a list of strings</string>
     <string name="service_error_icons_unknown_category">Unknown icon category: \'%1$s\'. ICONS without parameters lists the categories</string>
     <string name="service_error_icon_unknown">Unknown icon: \'%1$s\'. The ICONS command searches the icons by word and category</string>
+    <string name="service_error_icon_color_unknown">Unknown icon colour: \'%1$s\'. One of %2$s, or null for none</string>
     <string name="action_verbalize_icons_overview">Overview of the icons</string>
     <string name="action_verbalize_icons_search">Search of the icons</string>
 

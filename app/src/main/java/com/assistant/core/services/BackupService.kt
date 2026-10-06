@@ -152,6 +152,7 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("name", zone.name)
                                 put("description", zone.description)
                                 put("icon_name", zone.icon_name)
+                                put("icon_color", zone.icon_color)
                                 put("active", zone.active)
                                 put("display_mode", zone.display_mode)
                                 put("grid_x", zone.grid_x)
@@ -595,6 +596,8 @@ class BackupService(private val context: Context) : ExecutableService {
                         name = item.getString("name"),
                         description = item.optString("description", null),
                         icon_name = item.optString("icon_name", null),
+                        // Absent from a backup made before version 63: a neutral icon
+                        icon_color = item.optString("icon_color", null),
                         active = item.optBoolean("active", true),
                         display_mode = item.getString("display_mode"),
                         grid_x = item.getInt("grid_x"),

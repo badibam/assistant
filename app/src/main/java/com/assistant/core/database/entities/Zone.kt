@@ -12,6 +12,8 @@ data class Zone(
     val description: String? = null,
     /** A Lucide icon name, stored under its current name. Null until one is chosen. */
     val icon_name: String? = null,
+    /** Its icon's colour, a name of IconColor.NAMES; null for a neutral icon. */
+    val icon_color: String? = null,
     val active: Boolean = true,
     /** How its tile shows on the home screen: ICON, MINIMAL, LINE or CONDENSED (ZonePositions.MODES). */
     val display_mode: String = "LINE",

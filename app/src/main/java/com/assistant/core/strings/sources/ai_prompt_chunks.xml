@@ -472,6 +472,7 @@ Creates a zone.
 - `name` (string, **required**)
 - `description` (string, optional)
 - `icon_name` (string, optional)
+- `icon_color` (string, optional): the icon's colour, one of `RED`, `ORANGE`, `YELLOW`, `GREEN`, `TEAL`, `BLUE`, `PURPLE`, `PINK`; neutral when left out. A tool's icon has its own, in its config
 - `group` (string, optional): one of the zone groups of the home screen
 - `display_mode` (string, optional): how its tile shows on the home screen, `LINE` when left out
 - `tool_groups` (array, optional): the groups its tools are sorted into
@@ -488,6 +489,7 @@ Changes a zone. Only what you give changes; `null` empties a field, except the n
 - `name` (string, optional)
 - `description` (string, optional)
 - `icon_name` (string, optional)
+- `icon_color` (string, optional): `null` makes the icon neutral
 - `group` (string, optional)
 - `display_mode` (string, optional)
 - `tool_groups` (array, optional): the **whole** list, which replaces the old one. A group still held by a tool, an automation or a variable cannot be removed

@@ -102,7 +102,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 62
+        const val VERSION = 63
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1723,6 +1723,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** A zone's icon colour (docs/design/icon-colors.md): a new column, empty, every icon staying neutral. */
+        private val MIGRATION_62_63 = object : Migration(62, 63) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE zones ADD COLUMN icon_color TEXT")
+                LogManager.database("MIGRATION 62->63: zones.icon_color added", "INFO")
+            }
+        }
+
         /** The former text types left in users' fields become a TEXT with its length: see TextLengthAtV61. */
         private val MIGRATION_60_61 = object : Migration(60, 61) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2417,7 +2425,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_58_59,
                     MIGRATION_59_60,
                     MIGRATION_60_61,
-                    MIGRATION_61_62
+                    MIGRATION_61_62,
+                    MIGRATION_62_63
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

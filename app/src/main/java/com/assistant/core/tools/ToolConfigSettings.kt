@@ -35,6 +35,9 @@ object ToolConfigSettings {
                 // Checked against the icon index by the service (ToolInstanceService)
                 field("icon_name", text("tools_config_label_icon"), FieldType.TEXT, text("tools_base_schema_config_icon_name"),
                     default = toolType.getDefaultIconName(), config = mapOf("length" to TextLength.SHORT.name)),
+                // A tag's name, or none for a neutral icon; checked with its names by the service
+                field(com.assistant.core.themes.IconColor.KEY, text("label_icon_color"), FieldType.CHOICE, text("tools_base_schema_config_icon_color"),
+                    config = mapOf("options" to com.assistant.core.themes.IconColor.options(text))),
                 field("management", text("tools_config_label_management"), FieldType.CHOICE, text("tools_base_schema_config_management"),
                     default = "manual",
                     config = choice(listOf("manual", "ai"), mapOf("manual" to text("tools_config_option_manual"), "ai" to text("tools_config_option_ai")))),
