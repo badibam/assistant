@@ -1,5 +1,6 @@
 package com.assistant.themes.retro
 
+import com.assistant.core.themes.Lch
 import com.assistant.core.themes.PaletteMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
