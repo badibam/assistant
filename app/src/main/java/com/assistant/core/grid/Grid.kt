@@ -105,7 +105,11 @@ object Grid {
      * Left and right keep its row and go a quarter at a time to the next column where it fits.
      * Up and down keep its column and stop at the first row where it fits or the first
      * interstice, whichever comes first: at an interstice, rows open for it and the ones after
-     * move down. A row it leaves empty closes. A place that changes nothing is passed over.
+     * move down. A row it leaves empty closes. A place that changes nothing is passed over, and so
+     * is one that does not take the tile further in [direction] from the other tiles: lower than
+     * at least one of them for down and higher than none, the other way round for up. Without it,
+     * rows opened under the top of a tall tile push the others down while the tile stays: down
+     * would move them, not it.
      */
     fun move(tiles: List<Tile>, id: String, direction: Direction): List<Tile>? {
         val tile = tiles.single { it.id == id }
@@ -114,6 +118,14 @@ object Grid {
         fun fits(column: Int, row: Int) = column >= 0 && column + tile.width <= COLUMNS && row >= 0 &&
             others.none { it.overlaps(tile.copy(column = column, row = row)) }
         fun changed(next: List<Tile>): List<Tile>? = closeEmptyRows(next).takeIf { layout(it) != before }
+        /** Whether [next] has the tile further in [direction] from the others, as the arrow says. */
+        fun goes(next: List<Tile>): Boolean {
+            val sign = if (direction == Direction.DOWN) 1 else -1
+            val after = next.associateBy { it.id }
+            val moved = after.getValue(id).row
+            val shifts = others.map { other -> sign * ((moved - after.getValue(other.id).row) - (tile.row - other.row)) }
+            return shifts.any { it > 0 } && shifts.none { it < 0 }
+        }
 
         return when (direction) {
             Direction.LEFT, Direction.RIGHT -> {
@@ -132,11 +144,11 @@ object Grid {
                 order.asSequence().mapNotNull { place ->
                     if (place % 2 == 1) {
                         val row = place / 2
-                        if (fits(tile.column, row)) changed(others + tile.copy(row = row)) else null
+                        if (fits(tile.column, row)) changed(others + tile.copy(row = row))?.takeIf { goes(it) } else null
                     } else {
                         val boundary = place / 2
                         if (isInterstice(others, boundary)) {
-                            changed(others.map { if (it.row >= boundary) it.copy(row = it.row + tile.height) else it } + tile.copy(row = boundary))
+                            changed(others.map { if (it.row >= boundary) it.copy(row = it.row + tile.height) else it } + tile.copy(row = boundary))?.takeIf { goes(it) }
                         } else null
                     }
                 }.firstOrNull()

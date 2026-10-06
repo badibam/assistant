@@ -171,6 +171,16 @@ class GridTest {
     }
 
     @Test
+    fun down_movesTheTile_notTheOthers() {
+        // Seen on the phone: Course two rows high, Travail beside it a row lower, Cuisine under both.
+        // Rows opened under Course's top would push Travail down while Course stays: passed over
+        val tiles = listOf(Tile("course", 0, 0, 2, 2), Tile("travail", 2, 1, 2, 2), Tile("cuisine", 0, 3, 4, 1))
+        val aligned = mapOf("course" to (0 to 0), "travail" to (2 to 0), "cuisine" to (0 to 2))
+        assertEquals(aligned, move(tiles, "course", Grid.Direction.DOWN))
+        assertEquals("up on the other one comes to the same", aligned, move(tiles, "travail", Grid.Direction.UP))
+    }
+
+    @Test
     fun anArrowWithNowhereToGo_isGreyed() {
         assertEquals(null, move(listOf(Tile("a", 0, 0, 4, 1)), "a", Grid.Direction.DOWN))
         assertEquals(null, move(listOf(Tile("a", 0, 0, 4, 1)), "a", Grid.Direction.UP))
