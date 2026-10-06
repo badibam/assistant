@@ -46,6 +46,7 @@ import com.assistant.core.versioning.UiAppearanceAtV55
 import com.assistant.core.versioning.UiSizeStepAtV56
 import com.assistant.core.versioning.UiThemeModeAtV57
 import com.assistant.core.versioning.UiHueShiftAtV58
+import com.assistant.core.versioning.TextLengthAtV61
 import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
@@ -100,7 +101,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 60
+        const val VERSION = 61
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1658,6 +1659,27 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** The former text types left in users' fields become a TEXT with its length: see TextLengthAtV61. */
+        private val MIGRATION_60_61 = object : Migration(60, 61) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                var rewritten = 0
+                database.query("SELECT id, config_json FROM tool_instances").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        // A config that cannot be read stays as it was and is logged
+                        try {
+                            val config = TextLengthAtV61.config(org.json.JSONObject(cursor.getString(1)))
+                            database.execSQL("UPDATE tool_instances SET config_json = ? WHERE id = ?", arrayOf(config.toString(), id))
+                            rewritten++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 60->61: config of tool $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 60->61: $rewritten config(s) rewritten", "INFO")
+            }
+        }
+
         /** A theme's palette family gives way to a hue shift: see UiHueShiftAtV58. */
         private val MIGRATION_57_58 = object : Migration(57, 58) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2329,7 +2351,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_56_57,
                     MIGRATION_57_58,
                     MIGRATION_58_59,
-                    MIGRATION_59_60
+                    MIGRATION_59_60,
+                    MIGRATION_60_61
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
