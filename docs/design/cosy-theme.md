@@ -22,3 +22,16 @@ Maquettes (écran d'une zone, à côté des autres pistes de thème écartées) 
 - **Le mouvement est un ressort** (2026-10-06). Au toucher, un élément s'enfonce dans son ombre, qui disparaît sous lui ; au lâcher, il remonte sur un ressort qui dépasse un peu sa place puis s'y pose, en un quart de seconde environ. Une fenêtre (dialogue, chat) arrive un peu plus petite et en fondu, puis gonfle jusqu'à sa taille avec le même dépassement ; elle se ferme d'un coup. Une tuile soulevée en mode d'édition grossit un peu, penche de quelques degrés, son ombre s'allonge ; posée, elle rebondit à sa place. Un bloc qui se déplie glisse, sans rebond. Les animations coupées dans Android, tout arrive à sa place d'un coup.
 - **Les sons viennent de Kenney** (CC0, crédités dans `sounds.json` comme ceux du rétro), choisis à l'oreille sur une planche d'écoute de tout Kenney (2026-10-06) : confirmer `drop_004`, entrer `select_008`, revenir `select_007`, ouvrir `maximize_001`, fermer `minimize_001`, cocher `select_001`, le cran `tick_001`, le bout d'une liste `bong_001`, le refus `error_006`, tous d'Interface Sounds. Leur niveau : 13 dB sous les originaux de Kenney, 3 sous le rétro, à ajuster à l'oreille sur le téléphone. Les familles retenues pour une retouche : back, bong, click, drop, error, maximize, minimize, pluck, select, switch, tick et toggle d'Interface Sounds ; click, rollover et switch d'UI Audio.
 - **La taille** (2026-10-06) : la taille de texte d'Android est suivie, pour le texte seul ; le cran (0 à 3) agrandit tout ensemble, texte, marges, arrondis, ombres et icônes, par ×1, ×1,12, ×1,25 et ×1,4, le cran 0 étant la maquette.
+
+## Ce qui est codé
+
+`themes/cosy/` : la palette (`CosyPalette`, ses nombres dans `palettes.json`), les tailles et la police par cran (`CosySize`), la pièce posée sur son ombre, l'enfoncement et le ressort, la fenêtre qui gonfle, l'élément soulevé (`CosyPieces`), chaque composant du contrat (`CosyTheme`), les sons (`res/raw/cosy_*.flac`, crédits dans `sounds.json`). La police vient de `third_party/baloo2/` par `scripts/make_baloo_fonts.py`. `CosyPaletteTest` tient les contrastes des deux palettes. Choisi dans Réglages › Interface, sous le nom « Cosy ».
+
+## Ce qui reste ouvert
+
+- Rien n'a tourné sur un téléphone : le thème entier s'y juge, le ressort et le niveau des sons compris, et ce que deviennent les ressorts quand les animations sont coupées dans Android (Compose est censé les sauter, non vérifié).
+- Le banc des palettes (`./run themes`) n'a pas encore le cosy : ses nombres ont été lus sur la maquette et la nuit d'été est posée sans l'avoir vue.
+- Le Graphique passe par le dessin du thème par défaut (`DefaultDrawing`), dans les couleurs du cosy, comme le rétro.
+- Un bloc qui se déplie n'est pas au contrat des thèmes : son glissement reste celui du cœur.
+- Le mode d'édition de la grille atténue les autres tuiles par transparence (`FADED` dans `GridLayout`), sans que le thème s'en mêle.
+- Baloo 2 n'a pas l'espace fine insécable (U+202F) que le français met devant `; : ! ?` : Android la prend dans une police système, comme tout caractère qu'elle n'a pas.
