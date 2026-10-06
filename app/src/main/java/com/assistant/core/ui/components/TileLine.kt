@@ -19,8 +19,9 @@ import androidx.compose.ui.Modifier
  * are optional and keep the size they ask for; the middle takes what is left, a space apart from
  * each, and is the only part an ellipsis cuts.
  *
- * The middle is [text] on up to two lines, the most a slot of the grid holds with air around
- * it; or, given [secondary], [text] on one line and [secondary] under it, in the dim caption.
+ * The middle is [text] on up to [maxLines] lines, two by default, the most a slot of the grid
+ * holds with air around it; or, given [secondary], [text] on one line and [secondary] under it,
+ * in the dim caption.
  * Everything is centred vertically on the slot.
  */
 @Composable
@@ -30,9 +31,10 @@ fun TileLine(
     type: TextType = TextType.BODY,
     secondary: String? = null,
     leading: (@Composable () -> Unit)? = null,
-    trailing: (@Composable RowScope.() -> Unit)? = null
+    trailing: (@Composable RowScope.() -> Unit)? = null,
+    maxLines: Int = MAX_LINES
 ) = TileLine(modifier, leading, trailing) {
-    if (secondary == null) UI.Text(text, type, maxLines = MAX_LINES)
+    if (secondary == null) UI.Text(text, type, maxLines = maxLines)
     else Column {
         UI.Text(text, type, maxLines = 1)
         UI.Text(secondary, TextType.CAPTION, maxLines = 1)

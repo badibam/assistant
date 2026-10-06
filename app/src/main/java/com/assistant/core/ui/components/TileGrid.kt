@@ -13,13 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 /**
- * Items laid in a tile's body (ToolTile.Body): row by row in [columns] columns, each item
- * [itemLines] lines high, a row of cells holding two lines. Given [rows], the body shows what
- * they hold and no more, each slot taking its share of the height; null (FULL) shows every item.
+ * Items laid in a tile's body (ToolTile.Body): row by row in [columns] columns, [perRow] items
+ * stacked in a row of cells (2: an item has room for two lines of text; 4: for one; 1: for a
+ * tall item). Given [rows], the body shows what they hold and no more, each slot taking its share
+ * of the height; null (FULL) shows every item.
  */
 @Composable
-fun <T> TileGrid(rows: Int?, items: List<T>, columns: Int, itemLines: Int = 1, item: @Composable (T) -> Unit) {
-    val slotRows = rows?.let { it * 2 / itemLines } ?: ((items.size + columns - 1) / columns)
+fun <T> TileGrid(rows: Int?, items: List<T>, columns: Int, perRow: Int = 2, item: @Composable (T) -> Unit) {
+    val slotRows = tileGridSlotRows(rows, items.size, columns, perRow)
     Column(modifier = if (rows != null) Modifier.fillMaxSize() else Modifier.fillMaxWidth()) {
         for (slotRow in 0 until slotRows) {
             Row(
@@ -36,3 +37,7 @@ fun <T> TileGrid(rows: Int?, items: List<T>, columns: Int, itemLines: Int = 1, i
         }
     }
 }
+
+/** The rows of slots a tile's body lays: [perRow] per row of cells in [rows], or what [count] items need (FULL). */
+fun tileGridSlotRows(rows: Int?, count: Int, columns: Int, perRow: Int): Int =
+    rows?.let { it * perRow } ?: ((count + columns - 1) / columns)

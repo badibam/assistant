@@ -37,6 +37,9 @@ object ListToolType : ToolTypeContract {
     /** The setting under which items may carry a due date, notified when it comes. */
     const val DUE_DATES = "due_dates"
 
+    /** The setting under which the tile gives each item a single line, twice as many in its height. */
+    const val SHORT_ITEMS = "short_items"
+
     /** The data key of an item's due date, declared only while the list has due dates. */
     const val DUE_AT = "due_at"
 
@@ -70,6 +73,7 @@ object ListToolType : ToolTypeContract {
             DUE_AT -> s.tool("field_due_at")
             DUE_NOTIFIED -> s.tool("field_due_notified")
             DUE_DATES -> s.tool("field_due_dates")
+            SHORT_ITEMS -> s.tool("field_short_items")
             else -> BaseSchemas.getCommonFieldName(fieldName, context) ?: fieldName
         }
     }
@@ -78,9 +82,10 @@ object ListToolType : ToolTypeContract {
     const val REMOVE_WHEN_CHECKED = "remove_when_checked"
 
     /**
-     * Whether checking an item deletes it at once (shopping: what is bought goes), and whether
-     * items may carry a due date. What an item carries beyond its name and its due date is the
-     * user's fields, not a setting.
+     * Whether checking an item deletes it at once (shopping: what is bought goes), whether
+     * items may carry a due date, and whether the tile gives each item a single line (short items:
+     * twice as many shown). What an item carries beyond its name and its due date is the user's
+     * fields, not a setting.
      */
     override fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode> {
         val s = Strings.`for`(tool = "list", context = context)
@@ -89,7 +94,7 @@ object ListToolType : ToolTypeContract {
             required = true,
             default = false
         )
-        return listOf(switch(REMOVE_WHEN_CHECKED), switch(DUE_DATES))
+        return listOf(switch(REMOVE_WHEN_CHECKED), switch(DUE_DATES), switch(SHORT_ITEMS))
     }
 
     /**

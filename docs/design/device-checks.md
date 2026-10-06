@@ -97,6 +97,7 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 
 ## Outils et saisie
 
+- Liste réglée en « Éléments courts dans la tuile », dans les deux thèmes : 8 éléments en étendu, 24 en carré, une ligne chacun ; chaque case se coche sans toucher sa voisine (la case d'une ligne fait environ la moitié de celle d'avant). Réglage retiré : la tuile revient à 4 éléments sur deux lignes.
 - Créer et modifier une entrée de chaque type : tracking de chaque sorte, note insérée à une position, journal, occurrence Messages, et une entrée avec champs personnalisés.
 - Une plage de champ personnalisé dont le début dépasse la fin est refusée à l'écran.
 - Champ DATE et DATETIME d'une entrée : une date personnalisée s'enregistre ; « Date relative, la veille, début » et « Maintenant » enregistrent la date qu'affiche « Soit : », qui revient en date personnalisée à la réouverture ; un champ facultatif se vide par sa croix, un champ obligatoire n'en a pas.

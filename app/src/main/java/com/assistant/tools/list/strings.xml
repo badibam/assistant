@@ -27,6 +27,8 @@
     <string name="schema_config_remove_when_checked">Whether checking an item deletes it at once, for a list whose done items have nothing left to say (shopping). In such a list, the check operation deletes the item</string>
     <string name="field_due_dates">Due dates</string>
     <string name="schema_config_due_dates">Whether items may carry a due date (due_at), notified when it comes; a late item waits to be checked. For something to do once before a moment; a fixed rhythm belongs to the Messages tool</string>
+    <string name="field_short_items">Short items in the tile</string>
+    <string name="schema_config_short_items">Whether the tile gives each item a single line, showing twice as many (short items: a shopping list); otherwise an item may take two lines. The tool\'s screen is the same either way</string>
 
     <!-- Screen -->
     <string name="list_empty">The list is empty</string>

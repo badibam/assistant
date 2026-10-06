@@ -27,6 +27,8 @@
     <string name="schema_config_remove_when_checked">Si cocher un élément le supprime aussitôt, pour une liste dont les éléments faits n\'ont plus rien à dire (les courses). Dans une telle liste, l\'opération check supprime l\'élément</string>
     <string name="field_due_dates">Échéances</string>
     <string name="schema_config_due_dates">Si les éléments peuvent porter une échéance (due_at), notifiée à son heure ; un élément en retard attend qu\'on le coche. Pour une chose à faire une fois avant un moment ; un rythme fixe relève de l\'outil Messages</string>
+    <string name="field_short_items">Éléments courts dans la tuile</string>
+    <string name="schema_config_short_items">Si la tuile donne une seule ligne à chaque élément, pour en montrer deux fois plus (des éléments courts : une liste de courses) ; sinon un élément peut prendre deux lignes. L\'écran de l\'outil ne change pas</string>
 
     <!-- Écran -->
     <string name="list_empty">La liste est vide</string>
