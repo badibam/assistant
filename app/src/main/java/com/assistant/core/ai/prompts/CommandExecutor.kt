@@ -419,6 +419,9 @@ class CommandExecutor(private val context: Context) {
                 data["name"]?.let { filtered["name"] = it }
                 data["tooltype"]?.let { filtered["tooltype"] = it }
 
+                // A group left behind by a change of zone (docs/design/group-integrity.md)
+                data["group_emptied"]?.let { filtered["group_emptied"] = it }
+
                 if (filtered.isEmpty()) null else filtered
             }
             "batch_create", "batch_update", "batch_delete" -> {
@@ -428,6 +431,8 @@ class CommandExecutor(private val context: Context) {
 
                 data["created_count"]?.let { filtered["created_count"] = it }
                 if (operation == "batch_create") data["ids"]?.let { filtered["ids"] = it }
+                // The user's fields the entries created leave empty, each with how many
+                data["extra_left_empty"]?.let { filtered["extra_left_empty"] = it }
                 data["failed_count"]?.let { filtered["failed_count"] = it }
                 data["updated_count"]?.let { filtered["updated_count"] = it }
                 data["deleted_count"]?.let { filtered["deleted_count"] = it }

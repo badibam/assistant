@@ -694,6 +694,10 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "tooltype" to tool.tooltype
             )
 
+            // The user's fields of its entries, which the AI writes beside the tool type's own and
+            // would not know of otherwise: read as stored, a field of an unknown type included
+            extraFieldsSummary(tool.config_json)?.let { resultMap["extra_fields"] = it }
+
             // Its place in the grid, for the screen: the AI neither sees nor changes places
             if (includePosition) {
                 resultMap["grid_x"] = tool.grid_x
@@ -719,6 +723,15 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     /**
      * List all tool instances across all zones
      */
+    /** The name, label and type of each user's field of a tool's config [configJson]; null when it has none. */
+    private fun extraFieldsSummary(configJson: String): List<Map<String, String>>? {
+        val fields = JSONObject(configJson).optJSONArray("extra_fields")?.takeIf { it.length() > 0 } ?: return null
+        return (0 until fields.length()).map { i ->
+            val field = fields.getJSONObject(i)
+            mapOf("name" to field.optString("name"), "display_name" to field.optString("display_name"), "type" to field.optString("type"))
+        }
+    }
+
     private suspend fun handleListAll(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -749,6 +762,10 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "description" to description,
                 "tooltype" to tool.tooltype
             )
+
+            // The user's fields of its entries, which the AI writes beside the tool type's own and
+            // would not know of otherwise: read as stored, a field of an unknown type included
+            extraFieldsSummary(tool.config_json)?.let { resultMap["extra_fields"] = it }
 
             // Its place in the grid, for the screen: the AI neither sees nor changes places
             if (includePosition) {

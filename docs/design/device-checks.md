@@ -22,6 +22,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Chat IA
 
+- Champs supplémentaires : « Ajoute une note dans Dev › Assistant » — l'IA remplit Catégorie et Portée sans lire le schéma (l'aperçu les nomme) ; une note créée sans eux, le résultat le dit (`extra_left_empty`) et l'IA le signale. Un outil changé de zone par l'IA : elle dit que son groupe est resté derrière.
 - Zones par l'IA : « Crée une zone Voyages dans le groupe X, affichage minimal, avec les groupes d'outils A et B » — la zone arrive rangée et réglée ; un groupe de l'accueil inventé est refusé avec la liste des groupes, et l'IA se reprend. « Renomme le groupe d'outils A en C » passe par UPDATE_ZONE avec `renames`, et ses outils le suivent.
 - Après le catalogue des commandes (`AICommands`) : « Combien de pesées cette semaine ? » passe par `TOOL_DATA` avec `period`, sans refus ; une commande à un paramètre inventé est refusée en le nommant, et l'IA la corrige au tour suivant ; le L1 (journal `Prompt data built`) garde sa taille d'avant, à quelques tokens près.
 - Réglages d'une session de chat : l'interrupteur de validation, à droite de son libellé, bascule et la validation suit.

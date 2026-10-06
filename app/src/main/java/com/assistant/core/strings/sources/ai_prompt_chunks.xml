@@ -388,8 +388,8 @@ Creates entries in one tool.
 - `tool_instance_id` (string, **required**)
 - `entries` (array, **required**): the entries to create, each `{ name?, timestamp?, data?, extra? }`
   - `name` and `timestamp`: whether a tool\'s entries take them, and whether they are required, is in its data schema (a note has no name)
-  - `data`: the tool type\'s fields; `extra`: the user\'s extra fields
-  - A field you leave out stays empty: the app never fills in a value you did not give]]></string>
+  - `data`: the tool type\'s fields; `extra`: the user\'s extra fields, named under `extra_fields` for each tool in the app\'s overview
+  - A field you leave out stays empty: the app never fills in a value you did not give. The result names the extra fields left empty, under `extra_left_empty`]]></string>
     <string name="ai_command_update_data"><![CDATA[### UPDATE_DATA
 
 Changes entries of one tool.

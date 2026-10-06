@@ -638,6 +638,13 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val createdIds = mutableListOf<String>()
         var successCount = 0
         var failureCount = 0
+        // The user's fields of the tool, and how many created entries leave each one empty: told
+        // back, since an omitted field is no error and nothing else would say it
+        val extraNames = AppDatabase.getDatabase(context).toolInstanceDao().getToolInstanceById(toolInstanceId)
+            ?.let { tool -> JSONObject(tool.config_json).optJSONArray("extra_fields") }
+            ?.let { fields -> (0 until fields.length()).map { fields.getJSONObject(it).optString("name") } }
+            .orEmpty()
+        val leftEmpty = mutableMapOf<String, Int>()
         // Each refusal by the entry's place in the batch, for a caller that answers line by line
         val refusals = mutableListOf<Map<String, Any>>()
         val batch = Batch()
@@ -657,6 +664,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (result.success) {
                     result.data?.get("id")?.let { createdIds.add(it.toString()) }
                     successCount++
+                    val extra = entryJson.optJSONObject("extra")
+                    extraNames.filter { name -> extra == null || extra.isNull(name) || extra.opt(name)?.toString().isNullOrEmpty() }
+                        .forEach { leftEmpty[it] = (leftEmpty[it] ?: 0) + 1 }
                 } else {
                     refusals.add(mapOf("index" to i, "error" to (result.error ?: "")))
                     failureCount++
@@ -694,7 +704,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             "refusals" to refusals,
             "ids" to createdIds,
             "tool_instance_name" to toolInstanceId // For CommandExecutor system messages
-        ))
+        ) + (leftEmpty.takeIf { it.isNotEmpty() }?.let { mapOf("extra_left_empty" to it) } ?: emptyMap()))
     }
 
     /**
