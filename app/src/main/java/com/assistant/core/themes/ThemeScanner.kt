@@ -1,5 +1,6 @@
 package com.assistant.core.themes
 
+import com.assistant.themes.cosy.CosyTheme
 import com.assistant.themes.default.DefaultTheme
 import com.assistant.themes.retro.RetroTheme
 
@@ -24,6 +25,7 @@ object ThemeScanner {
         return mapOf(
             "default" to DefaultTheme,
             "retro" to RetroTheme,
+            "cosy" to CosyTheme,
         )
     }
     

@@ -1,0 +1,59 @@
+{
+  "_about": "The cosy theme's interface sounds, one per UISignal, from Kenney's Interface Sounds, chosen by ear on a listening board of every Kenney sound (docs/design/cosy-theme.md), converted to FLAC 13 dB under the originals; their source and licence, checked when added.",
+  "sounds": {
+    "res/raw/cosy_confirm.flac": {
+      "title": "Interface Sounds · drop_004",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/cosy_enter.flac": {
+      "title": "Interface Sounds · select_008",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/cosy_back.flac": {
+      "title": "Interface Sounds · select_007",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/cosy_open.flac": {
+      "title": "Interface Sounds · maximize_001",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/cosy_close.flac": {
+      "title": "Interface Sounds · minimize_001",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/cosy_toggle.flac": {
+      "title": "Interface Sounds · select_001",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/cosy_step.flac": {
+      "title": "Interface Sounds · tick_001",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/cosy_scroll_end.flac": {
+      "title": "Interface Sounds · bong_001",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    },
+    "res/raw/cosy_refuse.flac": {
+      "title": "Interface Sounds · error_006",
+      "author": "Kenney",
+      "licence": "CC0 1.0",
+      "page": "https://kenney.nl/assets/interface-sounds"
+    }
+  }
+}
