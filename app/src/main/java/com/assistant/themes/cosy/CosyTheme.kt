@@ -60,6 +60,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.focusRequester
@@ -666,6 +667,18 @@ object CosyTheme : ThemeContract {
         }
     }
 
+    /**
+     * The tile being moved is lifted: a little larger, tilted, its shadow twice as deep; put down,
+     * it springs back. The others step back, faded, the cells showing through them.
+     */
+    @Composable
+    override fun GridTile(state: com.assistant.core.ui.GridTileState, content: @Composable () -> Unit) {
+        val chosen = state == com.assistant.core.ui.GridTileState.CHOSEN
+        Box(modifier = Modifier.alpha(if (state == com.assistant.core.ui.GridTileState.ASIDE) ASIDE_ALPHA else 1f)) {
+            Lifted(chosen) { CompositionLocalProvider(LocalCosyLifted provides chosen) { content() } }
+        }
+    }
+
     /** A small round of the main colour with Lucide's timer: a stopwatch runs. */
     @Composable
     override fun RunningMark() {
@@ -688,7 +701,8 @@ object CosyTheme : ThemeContract {
         Pressable(onClick = onClick, onLongClick = onLongClick, modifier = Modifier.fillMaxSize()) { pressed ->
             Raised(
                 modifier = Modifier.fillMaxSize(),
-                shape = RoundedCornerShape(size.tileRadius), fill = c.tile.srgb, shadow = c.shadow.srgb, depth = size.tileDepth,
+                shape = RoundedCornerShape(size.tileRadius), fill = c.tile.srgb, shadow = c.shadow.srgb,
+                depth = if (LocalCosyLifted.current) size.tileDepth * 2 else size.tileDepth,
                 pressed = pressed, padding = tileFrame(displayMode), contentModifier = Modifier.fillMaxSize()
             ) {
                 CompositionLocalProvider(LocalCosyLayer provides CosyLayer.TILE) { content() }
@@ -1414,6 +1428,7 @@ object CosyTheme : ThemeContract {
 
     private const val MAX_GRID_DP = 480
     private const val ITEM_ROUND = 1.5f
+    private const val ASIDE_ALPHA = 0.4f
     private const val TOAST_SHORT_MS = 2000L
     private const val TOAST_LONG_MS = 3500L
     private const val DOT_PITCH = 22f

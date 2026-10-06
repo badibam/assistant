@@ -103,3 +103,6 @@ val LocalCosyLayer = compositionLocalOf { CosyLayer.GROUND }
 
 /** An ink a container imposes on what it holds (a main button's, a disabled one's). */
 internal val LocalCosyInk = compositionLocalOf<Color?> { null }
+
+/** Whether the tile drawn is the one lifted from its grid in edit mode: its shadow goes deeper. */
+internal val LocalCosyLifted = compositionLocalOf { false }
