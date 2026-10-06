@@ -25,6 +25,7 @@ Application Android native (Kotlin + Jetpack Compose, persistance Room) : un ass
 - Quand une spec de `docs/design/` est élaguée, ses garanties deviennent des tests. Le code dit comment ; le test dit ce qui avait été promis, et c'est la seule forme de documentation qui ne peut pas mentir.
 - Ce que les fournisseurs d'IA changent sans que leur API le dise (modèle retiré, piège, défaut) vient du projet voisin `provider-facts` : sa copie `app/src/main/assets/facts.json`, déclarée avec les faits traités dans `provider-facts.json`, est vérifiée par `./run provider-facts`, que `./run release` passe d'abord. Un modèle retiré cité dans le code se corrige ; un piège se déclare avec la note qui dit comment il est traité.
 - Générer les strings avec `./gradlew generateStringResources`.
+- La police du thème cosy, Baloo 2, est copiée dans `third_party/baloo2/` (police variable, `OFL.txt`, `VERSION`) ; `scripts/make_baloo_fonts.py` en tire les cinq graisses fixes `res/font/baloo2_*.ttf`, sans la devanagari, et la licence embarquée ; sa sortie est commitée. Mettre Baloo 2 à jour = remplacer `third_party/baloo2/`, relancer le script, commiter.
 - Respecter l'architecture décrite dans les docs ci-dessous.
 
 ## Docs complémentaires
