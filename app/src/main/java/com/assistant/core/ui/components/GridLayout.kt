@@ -48,7 +48,8 @@ private const val FADED = 0.4f
  * leaves.
  *
  * A row is one row high, except the row of a tile that grows with its content ([grows]: a
- * FULL tile), which is as tall as what it shows, rounded up to whole rows. Such a tile is measured
+ * FULL tile), which is as tall as what it shows, a row at least, rounded up to a whole pixel of
+ * the theme's drawings (drawingUnit) so the rows under it stay on whole pixels. Such a tile is measured
  * once, its width fixed and its height free, and keeps the height it takes: the rest of its row
  * stays empty under it. It is never asked for its intrinsic height, which a tile holding a layout
  * measured by its constraints (BoxWithConstraints, a lazy list) cannot give. An empty cell stays
@@ -73,6 +74,7 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
         val rowPx = CurrentTheme.current.gridRowPx(cellPx)
         val gap = CurrentTheme.current.gridColumnGapPx()
         val rowGap = CurrentTheme.current.gridRowGapPx()
+        val unit = kotlin.math.ceil(CurrentTheme.current.drawingUnit()).toInt().coerceAtLeast(1)
         Layout(
             content = {
                 // In edit mode, first the cells, one per cell of the grid, then the tiles over them
@@ -114,13 +116,13 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
             val left = { column: Int -> column * (cell + gap) }
 
             // A tile that grows is measured first, at its width and a free height; its row takes
-            // that height in whole rows
+            // that height in whole pixels of the theme
             val rowHeights = IntArray(rowCount) { rowPx }
             val grown = tiles.mapIndexedNotNull { i, tile ->
                 if (!grows[i]) return@mapIndexedNotNull null
                 val width = span(tile.width)
                 val placeable = measurables[cells + i].measure(Constraints(minWidth = width, maxWidth = width, minHeight = rowPx))
-                rowHeights[tile.row] = maxOf(rowHeights[tile.row], (placeable.height + rowPx - 1) / rowPx * rowPx)
+                rowHeights[tile.row] = maxOf(rowHeights[tile.row], (placeable.height + unit - 1) / unit * unit)
                 i to placeable
             }.toMap()
             // Each row's top, a gap after every row but the last

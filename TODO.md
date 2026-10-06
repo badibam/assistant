@@ -29,7 +29,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## Bugs du téléphone
 
 - Afficher + d'items de listes dans les tuiles. À discuter — Amélioration — UI
-- Espace en trop après un outil en affichage complet (FULL) dans sa zone. — Amélioration — UI
 - La copie d'un outil et d'une automation prend « (copie) » écrit en dur dans le code (`ToolInstanceService`, `AutomationService`) : à passer par le système de strings.
 
 ## En attente d'un déclencheur
