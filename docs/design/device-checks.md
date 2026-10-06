@@ -5,6 +5,8 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Mise à jour et démarrage
 
 - Après la migration 60 (tables `mcp_clients` et `mcp_tokens`) : l'app démarre, sans erreur de Room dans le journal.
+- Après la migration 61 : Bilan quotidien, Journal de rêves et Histoire personnelle s'ouvrent, leur champ de texte supplémentaire en place, et l'IA les lit (TOOL_DATA, SCHEMA).
+- Après la migration 62 : rien ne bouge à l'accueil ni dans les zones ; le journal dit combien de groupes perdus ont été vidés.
 - Importer une sauvegarde faite avant la mise à jour (base 52 ou plus ancienne) : chaque zone montre ses outils dans le même ordre, l'accueil ses zones de même ; les récurrences et les pointeurs se relisent. Juste après, l'écran des journaux filtré sur « Error » ne montre aucune ligne `MIGRATION`.
 - Un pointeur qui filtrait un instant par « = » (avant la migration 52) est refusé en le disant : rien ne part en silence.
 
@@ -20,6 +22,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Chat IA
 
+- Zones par l'IA : « Crée une zone Voyages dans le groupe X, affichage minimal, avec les groupes d'outils A et B » — la zone arrive rangée et réglée ; un groupe de l'accueil inventé est refusé avec la liste des groupes, et l'IA se reprend. « Renomme le groupe d'outils A en C » passe par UPDATE_ZONE avec `renames`, et ses outils le suivent.
 - Après le catalogue des commandes (`AICommands`) : « Combien de pesées cette semaine ? » passe par `TOOL_DATA` avec `period`, sans refus ; une commande à un paramètre inventé est refusée en le nommant, et l'IA la corrige au tour suivant ; le L1 (journal `Prompt data built`) garde sa taille d'avant, à quelques tokens près.
 - Réglages d'une session de chat : l'interrupteur de validation, à droite de son libellé, bascule et la validation suit.
 - Le chat ouvert, sans session puis dans une session : il couvre l'écran jusqu'en bas, la barre de navigation masquée comme ailleurs, revenant un instant au glissé du bord ; la touche Retour le ferme ; les bandeaux du haut ont leur couleur d'avant.
@@ -126,6 +129,9 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 
 ## Réglages et affichage
 
+- Groupes de l'accueil (Réglages › Écran principal) : renommer un groupe qui a des zones, enregistrer — ses zones restent dedans sous le nouveau nom. Échanger deux noms : chaque zone garde sa section. Supprimer un groupe qui a des zones : refusé, en nommant ces zones. Supprimer puis rajouter le même nom : refusé de même s'il a des zones.
+- Groupes d'outils d'une zone (modifier la zone) : renommer un groupe — ses outils, automations et variables le suivent ; supprimer un groupe utilisé : refusé, en nommant ce qui l'utilise.
+- Changer un outil de zone dans sa config : le groupe se vide aussitôt, le sélecteur propose ceux de la zone choisie ; enregistré, l'outil est dans ce groupe-là ou hors groupe.
 - Portrait seul : tourner le téléphone sur n'importe quel écran (accueil, zone, outil, chat, sélecteur de date et d'heure) ne change rien ; les sélecteurs de date et d'heure s'ouvrent sur le calendrier et le cadran.
 - Icônes à la place des glyphes : les boutons d'action en icône (enregistrer, supprimer en corbeille, flèches de période, en-têtes) ont leur couleur de bouton et une taille lisible ; dans le chat, les enrichissements du composeur et d'un message, le résultat d'une commande et le compte à rebours de fermeture ; les boutons horaire et déclencheurs d'une automation ; le fournisseur actif ; l'avertissement d'une validation ; le chemin des sélecteurs de copie et de pointeur.
 - Écrans de réglages générés (format, limites IA, validation, écran d'accueil) : chacun s'ouvre sur les valeurs stockées, s'enregistre et se retrouve à la réouverture ; fuseau et langue à « Aucun » suivent le téléphone ; un changement du fuseau ou du début de journée est suivi aussitôt par l'historique ; les groupes de zones ajoutés apparaissent sur l'accueil et dans l'écran de zone. L'écran de validation, qui était un bouchon, fonctionne.
