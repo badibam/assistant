@@ -165,6 +165,8 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 
 **UI.FormSelection** - Sélections avec label, options, selected, onSelect et required.
 
+**UI.SectionedSelection** - La même sélection rangée en sections, le titre de chacune dessiné sans se choisir, une option choisie par sa position ; chaque option peut avoir l'icône d'une zone ou d'un outil dans sa couleur (`OptionIcon`), dessinée devant elle et devant la valeur choisie (`ZoneChoice`).
+
 **UI.BooleanField** - Oui/non en deux boutons. Une réponse (`Boolean?`) part sans bouton choisi et se vide si elle est facultative ; un état (`Boolean`) a toujours un bouton choisi et ne se vide jamais : « On » / « Off » par défaut, en boutons compacts qui se posent à côté de ce qu'ils commutent (une automation) ; avec ses propres libellés, c'est un choix entre deux modes, sur toute la largeur. Une liste où l'on coche plusieurs éléments est faite de `UI.Checkbox`.
 
 **UI.Switch, UI.Tabs** - Un réglage qui prend effet dès qu'on le bascule, son libellé au début ; une rangée d'onglets, un par libellé. Dessinés par le thème.
