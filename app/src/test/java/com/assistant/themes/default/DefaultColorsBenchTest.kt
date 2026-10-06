@@ -40,6 +40,25 @@ class DefaultColorsBenchTest {
     }
 
     @Test
+    fun `the page's item icons are the theme's`() {
+        fun hex(c: androidx.compose.ui.graphics.Color) = "#%06X".format(c.toArgb() and 0xFFFFFF)
+        for ((name, mode) in listOf("LIGHT" to PaletteMode.LIGHT, "DARK" to PaletteMode.DARK)) {
+            val body = Regex("""$name: \{(.*?)\}""", RegexOption.DOT_MATCHES_ALL).find(page.substringAfter("const ITEM_ICONS"))?.groupValues?.get(1)
+                ?: error("no ITEM_ICONS.$name in colors.html")
+            val shown = Regex("""(\w+): \["(#\w{6})", "(#\w{6})"\]""").findAll(body)
+                .associate { it.groupValues[1] to listOf(it.groupValues[2].uppercase(), it.groupValues[3].uppercase()) }
+            assertEquals(com.assistant.core.themes.IconColor.NAMES, shown.keys.toList())
+            for ((colour, pair) in shown) {
+                val tag = com.assistant.core.themes.TagColor.valueOf(colour)
+                val pale = hex(DefaultTheme.getTagColor(tag, mode))
+                val deep = hex(DefaultTheme.itemIconDeepTone(tag, mode))
+                // A pale badge and a deep ink in the light palette, the other way round in the dark one
+                assertEquals("$name $colour", if (mode == PaletteMode.DARK) listOf(deep, pale) else listOf(pale, deep), pair)
+            }
+        }
+    }
+
+    @Test
     fun `the page's chart series are the drawing's`() {
         val series = Regex("""const SERIES = \{ LIGHT: \["(#\w{6})", "(#\w{6})"\], DARK: \["(#\w{6})", "(#\w{6})"\] \};""").find(page)
             ?.groupValues?.drop(1) ?: error("no SERIES in colors.html")

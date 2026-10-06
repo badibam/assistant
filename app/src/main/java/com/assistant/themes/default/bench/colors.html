@@ -22,7 +22,8 @@
   .tile { padding: 12px; min-height: 92px; box-shadow: 0 1px 2px rgba(0,0,0,.25); display: flex; flex-direction: column; gap: 6px; }
   .tile.wide { grid-column: span 2; min-height: 60px; flex-direction: row; align-items: center; justify-content: space-between; }
   .tile.bare { align-items: center; justify-content: center; }
-  .icon { width: 22px; height: 22px; border: 2px solid; border-radius: 4px; display: inline-block; vertical-align: -5px; margin-right: 8px; }
+  .icon { width: 16px; height: 16px; border: 2px solid; border-radius: 4px; display: inline-block; }
+  .badge { width: 33px; height: 33px; border-radius: 9px; display: inline-grid; place-items: center; vertical-align: middle; margin-right: 8px; }
   .chart { display: flex; align-items: flex-end; gap: 4px; height: 56px; }
   .chart div { flex: 1; display: flex; flex-direction: column; }
   .tile b { font-size: 16px; font-weight: 500; }
@@ -44,7 +45,7 @@
 <header>
   <label>Teinte : <input id="hue" type="range" min="0" max="359" step="1" value="0"> <b id="hueOut"></b>
 </label>
-  <div class="note">Les couleurs du thème par défaut, claires et sombres, tournées autour du cercle des teintes (OKLCH) du même angle, comme le réglage « Teinte » de l'app les tourne : leur clarté et leur saturation gardées, les couleurs d'état (attention, erreur) fixes. 0 = les couleurs du thème. Une couleur hors de l'écran perd de la saturation, jamais de clarté. Un aperçu : les couleurs se changent dans DefaultTheme.kt, puis ici (DefaultColorsBenchTest vérifie qu'elles sont les mêmes).</div>
+  <div class="note">Les couleurs du thème par défaut, claires et sombres, tournées autour du cercle des teintes (OKLCH) du même angle, comme le réglage « Teinte » de l'app les tourne : leur clarté et leur saturation gardées, les couleurs d'état (attention, erreur) fixes. 0 = les couleurs du thème. Une couleur hors de l'écran perd de la saturation, jamais de clarté. Les icônes des outils sur leur pastille : bleue, neutre, orange ; les couleurs des pastilles ne tournent pas, la neutre si. Un aperçu : les couleurs se changent dans DefaultTheme.kt, puis ici (DefaultColorsBenchTest vérifie qu'elles sont les mêmes).</div>
 </header>
 <main id="main"></main>
 <script>
@@ -63,6 +64,14 @@ const DARK = {
   surfaceVariant: "#3D3848", onSurfaceVariant: "#D5CBDF", background: "#1E1B26", onBackground: "#E8E2EE",
   error: "#E88888", onError: "#2D1A1A", outline: "#6B6178", outlineVariant: "#433E4D",
   secondaryContainer: "#4A4458", onSecondaryContainer: "#E8DEF8",
+};
+// An item's icon on its badge, as DefaultTheme.ItemIcon draws it: [badge, ink] by colour name, which
+// do not turn; a neutral icon takes the scheme's surfaceVariant and onSurfaceVariant, which do
+const ITEM_ICONS = {
+  LIGHT: { RED: ["#F4B9B9", "#7E2F35"], ORANGE: ["#F9CDAE", "#763B00"], YELLOW: ["#F5E8AE", "#5B4C00"], GREEN: ["#C6E3BE", "#295B19"],
+           TEAL: ["#B5E0DA", "#005A53"], BLUE: ["#BCD0F2", "#284B88"], PURPLE: ["#D8C6EA", "#5E3A7B"], PINK: ["#F3C3DC", "#75305A"] },
+  DARK: { RED: ["#592F31", "#E39A9A"], ORANGE: ["#55341C", "#EFB48C"], YELLOW: ["#463D14", "#E6D48A"], GREEN: ["#2C4525", "#A6CF9C"],
+          TEAL: ["#074742", "#8FCBC4"], BLUE: ["#2B3D5D", "#9BB8E8"], PURPLE: ["#463455", "#C0A6DA"], PINK: ["#543044", "#E3A3C6"] },
 };
 // A chart's series, as DefaultDrawing.color gives them: a tag's hue, which does not turn
 const SERIES = { LIGHT: ["#3D6FC6", "#D9772B"], DARK: ["#8DB0F0", "#F5AE72"] };
@@ -109,7 +118,12 @@ function turned(scheme, delta) {
   return out;
 }
 
-function phone(name, c, series) {
+function phone(name, c, series, items) {
+  // A tool's icon in a colour, or neutral for none
+  const icon = (color) => {
+    const [badge, ink] = color ? items[color] : [c.surfaceVariant, c.onSurfaceVariant];
+    return `<span class="badge" style="background:${badge}"><span class="icon" style="border-color:${ink}"></span></span>`;
+  };
   const bars = [[0.72, 0.2], [0.9, 0.1], [0.64, 0.25], [1, 0.15], [0.82, 0.2], [0.55, 0.3], [0.77, 0.12]]
     .map(([v, top]) => `<div style="height:${v * 100}%"><span style="flex:${top};background:${series[1]}"></span><span style="flex:${1 - top};background:${series[0]}"></span></div>`).join("");
   return `<div class="phone" style="background:${c.background};color:${c.onBackground}">
@@ -118,10 +132,10 @@ function phone(name, c, series) {
       <div class="title" style="background:${c.surface};color:${c.onSurface}">Assistant · ${name}</div>
       <div class="section" style="border-color:${c.outline}">Démo <span class="plus" style="color:${c.primary}">+</span></div>
       <div class="tiles">
-        <div class="tile" style="background:${c.surface};color:${c.onSurface}"><b><span class="icon" style="border-color:${c.onSurfaceVariant}"></span>Course <span class="dot" style="background:${c.primary}"></span></b><span style="color:${c.onSurfaceVariant}">Camille prépare un semi-marathon…</span></div>
+        <div class="tile" style="background:${c.surface};color:${c.onSurface}"><b>${icon("BLUE")}Course <span class="dot" style="background:${c.primary}"></span></b><span style="color:${c.onSurfaceVariant}">Camille prépare un semi-marathon…</span></div>
         <div class="tile bare" style="background:${c.surface};color:${c.onSurface}"><b>Recette</b><span style="color:${c.onSurfaceVariant}">sans icône : centré</span></div>
-        <div class="tile wide" style="background:${c.surface};color:${c.onSurface}"><b><span class="icon" style="border-color:${c.onSurfaceVariant}"></span>Tâches</b><span><span class="chk" style="border:2px solid ${c.onSurfaceVariant}"></span>Relancer la librairie</span><span style="color:${c.primary};font-size:22px">+</span></div>
-        <div class="tile wide" style="background:${c.surface};color:${c.onSurface};flex-direction:column;align-items:stretch"><b><span class="icon" style="border-color:${c.onSurfaceVariant}"></span>Heures par client</b><div class="chart">${bars}</div></div>
+        <div class="tile wide" style="background:${c.surface};color:${c.onSurface}"><b>${icon(null)}Tâches</b><span><span class="chk" style="border:2px solid ${c.onSurfaceVariant}"></span>Relancer la librairie</span><span style="color:${c.primary};font-size:22px">+</span></div>
+        <div class="tile wide" style="background:${c.surface};color:${c.onSurface};flex-direction:column;align-items:stretch"><b>${icon("ORANGE")}Heures par client</b><div class="chart">${bars}</div></div>
       </div>
       <div class="section" style="border-color:${c.outline}">Configurer</div>
       <div class="form" style="background:${c.surface};color:${c.onSurface}">
@@ -140,7 +154,7 @@ function draw() {
   const delta = +document.getElementById("hue").value;
   document.getElementById("hueOut").textContent = "+" + delta + "°";
   document.getElementById("main").innerHTML =
-    phone("clair", turned(LIGHT, delta), SERIES.LIGHT) + phone("sombre", turned(DARK, delta), SERIES.DARK);
+    phone("clair", turned(LIGHT, delta), SERIES.LIGHT, ITEM_ICONS.LIGHT) + phone("sombre", turned(DARK, delta), SERIES.DARK, ITEM_ICONS.DARK);
 }
 document.getElementById("hue").oninput = draw;
 draw();
