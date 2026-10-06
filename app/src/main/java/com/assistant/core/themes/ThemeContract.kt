@@ -387,12 +387,20 @@ interface ThemeContract {
         labelAbove: Boolean
     )
     
+    /**
+     * A choice among [options], [shown] written in its field. [selected] is the index of the
+     * option chosen, null for none. [sections] is empty, or gives each option the title of its
+     * section (null for none): a title is drawn, not chosen, above the first option of each run
+     * of options sharing it.
+     */
     @Composable
     fun FormSelection(
         label: String,
         options: List<String>,
-        selected: String,
-        onSelect: (String) -> Unit,
+        sections: List<String?>,
+        selected: Int?,
+        shown: String,
+        onSelect: (Int) -> Unit,
         required: Boolean
     )
     

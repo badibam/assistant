@@ -130,6 +130,7 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 
 ## Réglages et affichage
 
+- Choix de la zone dans la config d'un outil et dans une automation, dans les deux thèmes : les zones dans l'ordre de l'accueil, sous le titre de leur groupe puis « Sans groupe » ; un titre ne se choisit pas ; deux zones de même nom se choisissent chacune.
 - Groupes de l'accueil (Réglages › Écran principal) : renommer un groupe qui a des zones, enregistrer — ses zones restent dedans sous le nouveau nom. Échanger deux noms : chaque zone garde sa section. Supprimer un groupe qui a des zones : refusé, en nommant ces zones. Supprimer puis rajouter le même nom : refusé de même s'il a des zones.
 - Groupes d'outils d'une zone (modifier la zone) : renommer un groupe — ses outils, automations et variables le suivent ; supprimer un groupe utilisé : refusé, en nommant ce qui l'utilise.
 - Changer un outil de zone dans sa config : le groupe se vide aussitôt, le sélecteur propose ceux de la zone choisie ; enregistré, l'outil est dans ce groupe-là ou hors groupe.

@@ -96,17 +96,8 @@ fun ToolConfigScreen(
         true
     }
 
-    // The zones a tool can move to, and the groups of the one it is in
-    var zones by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    // The groups of the zone the tool is in
     var groups by remember { mutableStateOf<List<String>>(emptyList()) }
-    LaunchedEffect(Unit) {
-        val result = coordinator.processUserAction("zones.list", emptyMap())
-        zones = (result.data?.get("zones") as? List<*>).orEmpty().mapNotNull { zone ->
-            val map = zone as? Map<*, *> ?: return@mapNotNull null
-            val id = map["id"] as? String ?: return@mapNotNull null
-            id to (map["name"] as? String ?: id)
-        }
-    }
     LaunchedEffect(currentZoneId) {
         val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to currentZoneId))
         groups = ((result.data?.get("zone") as? Map<*, *>)?.get("tool_groups") as? List<*>).orEmpty().mapNotNull { it as? String }
@@ -181,19 +172,18 @@ fun ToolConfigScreen(
         SettingsForm(nodes, config, { config = it; fill = JSONObject() }, context, editors, rows = toolType.getRowFields(), scroll = scroll) {
             // The zone is the tool's place, not a setting of its config: offered once the tool
             // exists, on the root page alone
-            if (isEditing && zones.isNotEmpty()) {
-                UI.FormSelection(
-                    required = false,
+            if (isEditing) {
+                com.assistant.core.ui.selectors.ZoneChoice(
                     label = s.shared("label_zone"),
-                    options = zones.map { it.second },
-                    selected = zones.find { it.first == currentZoneId }?.second ?: "",
-                    onSelect = { name ->
-                        zones.find { it.second == name }?.takeIf { it.first != currentZoneId }?.let {
-                            currentZoneId = it.first
+                    selected = currentZoneId,
+                    onSelect = { id ->
+                        if (id != currentZoneId) {
+                            currentZoneId = id
                             // Its group stays in the zone it leaves: the selector offers the new zone's
                             config = JSONObject(config.toString()).apply { remove("group") }
                         }
-                    }
+                    },
+                    required = false
                 )
             }
         }

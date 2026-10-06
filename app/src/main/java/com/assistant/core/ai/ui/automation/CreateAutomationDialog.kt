@@ -79,25 +79,6 @@ fun CreateAutomationDialog(
         )
     }
 
-    // Load all zones for zone selection (EDIT mode)
-    var availableZones by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    LaunchedEffect(Unit) {
-        try {
-            val zonesResult = coordinator.processUserAction("zones.list", emptyMap())
-            if (zonesResult.status == CommandStatus.SUCCESS) {
-                val zones = zonesResult.data?.get("zones") as? List<*>
-                availableZones = zones?.mapNotNull { zoneMap ->
-                    val map = zoneMap as? Map<*, *>
-                    val id = map?.get("id") as? String
-                    val name = map?.get("name") as? String
-                    if (id != null && name != null) Pair(id, name) else null
-                } ?: emptyList()
-            }
-        } catch (e: Exception) {
-            LogManager.aiUI("Failed to load zones: ${e.message}", "ERROR", e)
-        }
-    }
-
     // Load zone tool_groups (updates when selectedZoneId changes)
     var zoneToolGroups by remember { mutableStateOf<List<String>>(emptyList()) }
     LaunchedEffect(selectedZoneId) {
@@ -331,17 +312,14 @@ fun CreateAutomationDialog(
             ))
 
             // Zone selection (only in EDIT mode)
-            if (isEditMode && availableZones.isNotEmpty()) {
-                val currentZoneName = availableZones.find { it.first == selectedZoneId }?.second ?: ""
-                UI.FormSelection(
+            if (isEditMode) {
+                com.assistant.core.ui.selectors.ZoneChoice(
                     label = s.shared("label_zone"),
-                    options = availableZones.map { it.second },
-                    selected = currentZoneName,
-                    onSelect = { selectedZoneName ->
-                        val newZoneId = availableZones.find { it.second == selectedZoneName }?.first
-                        if (newZoneId != null) {
-                            selectedZoneId = newZoneId
-                            // Reset group selection when zone changes (groups are zone-specific)
+                    selected = selectedZoneId,
+                    onSelect = { id ->
+                        if (id != selectedZoneId) {
+                            selectedZoneId = id
+                            // Its group stays in the zone it leaves: the selector offers the new zone's
                             settings = org.json.JSONObject(settings.toString()).apply { remove("group") }
                         }
                     },
