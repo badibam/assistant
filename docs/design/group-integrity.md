@@ -17,14 +17,14 @@ Un élément rangé a pour groupe `null` ou un groupe qui existe. Deux sortes de
 4. **Renommer met à jour tout ce qui retient l'ancien nom**, dans la même écriture que la liste.
 5. **Changer de zone vide le groupe**, pour un outil, une automation ou une variable. À l'écran, choisir une autre zone retire aussitôt le groupe, et le sélecteur propose ceux de la zone d'arrivée. Au service, un déplacement sans groupe donné vide le groupe et le résultat le dit ; un groupe donné doit exister dans la zone d'arrivée.
 
-Une fois la règle tenue, `ZonePositions.section` et `ToolPositions.section` n'ont plus de groupe inconnu à ranger hors groupe : ce cas sort du code.
+Une fois la règle tenue, `ZonePositions.section` et `ToolPositions.section` n'ont plus de groupe inconnu à ranger ; s'il en vient un (un bug), il est écrit en erreur au journal et l'élément reste affiché hors groupe plutôt que perdu de l'écran.
 
 ## Le renommage
 
 Le service ne voit que l'ancienne liste et la nouvelle : il ne sait pas distinguer un renommage d'une suppression suivie d'un ajout. C'est l'éditeur de liste qui le sait.
 
 - **L'éditeur de liste** (`ListForm`, `SettingsForm`) retient le nom d'origine de chaque élément d'une liste de valeurs, en état d'écran : un élément existant garde son origine à travers les déplacements, un élément ajouté n'en a pas, un élément supprimé l'emporte. Modifier le texte d'un élément est un renommage ; supprimer puis ajouter le même nom ne l'est pas.
-- **L'écran** envoie avec la liste les paires de ses éléments dont le nom a changé : `renames`, par nom de liste — `{"zone_groups": {"Santé": "Corps"}}` à `app_config.update`, `{"tool_groups": {...}}` à `zones.update`. Deux noms échangés donnent deux paires, appliquées ensemble.
+- **L'écran** envoie avec la liste les paires de ses éléments dont le nom a changé : `renames`, par nom de liste — `{"zone_groups": {"Santé": "Corps"}}` à `app_config.set`, `{"tool_groups": {...}}` à `zones.update`. Deux noms échangés donnent deux paires, appliquées ensemble.
 - **Le service** applique d'abord les renommages à ce qui retient les anciens noms, puis refuse une suppression encore utilisée, puis écrit la liste — une seule transaction.
 
 ## Côté IA
