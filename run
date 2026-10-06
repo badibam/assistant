@@ -554,6 +554,15 @@ def task_bench(*args):
                           check=False).returncode
 
 
+def task_bugs():
+    """Bring the bugs noted on the phone (Dev › Assistant) into TODO.md, then delete them there.
+
+    Through the claude.ai connector to the app's MCP server: the phone's external access must be open.
+    """
+    return subprocess.run([sys.executable, str(ROOT / "scripts" / "phone_bugs.py")], cwd=ROOT,
+                          check=False).returncode
+
+
 def task_themes():
     """Serve the themes' benches and open their page; Ctrl+C stops the server.
 
@@ -613,6 +622,7 @@ ACTIONS = {
     "provider-facts": task_provider_facts,
     "db": task_db,
     "bench": task_bench,
+    "bugs": task_bugs,
     "themes": task_themes,
     "clean": task_clean,
 }
@@ -630,6 +640,7 @@ LABELS = {
     "provider-facts": "provider-facts    check the app against the providers' facts (run by release)",
     "db": "db         back up or restore the device database",
     "bench": "bench      free models played on the app's scenarios, on the emulator",
+    "bugs": "bugs       the bugs noted on the phone (Dev › Assistant) into TODO.md, then deleted there",
     "themes": "themes     the themes' benches: their colours, the retro palettes set and saved",
     "clean": "clean      drop build outputs",
 }
@@ -672,7 +683,7 @@ def menu():
     choices = [Separator("Build")]
     choices += [Choice(LABELS[k], k) for k in ("compile", "strings", "build", "install")]
     choices += [Separator("Device")]
-    choices += [Choice(LABELS[k], k) for k in ("logs", "devices", "db", "bench")]
+    choices += [Choice(LABELS[k], k) for k in ("logs", "devices", "db", "bench", "bugs")]
     choices += [Separator("Release")]
     choices += [Choice(LABELS[k], k) for k in ("release", "install-release", "provider-facts")]
     choices += [Separator("Theme")]
