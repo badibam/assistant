@@ -870,6 +870,7 @@
     <string name="ai_prompt_level3_title">Snapshot of the state of the application</string>
     <string name="ai_prompt_level3_snapshot_time">Snapshot taken at the start of the session: **%1$s**</string>
     <string name="ai_prompt_level3_snapshot_note">Note: this is a snapshot, which may have moved on since the start of the session.</string>
+    <string name="ai_prompt_level3_zone_groups_title">Zone groups of the home screen</string>
     <string name="ai_prompt_level3_zones_title">Zones</string>
     <string name="ai_prompt_level3_tools_title">Tool instances</string>
     <string name="ai_prompt_current_datetime">Current date and time: %1$s</string>

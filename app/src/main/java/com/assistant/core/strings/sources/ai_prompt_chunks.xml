@@ -451,7 +451,7 @@ Changes the configuration of a tool, or moves it to another zone.
 
 - `tool_instance_id` (string, **required**)
 - `config` (object, optional): the **whole** new configuration, which replaces the old one: read it with TOOL_CONFIG, change what you mean to, send it all back
-- `zone_id` (string, optional): the zone to move the tool to
+- `zone_id` (string, optional): the zone to move the tool to; its group stays behind, unless `config` names one of the new zone's tool groups
 - `confirm_migration` (boolean, optional): `true` to agree to what the change erases in the entries
 - `fill_values` (object, optional): the values to give the entries a change leaves without a required value, `{"data": {"value": 3}}`
 
@@ -472,7 +472,7 @@ Creates a zone.
 - `name` (string, **required**)
 - `description` (string, optional)
 - `icon_name` (string, optional)
-- `group` (string, optional): the zone group of the home screen it is shown in
+- `group` (string, optional): one of the zone groups of the home screen
 - `display_mode` (string, optional): how its tile shows on the home screen, `LINE` when left out
 - `tool_groups` (array, optional): the groups its tools are sorted into
 
@@ -490,7 +490,8 @@ Changes a zone. Only what you give changes; `null` empties a field, except the n
 - `icon_name` (string, optional)
 - `group` (string, optional)
 - `display_mode` (string, optional)
-- `tool_groups` (array, optional): the **whole** list, which replaces the old one; a tool whose group the zone loses shows among its ungrouped tools
+- `tool_groups` (array, optional): the **whole** list, which replaces the old one. A group still held by a tool, an automation or a variable cannot be removed
+- `renames` (object, optional): the tool groups renamed in `tool_groups`, `{"tool_groups": {"former name": "new name"}}`: what holds a former name takes the new one
 
 The zone is held to the schema given with CREATE_ZONE.]]></string>
     <string name="ai_command_delete_zone"><![CDATA[### DELETE_ZONE
@@ -556,8 +557,8 @@ Changes a variable. Only what you give changes; a `definition` given replaces th
 - `variable_id` (string, **required**)
 - `name` (string, optional)
 - `definition` (object, optional)
-- `group` (string, optional)
-- `zone_id` (string, optional)]]></string>
+- `group` (string, optional): one of its zone's tool groups
+- `zone_id` (string, optional): the zone to move it to; its group stays behind unless you give one of the new zone's]]></string>
     <string name="ai_command_delete_variable"><![CDATA[### DELETE_VARIABLE
 
 Deletes a variable. A formula naming it no longer computes.

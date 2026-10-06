@@ -386,8 +386,12 @@ object PromptManager {
             }
         }
 
+        // The groups a zone may hold, in their order on the home screen
+        val zoneGroups = org.json.JSONArray(com.assistant.core.services.AppConfigService(context).getZoneGroups())
+
         val snapshot = org.json.JSONObject().apply {
             put("timestamp", timestamp)
+            put("zone_groups", zoneGroups)
             put("zones", zonesArray)
             put("tool_instances", toolInstancesArray)
         }
@@ -419,6 +423,15 @@ object PromptManager {
         sb.appendLine(s.shared("ai_prompt_level3_snapshot_time").format(dateStr))
         sb.appendLine(s.shared("ai_prompt_level3_snapshot_note"))
         sb.appendLine()
+        // A snapshot stored before the zone groups were part of it has none to show
+        snapshotObj.optJSONArray("zone_groups")?.let { groups ->
+            sb.appendLine("### ${s.shared("ai_prompt_level3_zone_groups_title")}")
+            sb.appendLine()
+            sb.appendLine("```json")
+            sb.appendLine(groups.toString())
+            sb.appendLine("```")
+            sb.appendLine()
+        }
         sb.appendLine("### ${s.shared("ai_prompt_level3_zones_title")}")
         sb.appendLine()
         sb.appendLine("```json")

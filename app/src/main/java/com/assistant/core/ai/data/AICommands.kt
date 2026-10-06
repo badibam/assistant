@@ -124,7 +124,7 @@ object AICommands {
             p("group", "string"), p("display_mode", "string"), p("tool_groups", "array")),
         action("UPDATE_ZONE",
             p("zone_id", "string", true), p("name", "string"), p("description", "string"), p("icon_name", "string"),
-            p("group", "string"), p("display_mode", "string"), p("tool_groups", "array")),
+            p("group", "string"), p("display_mode", "string"), p("tool_groups", "array"), p("renames", "object")),
         action("DELETE_ZONE", p("zone_id", "string", true)),
         action("CREATE_VARIABLE", p("zone_id", "string", true), p("name", "string", true), p("group", "string"), p("definition", "object", true)),
         action("UPDATE_VARIABLE",
