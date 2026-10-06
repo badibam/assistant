@@ -32,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
@@ -1099,6 +1100,12 @@ object DefaultTheme : ThemeContract {
     @Composable
     override fun GridCell() {
         Box(modifier = Modifier.fillMaxSize().padding(2.dp).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)))
+    }
+
+    /** The tiles aside faded, the cells showing through them. */
+    @Composable
+    override fun GridTile(state: com.assistant.core.ui.GridTileState, content: @Composable () -> Unit) {
+        Box(modifier = Modifier.alpha(if (state == com.assistant.core.ui.GridTileState.ASIDE) 0.4f else 1f)) { content() }
     }
 
     @Composable

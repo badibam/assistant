@@ -14,7 +14,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
@@ -24,6 +23,7 @@ import com.assistant.core.grid.Grid
 import com.assistant.core.grid.ToolPositions
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.ui.DisplayMode
+import com.assistant.core.ui.GridTileState
 import com.assistant.core.ui.UI
 import org.json.JSONObject
 
@@ -36,9 +36,6 @@ data class GridEdit(val places: List<Grid.Tile>, val selectedId: String?, val on
 
 /** The height of a row of the grid a tile stands in (ThemeContract.gridRowPx). */
 val LocalGridRow = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.unit.Dp> { error("No grid around this tile") }
-
-/** How far the tiles not being moved fade while one is. */
-private const val FADED = 0.4f
 
 /**
  * Tiles laid on a grid: four columns of cells, each [tiles] at its place, [item] drawing the one
@@ -89,12 +86,15 @@ fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, i
                                 requester.bringIntoView(Rect(0f, -line, place.width * (cellPx + gap).toFloat(), place.height * (rowPx + rowGap) + line))
                             }
                         }
-                        Box(
-                            modifier = Modifier
-                                .bringIntoViewRequester(requester)
-                                .alpha(if (edit?.selectedId != null && !selected) FADED else 1f)
-                        ) {
-                            androidx.compose.runtime.CompositionLocalProvider(LocalGridRow provides with(LocalDensity.current) { rowPx.toDp() }) { item(i) }
+                        val state = when {
+                            edit?.selectedId == null -> GridTileState.PLAIN
+                            selected -> GridTileState.CHOSEN
+                            else -> GridTileState.ASIDE
+                        }
+                        Box(modifier = Modifier.bringIntoViewRequester(requester)) {
+                            CurrentTheme.current.GridTile(state) {
+                                androidx.compose.runtime.CompositionLocalProvider(LocalGridRow provides with(LocalDensity.current) { rowPx.toDp() }) { item(i) }
+                            }
                             // In edit mode the tile's own gestures give way to a touch that selects
                             if (edit != null) {
                                 Box(

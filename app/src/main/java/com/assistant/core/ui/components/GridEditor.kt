@@ -16,7 +16,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -211,13 +210,13 @@ fun GridEditBar(editor: GridEditor) {
 }
 
 /**
- * [content] faded and deaf while [faded]: the rest of the screen while a section is in edit mode.
- * Scrolling still goes through.
+ * [content] set aside and deaf while [faded]: the rest of the screen while a section is in edit
+ * mode, drawn by the theme as a tile aside (ThemeContract.GridTile). Scrolling still goes through.
  */
 @Composable
 fun Faded(faded: Boolean, content: @Composable () -> Unit) {
     Box {
-        Box(modifier = Modifier.alpha(if (faded) 0.4f else 1f)) { content() }
+        com.assistant.core.themes.CurrentTheme.current.GridTile(if (faded) com.assistant.core.ui.GridTileState.ASIDE else com.assistant.core.ui.GridTileState.PLAIN) { content() }
         if (faded) {
             Box(modifier = Modifier.matchParentSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {})
         }

@@ -334,6 +334,14 @@ interface ThemeContract {
     @Composable
     fun GridCell()
 
+    /**
+     * A tile of a grid as it stands in edit mode ([state]): the one chosen stands out from the
+     * others, and the cells under the others (GridCell) show through them, so the holes are seen.
+     * The rest of the screen, while a grid is edited, is set aside the same way (Faded).
+     */
+    @Composable
+    fun GridTile(state: com.assistant.core.ui.GridTileState, content: @Composable () -> Unit)
+
     /** The mark on a tool's or a zone's icon when a stopwatch runs on one of its entries. */
     @Composable
     fun RunningMark()

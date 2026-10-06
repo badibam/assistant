@@ -48,6 +48,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.ImageShader
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInRoot
+import com.assistant.core.ui.GridTileState
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
@@ -629,28 +641,66 @@ object RetroTheme : ThemeContract {
     }
 
     /**
-     * A cell of the grid in edit mode: a dotted outline, one pixel lit in two, around the cell.
+     * A cell of the grid in edit mode: a dotted outline, one pixel lit in two, around the cell;
+     * its dots on the screen's checker (RetroChecker), where a tile aside lets them through.
      */
     @Composable
     override fun GridCell() {
         val grid = retroGrid()
         val dots = retroColors.screen.borderInner.srgb
+        var corner by remember { mutableStateOf(Offset.Zero) }
         Box(
-            modifier = Modifier.fillMaxSize().drawBehind {
-                val p = grid.scale.toFloat()
-                val w = (size.width / p).toInt()
-                val h = (size.height / p).toInt()
-                val dot = GeometrySize(p, p)
-                for (x in 0 until w step 2) {
-                    drawRect(dots, Offset(x * p, 0f), dot)
-                    drawRect(dots, Offset(x * p, (h - 1) * p), dot)
+            modifier = Modifier.fillMaxSize()
+                .onPlaced { corner = it.positionInRoot() }
+                .drawBehind {
+                    val p = grid.scale.toFloat()
+                    val left = RetroChecker.pixel(corner.x, grid.scale)
+                    val top = RetroChecker.pixel(corner.y, grid.scale)
+                    val dot = GeometrySize(p, p)
+                    RetroChecker.cellDots((size.width / p).toInt(), (size.height / p).toInt(), left, top).forEach { (x, y) ->
+                        drawRect(dots, Offset(x * p, y * p), dot)
+                    }
                 }
-                for (y in 0 until h step 2) {
-                    drawRect(dots, Offset(0f, y * p), dot)
-                    drawRect(dots, Offset((w - 1) * p, y * p), dot)
-                }
-            }
         )
+    }
+
+    /**
+     * A tile aside, while another is moved, on one pixel in two (RetroChecker): the cells under it
+     * show on the others, never a blend (pixel-ui). The chosen one stands whole among them.
+     */
+    @Composable
+    override fun GridTile(state: GridTileState, content: @Composable () -> Unit) {
+        val scale = retroGrid().scale
+        val aside = state == GridTileState.ASIDE
+        val holes = remember(scale) { checkerHoles(scale) }
+        var corner by remember { mutableStateOf(Offset.Zero) }
+        Box(
+            modifier = Modifier
+                .onPlaced { corner = it.positionInRoot() }
+                .graphicsLayer { compositingStrategy = if (aside) CompositingStrategy.Offscreen else CompositingStrategy.Auto }
+                .drawWithContent {
+                    drawContent()
+                    if (!aside) return@drawWithContent
+                    val p = scale.toFloat()
+                    val shift = RetroChecker.shift(RetroChecker.pixel(corner.x, scale), RetroChecker.pixel(corner.y, scale)) * p
+                    translate(left = shift) {
+                        drawRect(holes, topLeft = Offset(-shift, 0f), size = GeometrySize(size.width + shift, size.height), blendMode = BlendMode.DstOut)
+                    }
+                }
+        ) { content() }
+    }
+
+    /**
+     * The open pixels of the checker, two by two pixels of [scale] repeated, open at the top left
+     * and the bottom right: cut out of a tile aside.
+     */
+    private fun checkerHoles(scale: Int): ShaderBrush {
+        val side = scale * 2
+        val bitmap = android.graphics.Bitmap.createBitmap(side, side, android.graphics.Bitmap.Config.ARGB_8888)
+        for (y in 0 until side) for (x in 0 until side) {
+            if (RetroChecker.open(x / scale, y / scale)) bitmap.setPixel(x, y, android.graphics.Color.BLACK)
+        }
+        return ShaderBrush(ImageShader(bitmap.asImageBitmap(), TileMode.Repeated, TileMode.Repeated))
     }
 
     /** The font's triangle in the warning colour: something is running. */

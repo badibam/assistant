@@ -198,3 +198,9 @@ enum class CardType {
     SECTION_HEADER  // A group's or section's header: its title over a divider, no card
     // Types to be added as needed
 }
+
+/**
+ * How a tile of a grid stands while the grid is edited: [PLAIN] when no tile is chosen (or the
+ * grid is not edited), [CHOSEN] the one being moved, [ASIDE] every other while one is.
+ */
+enum class GridTileState { PLAIN, CHOSEN, ASIDE }
