@@ -33,6 +33,7 @@ import com.assistant.core.versioning.UiSizeStepAtV56
 import com.assistant.core.versioning.UiThemeModeAtV57
 import com.assistant.core.versioning.UiHueShiftAtV58
 import com.assistant.core.versioning.TextLengthAtV61
+import com.assistant.core.versioning.GroupsAtV62
 import com.assistant.core.database.entities.VariableEntity
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
@@ -940,6 +941,9 @@ class BackupService(private val context: Context) : ExecutableService {
             }
             if (fromVersion < 61 && toVersion >= 61) {
                 TextLengthAtV61.backup(data)
+            }
+            if (fromVersion < 62 && toVersion >= 62) {
+                GroupsAtV62.backup(data)
             }
 
             // Transform app settings

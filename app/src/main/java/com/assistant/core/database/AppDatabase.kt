@@ -47,6 +47,7 @@ import com.assistant.core.versioning.UiSizeStepAtV56
 import com.assistant.core.versioning.UiThemeModeAtV57
 import com.assistant.core.versioning.UiHueShiftAtV58
 import com.assistant.core.versioning.TextLengthAtV61
+import com.assistant.core.versioning.GroupsAtV62
 import com.assistant.core.versioning.TrackingUnitAtV43
 import com.assistant.core.versioning.PointerAtV44
 import com.assistant.core.versioning.EnrichmentTextAtV45
@@ -101,7 +102,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 61
+        const val VERSION = 62
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1659,6 +1660,69 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** A group held is null or one that exists: see GroupsAtV62. */
+        private val MIGRATION_61_62 = object : Migration(61, 62) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val homeGroups = GroupsAtV62.zoneGroups(
+                    database.query("SELECT settings FROM app_settings_categories WHERE category = ?", arrayOf<Any?>(com.assistant.core.database.entities.AppSettingCategories.MAIN_SCREEN)).use { cursor ->
+                        if (cursor.moveToFirst()) cursor.getString(0) else null
+                    }
+                )
+
+                // The zones' groups, and the tool groups each zone has
+                var emptied = 0
+                val toolGroups = mutableMapOf<String, List<String>>()
+                database.query("SELECT id, `group`, tool_groups FROM zones").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        val group = if (cursor.isNull(1)) null else cursor.getString(1)
+                        if (group != null && GroupsAtV62.kept(group, homeGroups) == null) {
+                            database.execSQL("UPDATE zones SET `group` = NULL WHERE id = ?", arrayOf<Any?>(id))
+                            emptied++
+                        }
+                        // A zone whose tool groups cannot be read leaves its tools, automations and
+                        // variables as they were, and is logged
+                        try {
+                            toolGroups[id] = GroupsAtV62.toolGroups(if (cursor.isNull(2)) null else cursor.getString(2))
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 61->62: tool groups of zone $id unreadable, its members left as they were: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+
+                database.query("SELECT id, zone_id, config_json FROM tool_instances").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        // A config that cannot be read stays as it was and is logged
+                        try {
+                            val config = org.json.JSONObject(cursor.getString(2))
+                            val groups = toolGroups[cursor.getString(1)] ?: continue
+                            val kept = GroupsAtV62.toolConfig(config, groups)
+                            if (kept.has("group") != config.has("group")) {
+                                database.execSQL("UPDATE tool_instances SET config_json = ? WHERE id = ?", arrayOf<Any?>(kept.toString(), id))
+                                emptied++
+                            }
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 61->62: config of tool $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+
+                for (table in listOf("automations", "variables")) {
+                    database.query("SELECT id, zone_id, `group` FROM $table WHERE `group` IS NOT NULL").use { cursor ->
+                        while (cursor.moveToNext()) {
+                            val groups = toolGroups[cursor.getString(1)] ?: continue
+                            if (GroupsAtV62.kept(cursor.getString(2), groups) == null) {
+                                database.execSQL("UPDATE $table SET `group` = NULL WHERE id = ?", arrayOf<Any?>(cursor.getString(0)))
+                                emptied++
+                            }
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 61->62: $emptied group(s) that did not exist emptied", "INFO")
+            }
+        }
+
         /** The former text types left in users' fields become a TEXT with its length: see TextLengthAtV61. */
         private val MIGRATION_60_61 = object : Migration(60, 61) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2352,7 +2416,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_57_58,
                     MIGRATION_58_59,
                     MIGRATION_59_60,
-                    MIGRATION_60_61
+                    MIGRATION_60_61,
+                    MIGRATION_61_62
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
