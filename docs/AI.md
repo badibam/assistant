@@ -349,13 +349,15 @@ La recherche de la prochaine occurrence démarre au plus tôt à `maintenant −
 
 ### Reprise sessions
 Détection automatique sessions orphelines par AutomationScheduler :
-- **endReason null** : Crash/interruption → reprise transparente, sauf pendant des actions (ci-dessous)
+- **endReason null** : Crash/interruption → une AUTOMATION reprend de façon transparente, sauf pendant des actions ; un CHAT coupé en plein tour est interrompu (ci-dessous)
 - **NETWORK_ERROR** : Échec réseau → reprise avec retry
 - **SUSPENDED** : Éviction système → reprise quand slot libre
 
 **Transparence** : Pas de message système, IA ne sait pas qu'elle reprend (continue naturellement).
 
-**Actions coupées par la fermeture de l'app** : une session restaurée en `EXECUTING_ACTIONS` ne rejoue jamais ses actions, qu'une reprise ferait deux fois (une création, un import). Un message, envoyé aussi à l'IA, dit que celles terminées avant ont eu lieu et les autres non ; un CHAT revient à `IDLE` par `INTERRUPTED`, une AUTOMATION se ferme en `INTERRUPTED`, que l'AutomationScheduler ne reprend pas. Les lectures et l'appel IA se reprennent comme avant.
+**Actions coupées par la fermeture de l'app** : une session restaurée en `EXECUTING_ACTIONS` ne rejoue jamais ses actions, qu'une reprise ferait deux fois (une création, un import). Un message, envoyé aussi à l'IA, dit que celles terminées avant ont eu lieu et les autres non ; un CHAT revient à `IDLE` par `INTERRUPTED`, une AUTOMATION se ferme en `INTERRUPTED`, que l'AutomationScheduler ne reprend pas. Un CHAT restauré au milieu d'un tour (`ROUND_PHASES` : appel IA, lectures, relances…) est interrompu (« Round IA interrompu ») et attend l'utilisateur : un tour qui a fait tomber l'app la referait tomber à chaque démarrage (`settleRoundCutByAppClosing`) ; une AUTOMATION reprend.
+
+**Erreur imprévue dans un tour** : une exception qui sort de la boucle d'états ou d'un de ses travaux (appel IA, actions, relance) arrête le tour sans tuer l'app (`stopRoundOnError`) : un CHAT revient au repos, sa session ouverte, l'erreur dite dans ses messages hors prompt ; une AUTOMATION se termine en erreur.
 
 ### SessionEndReason
 Raison d'arrêt session (audit + logique reprise) :
@@ -454,6 +456,7 @@ Event NetworkErrorOccurred:
 **Seuil de taille des données** :
 - Les données récupérées pour l'IA, par les pointeurs de l'utilisateur ou par ses propres requêtes, sont mesurées en caractères du texte qu'elle recevrait, contre `chat_max_data_chars` ou `automation_max_data_chars` (`ai_limits`, réglables dans l'écran des limites IA).
 - CHAT au-delà : le message de données est stocké hors du prompt (`DATA_AWAITING_CONFIRMATION`), phase `WAITING_DATA_CONFIRMATION`. Le contexte d'attente est relu depuis ce message, donc l'attente survit à un redémarrage. « Envoyer » le rend `DATA_ADDED` et l'intègre au prompt ; « Refuser » le rend `DATA_REFUSED`, sans données, avec un résumé qui demande à l'IA de resserrer.
+- Outils toujours envoyés au-delà de leur propre seuil : même attente et même carte, avant l'appel à l'IA, le choix valant pour la session (`ALWAYS_SEND_AWAITING_CONFIRMATION`, puis `ALWAYS_SEND_ACCEPTED` ou `ALWAYS_SEND_REFUSED`, hors prompt).
 - AUTOMATION au-delà : les données ne sont pas stockées ; un message `DATA_REFUSED` part à l'IA avec la taille, le seuil et les requêtes concernées, et reste visible dans l'historique d'exécution.
 - Résultats d'actions : ils partent sans rien demander, l'action étant faite ; au-delà du même seuil, `withinChars` les coupe là où la place finit (résumé et résultats entiers d'abord, dans l'ordre), avec le nombre de caractères non envoyés.
 - Les données des outils « toujours envoyer » (niveau 2) ne sont pas mesurées : c'est un choix de configuration de l'utilisateur.
@@ -532,7 +535,7 @@ class EnrichmentProcessor {
 
 ### 2 niveaux de contexte
 **Level 1: DOC** - Généré par PromptChunks avec degrés d'importance configurables. Inclut rôle IA, documentation API, **limites IA dynamiques** selon SessionType, la légende de la notation des schémas, la définition d'un champ et les schémas de la réponse de l'IA et d'une zone, écrits dans cette notation (`SchemaNotation`, voir `docs/DATA.md`). Pour AUTOMATION : documentation flag `completed: true` obligatoire + continuation automatique après succès actions.
-**Level 2: USER DATA** - Données tool instances avec `always_send: true`.
+**Level 2: USER DATA** - Données tool instances avec `always_send: true`, lues avec leur config (`include_config`) pour trouver les outils marqués ; leurs schémas de données entrent une fois dans la session comme tout schéma reçu (hors session, `app_context` les donne avec). Au-delà de `always_send_max_chars`, un CHAT demande une fois par session, une AUTOMATION et une IA extérieure en reçoivent la liste (`docs/design/always-send.md`).
 
 **APP_STATE** : les groupes de l'écran d'accueil, les zones, les instances d'outils avec les champs supplémentaires de chacune (nom, libellé, type) et les variables (zones.list, tools.list_all, variables.list_all), envoyé d'office au premier message.
 **Enrichments** : Stockés comme SessionMessage sender=SYSTEM, inclus dans l'historique.
