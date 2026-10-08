@@ -24,6 +24,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * AI Orchestrator singleton - Public API for AI system.
@@ -71,7 +73,9 @@ object AIOrchestrator {
     private val draftMessage = mutableMapOf<String, List<MessageSegment>>()
 
     // Initialization flag to prevent multiple initializations
-    private var initialized = false
+    @Volatile private var initialized = false
+    // The screen and the scheduler's tick may both initialize at once: one does it, the other waits
+    private val initializing = Mutex()
 
     // ========================================================================================
     // Public Observable State
@@ -202,15 +206,12 @@ object AIOrchestrator {
      * Initialize orchestrator with context.
      * Must be called at app startup before any usage.
      *
-     * Protected against multiple calls: if already initialized, this is a no-op.
-     * This prevents duplicate initialization when MainActivity.onCreate() is called
-     * multiple times (e.g., during configuration changes or activity recreation).
+     * Protected against multiple calls: if already initialized, this is a no-op. Called by
+     * MainActivity.onCreate() (again at each recreation) and by every scheduler tick, which may
+     * run in a process no screen started.
      */
-    suspend fun initialize(context: Context) {
-        if (initialized) {
-            LogManager.aiSession("AIOrchestrator.initialize() called but already initialized, ignoring", "DEBUG")
-            return
-        }
+    suspend fun initialize(context: Context) = initializing.withLock {
+        if (initialized) return@withLock
 
         LogManager.aiSession("AIOrchestrator V2 initializing...", "INFO")
 
@@ -778,7 +779,7 @@ object AIOrchestrator {
 
     /**
      * Scheduler heartbeat
-     * Called by: internal coroutine (1 min, app-open) + WorkManager (15 min, app-closed)
+     * Called by: internal coroutine (1 min, app-open) + SchedulerAlarm (10 min, app-closed)
      */
     suspend fun tick() {
         eventProcessor.emit(AIEvent.SchedulerHeartbeat)

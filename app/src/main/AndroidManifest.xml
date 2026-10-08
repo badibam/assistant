@@ -10,6 +10,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- The scheduler's alarm (SchedulerAlarm), exact and ringing while the phone sleeps, and set
+         again when the phone restarts. USE_EXACT_ALARM is granted at install from Android 13 -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <!-- Lets the user waive battery optimisation, so background notifications still fire -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
@@ -48,6 +54,15 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <!-- The scheduler's alarm, the phone restarted, the app updated: the tick runs and the alarm is set again -->
+        <receiver
+            android:name=".core.scheduling.SchedulerAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
         <!-- The external access (docs/design/mcp-server.md): its loop, and its quick settings tile -->
         <service
             android:name=".core.mcp.McpAccessService"

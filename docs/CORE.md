@@ -52,7 +52,7 @@ Chaque opération reçoit automatiquement un CancellationToken unique avec créa
 ### CoreScheduler
 **Principe** : Point d'entrée unique pour scheduling AI + Tools via discovery pattern.
 
-**Heartbeat** : Coroutine 1 min (app-open) + WorkManager 15 min (app-closed)
+**Heartbeat** : Coroutine 1 min (app-open) + alarme exacte 10 min (`SchedulerAlarm`, app fermée et téléphone en veille compris), réarmée à chaque sonnerie, au redémarrage du téléphone et à la mise à jour de l'app. Le processus pose le contexte du scheduler (`CoreScheduler.attach`, dans `TreeluneApplication`) et le tick initialise l'orchestrateur IA s'il ne l'est pas : l'alarme peut lancer le processus sans écran.
 **Triggers** : Périodiques + événementiels (CRUD automations, CRUD instances d'outils, fin session)
 
 **Découverte** : `ToolTypeManager.getAllToolTypes().forEach { toolType.getScheduler()?.checkScheduled() }`

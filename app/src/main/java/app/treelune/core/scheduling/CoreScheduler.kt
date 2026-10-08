@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
  *
  * Heartbeat mechanism:
  * - 1 minute coroutine (app-open, high reactivity)
- * - 15 minute WorkManager (app-closed, background)
+ * - 10 minute exact alarm (SchedulerAlarm), which also rings while the phone sleeps
  *
  * Discovery pattern:
  * - No hardcoded dependencies on specific tools
@@ -27,9 +27,10 @@ import kotlinx.coroutines.launch
  * - CoreScheduler discovers and calls all registered schedulers
  *
  * Lifecycle:
- * - initialize() called from MainActivity.onCreate()
+ * - attach() called from TreeluneApplication.onCreate(), whatever starts the process
+ * - initialize() called from MainActivity.onCreate(), for the heartbeat
  * - shutdown() called from MainActivity.onDestroy()
- * - tick() called periodically by internal heartbeat + WorkManager
+ * - tick() called periodically by internal heartbeat + SchedulerAlarm
  */
 object CoreScheduler {
 
@@ -38,13 +39,20 @@ object CoreScheduler {
     private var heartbeatJob: Job? = null
 
     /**
-     * Initialize the scheduler with app context.
+     * Gives the scheduler the app's context, before any tick: the process may be started by the
+     * alarm alone, with no screen to do it.
+     */
+    fun attach(appContext: Context) {
+        context = appContext.applicationContext
+    }
+
+    /**
      * Starts the internal 1-minute heartbeat for app-open scenarios.
      *
      * @param appContext Application context
      */
     fun initialize(appContext: Context) {
-        context = appContext.applicationContext
+        attach(appContext)
         startHeartbeat()
         LogManager.service("CoreScheduler initialized with 1-minute internal heartbeat", "INFO")
     }
@@ -92,7 +100,9 @@ object CoreScheduler {
         // Everything a tick starts is the scheduler's, unless it is the AI's (processAICommand)
 
         try {
-            // 1. AI scheduling (AIOrchestrator handles automations + session management)
+            // 1. AI scheduling (AIOrchestrator handles automations + session management), set up
+            // here when the alarm started the process and no screen did
+            AIOrchestrator.initialize(context)
             AIOrchestrator.tick()
 
         } catch (e: Exception) {

@@ -320,9 +320,6 @@ dependencies {
     // JSON serialization for AI provider communication
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
-    // WorkManager for automation scheduling
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-
     // Testing
     testImplementation("junit:junit:4.13.2")
     // Real org.json on the JVM: the android.jar stub throws on every call, which would

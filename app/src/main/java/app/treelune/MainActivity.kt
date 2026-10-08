@@ -23,20 +23,15 @@ import app.treelune.core.ui.UI
 import app.treelune.core.ui.*
 import app.treelune.core.ui.sound.scrollEndSound
 import app.treelune.core.themes.CurrentTheme
-import app.treelune.core.utils.AppConfigManager
 import app.treelune.core.ai.orchestration.AIOrchestrator
 import app.treelune.core.scheduling.CoreScheduler
-import app.treelune.core.scheduling.CoreSchedulerWorker
+import app.treelune.core.scheduling.SchedulerAlarm
 import app.treelune.core.notifications.NotificationChannels
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import app.treelune.core.utils.LogManager
-import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
@@ -66,12 +61,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Once only: a rotation recreates the activity with the same intent
         if (savedInstanceState == null) openToolId = intent.getStringExtra(EXTRA_TOOL_INSTANCE_ID)
-
-        // Initialize LogManager first (for DB persistence)
-        LogManager.initialize(this)
-
-        // Initialize app config cache: the theme and the timezone, the screen after a crash's too
-        AppConfigManager.initialize(this)
 
         // The phone's dark theme setting from the first frame on
         CurrentTheme.systemDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
@@ -138,9 +127,9 @@ class MainActivity : ComponentActivity() {
         // Initialize CoreScheduler with 1-minute internal heartbeat for app-open reactivity
         CoreScheduler.initialize(this)
 
-        // Schedule WorkManager for app-closed scheduling (15 min interval)
-        // Complements CoreScheduler's 1-minute heartbeat for app-open scenarios
-        scheduleCoreSchedulerWorker()
+        // The alarm that runs the scheduler when the app is closed (10 min), complementing
+        // CoreScheduler's 1-minute heartbeat while it is open
+        SchedulerAlarm.arm(this)
 
         setContent {
             // The phone's dark theme setting, which the mode "as the phone" follows as it changes
@@ -264,31 +253,6 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {
             LogManager.service("Failed to request battery optimization exemption: ${e.message}", "WARN", e)
-        }
-    }
-
-    private fun scheduleCoreSchedulerWorker() {
-        LogManager.service("scheduleCoreSchedulerWorker: Starting WorkManager registration", "INFO")
-
-        try {
-            val intervalMinutes = 15L // Minimum allowed by WorkManager
-            LogManager.service("scheduleCoreSchedulerWorker: Creating PeriodicWorkRequest with interval=${intervalMinutes}min", "DEBUG")
-
-            val workRequest = PeriodicWorkRequestBuilder<CoreSchedulerWorker>(
-                intervalMinutes, TimeUnit.MINUTES
-            ).build()
-
-            LogManager.service("scheduleCoreSchedulerWorker: Enqueueing work request with REPLACE policy", "DEBUG")
-
-            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "core_scheduler",
-                ExistingPeriodicWorkPolicy.REPLACE, // Replace to update interval if changed
-                workRequest
-            )
-
-            LogManager.service("scheduleCoreSchedulerWorker: SUCCESS - Core scheduler registered (${intervalMinutes}min periodic tick for app-closed)", "INFO")
-        } catch (e: Exception) {
-            LogManager.service("scheduleCoreSchedulerWorker: FAILED - ${e.message}", "ERROR", e)
         }
     }
 }
