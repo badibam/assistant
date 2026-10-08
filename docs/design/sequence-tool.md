@@ -28,21 +28,21 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 ```json
 {
   "steps": [
-    { "id": "s1", "name": "Échauffement", "end": "manual" },
-    { "block": true, "repeat": 8, "skip_last": "s3", "steps": [
-      { "id": "s2", "name": "Course", "end": "timed", "duration": 30000, "instruction": "Allure 5 km" },
-      { "id": "s3", "name": "Récup", "end": "timed", "duration": 90000 }
+    { "kind": "step", "name": "Échauffement", "end": "manual" },
+    { "kind": "block", "name": "Intervalles", "repeat": 8, "steps": [
+      { "kind": "step", "name": "Course", "end": "timed", "duration": 30000, "instruction": "Allure 5 km" },
+      { "kind": "step", "name": "Récup", "end": "timed", "duration": 90000, "skip_last_round": true }
     ]},
-    { "id": "s4", "name": "Retour au calme", "end": "timed_then_manual", "duration": 300000 }
+    { "kind": "step", "name": "Retour au calme", "end": "timed_then_manual", "duration": 300000 }
   ],
   "signals": { "step_change": "sound_and_vibration", "countdown": true, "voice": false },
   "schedule": null
 }
 ```
 
-- **Une étape** : un identifiant stable, un nom, une consigne facultative, une façon de finir — `timed` (le minuteur descend, puis on passe d'office), `manual` (un chrono monte, on touche « Fait »), `timed_then_manual` (le minuteur sonne, le chrono continue en dépassement jusqu'à « Fait »).
-- **Un bloc** (`Variant`) répète ses éléments N fois. Deux niveaux au plus : un bloc contient des étapes ou des blocs, ces derniers des étapes seulement.
-- **`skip_last`** : l'étape d'un bloc sautée à son dernier tour, le repos qui ne précède plus rien.
+- **Une étape** : un nom, une consigne facultative, une façon de finir — `timed` (le minuteur descend, puis on passe d'office), `manual` (un chrono monte, on touche « Fait »), `timed_then_manual` (le minuteur sonne, le chrono continue en dépassement jusqu'à « Fait »).
+- **Un bloc** (`Variant`, `kind`) a un nom et répète ses éléments N fois. Deux niveaux au plus : un bloc contient des étapes ou des blocs, ces derniers des étapes seulement.
+- **`skip_last_round`**, sur une étape d'un bloc : sautée à son dernier tour, le repos qui ne précède plus rien.
 - **Les signaux** valent pour toute la séance : au changement d'étape (son, vibration, les deux, rien), le décompte (oui / non), l'annonce vocale de l'étape qui commence et de sa consigne (oui / non, synthèse vocale d'Android).
 - **Le planning**, facultatif (`ScheduleSettings`), calqué sur le Questionnaire : à chaque heure, une entrée `planned` et une notification, les heures manquées rattrapées, « Tout ignorer », le point d'attente sur la tuile. Une séance prévue jamais faite reste `planned` : « manquée » se déduit.
 
@@ -50,7 +50,7 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 
 - `state` : `status` (`planned`, `running`, `done`, `stopped`, `ignored`), `started_at`, `ended_at` ; tant qu'elle court, l'étape en cours, l'heure de son début, et le déroulé déplié recopié de la config au démarrage — une config modifiée pendant la séance ne la change pas. Le déroulé et l'étape en cours s'effacent à la fin.
 - `data` : `duration`, `paused`, `steps_done`, `steps_skipped`, `steps_not_done` (les étapes qu'une séance arrêtée n'a pas atteintes).
-- Ces champs s'écrivent par les opérations de la séance, jamais par l'écriture générique (`tool_data.create` / `update`), qui les refuse ; les champs supplémentaires de l'entrée s'écrivent normalement. La Lecture les lit déjà, à leur place fixe.
+- Ces champs s'écrivent par les opérations de la séance, jamais par l'écriture générique (`tool_data.create` / `update`), qui les écarte (`systemWritten`, l'état entier l'étant déjà) ; les champs supplémentaires de l'entrée s'écrivent normalement. La Lecture les lit déjà, à leur place fixe.
 
 ## Les opérations
 
