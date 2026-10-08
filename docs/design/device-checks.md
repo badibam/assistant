@@ -20,6 +20,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Validation
 
+- Passer `docs/design/validation-nulls-ai-check.md` : le message à coller dans une session IA, et ce qui est attendu étape par étape.
 - Demander à l'IA de créer une entrée en laissant un champ facultatif vide : l'entrée s'enregistre, sans ce champ. Lui faire appeler une opération d'outil avec un paramètre facultatif à null (« Noter après coup » une séance, sans durée) : acceptée.
 - Créer une entrée dans une Liste, un Questionnaire (« Remplir maintenant » en passant une question), une fiche de Données structurées, un Journal, chacun avec un champ supplémentaire laissé vide : enregistrée, le champ absent.
 - Enregistrer la config d'un outil, les réglages de l'app, une automation, un fournisseur d'IA, sans rien changer : accepté. Répondre à un module de communication de l'IA en laissant un champ facultatif vide : accepté.
