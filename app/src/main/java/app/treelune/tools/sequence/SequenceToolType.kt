@@ -184,18 +184,28 @@ object SequenceToolType : ToolTypeContract {
     }
 
     /**
-     * What the AI may do: note a session after the fact, ignore a planned one. Starting and every
-     * gesture of a session running belong to whoever does it: the screen and the notification call
-     * them, the AI is never offered them (SequenceService).
+     * What the AI may do: mark a session done, a planned one or one that was not, correct one
+     * over, ignore a planned one. Starting and every gesture of a session running belong to
+     * whoever does it: the screen and the notification call them, the AI is never offered them
+     * (SequenceService).
      */
     override fun getOperations(context: Context): List<ToolOperation> {
         val s = s(context)
         val id = SettingNode.Field(field("id", s.tool("field_entry"), FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)), required = true)
+        val count = mapOf("min" to 0, "decimals" to 0)
         return listOf(
-            ToolOperation(SequenceService.LOG_AFTER, s.tool("operation_log_after"), listOf(
-                SettingNode.Field(field("timestamp", s.tool("field_log_timestamp"), FieldType.DATETIME, s.tool("schema_log_timestamp")), required = true),
-                SettingNode.Field(field(DURATION, s.tool("field_duration"), FieldType.DURATION, s.tool("schema_log_duration"))),
-                SettingNode.Field(field("id", s.tool("field_entry"), FieldType.TEXT, s.tool("schema_log_id"), mapOf("length" to TextLength.SHORT.name)))
+            ToolOperation(SequenceService.COMPLETE, s.tool("operation_complete"), listOf(
+                SettingNode.Field(field("id", s.tool("field_entry"), FieldType.TEXT, s.tool("schema_complete_id"), mapOf("length" to TextLength.SHORT.name))),
+                SettingNode.Field(field("timestamp", s.tool("field_when"), FieldType.DATETIME, s.tool("schema_complete_timestamp"))),
+                SettingNode.Field(field(DURATION, s.tool("field_duration"), FieldType.DURATION, s.tool("schema_complete_duration")))
+            )),
+            ToolOperation(SequenceService.CORRECT, s.tool("operation_correct"), listOf(
+                id,
+                SettingNode.Field(field("timestamp", s.tool("field_when"), FieldType.DATETIME)),
+                SettingNode.Field(field(DURATION, s.tool("field_duration"), FieldType.DURATION)),
+                SettingNode.Field(field(STEPS_DONE, s.tool("field_steps_done"), FieldType.NUMERIC, config = count)),
+                SettingNode.Field(field(STEPS_SKIPPED, s.tool("field_steps_skipped"), FieldType.NUMERIC, config = count)),
+                SettingNode.Field(field(STEPS_NOT_DONE, s.tool("field_steps_not_done"), FieldType.NUMERIC, config = count))
             )),
             ToolOperation(SequenceService.IGNORE, s.tool("operation_ignore"), listOf(id)),
             ToolOperation(SequenceService.IGNORE_ALL, s.tool("operation_ignore_all"), emptyList())

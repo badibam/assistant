@@ -61,14 +61,8 @@
     <string name="field_steps_not_done">Étapes non atteintes</string>
     <string name="schema_steps_not_done">Les étapes qu\'une séance arrêtée en route n\'a pas atteintes</string>
     <string name="field_entry">Séance</string>
-    <string name="field_log_timestamp">Quand</string>
-    <string name="schema_log_timestamp">Quand la séance a eu lieu</string>
-    <string name="schema_log_duration">Combien de temps elle a duré, si on le sait</string>
-    <string name="schema_log_id">Une séance prévue qu\'est celle-ci : complétée plutôt qu\'une nouvelle entrée</string>
-    <string name="operation_log_after">Note une séance faite après coup, toutes ses étapes comptées faites ; commencer une séance et ses gestes appartiennent à qui la fait, jamais à l\'IA</string>
     <string name="operation_ignore">Une séance prévue laissée de côté, qui reste dans l\'historique</string>
     <string name="operation_ignore_all">Toutes les séances prévues de l\'outil laissées de côté</string>
-    <string name="verbalize_log_after">Séance notée après coup</string>
     <string name="verbalize_ignore">Séance prévue ignorée</string>
     <string name="verbalize_ignore_all">Séances prévues ignorées</string>
     <string name="error_gesture_origin">Commencer une séance et ses gestes appartiennent à qui la fait</string>
@@ -80,7 +74,6 @@
     <string name="error_back_first">Aucune étape avant celle-ci</string>
     <string name="error_extend_manual">Cette étape n\'a pas de minuteur</string>
     <string name="action_start">Commencer</string>
-    <string name="action_log_after">Noter après coup</string>
     <string name="action_ignore">Ignorer</string>
     <string name="action_ignore_all">Tout ignorer</string>
     <string name="action_done">Fait</string>
@@ -111,4 +104,18 @@
     <string name="notification_starting">Démarrage</string>
     <string name="notification_paused">%1$s · en pause</string>
     <string name="notification_planned">Une séance est prévue</string>
+    <string name="field_when">Quand</string>
+    <string name="schema_complete_id">La séance prévue faite ; absent pour une séance qui n\'était pas prévue</string>
+    <string name="schema_complete_timestamp">Quand elle a été faite : obligatoire pour une séance qui n\'était pas prévue ; pour une séance prévue, son heure prévue si absent</string>
+    <string name="schema_complete_duration">Combien de temps elle a duré, si on le sait</string>
+    <string name="operation_complete">Marque faite une séance faite sans suivre l\'écran, toutes ses étapes comptées faites : une séance prévue (id), ou une séance qui n\'était pas prévue, à l\'heure donnée</string>
+    <string name="operation_correct">Corrige une séance finie : son heure, sa durée, ses étapes faites, sautées et non atteintes, chacune gardée si absente ; les trois comptes font le nombre d\'étapes de la séance, et son état les suit</string>
+    <string name="verbalize_complete">Séance marquée faite</string>
+    <string name="verbalize_correct">Séance corrigée</string>
+    <string name="error_complete_without_time">Une séance qui n\'était pas prévue demande l\'heure où elle a été faite</string>
+    <string name="error_not_over">Seule une séance finie se corrige</string>
+    <string name="error_counts_total">Les étapes faites, sautées et non atteintes doivent faire %1$d, les étapes de la séance ; elles font %2$d</string>
+    <string name="error_counts_negative">Un nombre d\'étapes ne peut pas être négatif</string>
+    <string name="action_mark_done">Faite</string>
+    <string name="correct_total">Faites, sautées et non atteintes font %1$d étapes</string>
 </resources>

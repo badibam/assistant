@@ -21,7 +21,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Validation
 
 - Passer `docs/design/validation-nulls-ai-check.md` : le message à coller dans une session IA, et ce qui est attendu étape par étape.
-- Demander à l'IA de créer une entrée en laissant un champ facultatif vide : l'entrée s'enregistre, sans ce champ. Lui faire appeler une opération d'outil avec un paramètre facultatif à null (« Noter après coup » une séance, sans durée) : acceptée.
+- Demander à l'IA de créer une entrée en laissant un champ facultatif vide : l'entrée s'enregistre, sans ce champ. Lui faire appeler une opération d'outil avec un paramètre facultatif à null (`complete` une séance du Fractionné, sans durée) : acceptée.
 - Créer une entrée dans une Liste, un Questionnaire (« Remplir maintenant » en passant une question), une fiche de Données structurées, un Journal, chacun avec un champ supplémentaire laissé vide : enregistrée, le champ absent.
 - Enregistrer la config d'un outil, les réglages de l'app, une automation, un fournisseur d'IA, sans rien changer : accepté. Répondre à un module de communication de l'IA en laissant un champ facultatif vide : accepté.
 
@@ -239,8 +239,9 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 - Forcer l'arrêt de l'app pendant une séance, rouvrir l'outil : « Cette séance s'est arrêtée avec l'app » ; « Reprendre » relance l'étape, « Arrêter » la clôt.
 - « Commencer » une autre Séance pendant qu'une tourne : refusé, le message nomme l'outil.
 - La dernière étape faite : l'accord de fin, l'entrée « Faite » avec sa durée et « n / n étapes » dans l'historique et la tuile ; « Arrêter » en route : « Arrêtée », les étapes non atteintes comptées.
-- Planifiée chaque jour à une heure passée : au tick, une entrée prévue, une notification qui ouvre l'outil, le point d'attente sur la tuile ; « Commencer » la reprend, « Noter après coup » la complète ; une absence de plusieurs jours, « Tout ignorer ».
-- L'IA note une séance après coup et ignore une séance prévue ; lui demander de commencer une séance : elle ne le peut pas.
+- Planifiée chaque jour à une heure passée : au tick, une entrée prévue, une notification qui ouvre l'outil, le point d'attente sur la tuile ; « Commencer » la reprend, « Faite » la marque faite à son heure prévue ; une absence de plusieurs jours, « Tout ignorer ».
+- L'IA marque faite une séance prévue, ajoute une séance faite hier sans être prévue, corrige la durée d'une séance, ignore une séance prévue ; lui demander de commencer une séance : elle ne le peut pas.
+- Toucher une séance de l'historique : son heure, sa durée et ses étapes faites, sautées, non atteintes, modifiables ; passer une séance arrêtée à toutes ses étapes faites la rend « Faite » ; des comptes qui ne font plus le nombre d'étapes sont refusés, le message dit lequel.
 - L'écran de la séance en cours et la tuile, dans les trois thèmes.
 - La démo : Fractionné dans Course, groupe Entraînement, sous Sorties ; son historique, une séance par jeudi de fractionné, dont une « Arrêtée » et une avec une étape sautée ; le jeudi à 18 h 30, une séance prévue ; « Commencer » enchaîne ses 17 étapes, la voix les annonçant.
 

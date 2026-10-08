@@ -55,7 +55,8 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 ## Les opérations
 
 - `start` (reprend la dernière entrée prévue, ou en crée une) : l'écran seulement — Android refuse de démarrer un service au premier plan depuis l'arrière-plan, où tourne l'IA d'une automation. La notification d'une séance prévue ouvre l'outil.
-- `log_after` : une entrée `done`, datée au choix, toutes ses étapes comptées faites, sa durée facultative ; `id` désigne une entrée prévue, complétée plutôt qu'une nouvelle. Écran et IA, comme `ignore` et `ignore_all`.
+- `complete` : une séance faite sans suivre l'écran, toutes ses étapes comptées faites, sa durée facultative. Avec `id`, la séance prévue, à son heure prévue sauf si une heure est donnée ; sans `id`, une séance qui n'était pas prévue, à l'heure donnée, alors obligatoire. Écran (« Faite » sur une séance prévue) et IA.
+- `correct` : une séance finie corrigée, son heure, sa durée et ses étapes faites, sautées, non atteintes, chacune gardée si absente ; les trois comptes font toujours le nombre d'étapes de la séance, et son état les suit — « faite » sans étape non atteinte, « arrêtée » sinon (`SequenceCorrection`). Les pauses ne se corrigent pas. Écran et IA, comme `ignore` et `ignore_all`.
 - `done`, `skip`, `back`, `restart`, `pause`, `resume`, `extend` (+15 s), `stop` : écran et notification seulement ; elles n'ont de sens que pour qui fait la séance.
 - `back` annule le dernier passage d'étape, comme si le geste n'avait pas eu lieu : l'étape précédente reprend où elle en était, le temps écoulé depuis lui revient, l'étape quittée n'a pas commencé, les compteurs reviennent en arrière. Une étape au temps finie d'elle-même revient arrêtée à zéro, en attente de « Fait » ou de `restart` — sinon elle repasserait aussitôt.
 - `restart` relance l'étape en cours depuis le début.
@@ -81,7 +82,7 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 
 ## L'écran
 
-- **Sans séance en cours** : « Commencer » (qui dit pour quand une entrée prévue attendait) et « Noter après coup » ; le déroulé en lecture, une ligne par étape, les blocs « × N » en retrait ; l'historique, une ligne par séance (date, état, durée, « 14 / 15 étapes »).
+- **Sans séance en cours** : « Commencer » (qui dit pour quand une entrée prévue attendait) ; les séances prévues, chacune avec « Faite » et « Ignorer » ; le déroulé en lecture, une ligne par étape, les blocs « × N » en retrait ; l'historique, une ligne par séance (date, état, durée, « 14 / 15 étapes »), qui ouvre la séance pour corriger son heure, sa durée et ses étapes.
 - **En cours** : l'étape en grand (nom, tour « 2 / 4 », minuteur ou « Fait », consigne), l'étape suivante en petit, la barre des gestes, le déroulé replié.
 - **La tuile** : la dernière séance faite ou la prochaine prévue, le point d'attente ; pendant une séance, l'étape en cours et le temps restant.
 

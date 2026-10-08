@@ -2,6 +2,7 @@ package app.treelune.tools.sequence.ui
 
 import android.content.Context
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -65,25 +66,28 @@ data class SequenceEntry(
     val status: String,
     val duration: Long?,
     val stepsDone: Int?,
-    val stepsTotal: Int?,
+    val stepsSkipped: Int?,
+    val stepsNotDone: Int?,
     val run: SequenceRun?
-)
+) {
+    /** The steps of the session, once it is over: done, skipped and not reached together. */
+    val stepsTotal: Int? get() = if (stepsDone != null && stepsSkipped != null && stepsNotDone != null) stepsDone + stepsSkipped + stepsNotDone else null
+}
 
 /** The entries of a tool, as tool_data.get gives them. */
 internal fun sequenceEntries(result: Map<String, Any?>?): List<SequenceEntry> =
     (result?.get("entries") as? List<*>).orEmpty().filterIsInstance<Map<*, *>>().map { e ->
         val state = e["state"] as? Map<*, *>
         val data = e["data"] as? Map<*, *>
-        val done = (data?.get(SequenceToolType.STEPS_DONE) as? Number)?.toInt()
-        val total = listOf(SequenceToolType.STEPS_DONE, SequenceToolType.STEPS_SKIPPED, SequenceToolType.STEPS_NOT_DONE)
-            .map { (data?.get(it) as? Number)?.toInt() }.takeIf { counts -> counts.all { it != null } }?.sumOf { it!! }
+        fun count(key: String) = (data?.get(key) as? Number)?.toInt()
         SequenceEntry(
             id = e["id"] as String,
             timestamp = (e["timestamp"] as Number).toLong(),
             status = state?.get(SequenceToolType.STATUS) as? String ?: "",
             duration = (data?.get(SequenceToolType.DURATION) as? Number)?.toLong(),
-            stepsDone = done,
-            stepsTotal = total,
+            stepsDone = count(SequenceToolType.STEPS_DONE),
+            stepsSkipped = count(SequenceToolType.STEPS_SKIPPED),
+            stepsNotDone = count(SequenceToolType.STEPS_NOT_DONE),
             run = (state?.get(SequenceToolType.RUN) as? String)?.takeIf { it.isNotEmpty() && state[SequenceToolType.STATUS] == SequenceToolType.Status.RUNNING }
                 ?.let { SequenceRun.fromJson(JSONObject(it)) }
         )
@@ -133,6 +137,8 @@ fun SequenceScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigu
     var version by remember { mutableIntStateOf(0) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val live by SequenceLive.running.collectAsState()
+    // A session of the history opened, to read and correct
+    var openId by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(toolInstanceId, version) {
         val tool = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
@@ -179,15 +185,17 @@ fun SequenceScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigu
             iconColor = app.treelune.core.themes.IconColor.of(settings.string(app.treelune.core.themes.IconColor.KEY)),
             leftButton = ButtonAction.BACK,
             rightButton = ButtonAction.CONFIGURE,
-            onLeftClick = onNavigateBack,
+            onLeftClick = { if (openId != null) openId = null else onNavigateBack() },
             onRightClick = onConfigureClick
         )
+        val open = openId?.let { id -> loaded.find { it.id == id && it.stepsTotal != null } }
         when {
+            open != null -> SessionView(open, s) { params -> call(SequenceService.CORRECT, mapOf("id" to open.id) + params) {} }
             running != null && live == running.id -> Running(running.id, running.run!!, s) { op -> call(op, mapOf("id" to running.id)) }
             running != null -> Interrupted(s,
                 onResume = { call(SequenceService.RESUME_INTERRUPTED, mapOf("id" to running.id)) },
                 onStop = { call(SequenceService.STOP, mapOf("id" to running.id)) })
-            else -> Idle(loadedConfig, loaded, s, ::call)
+            else -> Idle(loadedConfig, loaded, s, ::call, onOpen = { openId = it })
         }
     }
 }
@@ -244,20 +252,18 @@ private fun Interrupted(s: StringsContext, onResume: () -> Unit, onStop: () -> U
     }
 }
 
-/** No session running: start or note one, the planned ones, the run, the history. */
+/**
+ * No session running: start one, the planned ones (done without the app, or ignored), the run,
+ * the history, a session of which opens to be corrected.
+ */
 @Composable
-private fun Idle(config: JSONObject, entries: List<SequenceEntry>, s: StringsContext, call: (String, Map<String, Any?>, () -> Unit) -> Unit) {
+private fun Idle(config: JSONObject, entries: List<SequenceEntry>, s: StringsContext, call: (String, Map<String, Any?>, () -> Unit) -> Unit, onOpen: (String) -> Unit) {
     val context = LocalContext.current
-    var noting by rememberSaveable { mutableStateOf(false) }
     val planned = entries.filter { it.status == SequenceToolType.Status.PLANNED }.sortedByDescending { it.timestamp }
     val history = entries.filter { it.status != SequenceToolType.Status.PLANNED }.sortedByDescending { it.timestamp }
 
     planned.firstOrNull()?.let { UI.Text(s.tool("planned_waiting").format(FormatUtils.formatRelativeTimePast(it.timestamp, context)), TextType.CAPTION) }
-    Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
-        UI.Button(type = ButtonType.PRIMARY, onClick = { call(SequenceService.START, emptyMap()) {} }) { UI.Text(s.tool("action_start"), TextType.LABEL) }
-        UI.Button(type = ButtonType.SECONDARY, onClick = { noting = !noting }) { UI.Text(s.tool("action_log_after"), TextType.LABEL) }
-    }
-    if (noting) NoteAfter(s, planned.firstOrNull()?.id, onCancel = { noting = false }) { params -> call(SequenceService.LOG_AFTER, params) { noting = false } }
+    UI.Button(type = ButtonType.PRIMARY, onClick = { call(SequenceService.START, emptyMap()) {} }) { UI.Text(s.tool("action_start"), TextType.LABEL) }
 
     if (planned.isNotEmpty()) {
         Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
@@ -267,6 +273,7 @@ private fun Idle(config: JSONObject, entries: List<SequenceEntry>, s: StringsCon
         planned.forEach { entry ->
             Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
                 UI.Text(DateTimeFormatter.formatForDisplay(entry.timestamp, context), TextType.BODY)
+                UI.Button(type = ButtonType.SECONDARY, onClick = { call(SequenceService.COMPLETE, mapOf("id" to entry.id)) {} }) { UI.Text(s.tool("action_mark_done"), TextType.LABEL) }
                 UI.Button(type = ButtonType.DEFAULT, onClick = { call(SequenceService.IGNORE, mapOf("id" to entry.id)) {} }) { UI.Text(s.tool("action_ignore"), TextType.LABEL) }
             }
         }
@@ -277,7 +284,12 @@ private fun Idle(config: JSONObject, entries: List<SequenceEntry>, s: StringsCon
 
     UI.Text(s.tool("history"), TextType.SUBTITLE)
     if (history.isEmpty()) UI.Text(s.tool("history_empty"), TextType.CAPTION)
-    history.forEach { entry -> UI.Text(historyLine(entry, s, context), TextType.BODY) }
+    history.forEach { entry ->
+        val opens = entry.stepsTotal != null
+        Box(modifier = if (opens) Modifier.fillMaxWidth().clickable { onOpen(entry.id) }.padding(vertical = UI.Space.XS) else Modifier.padding(vertical = UI.Space.XS)) {
+            UI.Text(historyLine(entry, s, context), TextType.BODY)
+        }
+    }
 }
 
 /** One history line: when, its state, how long, how far. */
@@ -311,26 +323,37 @@ private fun StepLines(elements: JSONArray?, depth: Int, s: StringsContext) {
     }
 }
 
-/** « Note after the fact »: when, how long if known; the planned session waiting, if any, is the one noted. */
+/**
+ * A session over, read and corrected: its time, its length, its steps done, skipped and not
+ * reached, its state following the counts as the service sets it (SequenceCorrection).
+ */
 @Composable
-private fun NoteAfter(s: StringsContext, plannedId: String?, onCancel: () -> Unit, onSave: (Map<String, Any?>) -> Unit) {
+private fun SessionView(entry: SequenceEntry, s: StringsContext, onSave: (Map<String, Any?>) -> Unit) {
     val context = LocalContext.current
-    var at by rememberSaveable { mutableStateOf<Any?>(System.currentTimeMillis()) }
-    var duration by rememberSaveable { mutableStateOf<Any?>(null) }
-    val atField = remember { FieldDefinition("timestamp", s.tool("field_log_timestamp"), null, FieldType.DATETIME, false, null) }
-    val durationField = remember { FieldDefinition(SequenceToolType.DURATION, s.tool("field_duration"), null, FieldType.DURATION, false, null) }
-    UI.Card(type = CardType.DEFAULT) {
-        Column(modifier = Modifier.padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
-            FieldInput(atField, at, { at = it }, context, required = true)
-            FieldInput(durationField, duration, { duration = it }, context)
-            Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
-                UI.Button(type = ButtonType.PRIMARY, onClick = {
-                    onSave(listOfNotNull("timestamp" to at, duration?.let { SequenceToolType.DURATION to it }, plannedId?.let { "id" to it }).toMap())
-                }) { UI.Text(s.shared("action_save"), TextType.LABEL) }
-                UI.Button(type = ButtonType.SECONDARY, onClick = onCancel) { UI.Text(s.shared("action_cancel"), TextType.LABEL) }
-            }
-        }
-    }
+    var at by rememberSaveable(entry.id) { mutableStateOf<Any?>(entry.timestamp) }
+    var duration by rememberSaveable(entry.id) { mutableStateOf<Any?>(entry.duration) }
+    var done by rememberSaveable(entry.id) { mutableStateOf<Any?>(entry.stepsDone) }
+    var skipped by rememberSaveable(entry.id) { mutableStateOf<Any?>(entry.stepsSkipped) }
+    var notDone by rememberSaveable(entry.id) { mutableStateOf<Any?>(entry.stepsNotDone) }
+    val count = mapOf("min" to 0, "decimals" to 0)
+    fun field(name: String, type: FieldType, config: Map<String, Any>? = null) = FieldDefinition(name, s.tool("field_$name"), null, type, false, config)
+    val notReached = (notDone as? Number)?.toInt() ?: 0
+    UI.Text(s.tool("status_${if (notReached == 0) SequenceToolType.Status.DONE else SequenceToolType.Status.STOPPED}"), TextType.SUBTITLE)
+    FieldInput(field("when", FieldType.DATETIME), at, { at = it }, context, required = true)
+    FieldInput(field(SequenceToolType.DURATION, FieldType.DURATION), duration, { duration = it }, context)
+    FieldInput(field(SequenceToolType.STEPS_DONE, FieldType.NUMERIC, count), done, { done = it }, context, required = true)
+    FieldInput(field(SequenceToolType.STEPS_SKIPPED, FieldType.NUMERIC, count), skipped, { skipped = it }, context, required = true)
+    FieldInput(field(SequenceToolType.STEPS_NOT_DONE, FieldType.NUMERIC, count), notDone, { notDone = it }, context, required = true)
+    UI.Text(s.tool("correct_total").format(entry.stepsTotal ?: 0), TextType.CAPTION)
+    UI.Button(type = ButtonType.PRIMARY, onClick = {
+        onSave(mapOf(
+            "timestamp" to at,
+            SequenceToolType.DURATION to duration,
+            SequenceToolType.STEPS_DONE to done,
+            SequenceToolType.STEPS_SKIPPED to skipped,
+            SequenceToolType.STEPS_NOT_DONE to notDone
+        ))
+    }) { UI.Text(s.shared("action_save"), TextType.LABEL) }
 }
 
 /** How often the clock on screen is redrawn. */

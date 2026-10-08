@@ -18,8 +18,12 @@ import org.json.JSONObject
  * A session's operations (docs/design/sequence-tool.md, « Les opérations »).
  *
  * For the screen, the notification and the AI:
- * - log_after: `timestamp`, `duration`, `id` — a session done, all its steps counted, noted after
- *   the fact; `id` a planned entry it fills, a new entry without
+ * - complete: `id`, `timestamp`, `duration` — a session done without following the screen, all
+ *   its steps counted done: the planned one `id`, at its planned time unless `timestamp` is given;
+ *   without `id`, one that was not planned, at `timestamp`, then required
+ * - correct: `id`, `timestamp`, `duration`, `steps_done`, `steps_skipped`, `steps_not_done` — a
+ *   session over corrected, each value kept when not given; its counts add up to its steps, its
+ *   state follows them
  * - ignore: `id` — a planned session left undone, which stays in the history
  * - ignore_all: every planned session of the tool
  *
@@ -46,7 +50,8 @@ class SequenceService(private val context: Context) : ExecutableService {
         }
         return when (operation) {
             START -> start(params.optString("tool_instance_id"))
-            LOG_AFTER -> logAfter(params)
+            COMPLETE -> complete(params)
+            CORRECT -> correct(params)
             IGNORE -> ignore(params.optString("id"))
             IGNORE_ALL -> ignoreAll(params.optString("tool_instance_id"))
             in GESTURES -> gesture(operation, params.optString("id"))
@@ -142,11 +147,17 @@ class SequenceService(private val context: Context) : ExecutableService {
         return OperationResult.success(mapOf("id" to id, "status" to status))
     }
 
-    private suspend fun logAfter(params: JSONObject): OperationResult {
+    /**
+     * A session done without following the screen, all its steps counted done: a planned one
+     * ([id]), at its planned time unless a time is given, or one that was not planned, at the
+     * time given, which it cannot do without.
+     */
+    private suspend fun complete(params: JSONObject): OperationResult {
         val toolInstanceId = params.optString("tool_instance_id")
         if (toolInstanceId.isEmpty()) return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
         val timestamp = (params.opt("timestamp") as? Number)?.toLong()
-            ?: return OperationResult.error(s.shared("service_error_missing_required_params").format("timestamp"))
+        val plannedId = params.optString("id").takeIf { it.isNotEmpty() }
+        if (plannedId == null && timestamp == null) return OperationResult.error(s.tool("error_complete_without_time"))
         val steps = SequencePlan.unroll(configOf(toolInstanceId))
         if (steps.isEmpty()) return OperationResult.error(s.tool("error_no_steps"))
         val data = mutableMapOf<String, Any>(
@@ -156,16 +167,50 @@ class SequenceService(private val context: Context) : ExecutableService {
         )
         (params.opt(SequenceToolType.DURATION) as? Number)?.let { data[SequenceToolType.DURATION] = it.toLong() }
         val state = mapOf(SequenceToolType.STATUS to SequenceToolType.Status.DONE)
-        val plannedId = params.optString("id").takeIf { it.isNotEmpty() }
         val result = if (plannedId != null) {
             val planned = entryOf(plannedId) ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(plannedId))
             if (planned.toolInstanceId != toolInstanceId || statusOf(planned) != SequenceToolType.Status.PLANNED) return OperationResult.error(s.tool("error_not_planned"))
-            coordinator.processUserAction("tool_data.update", mapOf("id" to plannedId, "timestamp" to timestamp, "data" to data, "state" to state))
+            coordinator.processUserAction("tool_data.update", buildMap {
+                put("id", plannedId); put("data", data); put("state", state)
+                timestamp?.let { put("timestamp", it) }
+            })
         } else {
             coordinator.processUserAction("tool_data.create", mapOf("tool_instance_id" to toolInstanceId, "timestamp" to timestamp, "data" to data, "state" to state))
         }
         if (!result.isSuccess) return OperationResult.error(result.error ?: "")
         return OperationResult.success(mapOf("id" to (plannedId ?: result.data?.get("id") as String), "status" to SequenceToolType.Status.DONE))
+    }
+
+    /**
+     * A session over corrected after the fact: its time, its length, its counts of steps
+     * (SequenceCorrection), each kept when not given; its state follows the counts.
+     */
+    private suspend fun correct(params: JSONObject): OperationResult {
+        val id = params.optString("id")
+        if (id.isEmpty()) return OperationResult.error(s.shared("service_error_missing_id"))
+        val entry = entryOf(id) ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(id))
+        if (statusOf(entry) !in setOf(SequenceToolType.Status.DONE, SequenceToolType.Status.STOPPED)) return OperationResult.error(s.tool("error_not_over"))
+        val stored = JSONObject(entry.data)
+        fun count(key: String) = if (stored.has(key)) stored.getInt(key) else throw IllegalStateException("session $id without $key")
+        fun given(key: String) = (params.opt(key) as? Number)?.toInt()
+        val current = StepCounts(count(SequenceToolType.STEPS_DONE), count(SequenceToolType.STEPS_SKIPPED), count(SequenceToolType.STEPS_NOT_DONE))
+        val counts = when (val corrected = SequenceCorrection.apply(current,
+            given(SequenceToolType.STEPS_DONE), given(SequenceToolType.STEPS_SKIPPED), given(SequenceToolType.STEPS_NOT_DONE))) {
+            is SequenceCorrection.Result.Corrected -> corrected.counts
+            is SequenceCorrection.Result.WrongTotal -> return OperationResult.error(s.tool("error_counts_total").format(corrected.total, corrected.given))
+            SequenceCorrection.Result.Negative -> return OperationResult.error(s.tool("error_counts_negative"))
+        }
+        val data = mutableMapOf<String, Any>(
+            SequenceToolType.STEPS_DONE to counts.done,
+            SequenceToolType.STEPS_SKIPPED to counts.skipped,
+            SequenceToolType.STEPS_NOT_DONE to counts.notDone
+        )
+        (params.opt(SequenceToolType.DURATION) as? Number)?.let { data[SequenceToolType.DURATION] = it.toLong() }
+        val result = coordinator.processUserAction("tool_data.update", buildMap {
+            put("id", id); put("data", data); put("state", mapOf(SequenceToolType.STATUS to counts.status))
+            (params.opt("timestamp") as? Number)?.let { put("timestamp", it.toLong()) }
+        })
+        return if (result.isSuccess) OperationResult.success(mapOf("id" to id, "status" to counts.status)) else OperationResult.error(result.error ?: "")
     }
 
     private suspend fun ignore(id: String): OperationResult {
@@ -221,12 +266,13 @@ class SequenceService(private val context: Context) : ExecutableService {
 
     override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(tool = "sequence", context = context)
-        return if (operation in setOf(LOG_AFTER, IGNORE, IGNORE_ALL)) s.tool("verbalize_$operation") else s.shared("action_verbalize_unknown")
+        return if (operation in setOf(COMPLETE, CORRECT, IGNORE, IGNORE_ALL)) s.tool("verbalize_$operation") else s.shared("action_verbalize_unknown")
     }
 
     companion object {
         const val START = "start"
-        const val LOG_AFTER = "log_after"
+        const val COMPLETE = "complete"
+        const val CORRECT = "correct"
         const val IGNORE = "ignore"
         const val IGNORE_ALL = "ignore_all"
         const val DONE = "done"

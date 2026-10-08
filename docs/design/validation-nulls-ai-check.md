@@ -21,7 +21,7 @@ Session de test de l'app, pas une demande réelle. Fais les étapes une par une,
 6. Modifie la même entrée : `"note": null`, pour effacer la note.
 7. Modifie la config de « Mesure test » : renvoie la config entière, avec `"description": null`.
 8. Lis les deux entrées de « Mesure test » et la config de l'outil : dis pour chacune si une clé y vaut null, ou si la clé est absente.
-9. Dans l'outil Fractionné (zone Course), appelle l'opération log_after : datée d'hier à 18 h 30, avec `"duration": null`.
+9. Dans l'outil Fractionné (zone Course), appelle l'opération complete pour une séance qui n'était pas prévue : datée d'hier à 18 h 30, avec `"duration": null`.
 10. Lis l'entrée créée à l'étape 9 : dis si `duration` est absent ou vaut null.
 11. Pose-moi une question par un module de communication : un champ « Commentaire » (texte, facultatif) et un champ « Note sur 5 » (nombre, obligatoire). J'y répondrai.
 12. Supprime la zone « Test null ».

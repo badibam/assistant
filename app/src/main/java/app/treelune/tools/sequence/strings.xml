@@ -61,14 +61,8 @@
     <string name="field_steps_not_done">Steps not reached</string>
     <string name="schema_steps_not_done">The steps a session stopped on the way did not reach</string>
     <string name="field_entry">Session</string>
-    <string name="field_log_timestamp">When</string>
-    <string name="schema_log_timestamp">When the session took place</string>
-    <string name="schema_log_duration">How long it lasted, if known</string>
-    <string name="schema_log_id">A planned session that this one is: filled rather than a new entry</string>
-    <string name="operation_log_after">Notes a session done after the fact, all its steps counted done; starting a session and its gestures belong to whoever does it, never to the AI</string>
     <string name="operation_ignore">A planned session left undone, which stays in the history</string>
     <string name="operation_ignore_all">Every planned session of the tool left undone</string>
-    <string name="verbalize_log_after">Session noted after the fact</string>
     <string name="verbalize_ignore">Planned session ignored</string>
     <string name="verbalize_ignore_all">Planned sessions ignored</string>
     <string name="error_gesture_origin">Starting a session and its gestures belong to whoever does it</string>
@@ -80,7 +74,6 @@
     <string name="error_back_first">No step before this one</string>
     <string name="error_extend_manual">This step has no timer</string>
     <string name="action_start">Start</string>
-    <string name="action_log_after">Note after the fact</string>
     <string name="action_ignore">Ignore</string>
     <string name="action_ignore_all">Ignore all</string>
     <string name="action_done">Done</string>
@@ -111,4 +104,18 @@
     <string name="notification_starting">Starting</string>
     <string name="notification_paused">%1$s · paused</string>
     <string name="notification_planned">A session is planned</string>
+    <string name="field_when">When</string>
+    <string name="schema_complete_id">The planned session done; left out for a session that was not planned</string>
+    <string name="schema_complete_timestamp">When it was done: required for a session that was not planned; for a planned one, its planned time when left out</string>
+    <string name="schema_complete_duration">How long it lasted, if known</string>
+    <string name="operation_complete">Marks a session done without following the screen, all its steps counted done: a planned one (id), or one that was not planned, at the time given</string>
+    <string name="operation_correct">Corrects a session over: its time, its length, its steps done, skipped and not reached, each kept when left out; the three counts add up to the session\'s steps, and its state follows them</string>
+    <string name="verbalize_complete">Session marked done</string>
+    <string name="verbalize_correct">Session corrected</string>
+    <string name="error_complete_without_time">A session that was not planned needs the time it was done</string>
+    <string name="error_not_over">Only a session over can be corrected</string>
+    <string name="error_counts_total">The steps done, skipped and not reached must add up to %1$d, the session\'s steps; they add up to %2$d</string>
+    <string name="error_counts_negative">A count of steps cannot be below zero</string>
+    <string name="action_mark_done">Done</string>
+    <string name="correct_total">Done, skipped and not reached add up to %1$d steps</string>
 </resources>
