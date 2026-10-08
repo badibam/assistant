@@ -377,6 +377,7 @@
     <string name="ai_data_confirmation_text">Les données demandées font %1$d caractères, au-delà de ton seuil de %2$d. Les envoyer à l\'IA ?</string>
     <string name="ai_data_confirmation_send">Envoyer</string>
     <string name="ai_data_confirmation_refuse">Refuser</string>
+    <string name="ai_always_send_title">Outils toujours envoyés</string>
     <string name="ai_phase_waiting_network">Attente réseau...</string>
     <string name="ai_phase_retrying">Nouvelle tentative...</string>
     <string name="ai_phase_interrupted">Interrompu</string>
@@ -870,6 +871,11 @@
     <!-- AI PROMPT SYSTEM - Messages internes du système de prompts -->
     <string name="ai_prompt_duplicate_ignored">Ignorée (duplication)</string>
     <string name="ai_prompt_level2_intro">Les données ci-dessous sont configurées par l\'utilisateur pour être systématiquement incluses dans les sessions IA. Ces données reflètent des spécificités ou des préférences de l\'utilisateur et doivent être prises en compte dans toutes tes réponses.</string>
+    <string name="ai_prompt_level2_not_sent">Outils que l\'utilisateur a marqués pour être toujours envoyés, non envoyés dans cette session à cause de leur taille : %1$s. Lis-les avec TOOL_DATA quand tu en as besoin.</string>
+    <string name="ai_always_send_awaiting">Les outils toujours envoyés pèsent %1$s caractères à eux tous (seuil : %2$s) : %3$s. Ton choix vaut pour toute cette session : envoyés avec chaque message, ou plus du tout, l\'IA pouvant les lire au besoin. Une nouvelle session te le redemandera.</string>
+    <string name="ai_always_send_accepted">Outils toujours envoyés : envoyés avec chaque message de cette session (%1$s caractères)</string>
+    <string name="ai_always_send_refused">Outils toujours envoyés : non envoyés dans cette session (%1$s caractères), l\'IA peut les lire au besoin</string>
+    <string name="ai_always_send_automation_refused">Outils toujours envoyés : %1$s caractères, au-delà du seuil de %2$s, non envoyés ; l\'IA en a reçu la liste</string>
     <string name="ai_prompt_level3_title">Snapshot de l\'état de l\'application</string>
     <string name="ai_prompt_level3_snapshot_time">Snapshot pris au début de la session : **%1$s**</string>
     <string name="ai_prompt_level3_snapshot_note">Note : Il s\'agit d\'un snapshot qui a pu évoluer depuis le début de la session.</string>
@@ -917,6 +923,8 @@
     <string name="app_config_ai_data_automation">Taille des données admise, automation (caractères)</string>
     <string name="settings_ai_data_chat_help">Au-delà, les données demandées, par tes pointeurs ou par l\'IA, attendent que tu les envoies ou les refuses.</string>
     <string name="settings_ai_data_automation_help">Au-delà, les données ne partent pas : l\'IA est invitée à resserrer sa demande. Visible dans l\'historique d\'exécution.</string>
+    <string name="app_config_ai_always_send">Taille des outils toujours envoyés avant confirmation (caractères)</string>
+    <string name="settings_ai_always_send_help">Les outils marqués « toujours envoyer » partent avec chaque message à l\'IA. Au-delà de cette taille à eux tous, un chat te demande une fois par session s\'il faut les envoyer ; une automation, ou une IA extérieure à l\'app, n\'en reçoit que la liste et peut les lire au besoin.</string>
 
     <string name="settings_validation">Validation IA</string>
     <string name="settings_validation_description">Configurer quand l\'IA doit demander validation</string>

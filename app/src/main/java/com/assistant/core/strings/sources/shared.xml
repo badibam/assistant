@@ -377,6 +377,7 @@
     <string name="ai_data_confirmation_text">The data requested is %1$d characters, above your threshold of %2$d. Send it to the AI?</string>
     <string name="ai_data_confirmation_send">Send</string>
     <string name="ai_data_confirmation_refuse">Refuse</string>
+    <string name="ai_always_send_title">Tools sent always</string>
     <string name="ai_phase_waiting_network">Waiting for the network...</string>
     <string name="ai_phase_retrying">Trying again...</string>
     <string name="ai_phase_interrupted">Interrupted</string>
@@ -870,6 +871,11 @@
     <!-- AI PROMPT SYSTEM - Internal messages of the prompt system -->
     <string name="ai_prompt_duplicate_ignored">Ignored (duplicate)</string>
     <string name="ai_prompt_level2_intro">The data below is set by the user to be included in every AI session. This data reflects specifics or preferences of the user and must be taken into account in all your answers.</string>
+    <string name="ai_prompt_level2_not_sent">Tools the user marked to be sent always, not sent in this session for their size: %1$s. Read them with TOOL_DATA when you need them.</string>
+    <string name="ai_always_send_awaiting">The tools sent always weigh %1$s characters together (threshold: %2$s): %3$s. Your choice holds for this whole session: sent with every message, or not at all, the AI being able to read them when it needs. A new session will ask again.</string>
+    <string name="ai_always_send_accepted">Tools sent always: sent with every message of this session (%1$s characters)</string>
+    <string name="ai_always_send_refused">Tools sent always: not sent in this session (%1$s characters), the AI can read them when it needs</string>
+    <string name="ai_always_send_automation_refused">Tools sent always: %1$s characters, above the threshold of %2$s, not sent; the AI was given their list</string>
     <string name="ai_prompt_level3_title">Snapshot of the state of the application</string>
     <string name="ai_prompt_level3_snapshot_time">Snapshot taken at the start of the session: **%1$s**</string>
     <string name="ai_prompt_level3_snapshot_note">Note: this is a snapshot, which may have moved on since the start of the session.</string>
@@ -917,6 +923,8 @@
     <string name="app_config_ai_data_automation">Data size allowed, automation (characters)</string>
     <string name="settings_ai_data_chat_help">Data asked for above this size, by your pointers or by the AI, waits for you to send or refuse it.</string>
     <string name="settings_ai_data_automation_help">Above this size the data is not sent: the AI is told to narrow its request. Visible in the execution history.</string>
+    <string name="app_config_ai_always_send">Size of the tools sent always before asking (characters)</string>
+    <string name="settings_ai_always_send_help">Tools marked “always send” go with every message to the AI. Above this size together, a chat asks you once per session whether to send them; an automation, or an AI outside the app, gets only their list and can read them when it needs.</string>
 
     <string name="settings_validation">AI validation</string>
     <string name="settings_validation_description">Configure when the AI must ask for validation</string>

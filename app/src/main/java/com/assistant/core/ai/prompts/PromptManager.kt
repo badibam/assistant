@@ -63,7 +63,7 @@ object PromptManager {
         )
 
         // 3. Build Level 2 (USER DATA - always_send tools)
-        val level2Content = buildLevel2Content(context, sessionId)
+        val level2Content = buildLevel2Content(context, sessionId, sessionType)
 
         // 4. Build/Load Level 3 (APP_STATE snapshot)
         val level3Content = if (existingSnapshot != null) {
@@ -252,88 +252,124 @@ object PromptManager {
     // === Level Command Builders ===
     // Note: Level 1 now uses PromptChunks - no commands needed
 
+    /** A tool marked always_send, the size of what the AI reads of it. */
+    data class AlwaysSentTool(val id: String, val name: String, val chars: Int)
+
+    /** The tools marked always_send and what the AI reads of them: their data, and their schema when the session lacks it. */
+    data class AlwaysSent(val tools: List<AlwaysSentTool>, val results: List<PromptCommandResult>) {
+        /** The size of it all, as the AI receives it. */
+        val chars: Int get() = tools.sumOf { it.chars }
+
+        /** The tools as the confirmation and the prompt list them: name (id, size). */
+        fun listed(): String = tools.joinToString(", ") { "${it.name} (${it.id}, ${it.chars})" }
+    }
+
+    /** The user's choice on the tools sent always, for a CHAT session above the threshold. */
+    enum class AlwaysSendChoice { ACCEPTED, REFUSED }
+
+    /** What becomes of the tools sent always at one call. */
+    enum class AlwaysSendOutcome { SEND, ASK, LIST }
+
     /**
-     * Generate Level 2 commands: User data (tool_data with always_send flag)
+     * The tools sent always, [chars] of them against [threshold]: sent within it; above it, sent
+     * in a CHAT whose user accepted, asked in a CHAT not asked yet, listed otherwise (refused, an
+     * AUTOMATION, an outside AI with no [sessionType]).
      */
-    private suspend fun buildLevel2Commands(context: Context): List<DataCommand> {
-        LogManager.aiPrompt("Building Level 2 commands (USER DATA)", "DEBUG")
-
-        val commands = mutableListOf<DataCommand>()
-        val coordinator = Coordinator(context)
-
-        // Get all tool instances
-        val result = coordinator.processUserAction("tools.list_all", emptyMap())
-
-        if (!result.isSuccess) {
-            LogManager.aiPrompt("Failed to retrieve tool instances for Level 2: ${result.error}", "WARN")
-            return emptyList()
-        }
-
-        val toolInstancesData = result.data?.get("tool_instances") as? List<*>
-        if (toolInstancesData == null) {
-            LogManager.aiPrompt("No tool instances found for Level 2", "DEBUG")
-            return emptyList()
-        }
-
-        // Filter tool instances with always_send=true
-        for (toolInstanceMap in toolInstancesData) {
-            if (toolInstanceMap !is Map<*, *>) continue
-
-            val toolInstanceId = toolInstanceMap["id"] as? String ?: continue
-            val config = (toolInstanceMap["config"] as? Map<String, Any?>)
-                ?.let { JsonUtils.toJSONObject(it) } ?: continue
-
-            try {
-                val alwaysSend = com.assistant.core.tools.ToolConfigSettings
-                    .read(toolInstanceMap["tooltype"] as String, config, context).boolean("always_send")
-
-                if (alwaysSend) {
-                    // Generate TOOL_DATA command for this instance (all data, no filters)
-                    commands.add(
-                        DataCommand(
-                            id = "tool_data_always_send_$toolInstanceId",
-                            type = "TOOL_DATA",
-                            params = mapOf("id" to toolInstanceId),
-                            isRelative = false
-                        )
-                    )
-                    LogManager.aiPrompt("Added always_send tool instance to Level 2: $toolInstanceId", "DEBUG")
-                }
-            } catch (e: Exception) {
-                LogManager.aiPrompt("Failed to parse config for tool instance $toolInstanceId: ${e.message}", "WARN")
-            }
-        }
-
-        LogManager.aiPrompt("Level 2: Generated ${commands.size} commands for always_send tool instances", "DEBUG")
-        return commands
+    fun alwaysSendOutcome(chars: Int, threshold: Int, sessionType: SessionType?, choice: AlwaysSendChoice?): AlwaysSendOutcome = when {
+        chars <= threshold -> AlwaysSendOutcome.SEND
+        sessionType != SessionType.CHAT -> AlwaysSendOutcome.LIST
+        choice == AlwaysSendChoice.ACCEPTED -> AlwaysSendOutcome.SEND
+        choice == AlwaysSendChoice.REFUSED -> AlwaysSendOutcome.LIST
+        else -> AlwaysSendOutcome.ASK
     }
 
     /**
-     * Level 2: the data of the tools marked always_send, read now.
+     * The tools marked always_send, read now. The tools' config is asked for only to find the
+     * marked ones (tools.list_all leaves it out otherwise): it does not reach the AI.
      *
-     * @param sessionId The session the schemas it carries are counted against, so none is sent
-     *   twice in it; null outside a session (an outside AI's context), where each is sent
+     * @param sessionId The session the schemas are counted against, so none is sent twice in
+     *   it; null outside a session (an outside AI's context), where each is sent
+     * @throws IllegalStateException when the tools or a tool's config cannot be read: a tool
+     *   skipped in silence is how its data went missing for a year
      */
-    suspend fun buildLevel2Content(context: Context, sessionId: String?): String {
-        LogManager.aiPrompt("Building Level 2 (USER DATA)", "DEBUG")
-        val level2Commands = buildLevel2Commands(context)
-        // L2 commands name a tool instance and carry no period, so the reference never applies
-        val level2Executable = UserCommandProcessor(context).processCommands(level2Commands, System.currentTimeMillis())
-        val level2Result = CommandExecutor(context).executeCommands(
-            commands = level2Executable,
-            messageType = SystemMessageType.DATA_ADDED,
-            origin = com.assistant.core.coordinator.Source.SYSTEM,
-            level = "L2",
-            sessionId = sessionId
-        )
+    suspend fun readAlwaysSent(context: Context, sessionId: String?): AlwaysSent {
+        val result = Coordinator(context).processUserAction("tools.list_all", mapOf("include_config" to true))
+        if (!result.isSuccess) throw IllegalStateException("Cannot list the tools for the ones sent always: ${result.error}")
+        val toolInstances = result.data?.get("tool_instances") as? List<*>
+            ?: throw IllegalStateException("Cannot list the tools for the ones sent always: no tool_instances")
 
-        // Include intro only if L2 has data
-        val level2Intro = if (level2Result.promptResults.isNotEmpty()) {
-            Strings.`for`(context = context).shared("ai_prompt_level2_intro")
-        } else {
-            ""
+        val tools = mutableListOf<AlwaysSentTool>()
+        val results = mutableListOf<PromptCommandResult>()
+        for (toolInstance in toolInstances) {
+            val map = toolInstance as Map<*, *>
+            val id = map["id"] as String
+            @Suppress("UNCHECKED_CAST")
+            val config = (map["config"] as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
+                ?: throw IllegalStateException("Tool $id has no config to tell whether it is sent always")
+            val marked = try {
+                com.assistant.core.tools.ToolConfigSettings.read(map["tooltype"] as String, config, context).boolean("always_send")
+            } catch (e: Exception) {
+                throw IllegalStateException("Cannot read whether tool $id is sent always: ${e.message}", e)
+            }
+            if (!marked) continue
+
+            // Its schema first, in the same batch: a query waits on it otherwise (CommandExecutor)
+            val commands = listOf(
+                DataCommand(id = "always_send_schema_$id", type = "SCHEMA", params = mapOf("tool_instance_id" to id), isRelative = false),
+                DataCommand(id = "always_send_data_$id", type = "TOOL_DATA", params = mapOf("id" to id), isRelative = false)
+            )
+            // They name a tool and carry no period, so the reference never applies
+            val executable = UserCommandProcessor(context).processCommands(commands, System.currentTimeMillis())
+            val executed = CommandExecutor(context).executeCommands(
+                commands = executable,
+                messageType = SystemMessageType.DATA_ADDED,
+                origin = com.assistant.core.coordinator.Source.SYSTEM,
+                level = "L2",
+                sessionId = sessionId
+            )
+            tools += AlwaysSentTool(id, map["name"] as String, executed.promptResults.sumOf { it.dataTitle.length + it.formattedData.length })
+            results += executed.promptResults
         }
-        return formatLevel("Level 2: User Data", level2Intro, level2Result.promptResults)
+        LogManager.aiPrompt("Level 2: ${tools.size} tool(s) sent always, ${tools.sumOf { it.chars }} characters", "DEBUG")
+        return AlwaysSent(tools, results)
+    }
+
+    /** The choice made in [sessionId] on the tools sent always, the last one, or null when none was asked. */
+    suspend fun alwaysSendChoice(context: Context, sessionId: String): AlwaysSendChoice? {
+        val messages = com.assistant.core.ai.state.AIMessageRepository(
+            com.assistant.core.database.AppDatabase.getDatabase(context).aiDao()
+        ).loadMessages(sessionId)
+        return messages.asReversed().firstNotNullOfOrNull { message ->
+            when (message.systemMessage?.type) {
+                SystemMessageType.ALWAYS_SEND_ACCEPTED -> AlwaysSendChoice.ACCEPTED
+                SystemMessageType.ALWAYS_SEND_REFUSED -> AlwaysSendChoice.REFUSED
+                else -> null
+            }
+        }
+    }
+
+    /**
+     * Level 2: the data of the tools marked always_send, read now (docs/design/always-send.md).
+     * Above their threshold they go only in a CHAT whose user accepted them; otherwise (refused,
+     * an AUTOMATION, an outside AI, or not asked yet) the AI is given their list to read them.
+     *
+     * @param sessionId As for [readAlwaysSent]
+     * @param sessionType The session's type, null outside a session
+     */
+    suspend fun buildLevel2Content(context: Context, sessionId: String?, sessionType: SessionType?): String {
+        LogManager.aiPrompt("Building Level 2 (USER DATA)", "DEBUG")
+        val alwaysSent = readAlwaysSent(context, sessionId)
+        val s = Strings.`for`(context = context)
+        if (alwaysSent.tools.isEmpty()) return formatLevel("Level 2: User Data", "", emptyList())
+
+        val threshold = AppConfigManager.getAILimits().alwaysSendMaxChars
+        val choice = if (sessionType == SessionType.CHAT && sessionId != null) alwaysSendChoice(context, sessionId) else null
+        // ASK here means the data grew above the threshold since holdForAlwaysSend looked: listed, said so
+        if (alwaysSendOutcome(alwaysSent.chars, threshold, sessionType, choice) != AlwaysSendOutcome.SEND) {
+            LogManager.aiPrompt("Level 2: ${alwaysSent.chars} characters above $threshold, the list sent instead", "INFO")
+            return formatLevel("Level 2: User Data", s.shared("ai_prompt_level2_not_sent").format(alwaysSent.listed()), emptyList())
+        }
+        return formatLevel("Level 2: User Data", s.shared("ai_prompt_level2_intro"), alwaysSent.results)
     }
 
     /** Level 3 as it stands now: the zones and the tools, for an outside AI's context. */

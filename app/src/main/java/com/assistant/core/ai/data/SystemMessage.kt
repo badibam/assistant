@@ -116,7 +116,10 @@ enum class SystemMessageType {
     DATA_AWAITING_CONFIRMATION, // Data above the CHAT size threshold, kept out of the prompt until the user sends it
     DATA_REFUSED,            // Data above the size threshold not sent: refused by the user or by an automation (sent to AI to narrow its request)
     TEXT_OUTSIDE_JSON,       // Text the AI wrote around its JSON, set aside: quoted to the user in summary; the AI gets only the notice in formattedData (PromptManager)
-    EMPTY_ANSWER             // The provider answered with no text, the request asked again once (stored for audit and cost, FILTERED from prompt)
+    EMPTY_ANSWER,            // The provider answered with no text, the request asked again once (stored for audit and cost, FILTERED from prompt)
+    ALWAYS_SEND_AWAITING_CONFIRMATION, // The tools sent always above their threshold, a CHAT waiting for the user's choice (out of the prompt)
+    ALWAYS_SEND_ACCEPTED,    // That choice, sent: they go with every call of the session (out of the prompt; read by PromptManager.alwaysSendChoice)
+    ALWAYS_SEND_REFUSED      // That choice, not sent: the AI gets their list (out of the prompt; read by PromptManager.alwaysSendChoice)
 }
 
 /**

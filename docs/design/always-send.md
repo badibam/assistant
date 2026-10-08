@@ -6,10 +6,11 @@ Conçu le 2026-10-08. Un outil marqué « toujours envoyer » (`always_send`) a 
 
 - `buildLevel2Commands` demande `tools.list_all` avec `include_config: true`. La config ne sert qu'à trouver les outils marqués : elle ne part pas à l'IA, seules leurs données (`TOOL_DATA`) partent.
 - Une config absente ou illisible arrête la construction du prompt avec une erreur qui nomme l'outil, au lieu de le sauter. L'erreur arrête le tour (`AIEventProcessor.stopRoundOnError`), sans tuer l'app.
+- Chaque outil marqué est lu avec son schéma, dans la même série (`SCHEMA` puis `TOOL_DATA`) : dans une session, une lecture attend le schéma de son outil tant que l'IA ne l'a pas reçu, et le Level 2 sortait vide pour cette raison aussi. Un schéma déjà reçu dans la session ne repart pas.
 
 ## Le seuil
 
-- Un réglage propre, dans Réglages › IA › Limites : la taille au-delà de laquelle les données envoyées d'office demandent une confirmation. 15 000 caractères par défaut, pour tous les types de session.
+- Un réglage propre (`always_send_max_chars`, ajouté aux réglages existants par la migration 63 → 64, `AILimitsAtV64`), dans Réglages › IA › Limites : la taille au-delà de laquelle les données envoyées d'office demandent une confirmation. 15 000 caractères par défaut, pour tous les types de session.
 - Il compte le total du Level 2 (le texte de ses données tel que l'IA le reçoit), pas un outil à la fois.
 - Il est distinct du seuil des données (`maxDataChars`), qui porte sur ce que l'IA demande dans une réponse : celui-ci protège des données face à l'IA, l'autre d'un coût qui grandit sans qu'on le voie, sur des données que l'utilisateur a choisi d'envoyer.
 
@@ -31,9 +32,9 @@ Personne pour confirmer : le Level 2 dit les outils non envoyés, comme après u
 
 ## Ce que garantissent les tests
 
-- Un outil marqué a ses données au Level 2, un outil non marqué non.
-- Une config illisible arrête la construction en nommant l'outil.
-- Au-delà du seuil : sans réponse dans la session, une confirmation est demandée ; acceptée, les données partent ; refusée, la liste des outils non envoyés part à la place ; sans session (connecteur), la liste.
+- La décision (`PromptManager.alwaysSendOutcome`) : sous le seuil, envoyés quel que soit le type de session ; au-delà, une discussion sans choix demande, une discussion suit le choix fait, une automation et une IA extérieure reçoivent la liste.
+- La migration 63 → 64 et l'import d'une sauvegarde : le seuil ajouté à 15 000, une valeur déjà là gardée.
+- La lecture des outils marqués et l'arrêt sur une config illisible passent par la base : ils sont vérifiés sur l'appareil, la suite de tests n'ayant pas de base.
 
 ## Sur l'appareil
 

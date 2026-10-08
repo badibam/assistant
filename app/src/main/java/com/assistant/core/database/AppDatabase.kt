@@ -30,6 +30,7 @@ import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.utils.LogManager
 import com.assistant.core.versioning.AILimitsAtV32
 import com.assistant.core.versioning.AILimitsAtV34
+import com.assistant.core.versioning.AILimitsAtV64
 import com.assistant.core.versioning.DateFieldBounds
 import com.assistant.core.versioning.SettingsAtV33
 import com.assistant.core.versioning.ChoiceOptionsAtV37
@@ -102,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 63
+        const val VERSION = 64
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1724,6 +1725,26 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /** A zone's icon colour (docs/design/icon-colors.md): a new column, empty, every icon staying neutral. */
+        private val MIGRATION_63_64 = object : Migration(63, 64) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // ai_limits gains the threshold of the tools sent always: see AILimitsAtV64.
+                // Settings that cannot be read are left as they are; reading them then fails with the reason.
+                database.query("SELECT settings FROM app_settings_categories WHERE category = 'ai_limits'").use { cursor ->
+                    if (!cursor.moveToFirst()) {
+                        LogManager.database("MIGRATION 63->64: no ai_limits stored, the defaults are written on first read", "INFO")
+                        return
+                    }
+                    try {
+                        val rewritten = AILimitsAtV64.rewrite(org.json.JSONObject(cursor.getString(0)))
+                        database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = 'ai_limits'", arrayOf(rewritten.toString()))
+                        LogManager.database("MIGRATION 63->64: ai_limits rewritten to $rewritten", "INFO")
+                    } catch (e: Exception) {
+                        LogManager.database("MIGRATION 63->64: ai_limits left as is (${e.message})", "ERROR")
+                    }
+                }
+            }
+        }
+
         private val MIGRATION_62_63 = object : Migration(62, 63) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE zones ADD COLUMN icon_color TEXT")
@@ -2426,7 +2447,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_59_60,
                     MIGRATION_60_61,
                     MIGRATION_61_62,
-                    MIGRATION_62_63
+                    MIGRATION_62_63,
+                    MIGRATION_63_64
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

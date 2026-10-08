@@ -43,10 +43,14 @@ sealed class WaitingContext {
      * @param messageId The SYSTEM message holding the data, kept out of the prompt meanwhile
      * @param dataChars Size of its data text, as the AI would receive it
      * @param maxDataChars The threshold it went over
+     * @param alwaysSend Whether the data is that of the tools sent always, asked once for the
+     *   whole session before the AI is called (docs/design/always-send.md), rather than data
+     *   the AI asked for
      */
     data class DataConfirmation(
         val messageId: String,
         val dataChars: Int,
-        val maxDataChars: Int
+        val maxDataChars: Int,
+        val alwaysSend: Boolean = false
     ) : WaitingContext()
 }

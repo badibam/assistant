@@ -33,7 +33,16 @@ data class AILimitsConfig(
      * confirm. 100 000 is over twice what the automations of the 2026-09-18 backup send
      * (about 43 000 on nearly every run).
      */
-    val automationMaxDataChars: Int = 100_000
+    val automationMaxDataChars: Int = 100_000,
+
+    /**
+     * Size, in characters of the text the AI receives, of the tools marked always_send together
+     * above which a CHAT asks once per session whether to send them, and an AUTOMATION or an
+     * outside AI gets their list instead (docs/design/always-send.md). Distinct from the data
+     * thresholds, which guard what the AI asks for: this one guards a cost the user chose and
+     * that grows unseen, paid at every call.
+     */
+    val alwaysSendMaxChars: Int = 15_000
 ) {
     /**
      * Get limits for specific session type
@@ -64,6 +73,7 @@ data class AILimitsConfig(
         put(KEY_AUTOMATION, automationMaxAutonomousRoundtrips)
         put(KEY_CHAT_DATA, chatMaxDataChars)
         put(KEY_AUTOMATION_DATA, automationMaxDataChars)
+        put(KEY_ALWAYS_SEND, alwaysSendMaxChars)
     }.toString()
 
     companion object {
@@ -71,6 +81,7 @@ data class AILimitsConfig(
         const val KEY_AUTOMATION = "automation_max_autonomous_roundtrips"
         const val KEY_CHAT_DATA = "chat_max_data_chars"
         const val KEY_AUTOMATION_DATA = "automation_max_data_chars"
+        const val KEY_ALWAYS_SEND = "always_send_max_chars"
 
         fun default() = AILimitsConfig()
 
@@ -83,7 +94,8 @@ data class AILimitsConfig(
             chatMaxAutonomousRoundtrips = settings.getInt(KEY_CHAT),
             automationMaxAutonomousRoundtrips = settings.getInt(KEY_AUTOMATION),
             chatMaxDataChars = settings.getInt(KEY_CHAT_DATA),
-            automationMaxDataChars = settings.getInt(KEY_AUTOMATION_DATA)
+            automationMaxDataChars = settings.getInt(KEY_AUTOMATION_DATA),
+            alwaysSendMaxChars = settings.getInt(KEY_ALWAYS_SEND)
         )
     }
 }

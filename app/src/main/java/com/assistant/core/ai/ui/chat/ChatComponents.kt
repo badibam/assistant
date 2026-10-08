@@ -209,6 +209,7 @@ fun ChatMessageBubble(
                                     DataConfirmationCard(
                                         dataChars = dataWaiting.dataChars,
                                         maxDataChars = dataWaiting.maxDataChars,
+                                        alwaysSend = dataWaiting.alwaysSend,
                                         onSend = { AIOrchestrator.resumeWithDataConfirmation(true) },
                                         onRefuse = { AIOrchestrator.resumeWithDataConfirmation(false) }
                                     )
@@ -515,11 +516,16 @@ fun SessionStatsDialog(
     }
 }
 
-/** Asks whether data above the CHAT size threshold goes to the AI. */
+/**
+ * Asks whether data above the CHAT size threshold goes to the AI. For the tools sent always
+ * ([alwaysSend]), the message above already says what is asked and that it holds for the
+ * session: the card only titles it and answers.
+ */
 @Composable
 private fun DataConfirmationCard(
     dataChars: Int,
     maxDataChars: Int,
+    alwaysSend: Boolean,
     onSend: () -> Unit,
     onRefuse: () -> Unit
 ) {
@@ -531,8 +537,8 @@ private fun DataConfirmationCard(
             modifier = Modifier.padding(UI.Space.M),
             verticalArrangement = Arrangement.spacedBy(UI.Space.S)
         ) {
-            UI.Text(text = s.shared("ai_data_confirmation_title"), type = TextType.SUBTITLE)
-            UI.Text(
+            UI.Text(text = s.shared(if (alwaysSend) "ai_always_send_title" else "ai_data_confirmation_title"), type = TextType.SUBTITLE)
+            if (!alwaysSend) UI.Text(
                 text = s.shared("ai_data_confirmation_text").format(dataChars, maxDataChars),
                 type = TextType.BODY
             )

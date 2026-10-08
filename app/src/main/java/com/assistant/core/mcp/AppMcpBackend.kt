@@ -46,7 +46,7 @@ class AppMcpBackend(private val context: Context) : McpBackend {
     override suspend fun appContext(): String = listOf(
         s.shared("ai_mcp_context_intro"),
         PromptChunks.buildAppNotions(context),
-        PromptManager.buildLevel2Content(context, sessionId = null),
+        PromptManager.buildLevel2Content(context, sessionId = null, sessionType = null),
         PromptManager.buildAppStateContent(context)
     ).joinToString("\n\n")
 

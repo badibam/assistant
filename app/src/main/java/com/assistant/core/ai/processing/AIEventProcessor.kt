@@ -173,7 +173,14 @@ class AIEventProcessor(
                 if (sessionId != null && waiting != null) {
                     val pending = messageRepository.loadMessages(sessionId).firstOrNull { it.id == waiting.messageId }
                     val systemMessage = pending?.systemMessage
-                    if (pending != null && systemMessage != null) {
+                    if (pending != null && systemMessage != null && waiting.alwaysSend) {
+                        // The choice on the tools sent always, kept for the session, out of the prompt
+                        val s = com.assistant.core.strings.Strings.`for`(context = context)
+                        messageRepository.updateMessage(sessionId, pending.copy(systemMessage = systemMessage.copy(
+                            type = if (event.approved) SystemMessageType.ALWAYS_SEND_ACCEPTED else SystemMessageType.ALWAYS_SEND_REFUSED,
+                            summary = s.shared(if (event.approved) "ai_always_send_accepted" else "ai_always_send_refused").format(waiting.dataChars)
+                        )))
+                    } else if (pending != null && systemMessage != null) {
                         val resolved = if (event.approved) {
                             pending.copy(
                                 systemMessage = systemMessage.copy(type = SystemMessageType.DATA_ADDED),
@@ -676,7 +683,10 @@ class AIEventProcessor(
                 null
             }
 
-            // 3. Build prompt data
+            // 3. The tools sent always, above their threshold, wait for the user's choice in a CHAT
+            if (holdForAlwaysSend(state, sessionId)) return
+
+            // 4. Build prompt data
             val promptData = promptManager.buildPromptData(sessionId, context)
 
             // Check network availability
@@ -1856,6 +1866,64 @@ class AIEventProcessor(
     }
 
     /**
+     * The tools sent always, when above their threshold (docs/design/always-send.md): a CHAT
+     * without a choice yet asks for one before the AI is called, the choice holding for the
+     * session; an AUTOMATION says once in its history that they were not sent, the AI getting
+     * their list (PromptManager.buildLevel2Content).
+     *
+     * @return true when the call waits for the user's choice, so the caller must not carry on
+     */
+    private suspend fun holdForAlwaysSend(state: AIState, sessionId: String): Boolean {
+        val threshold = AppConfigManager.getAILimits().alwaysSendMaxChars
+        val alwaysSent = PromptManager.readAlwaysSent(context, sessionId)
+        val choice = if (state.sessionType == SessionType.CHAT) PromptManager.alwaysSendChoice(context, sessionId) else null
+        val outcome = PromptManager.alwaysSendOutcome(alwaysSent.chars, threshold, state.sessionType, choice)
+        if (outcome == PromptManager.AlwaysSendOutcome.SEND) return false
+
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+        val messages = messageRepository.loadMessages(sessionId)
+        fun stored(summary: String, type: SystemMessageType) = SessionMessage(
+            id = UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            sender = MessageSender.SYSTEM,
+            richContent = null,
+            textContent = null,
+            aiMessage = null,
+            aiMessageJson = null,
+            systemMessage = com.assistant.core.ai.data.SystemMessage(
+                type = type,
+                // The size, read back by the waiting context after the app was closed
+                commandResults = listOf(com.assistant.core.ai.data.CommandResult(
+                    command = "always_send", status = com.assistant.core.ai.data.CommandStatus.SUCCESS, details = null,
+                    data = mapOf("chars" to alwaysSent.chars), error = null
+                )),
+                summary = summary,
+                formattedData = null
+            ),
+            executionMetadata = null,
+            excludeFromPrompt = true
+        )
+
+        if (state.sessionType == SessionType.AUTOMATION) {
+            // Said once per session: every call of it leaves them out alike
+            val said = messages.any { message -> message.systemMessage?.commandResults?.any { it.command == "always_send" } == true }
+            if (!said) messageRepository.storeMessage(sessionId, stored(
+                s.shared("ai_always_send_automation_refused").format(alwaysSent.chars, threshold), SystemMessageType.DATA_REFUSED
+            ))
+            return false
+        }
+
+        if (outcome != PromptManager.AlwaysSendOutcome.ASK) return false
+        LogManager.aiSession("Tools sent always: ${alwaysSent.chars} characters above $threshold, the user asked", "INFO")
+        messageRepository.storeMessage(sessionId, stored(
+            s.shared("ai_always_send_awaiting").format(alwaysSent.chars, threshold, alwaysSent.listed()),
+            SystemMessageType.ALWAYS_SEND_AWAITING_CONFIRMATION
+        ))
+        emit(AIEvent.DataConfirmationRequested)
+        return true
+    }
+
+    /**
      * Create the data confirmation waiting context when entering WAITING_DATA_CONFIRMATION.
      *
      * Read from the last message awaiting confirmation, so the same context comes back after
@@ -1864,12 +1932,24 @@ class AIEventProcessor(
     private suspend fun createDataConfirmationWaitingContext(state: AIState) {
         val sessionId = state.sessionId ?: return
         val pending = messageRepository.loadMessages(sessionId).lastOrNull {
-            it.systemMessage?.type == SystemMessageType.DATA_AWAITING_CONFIRMATION
+            it.systemMessage?.type == SystemMessageType.DATA_AWAITING_CONFIRMATION ||
+                it.systemMessage?.type == SystemMessageType.ALWAYS_SEND_AWAITING_CONFIRMATION
         } ?: run {
             LogManager.aiSession("createDataConfirmationWaitingContext: No data awaiting confirmation", "ERROR")
             return
         }
         val sessionType = state.sessionType ?: SessionType.CHAT
+        if (pending.systemMessage?.type == SystemMessageType.ALWAYS_SEND_AWAITING_CONFIRMATION) {
+            // Its size is in its one command result, as holdForAlwaysSend stored it
+            val chars = (pending.systemMessage.commandResults.single().data?.get("chars") as Number).toInt()
+            stateRepository.updateWaitingContext(WaitingContext.DataConfirmation(
+                messageId = pending.id,
+                dataChars = chars,
+                maxDataChars = AppConfigManager.getAILimits().alwaysSendMaxChars,
+                alwaysSend = true
+            ))
+            return
+        }
         stateRepository.updateWaitingContext(WaitingContext.DataConfirmation(
             messageId = pending.id,
             dataChars = pending.systemMessage?.formattedData?.length ?: 0,
