@@ -97,7 +97,7 @@ Le contenu des tutoriels 2 à 4 s'écrit à leur construction : il nomme des éc
 1. **Aller** : ouvrez le groupe Démo, puis la zone Course. L'explication présente Camille, sa zone, ses outils rangés par groupes.
 2. **Faire** : ajoutez une sortie dans *Sorties* (`tool_data.create` sur `demo-course-runs`, d'origine utilisateur).
 3. **Aller, puis lire** : ouvrez *Km par semaine* — votre sortie y est, et l'objectif *Semaine d'entraînement* l'a comptée. Les outils se nourrissent entre eux.
-4. **Faire** : créez votre propre zone, hors démo.
+4. **Faire** : créez votre propre zone, hors démo : l'explication envoie à la section « Hors groupe », tout en bas de l'accueil, et à son +, le groupe Démo étant à Camille.
 5. **Faire** : ajoutez-y un outil ; n'importe quel type, l'explication suggère une Liste, où une entrée n'est qu'un nom à cocher (le Suivi et ses raccourcis sont vus à l'étape 2, dans la démo ; sans raccourci, sa saisie intimide).
 6. **Faire** : ajoutez-y une première entrée, dans l'outil de l'étape 5 : un élément de la Liste.
 

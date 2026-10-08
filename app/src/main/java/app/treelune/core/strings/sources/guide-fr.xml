@@ -35,7 +35,7 @@
     <string name="guide_path_then">, puis </string>
     <string name="guide_path_zone">ouvrez la zone %1$s</string>
     <string name="guide_path_zone_config">touchez l\'engrenage en haut à droite</string>
-    <string name="guide_path_zone_new">touchez + à côté d\'un groupe</string>
+    <string name="guide_path_zone_new">descendez jusqu\'à « Hors groupe » et touchez son +</string>
     <string name="guide_path_tool">touchez %1$s</string>
     <string name="guide_path_tool_new">touchez + à côté d\'une section, puis un type d\'outil</string>
     <string name="guide_path_tool_config">appuyez longuement sur le titre de l\'outil</string>
@@ -73,8 +73,8 @@
     <string name="guide_first_steps_2_text">Sorties est un outil de Suivi : chaque entrée est un chiffre, ici des kilomètres, avec sa date. Le + en ajoute une ; les boutons sous le titre sont des entrées toutes prêtes.</string>
     <string name="guide_first_steps_3_goal">Ouvrez Km par semaine</string>
     <string name="guide_first_steps_3_text">Votre sortie est déjà dans le graphique, et l\'objectif « Semaine d\'entraînement » l\'a comptée. Les outils se nourrissent entre eux : un graphique, un objectif, une variable lisent les entrées des autres outils.</string>
-    <string name="guide_first_steps_4_goal">Créez votre propre zone</string>
-    <string name="guide_first_steps_4_text">Sur l\'accueil, le + d\'un groupe crée une zone : donnez-lui un nom, une icône, une courte description. Hors de la démo : ce que vous ajoutez à la démo disparaît à la prochaine mise à jour.</string>
+    <string name="guide_first_steps_4_goal">Créez votre propre zone, dans « Hors groupe »</string>
+    <string name="guide_first_steps_4_text">Sur l\'accueil, descendez jusqu\'à la section « Hors groupe », tout en bas, et touchez son + : donnez à la zone un nom, une icône, une courte description. Pas dans le groupe Démo, qui est à Camille. Vos propres groupes viendront plus tard, par l\'engrenage de l\'accueil.</string>
     <string name="guide_first_steps_5_goal">Ajoutez-y un outil</string>
     <string name="guide_first_steps_5_text">Dans votre zone, le + d\'une section liste les types d\'outils. N\'importe lequel convient ; la Liste est la plus simple : vos courses, vos choses à faire, chacune un nom que vous cochez.</string>
     <string name="guide_first_steps_6_goal">Ajoutez-y une première entrée</string>

@@ -35,7 +35,7 @@
     <string name="guide_path_then">, then </string>
     <string name="guide_path_zone">open the zone %1$s</string>
     <string name="guide_path_zone_config">touch the gear at the top right</string>
-    <string name="guide_path_zone_new">touch + beside a group</string>
+    <string name="guide_path_zone_new">scroll down to « Ungrouped » and touch its +</string>
     <string name="guide_path_tool">touch %1$s</string>
     <string name="guide_path_tool_new">touch + beside a section, then a tool type</string>
     <string name="guide_path_tool_config">touch and hold the tool\'s title</string>
@@ -73,8 +73,8 @@
     <string name="guide_first_steps_2_text">Runs is a Tracking tool: each entry is a figure, here kilometres, with its date. The + adds one; the buttons under the title are ready-made entries.</string>
     <string name="guide_first_steps_3_goal">Open Km per week</string>
     <string name="guide_first_steps_3_text">Your run is already in the chart, and the goal « Training week » counted it. Tools feed each other: a chart, a goal, a variable read the entries of other tools.</string>
-    <string name="guide_first_steps_4_goal">Create your own zone</string>
-    <string name="guide_first_steps_4_text">On the home screen, the + of a group creates a zone: give it a name, an icon, a short description. Outside the demo: what you add to the demo goes at the next update.</string>
+    <string name="guide_first_steps_4_goal">Create your own zone, under « Ungrouped »</string>
+    <string name="guide_first_steps_4_text">On the home screen, scroll down to the « Ungrouped » section, at the very bottom, and touch its +: give the zone a name, an icon, a short description. Not in the Demo group, which is Camille\'s. Groups of your own come later, from the gear of the home screen.</string>
     <string name="guide_first_steps_5_goal">Add a tool to it</string>
     <string name="guide_first_steps_5_text">In your zone, the + of a section lists the tool types. Any will do; a List is the simplest: your shopping, your things to do, each one a name you check off.</string>
     <string name="guide_first_steps_6_goal">Add a first entry to it</string>
