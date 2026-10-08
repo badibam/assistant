@@ -112,7 +112,7 @@ object SchemaValidator {
      * This is appropriate for CREATE operations where null = "don't specify this field"
      * For UPDATE operations with partial validation, nulls are already handled differently
      */
-    private fun filterEmptyValues(data: Map<String, Any?>): Map<String, Any> {
+    internal fun filterEmptyValues(data: Map<String, Any?>): Map<String, Any> {
         return data.mapNotNull { (key, value) ->
             val filteredValue = filterEmptyValue(value)
             if (filteredValue != null) {
@@ -128,7 +128,8 @@ object SchemaValidator {
      *
      * CRITICAL: Empty strings are NOT filtered (they are valid values to intentionally clear a field)
      * Only null values are filtered for partial updates
-     * Empty Maps/Lists are filtered only if all their contents were filtered out
+     * A list is filtered only if all its contents were filtered out: one sent empty is a value
+     * (a home screen without zone groups), which a required list must find
      */
     private fun filterEmptyValue(value: Any?): Any? {
         return when (value) {
@@ -146,7 +147,7 @@ object SchemaValidator {
             }
             is List<*> -> {
                 val filteredList = value.mapNotNull { filterEmptyValue(it) }
-                if (filteredList.isEmpty()) null else filteredList
+                if (filteredList.isEmpty() && value.isNotEmpty()) null else filteredList
             }
             else -> value
         }
