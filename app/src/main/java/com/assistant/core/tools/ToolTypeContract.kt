@@ -158,6 +158,14 @@ interface ToolTypeContract {
     suspend fun settleEntries(entries: suspend () -> List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> = emptyList()
 
     /**
+     * The entries [config] removes among those recorded ([entries]), beyond what its fields
+     * lose: a list set to remove what is checked removes the items already checked. They join
+     * the entries a config change deletes (ToolInstanceService.planMigration), so nothing goes
+     * before the user or the AI agrees to it (confirm_migration).
+     */
+    fun entriesRemovedByConfig(config: JSONObject, entries: List<ToolDataEntity>, context: Context): List<ToolDataEntity> = emptyList()
+
+    /**
      * [config] completed with what only this tool type writes, on every create and update of an
      * instance, before it is checked: a goal gives each new criterion its key, fixed from then on.
      *

@@ -97,6 +97,11 @@ object ListToolType : ToolTypeContract {
         return listOf(switch(REMOVE_WHEN_CHECKED), switch(DUE_DATES), switch(SHORT_ITEMS))
     }
 
+    /** Set to remove what is checked, a list removes the items checked before it was. */
+    override fun entriesRemovedByConfig(config: JSONObject, entries: List<ToolDataEntity>, context: Context): List<ToolDataEntity> =
+        if (!com.assistant.core.tools.ToolConfigSettings.read(this, config, context).boolean(REMOVE_WHEN_CHECKED)) emptyList()
+        else entries.filter { ListItems.isChecked(it.state) }
+
     /**
      * An item: its name, required; the moment it was added, as any entry; in data its due date,
      * optional, when the list has due dates, and nothing otherwise. Its state holds its position,

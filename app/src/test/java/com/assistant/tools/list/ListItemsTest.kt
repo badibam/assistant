@@ -71,4 +71,13 @@ class ListItemsTest {
         val unchecked = items.map { if (it.id == "b") it.copy(checkedAt = null) else it }
         assertEquals(listOf("a", "b", "c", "e", "d"), ListItems.shown(unchecked).map { it.id })
     }
+
+    /** What a list set to remove what is checked removes from the items already there. */
+    @Test
+    fun onlyAnItemWithACheckedDate_isChecked() {
+        assertEquals(true, ListItems.isChecked("""{"checked_at": 1760000000000, "position": 2}"""))
+        assertEquals(false, ListItems.isChecked("""{"checked_at": null, "position": 2}"""))
+        assertEquals(false, ListItems.isChecked("""{"position": 2}"""))
+        assertEquals(false, ListItems.isChecked(null))
+    }
 }

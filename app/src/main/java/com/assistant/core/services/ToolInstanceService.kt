@@ -347,13 +347,19 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 extraReferences.mapNotNull { ReferenceTarget.referenceOf(extra[it.name]) }
         }.filter { it.kind == ReferenceKind.ENTRY }.mapNotNull { it.id }.distinct()
         val instances = referenced.associateWith { database.toolDataDao().getById(it)?.toolInstanceId }
-        return EntryMigration.plan(
+        val plan = EntryMigration.plan(
             old = old,
             new = fieldsOf(JSONObject(newConfigJson)),
             entries = entries,
             fill = fill,
             entryInstance = { instances[it] }
         )
+        // What the tool type's own rules remove under the new config, deleted with the rest
+        val removed = toolType.entriesRemovedByConfig(JSONObject(newConfigJson), entries, context)
+            .filter { entry -> plan.deleted.none { it.id == entry.id } }
+        if (removed.isEmpty()) return plan
+        val removedIds = removed.map { it.id }.toSet()
+        return plan.copy(updated = plan.updated.filter { it.id !in removedIds }, deleted = plan.deleted + removed)
     }
 
     /**

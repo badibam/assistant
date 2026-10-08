@@ -33,6 +33,13 @@ data class ListItem(
  */
 object ListItems {
 
+    /** Whether an entry whose stored state is [state] is a checked item. */
+    fun isChecked(state: String?): Boolean {
+        if (state.isNullOrBlank()) return false
+        val json = JSONObject(state)
+        return json.has(ListToolType.CHECKED_AT) && !json.isNull(ListToolType.CHECKED_AT)
+    }
+
     /**
      * The items as a list shows them: those left in the manual order, then the checked ones in
      * the order they were checked. Each keeps its position among all, so an item unchecked goes
