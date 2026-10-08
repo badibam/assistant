@@ -66,6 +66,8 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 - **L'entrée est créée au démarrage**, `running`, et mise à jour à chaque geste : une séance interrompue n'est jamais perdue.
 - **Le temps se calcule depuis des heures enregistrées**, jamais d'un compteur : une app tuée retombe juste à la réouverture.
 - **Un service au premier plan tourne du début à la fin**, écran allumé ou non. Il émet seul les signaux, et sa notification (imposée par Android) montre l'étape et le temps restant, avec « Fait » et « Pause ».
+- **Un verrou d'éveil garde le processeur allumé** (`PARTIAL_WAKE_LOCK`, permission `WAKE_LOCK`), l'écran restant éteint : le service le prend au démarrage, le rend en pause et à la fin ; Android le rend seul si l'app est tuée. Sans lui, le processeur s'endort écran éteint, service au premier plan ou non, et un signal arrive en retard. En veille profonde, Android n'honore que le verrou d'une app qui a un service au premier plan : à essayer sur le téléphone une fois codé (étapes de 30 s au temps, écran éteint, posé à plat 15 min, chaque gong à l'heure), avec ce qu'il coûte en batterie.
+- Le service est de type `specialUse` : `health` demande des permissions de capteurs.
 - **Une seule séance en cours dans toute l'app** : `start` refusé ailleurs, en nommant l'outil.
 - Un décompte de 5 s avant la première étape.
 - L'écran reste allumé tant que la séance en cours est affichée.
@@ -84,7 +86,6 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 
 ## Ce qui reste ouvert
 
-- **Garder le processeur éveillé** : le service au premier plan empêche Android de tuer l'app, pas le processeur de s'endormir écran éteint, et un signal arriverait en retard. Un verrou d'éveil tenu toute la séance ? Les alarmes exactes ne suffisent pas : écran éteint, Android ne les laisse sonner qu'environ toutes les 9 minutes. Le type du service, qu'Android exige, est à nommer : `specialUse` (`health` demande des permissions de capteurs).
 - **Les sons** : trouvés (libres, CC0 ou licence acceptée par F-Droid, jamais « NC », dans `third_party/sounds/` avec leur provenance), ou fabriqués par un script dont la sortie est commitée, comme `scripts/make_launcher_icon.py` dessine l'icône.
 
 ## Hors de cette spec
