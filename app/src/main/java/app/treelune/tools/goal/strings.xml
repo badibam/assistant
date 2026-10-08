@@ -63,7 +63,9 @@
     <string name="notification_to_validate">An attempt is to be validated</string>
     <string name="no_attempt">No attempt in progress</string>
     <string name="history">History</string>
-    <string name="tab_to_validate">To validate (%1$d)</string>
+    <string name="history_empty">No past attempt</string>
+    <string name="tab_now">In progress</string>
+    <string name="tab_now_waiting">In progress (%1$d)</string>
     <string name="tile_count">%1$s / %2$s met</string>
     <string name="tile_ends">Ends %1$s</string>
     <string name="tile_stopped">Stopped</string>

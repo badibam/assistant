@@ -51,10 +51,11 @@ import org.json.JSONObject
 data class AttemptRow(val id: String, val start: Long, val status: String, val periodEnd: Long?, val validatedBy: String?)
 
 /**
- * A goal's screen (docs/design/missing-tools.md, « Objectif »): the attempt running on top, its
- * criteria by sub-goal, each value against its condition, entered where it is entered, the count
- * against what is asked, the time left and « Valider »; below, the attempts waiting to be
- * validated, then the history, each opened read-only with « Rouvrir ».
+ * A goal's screen (docs/design/missing-tools.md, « Objectif »), in two tabs, always there, the
+ * first open: « In progress », its label counting the attempts waiting to be validated, lists them
+ * oldest first, then the attempt running, its criteria by sub-goal, each value against its
+ * condition, entered where it is entered, the count against what is asked, the time left and
+ * « Valider »; « History », each attempt opened read-only with « Rouvrir ».
  */
 @Composable
 fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureClick: () -> Unit, openEntryId: String? = null) {
@@ -69,6 +70,7 @@ fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureCl
     var errorMessage by remember { mutableStateOf<String?>(null) }
     // An attempt opened from the tile, one to validate, or none
     var openId by rememberSaveable { mutableStateOf(openEntryId) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
 
     LaunchedEffect(toolInstanceId, version) {
         val tool = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
@@ -106,7 +108,7 @@ fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureCl
     if (loadedConfig == null || loaded == null) { UI.LoadingIndicator(); return }
     val settings = ToolConfigSettings.read(GoalToolType, loadedConfig, context)
     val current = loaded.filter { it.status == GoalToolType.Status.ACTIVE }.maxByOrNull { it.start }
-    val toValidate = loaded.filter { it.status == GoalToolType.Status.TO_VALIDATE }.sortedByDescending { it.start }
+    val toValidate = loaded.filter { it.status == GoalToolType.Status.TO_VALIDATE }.sortedBy { it.start }
     val history = loaded.filter { it.status in GoalToolType.Status.LOCKED }.sortedByDescending { it.start }
 
     Column(
@@ -131,18 +133,30 @@ fun GoalScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureCl
             return@Column
         }
 
-        if (current != null) AttemptCard(current, loadedConfig, toolInstanceId, version, s, onError = { errorMessage = it },
-            onValidate = { operation("validate", current.id) }, onReopen = {})
-        else UI.Text(s.tool("no_attempt"), TextType.CAPTION)
+        UI.Tabs(
+            labels = listOf(
+                if (toValidate.isEmpty()) s.tool("tab_now") else s.tool("tab_now_waiting").format(toValidate.size),
+                s.tool("history")
+            ),
+            selected = tab,
+            onSelect = { tab = it }
+        )
 
-        if (toValidate.isNotEmpty()) {
-            UI.Text(s.tool("tab_to_validate").format(toValidate.size), TextType.SUBTITLE)
-            toValidate.forEach { attempt -> AttemptLine(attempt, s) { openId = attempt.id } }
-        }
-        if (history.isNotEmpty()) {
-            UI.Text(s.tool("history"), TextType.SUBTITLE)
-            UI.Text(history.take(30).joinToString(" ") { dot(it.status) }, TextType.BODY)
-            history.forEach { attempt -> AttemptLine(attempt, s) { openId = attempt.id } }
+        when (tab) {
+            0 -> {
+                if (toValidate.isNotEmpty()) {
+                    UI.Text(s.tool("status_to_validate"), TextType.SUBTITLE)
+                    toValidate.forEach { attempt -> AttemptLine(attempt, s) { openId = attempt.id } }
+                }
+                if (current != null) AttemptCard(current, loadedConfig, toolInstanceId, version, s, onError = { errorMessage = it },
+                    onValidate = { operation("validate", current.id) }, onReopen = {})
+                else UI.Text(s.tool("no_attempt"), TextType.CAPTION)
+            }
+            else -> {
+                if (history.isEmpty()) UI.Text(s.tool("history_empty"), TextType.CAPTION)
+                else UI.Text(history.take(30).joinToString(" ") { dot(it.status) }, TextType.BODY)
+                history.forEach { attempt -> AttemptLine(attempt, s) { openId = attempt.id } }
+            }
         }
     }
 }

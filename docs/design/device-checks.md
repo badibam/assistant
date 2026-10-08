@@ -220,7 +220,7 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 - Créer un objectif ponctuel sans échéance avec trois critères (une variable « kcal » ≤ 2100, un champ « poids, dernière » ≤ 80, une saisie oui/non indispensable), au moins 2 : sa tentative s'ouvre dès l'enregistrement ; chaque critère montre sa valeur face à sa condition, la saisie oui/non se coche sur place ; « Valider » avant d'avoir saisi est refusé en nommant le critère ; après, la tentative est réussie ou échouée, « par vous ».
 - Une tentative validée : la modifier par l'IA est refusé ; « Rouvrir » la remet à valider et garde la date de réouverture.
 - Renommer un critère saisi : sa valeur reste ; le supprimer puis le recréer : la confirmation de la config compte la valeur retirée.
-- Un objectif récurrent quotidien : une tentative par jour ; à la fin de la période, une notification et « À valider (1) » ; sans validation, expirée après le délai. Arrêté, plus aucune ne s'ouvre.
+- Un objectif récurrent quotidien : une tentative par jour ; à la fin de la période, une notification et l'onglet « En cours (1) », la tentative à valider au-dessus de celle du jour ; sans validation, expirée après le délai. Arrêté, plus aucune ne s'ouvre.
 - Faire valider par l'IA : « par l'IA ».
 
 ## Questionnaire
@@ -229,6 +229,7 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 - Planifié chaque jour à une heure passée : au tick, une entrée « à remplir » datée de cette heure et une notification ; répondre à la première question puis quitter : la réponse reste, et « Remplir » reprend à la deuxième. Une absence de plusieurs jours : autant d'entrées, « Tout ignorer » les passe en ignorées.
 - « Avec l'IA » sur une entrée à remplir : le chat s'ouvre, sa saisie porte le message et les pointeurs vers l'outil et l'entrée ; envoyé, l'IA pose les questions, écrit les réponses et marque l'entrée remplie.
 - Toucher une entrée de l'historique : ses réponses en entier, modifiables.
+- Onglets, Questionnaire et Objectif, dans les trois thèmes : deux onglets toujours là, l'écran ouvert sur le premier ; « À remplir (2) » ou « En cours (2) » quand deux attendent, sans nombre sinon ; les entrées en attente de la plus ancienne à la plus récente, la première étant celle que la tuile ouvre ; « Remplir maintenant » et « Avec l'IA » sous elles, présents sans rien à remplir ; l'onglet choisi tient en tournant le téléphone.
 
 ## Séance
 

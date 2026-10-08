@@ -32,6 +32,8 @@
     <string name="action_ignore">Ignore</string>
     <string name="action_ignore_all">Ignore all</string>
     <string name="tab_to_fill">To fill (%1$d)</string>
+    <string name="tab_to_fill_none">To fill</string>
+    <string name="to_fill_empty">Nothing to fill</string>
     <string name="history">History</string>
     <string name="history_empty">Not answered yet</string>
     <string name="passing_title">Question %1$d / %2$d</string>

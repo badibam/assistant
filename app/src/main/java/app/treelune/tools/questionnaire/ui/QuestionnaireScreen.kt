@@ -58,10 +58,12 @@ import org.json.JSONObject
 data class QuestionnaireEntry(val id: String, val timestamp: Long, val status: String, val answers: Map<String, Any?>)
 
 /**
- * A questionnaire's screen (docs/design/missing-tools.md, « Questionnaire »): « Fill in now » and
- * « With the AI » on top, the entries to fill with « Ignore all », then the history, newest first,
- * each entry with its title and state; touching one opens it, its answers changed there. An
- * entry's title is the questionnaire's name and the moment it is about, relative, never stored.
+ * A questionnaire's screen (docs/design/missing-tools.md, « Questionnaire »), in two tabs, always
+ * there, the first open: « To fill », its label counting the entries waiting, lists them oldest
+ * first as the tile opens them, with « Ignore all », then « Fill in now » and « With the AI »;
+ * « History », newest first, each entry with its title and state, touching one opens it, its
+ * answers changed there. An entry's title is the questionnaire's name and the moment it is about,
+ * relative, never stored.
  */
 @Composable
 fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureClick: () -> Unit, openEntryId: String? = null) {
@@ -78,6 +80,7 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
     // from the tile; null when none
     var passing by rememberSaveable { mutableStateOf(openEntryId) }
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
+    var tab by rememberSaveable { mutableIntStateOf(0) }
 
     LaunchedEffect(toolInstanceId, version) {
         val tool = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
@@ -154,7 +157,7 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
         return
     }
 
-    val toFill = loaded.filter { it.status == QuestionnaireToolType.Status.TO_FILL }.sortedByDescending { it.timestamp }
+    val toFill = loaded.filter { it.status == QuestionnaireToolType.Status.TO_FILL }.sortedBy { it.timestamp }
     val history = loaded.filter { it.status != QuestionnaireToolType.Status.TO_FILL }.sortedByDescending { it.timestamp }
 
     Column(
@@ -180,40 +183,48 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
             return@Column
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
-            UI.Button(type = ButtonType.PRIMARY, onClick = { passing = "" }) { UI.Text(s.tool("action_fill_now"), TextType.LABEL) }
-            UI.Button(type = ButtonType.SECONDARY, onClick = { withAi(null) }) { UI.Text(s.tool("action_with_ai"), TextType.LABEL) }
-        }
+        UI.Tabs(
+            labels = listOf(
+                if (toFill.isEmpty()) s.tool("tab_to_fill_none") else s.tool("tab_to_fill").format(toFill.size),
+                s.tool("history")
+            ),
+            selected = tab,
+            onSelect = { tab = it }
+        )
 
-        if (toFill.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
-                UI.Text(s.tool("tab_to_fill").format(toFill.size), TextType.SUBTITLE)
-                UI.Button(type = ButtonType.DEFAULT, onClick = {
+        when (tab) {
+            0 -> {
+                if (toFill.isEmpty()) UI.Text(s.tool("to_fill_empty"), TextType.CAPTION)
+                else UI.Button(type = ButtonType.DEFAULT, onClick = {
                     write({ coordinator.processUserAction("questionnaire.ignore_all", mapOf("tool_instance_id" to toolInstanceId)) })
                 }) { UI.Text(s.tool("action_ignore_all"), TextType.LABEL) }
-            }
-            toFill.forEach { entry ->
-                UI.Card(type = CardType.DEFAULT) {
-                    Column(modifier = Modifier.padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
-                        UI.Text(title(entry), TextType.BODY)
-                        Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
-                            UI.Button(type = ButtonType.PRIMARY, onClick = { passing = entry.id }) { UI.Text(s.tool("action_fill"), TextType.LABEL) }
-                            UI.Button(type = ButtonType.SECONDARY, onClick = { withAi(entry) }) { UI.Text(s.tool("action_with_ai"), TextType.LABEL) }
-                            UI.Button(type = ButtonType.DEFAULT, onClick = {
-                                write({ coordinator.processUserAction("questionnaire.ignore", mapOf("tool_instance_id" to toolInstanceId, "id" to entry.id)) })
-                            }) { UI.Text(s.tool("action_ignore"), TextType.LABEL) }
+                toFill.forEach { entry ->
+                    UI.Card(type = CardType.DEFAULT) {
+                        Column(modifier = Modifier.padding(UI.Space.M), verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+                            UI.Text(title(entry), TextType.BODY)
+                            Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+                                UI.Button(type = ButtonType.PRIMARY, onClick = { passing = entry.id }) { UI.Text(s.tool("action_fill"), TextType.LABEL) }
+                                UI.Button(type = ButtonType.SECONDARY, onClick = { withAi(entry) }) { UI.Text(s.tool("action_with_ai"), TextType.LABEL) }
+                                UI.Button(type = ButtonType.DEFAULT, onClick = {
+                                    write({ coordinator.processUserAction("questionnaire.ignore", mapOf("tool_instance_id" to toolInstanceId, "id" to entry.id)) })
+                                }) { UI.Text(s.tool("action_ignore"), TextType.LABEL) }
+                            }
                         }
                     }
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.M)) {
+                    UI.Button(type = ButtonType.PRIMARY, onClick = { passing = "" }) { UI.Text(s.tool("action_fill_now"), TextType.LABEL) }
+                    UI.Button(type = ButtonType.SECONDARY, onClick = { withAi(null) }) { UI.Text(s.tool("action_with_ai"), TextType.LABEL) }
+                }
             }
-        }
-
-        UI.Text(s.tool("history"), TextType.SUBTITLE)
-        if (history.isEmpty()) UI.Text(s.tool("history_empty"), TextType.CAPTION)
-        history.forEach { entry ->
-            Row(modifier = Modifier.fillMaxWidth().clickable { openId = entry.id }.padding(vertical = UI.Space.XS), horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
-                UI.Text(title(entry), TextType.BODY)
-                UI.Text(s.tool("status_${entry.status}"), TextType.CAPTION)
+            else -> {
+                if (history.isEmpty()) UI.Text(s.tool("history_empty"), TextType.CAPTION)
+                history.forEach { entry ->
+                    Row(modifier = Modifier.fillMaxWidth().clickable { openId = entry.id }.padding(vertical = UI.Space.XS), horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+                        UI.Text(title(entry), TextType.BODY)
+                        UI.Text(s.tool("status_${entry.status}"), TextType.CAPTION)
+                    }
+                }
             }
         }
     }
