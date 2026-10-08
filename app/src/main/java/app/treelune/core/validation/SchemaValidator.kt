@@ -30,18 +30,36 @@ object SchemaValidator {
         resourceBundle = messageBundle(java.util.Locale.getDefault())
     }
 
-    /** The library's messages for [locale], their accents read right. */
-    internal fun messageBundle(locale: java.util.Locale): java.util.ResourceBundle =
-        java.util.ResourceBundle.getBundle("jsv-messages", locale, Latin1Properties)
+    /**
+     * The library's messages for [locale], their accents and apostrophes read right: its own file
+     * for the language, the default one beneath. Read here rather than by ResourceBundle.getBundle,
+     * whose cache would hand back the bundle the library loaded itself, without either fix.
+     */
+    internal fun messageBundle(locale: java.util.Locale): java.util.ResourceBundle {
+        val base = Latin1Messages.read("jsv-messages.properties", null)
+            ?: throw IllegalStateException("jsv-messages.properties not found")
+        return Latin1Messages.read("jsv-messages_${locale.language}.properties", base) ?: base
+    }
 
-    /** Reads a properties bundle in ISO-8859-1, the encoding of the library's message files. */
-    private object Latin1Properties : java.util.ResourceBundle.Control() {
-        override fun getFormats(baseName: String): List<String> = FORMAT_PROPERTIES
+    /**
+     * A message file of the library, read in ISO-8859-1, its encoding — Android reads a properties
+     * file as UTF-8, which turned every accent into a replacement character ("d?passer") — and
+     * each apostrophe doubled: the library formats its messages with MessageFormat, where a lone
+     * apostrophe quotes and vanishes ("n'a pas" shown as "na pas").
+     */
+    private class Latin1Messages(private val messages: Map<String, String>, parent: java.util.ResourceBundle?) : java.util.ResourceBundle() {
+        init { parent?.let { setParent(it) } }
 
-        override fun newBundle(baseName: String, locale: java.util.Locale, format: String, loader: ClassLoader, reload: Boolean): java.util.ResourceBundle? {
-            val resource = toResourceName(toBundleName(baseName, locale), "properties")
-            val stream = loader.getResourceAsStream(resource) ?: return null
-            return stream.reader(Charsets.ISO_8859_1).use { java.util.PropertyResourceBundle(it) }
+        override fun handleGetObject(key: String): Any? = messages[key]
+        override fun getKeys(): java.util.Enumeration<String> =
+            java.util.Collections.enumeration(messages.keys + (parent?.keySet() ?: emptySet()))
+
+        companion object {
+            fun read(resource: String, parent: java.util.ResourceBundle?): Latin1Messages? {
+                val stream = SchemaValidator::class.java.classLoader?.getResourceAsStream(resource) ?: return null
+                val read = stream.reader(Charsets.ISO_8859_1).use { java.util.Properties().apply { load(it) } }
+                return Latin1Messages(read.stringPropertyNames().associateWith { read.getProperty(it).replace("'", "''") }, parent)
+            }
         }
     }
     
