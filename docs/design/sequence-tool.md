@@ -86,7 +86,7 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 
 ## Ce qui reste ouvert
 
-- **Les sons** : trouvés (libres, CC0 ou licence acceptée par F-Droid, jamais « NC », dans `third_party/sounds/` avec leur provenance), ou fabriqués par un script dont la sortie est commitée, comme `scripts/make_launcher_icon.py` dessine l'icône.
+- **Les sons** : trois sons enregistrés à trouver (un gong doux, un gong léger, un bip court), libres — CC0 ou licence acceptée par F-Droid, jamais « NC » —, choisis pour aller ensemble, copiés dans `third_party/sounds/` avec leur licence et leur provenance.
 
 ## Hors de cette spec
 
