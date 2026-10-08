@@ -76,9 +76,9 @@
     <string name="guide_first_steps_4_goal">Create your own zone</string>
     <string name="guide_first_steps_4_text">On the home screen, the + of a group creates a zone: give it a name, an icon, a short description. Outside the demo: what you add to the demo goes at the next update.</string>
     <string name="guide_first_steps_5_goal">Add a tool to it</string>
-    <string name="guide_first_steps_5_text">In your zone, the + of a section lists the tool types. Any will do; Tracking is the simplest: a figure, a rating, a choice, a timer.</string>
-    <string name="guide_first_steps_6_goal">Note a first entry in it</string>
-    <string name="guide_first_steps_6_text">Open your tool and add an entry. A touch and hold on a tool\'s title opens its configuration, to change it at any time.</string>
+    <string name="guide_first_steps_5_text">In your zone, the + of a section lists the tool types. Any will do; a List is the simplest: your shopping, your things to do, each one a name you check off.</string>
+    <string name="guide_first_steps_6_goal">Add a first entry to it</string>
+    <string name="guide_first_steps_6_text">Open your tool and add an entry: in a List, type a name and add it, then check it once done. A touch and hold on a tool\'s title opens its configuration, to change it at any time.</string>
     <string name="guide_connect_ai_title">Connect an AI</string>
     <string name="guide_connect_ai_intro">The AI has the same moves as you: it reads your tools, fills them in, sets them up. It needs a key from a provider, which you bring.</string>
     <string name="guide_connect_ai_outro">The AI is connected. Next: have it build with you.</string>

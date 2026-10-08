@@ -76,9 +76,9 @@
     <string name="guide_first_steps_4_goal">Créez votre propre zone</string>
     <string name="guide_first_steps_4_text">Sur l\'accueil, le + d\'un groupe crée une zone : donnez-lui un nom, une icône, une courte description. Hors de la démo : ce que vous ajoutez à la démo disparaît à la prochaine mise à jour.</string>
     <string name="guide_first_steps_5_goal">Ajoutez-y un outil</string>
-    <string name="guide_first_steps_5_text">Dans votre zone, le + d\'une section liste les types d\'outils. N\'importe lequel convient ; le Suivi est le plus simple : un chiffre, une note, un choix, un chrono.</string>
-    <string name="guide_first_steps_6_goal">Notez-y une première entrée</string>
-    <string name="guide_first_steps_6_text">Ouvrez votre outil et ajoutez une entrée. Un appui long sur le titre d\'un outil ouvre sa configuration, pour le changer à tout moment.</string>
+    <string name="guide_first_steps_5_text">Dans votre zone, le + d\'une section liste les types d\'outils. N\'importe lequel convient ; la Liste est la plus simple : vos courses, vos choses à faire, chacune un nom que vous cochez.</string>
+    <string name="guide_first_steps_6_goal">Ajoutez-y une première entrée</string>
+    <string name="guide_first_steps_6_text">Ouvrez votre outil et ajoutez une entrée : dans une Liste, tapez un nom et ajoutez-le, puis cochez-le une fois fait. Un appui long sur le titre d\'un outil ouvre sa configuration, pour le changer à tout moment.</string>
     <string name="guide_connect_ai_title">Brancher une IA</string>
     <string name="guide_connect_ai_intro">L\'IA a les mêmes gestes que vous : elle lit vos outils, les remplit, les règle. Il lui faut une clé chez un fournisseur, que vous apportez.</string>
     <string name="guide_connect_ai_outro">L\'IA est branchée. Ensuite : la faire construire avec vous.</string>

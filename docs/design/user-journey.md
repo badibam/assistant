@@ -98,8 +98,8 @@ Le contenu des tutoriels 2 à 4 s'écrit à leur construction : il nomme des éc
 2. **Faire** : ajoutez une sortie dans *Sorties* (`tool_data.create` sur `demo-course-runs`, d'origine utilisateur).
 3. **Aller, puis lire** : ouvrez *Km par semaine* — votre sortie y est, et l'objectif *Semaine d'entraînement* l'a comptée. Les outils se nourrissent entre eux.
 4. **Faire** : créez votre propre zone, hors démo.
-5. **Faire** : ajoutez-y un outil ; n'importe quel type, l'explication suggère un Suivi.
-6. **Faire** : notez-y une première entrée, dans l'outil de l'étape 5.
+5. **Faire** : ajoutez-y un outil ; n'importe quel type, l'explication suggère une Liste, où une entrée n'est qu'un nom à cocher (le Suivi et ses raccourcis sont vus à l'étape 2, dans la démo ; sans raccourci, sa saisie intimide).
+6. **Faire** : ajoutez-y une première entrée, dans l'outil de l'étape 5 : un élément de la Liste.
 
 ## Référence
 
