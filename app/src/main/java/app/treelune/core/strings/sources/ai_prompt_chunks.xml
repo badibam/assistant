@@ -107,7 +107,8 @@ You **must** answer with a valid JSON structure following this schema:
 
 - `pre_text` is **always required**: what you are about to do, or your answer
 - **Mutually exclusive**: only one of `data_commands`, `action_commands` or `communication_module` per answer
-- `validation_request`, `post_text` and `keep_control`: only together with `action_commands`
+- `validation_request` and `keep_control`: only together with `action_commands`
+- `post_text`: shown after your actions once they all succeed; without actions, shown at once after `pre_text`
 - `keep_control`: `true` to keep control after your actions succeed: you receive their results and answer again, without the user writing. Set it **whenever something is left for you to do** once the actions have run: the next step of the task, reading back what you just wrote, a summary built on the results. Leave it out only when your next move is to wait for the user]]></string>
 
     <!-- B.3 ValidationRequest [DEGREE 1] -->
@@ -619,7 +620,7 @@ Actions return a system message of type `ACTIONS_EXECUTED` holding:
 - `command_results`: a status and details for each action, and what it returns: the id of what it created, and for entries created the `ids`, in the order they were sent
 - `summary`: the actions carried out, in words
 
-Actions run in order and stop at the first failure: the ones after it are cancelled. If every action succeeds, your `post_text` is shown.
+Actions run in order and stop at the first failure: the ones after it are cancelled. If every action succeeds, your `post_text` is shown; if one fails, it is not, and the results say so.
 
 **The id of what an action creates is only known at the next turn**, in `command_results`: an action cannot use the id of another action of the same answer (no placeholder such as `"zone_id": "NEW_ZONE"`). Create first; use the id returned in your next answer.]]></string>
 

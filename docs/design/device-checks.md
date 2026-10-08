@@ -36,6 +36,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Chat IA
 
+- Demander à l'IA de répondre dans `post_text` sans rien faire (« réponds-moi dans post_text, sans action ») : son texte s'affiche après `pre_text`. Lui faire créer une entrée dans un outil qui n'existe pas avec un `post_text` : il ne s'affiche pas, et le résultat qu'elle reçoit dit qu'il n'a pas été montré.
 - Champs supplémentaires : « Ajoute une note dans Dev › Treelune » — l'IA remplit Catégorie et Portée sans lire le schéma (l'aperçu les nomme) ; une note créée sans eux, le résultat le dit (`extra_left_empty`) et l'IA le signale. Un outil changé de zone par l'IA : elle dit que son groupe est resté derrière.
 - Couleurs d'icônes par l'IA : « Mets l'icône de la zone Santé en rose et celle du Poids en bleu » — CREATE/UPDATE_ZONE prend `icon_color`, l'outil la reçoit dans sa config ; « en gris » ou « en cyan » est refusé avec les huit noms.
 - Zones par l'IA : « Crée une zone Voyages dans le groupe X, affichage minimal, avec les groupes d'outils A et B » — la zone arrive rangée et réglée ; un groupe de l'accueil inventé est refusé avec la liste des groupes, et l'IA se reprend. « Renomme le groupe d'outils A en C » passe par UPDATE_ZONE avec `renames`, et ses outils le suivent.

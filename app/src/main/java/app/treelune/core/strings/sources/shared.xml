@@ -192,7 +192,6 @@
     <!-- AI Response Validation Errors -->
     <string name="ai_error_validation_multiple_action_types">Several command types present: %1$s. Only one type is allowed per answer.</string>
     <string name="ai_error_validation_request_without_actions">validation_request present without action_commands. validation_request is only allowed together with action_commands.</string>
-    <string name="ai_error_posttext_without_actions">post_text present without action_commands. post_text is only allowed together with action_commands.</string>
 
     <!-- Custom fields - Technical name -->
     <string name="error_field_name_unknown">Unknown technical name: %1$s. A technical name is assigned by the app and is not chosen: omit \'name\' to create a field, and repeat it as is to designate an existing field. Renaming it would destroy the values already recorded; \'display_name\' is the one that can be changed freely.</string>
@@ -373,6 +372,7 @@
     <string name="ai_system_data_too_large_automation">Data not sent: %1$d characters, above the automation threshold of %2$d. Narrow the request (fewer fields, a shorter period) or split what is really needed.</string>
     <string name="ai_system_data_refused_by_user">Data not sent: the user refused %1$d characters of data. Narrow the request (fewer fields, a shorter period) or ask the user what is needed.</string>
     <string name="ai_system_result_cut">[… %1$s characters not sent]</string>
+    <string name="ai_posttext_not_shown">Your post_text was not shown: the actions did not all succeed.</string>
     <string name="ai_data_confirmation_title">Large data</string>
     <string name="ai_data_confirmation_text">The data requested is %1$d characters, above your threshold of %2$d. Send it to the AI?</string>
     <string name="ai_data_confirmation_send">Send</string>
@@ -1105,7 +1105,7 @@
     <string name="ai_schema_field_validation_request_desc">Optional validation request (Boolean, only together with action_commands)</string>
     <string name="ai_schema_field_data_commands_desc">Data request commands (mutually exclusive with action_commands and communication_module)</string>
     <string name="ai_schema_field_action_commands_desc">Action commands to run (mutually exclusive with data_commands and communication_module)</string>
-    <string name="ai_schema_field_posttext_desc">Text to show after the actions have run successfully (only together with action_commands)</string>
+    <string name="ai_schema_field_posttext_desc">Text to show after the actions, once they all succeed; without actions, shown at once after pre_text</string>
     <string name="ai_schema_field_keep_control_desc">Keep control after the actions succeed, to chain further actions. In that case you will still see what the commands of the current message returned (successes, failures, ids of the created objects, and so on). Useful for multi-step sequences with intermediate system feedback.</string>
     <string name="ai_schema_field_communication_module_desc">A question to the user as a list of fields, with the schema communication_module (mutually exclusive with data_commands and action_commands)</string>
 

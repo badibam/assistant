@@ -960,15 +960,8 @@ class AIEventProcessor(
             }
 
             if (parsedAIMessage != null) {
-                // Clean postText if no actionCommands (silently fix, not an error)
-                // This ensures AI sees clean response in next round without confusion
-                var cleanedAIMessage = parsedAIMessage
+                val cleanedAIMessage = parsedAIMessage
                 val hasActionCommands = parsedAIMessage.actionCommands != null && parsedAIMessage.actionCommands.isNotEmpty()
-
-                if (parsedAIMessage.postText != null && !hasActionCommands) {
-                    LogManager.aiSession("parseAIResponse: Cleaning postText without actionCommands", "DEBUG")
-                    cleanedAIMessage = parsedAIMessage.copy(postText = null)
-                }
 
                 // Validate field constraints (from AIResponseParser logic)
                 val dataCommandsList = cleanedAIMessage.dataCommands
@@ -1045,10 +1038,12 @@ class AIEventProcessor(
                 val updatedMessage = lastAIMessage.copy(aiMessage = cleanedAIMessage, aiMessageJson = cleanedJson)
                 messageRepository.updateMessage(sessionId, updatedMessage)
 
+                // Without actions, nothing for post_text to wait for: shown at once, after pre_text
+                if (!hasActionCommands) cleanedAIMessage.postText?.let { storePostText(sessionId, it) }
+
                 // Writes on tools whose schema the AI lacks go no further, not even to validation
                 if (holdWritesForSchemas(sessionId, cleanedAIMessage)) return
 
-                // Emit success with cleanedAIMessage (postText removed if no actionCommands)
                 emit(AIEvent.AIResponseParsed(cleanedAIMessage))
 
             } else {
@@ -1509,6 +1504,11 @@ class AIEventProcessor(
                         it.status == CommandStatus.SUCCESS
                     }
 
+                    // A post_text says the actions are done: after a failure it is not shown, and the
+                    // AI is told so, which its own history, holding it still, does not say
+                    val postTextNotShown = if (!allSuccess && aiMessage.postText != null)
+                        app.treelune.core.strings.Strings.`for`(context = context).shared("ai_posttext_not_shown") else null
+
                     // Store SystemMessage with results (always, even on failure)
                     val systemSessionMessage = SessionMessage(
                         id = java.util.UUID.randomUUID().toString(),
@@ -1521,7 +1521,8 @@ class AIEventProcessor(
                         // Sent without asking anyone: held to the session's data threshold
                         systemMessage = result.systemMessage.withinChars(
                             AppConfigManager.getAILimits().getLimitsForSessionType(state.sessionType ?: SessionType.CHAT).maxDataChars
-                        ) { app.treelune.core.strings.Strings.`for`(context = context).shared("ai_system_result_cut").format(it) },
+                        ) { app.treelune.core.strings.Strings.`for`(context = context).shared("ai_system_result_cut").format(it) }
+                            .let { message -> postTextNotShown?.let { message.copy(summary = message.summary + "\n" + it) } ?: message },
                         executionMetadata = null,
                         excludeFromPrompt = false
                     )
@@ -1531,22 +1532,7 @@ class AIEventProcessor(
                     if (allSuccess) {
                         // All actions succeeded
 
-                        // Store postText as separate message if present
-                        if (aiMessage.postText != null) {
-                            val postTextMessage = SessionMessage(
-                                id = java.util.UUID.randomUUID().toString(),
-                                timestamp = System.currentTimeMillis(),
-                                sender = MessageSender.AI,
-                                richContent = null,
-                                textContent = aiMessage.postText,
-                                aiMessage = null,
-                                aiMessageJson = null,
-                                systemMessage = null,
-                                executionMetadata = null,
-                                excludeFromPrompt = true // PostText excluded from prompt
-                            )
-                            messageRepository.storeMessage(sessionId, postTextMessage)
-                        }
+                        aiMessage.postText?.let { storePostText(sessionId, it) }
 
                         // Emit success event with keepControl flag
                         val keepControl = aiMessage.keepControl == true
@@ -1571,6 +1557,25 @@ class AIEventProcessor(
             LogManager.aiSession("executeActions failed: ${e.message}", "ERROR", e)
             emit(AIEvent.SystemErrorOccurred(e.message ?: "Unknown error"))
         }
+    }
+
+    /**
+     * The AI's post_text shown, as a message of its own: excluded from the prompt, the AI reading
+     * it already in its answer's JSON.
+     */
+    private suspend fun storePostText(sessionId: String, text: String) {
+        messageRepository.storeMessage(sessionId, SessionMessage(
+            id = java.util.UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            sender = MessageSender.AI,
+            richContent = null,
+            textContent = text,
+            aiMessage = null,
+            aiMessageJson = null,
+            systemMessage = null,
+            executionMetadata = null,
+            excludeFromPrompt = true
+        ))
     }
 
     /**

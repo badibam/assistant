@@ -192,7 +192,6 @@
     <!-- AI Response Validation Errors -->
     <string name="ai_error_validation_multiple_action_types">Plusieurs types de commandes présents: %1$s. Un seul type autorisé par réponse.</string>
     <string name="ai_error_validation_request_without_actions">validation_request présent sans action_commands. validation_request n\'est autorisé qu\'avec action_commands.</string>
-    <string name="ai_error_posttext_without_actions">post_text présent sans action_commands. post_text n\'est autorisé qu\'avec action_commands.</string>
 
     <!-- Custom fields - Technical name -->
     <string name="error_field_name_unknown">Nom technique inconnu : %1$s. Un nom technique est attribué par l\'app et ne se choisit pas : omets \'name\' pour créer un champ, reprends-le tel quel pour désigner un champ existant. Le renommer détruirait les valeurs déjà enregistrées ; c\'est \'display_name\' qui se modifie librement.</string>
@@ -373,6 +372,7 @@
     <string name="ai_system_data_too_large_automation">Données non envoyées : %1$d caractères, au-delà du seuil des automations de %2$d. Resserre la requête (moins de champs, une période plus courte) ou découpe ce qui est vraiment nécessaire.</string>
     <string name="ai_system_data_refused_by_user">Données non envoyées : l\'utilisateur a refusé %1$d caractères de données. Resserre la requête (moins de champs, une période plus courte) ou demande-lui ce qui est nécessaire.</string>
     <string name="ai_system_result_cut">[… %1$s caractères non envoyés]</string>
+    <string name="ai_posttext_not_shown">Ton post_text n\'a pas été montré : les actions n\'ont pas toutes réussi.</string>
     <string name="ai_data_confirmation_title">Données volumineuses</string>
     <string name="ai_data_confirmation_text">Les données demandées font %1$d caractères, au-delà de ton seuil de %2$d. Les envoyer à l\'IA ?</string>
     <string name="ai_data_confirmation_send">Envoyer</string>
@@ -1105,7 +1105,7 @@
     <string name="ai_schema_field_validation_request_desc">Demande de validation optionnelle (Boolean, uniquement avec action_commands)</string>
     <string name="ai_schema_field_data_commands_desc">Commandes de requête de données (mutuellement exclusif avec action_commands et communication_module)</string>
     <string name="ai_schema_field_action_commands_desc">Commandes d\'actions à exécuter (mutuellement exclusif avec data_commands et communication_module)</string>
-    <string name="ai_schema_field_posttext_desc">Texte à afficher après l\'exécution réussie des actions (uniquement avec action_commands)</string>
+    <string name="ai_schema_field_posttext_desc">Texte à afficher après les actions, une fois toutes réussies ; sans actions, montré tout de suite après pre_text</string>
     <string name="ai_schema_field_keep_control_desc">Garde la main après succès des actions pour enchaîner d\'autres actions. Dans ce cas, tu verras quand même le retour des commandes du message actuel (succès, échecs, id des objets créés, etc.) Utile pour séquences multi-étapes avec feedback système intermédiaire.</string>
     <string name="ai_schema_field_communication_module_desc">Une question à l\'utilisateur sous forme de liste de champs, de schéma communication_module (exclusif de data_commands et action_commands)</string>
 

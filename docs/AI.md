@@ -116,7 +116,7 @@ data class SessionMessage(
 
 **Pattern stockage** : Messages séparés USER → SYSTEM → AI → SYSTEM. Le provider ajuste selon ses contraintes.
 
-**PostText success** : Après succès des actions, si `postText` présent dans AIMessage, un message séparé est créé avec `sender=AI`, `textContent=postText`, et `excludeFromPrompt=true`.
+**PostText** : le texte « c'est fait », montré comme un message séparé (`sender=AI`, `textContent=postText`, `excludeFromPrompt=true`, l'IA le relisant dans le JSON de sa réponse) : après les actions si elles réussissent toutes ; tout de suite après `preText` quand la réponse n'a pas d'actions, rien n'étant alors à attendre. Une action échoue : il n'est pas montré, et le résumé des résultats le dit à l'IA (`ai_posttext_not_shown`).
 
 ### RichMessage et AIMessage
 ```kotlin
@@ -136,7 +136,7 @@ data class AIMessage(
 )
 ```
 
-**Patterns AIMessage** : Actions (preText + validationRequest? + actionCommands + postText?), Queries (preText + dataCommands), Communication (preText + communicationModule uniquement).
+**Patterns AIMessage** : Actions (preText + validationRequest? + actionCommands + postText?), Queries (preText + dataCommands + postText?), Communication (preText + communicationModule + postText?).
 
 **Fallback parsing** : Si parsing JSON échoue, création AIMessage avec préfixe `"ai_response_invalid_format"` + texte brut dans preText.
 

@@ -47,7 +47,7 @@ object AIMessageSchemas {
      * - preText is always required
      * - Mutual exclusivity between dataCommands, actionCommands, communicationModule
      * - validationRequest only valid with actionCommands
-     * - postText only valid with actionCommands
+     * - postText shown after the actions succeed, or at once without actions
      */
     private fun getAIMessageResponseSchemaContent(context: Context): String {
         val s = Strings.`for`(context = context)
