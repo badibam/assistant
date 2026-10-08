@@ -2,8 +2,6 @@
 
 Conçu le 2026-10-08. Ce que voit une personne qui découvre l'app, du README à ses premiers outils, puis à l'IA et aux automations. Le public visé : une personne curieuse qui arrive par F-Droid ou GitHub, à l'aise avec un téléphone, pas développeuse, sans clé d'API. L'IA rend l'app fluide et fait partie du parcours, mais elle n'est pas demandée avant d'avoir quelque chose à lui confier.
 
-Ce chantier dépend de la navigation en pile (`docs/design/navigation.md`) : la bande sait où l'on est, et le Guide calcule un chemin, grâce à elle. Le README ne dépend de rien et se fait d'abord.
-
 ## La promesse
 
 Elle ouvre le README, la fiche F-Droid et l'écran d'accueil, dans cet ordre :
