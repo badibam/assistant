@@ -123,6 +123,19 @@ sealed class Place {
         override fun parent() = Zone(zoneId)
     }
 
+    /** The Guide's page: its journey, then its reference. */
+    object Guide : Place() {
+        override val kind = "guide"
+        override fun parent() = Home
+    }
+
+    /** A chapter of the Guide, read in full. */
+    data class Chapter(val id: String) : Place() {
+        override val kind = "chapter"
+        override val parameters get() = listOf(id)
+        override fun parent() = Guide
+    }
+
     /** The conversation with the AI, laid over the place it was opened from. */
     object Chat : Place() {
         override val kind = "chat"
@@ -149,6 +162,8 @@ sealed class Place {
                 "automation" -> Automation(r(1), r(2))
                 "execution" -> Execution(r(1), r(2), r(3))
                 "seed" -> Seed(r(1), r(2))
+                "guide" -> Guide
+                "chapter" -> Chapter(r(1))
                 "chat" -> Chat
                 else -> throw IllegalArgumentException("No place at address '$address'")
             }

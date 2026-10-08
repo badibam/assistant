@@ -34,7 +34,7 @@ enum class UISignal {
  * the sound of coming and going (Navigator), or the chat's window its own.
  */
 fun ButtonAction.signal(): UISignal? = when (this) {
-    ButtonAction.BACK, ButtonAction.CONFIGURE, ButtonAction.VIEW, ButtonAction.AI_CHAT -> null
+    ButtonAction.BACK, ButtonAction.CONFIGURE, ButtonAction.VIEW, ButtonAction.AI_CHAT, ButtonAction.GUIDE -> null
     ButtonAction.CANCEL -> UISignal.CLOSE
     ButtonAction.ATTACH, ButtonAction.PHOTO, ButtonAction.GALLERY -> UISignal.OPEN
     ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.UP, ButtonAction.DOWN -> UISignal.STEP

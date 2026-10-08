@@ -50,7 +50,12 @@ fun DemoSettingsScreen(onBack: () -> Unit) {
             onConfirm = { confirmingRemoval = false; runDemo("demo.remove", s.shared("demo_removed")) },
             onCancel = { confirmingRemoval = false }
         ) {
-            UI.Text(s.shared("demo_remove_confirm"), TextType.BODY)
+            androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(UI.Space.S)) {
+                UI.Text(s.shared("demo_remove_confirm"), TextType.BODY)
+                // The tutorials begun in the demo, and how to have it back for them
+                val tutorials = app.treelune.core.guide.GuideChapters.all(context).filter { it.usesDemo }.map { it.title(context) }
+                if (tutorials.isNotEmpty()) UI.Text(s.shared("guide_demo_removal_warning").format(tutorials.joinToString(", ")), TextType.CAPTION)
+            }
         }
     }
 

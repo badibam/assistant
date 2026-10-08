@@ -48,6 +48,9 @@ fun AIFloatingChat(
     var showHistory by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
 
     FullScreenDialog(onDismiss = onDismiss) {
+      // The tutorial's band in the chat too: a step may happen here
+      androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
+      androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
         when {
             showHistory -> {
                 app.treelune.core.ui.screens.HistoryScreen(
@@ -80,6 +83,9 @@ fun AIFloatingChat(
                 )
             }
         }
+      }
+      app.treelune.core.guide.ui.GuideBand()
+      }
     }
 
     // Error display

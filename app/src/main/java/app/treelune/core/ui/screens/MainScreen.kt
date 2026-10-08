@@ -62,6 +62,9 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
     LaunchedEffect(Unit) { snapshotFlow { Navigator.addresses() }.collect { saved.value = it } }
 
     val zones = rememberZones { errorMessage = it }
+    // The demo is there while one of its zones is
+    val demoInstalled = zones.list.any { it.id.startsWith(app.treelune.core.guide.DEMO_PREFIX) }
+    LaunchedEffect(Unit) { app.treelune.core.guide.Guide.start(context) }
 
     // A chat asked for from any screen, with its content, laid over that screen
     LaunchedEffect(Unit) {
@@ -119,13 +122,26 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         kept.clear(); kept.addAll(now)
     }
 
-    key(base.address) {
-        holder.SaveableStateProvider(base.address) {
-            CompositionLocalProvider(LocalBreadcrumb provides breadcrumb) {
-                PlaceScreen(base, zones)
+    // The first-launch screen, once, before any place; then the place, the tutorial's band under it
+    val guide = app.treelune.core.guide.Guide.progress
+    if (guide != null && !guide.welcomeSeen && zones.loaded) {
+        app.treelune.core.guide.ui.WelcomeScreen(demoInstalled)
+        return
+    }
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            key(base.address) {
+                holder.SaveableStateProvider(base.address) {
+                    CompositionLocalProvider(LocalBreadcrumb provides breadcrumb) {
+                        PlaceScreen(base, zones, demoInstalled)
+                    }
+                }
             }
         }
+        app.treelune.core.guide.ui.GuideBand()
     }
+    app.treelune.core.guide.Guide.ended?.let { app.treelune.core.guide.ui.GuideEndDialog(it, demoInstalled) }
+    app.treelune.core.guide.Guide.demoMissingFor?.let { app.treelune.core.guide.ui.GuideDemoMissingDialog(it) }
 
     AIFloatingChat(isVisible = Navigator.top == Place.Chat, onDismiss = { Navigator.pop() })
 
@@ -159,7 +175,7 @@ private suspend fun zoneOfTool(coordinator: Coordinator, toolId: String): String
  * (deleted from another screen, by the AI) leaves the stack.
  */
 @Composable
-private fun PlaceScreen(place: Place, zones: ZonesState) {
+private fun PlaceScreen(place: Place, zones: ZonesState, demoInstalled: Boolean) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val back = { Navigator.pop() }
@@ -252,6 +268,11 @@ private fun PlaceScreen(place: Place, zones: ZonesState) {
             name(s.shared("nav_seed"))
             app.treelune.core.ai.ui.screens.AIScreen(sessionId = place.sessionId, onClose = back)
         }
+        Place.Guide -> {
+            name(s.shared("guide_title"))
+            app.treelune.core.guide.ui.GuideScreen()
+        }
+        is Place.Chapter -> app.treelune.core.guide.ui.ChapterScreen(place.id, demoInstalled)
         Place.Chat -> throw IllegalStateException("The chat is laid over a place, never drawn as one")
     }
 }
@@ -378,6 +399,13 @@ private fun HomeScreen(zones: ZonesState) {
                 .padding(vertical = UI.Space.L),
             verticalArrangement = Arrangement.spacedBy(UI.Space.L)
         ) {
+            // The Guide's book, at the top of the home screen, marked while a tutorial waits
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = UI.Space.L), horizontalArrangement = Arrangement.End) {
+                Box {
+                    UI.ActionButton(action = ButtonAction.GUIDE, display = ButtonDisplay.ICON, size = Size.S) { Navigator.push(Place.Guide) }
+                    if (app.treelune.core.guide.Guide.pending) Box(modifier = Modifier.align(Alignment.TopEnd)) { UI.WaitingMark() }
+                }
+            }
             UI.PageHeader(
                 title = s.shared("app_name"),
                 subtitle = null,

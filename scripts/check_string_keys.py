@@ -7,8 +7,8 @@ compile or a test run notices, which is how 41 of them accumulated.
 
 This reads every literal key passed to s.shared("...") and s.tool("...") and looks it up:
 
-  - a shared key in shared.xml or ai_prompt_chunks.xml, the two sources the shared strings
-    are made of;
+  - a shared key in any default-language file of the shared sources (shared.xml,
+    ai_prompt_chunks.xml, guide.xml), which the build makes the shared strings of;
   - a tool key in the strings.xml of the tool whose directory the call sits in. A call from
     outside tools/ is looked up in every tool's file.
 
@@ -59,7 +59,8 @@ def code_lines(text):
 
 
 def main():
-    shared = keys_in(SHARED / "shared.xml") | keys_in(SHARED / "ai_prompt_chunks.xml")
+    # Every file without a language in its name: shared.xml, ai_prompt_chunks.xml, guide.xml
+    shared = set().union(*(keys_in(p) for p in SHARED.glob("*.xml") if not re.search(r"-[a-z]{2}(-r[A-Z]{2})?\.xml$", p.name)))
     tool_keys = {d.name: keys_in(d / "strings.xml") for d in TOOLS.iterdir() if (d / "strings.xml").exists()}
     every_tool_key = set().union(*tool_keys.values())
     theme_keys = {d.name: keys_in(d / "strings.xml") for d in THEMES.iterdir() if (d / "strings.xml").exists()}

@@ -23,7 +23,7 @@ class PlaceStackTest {
         Place.ToolConfig("z-course", "tracking", "t-runs", null), Place.ToolConfig("z-course", "chart", null, "Analyse"),
         Place.Variable("z-course", null, "Corps"), Place.Variable("z-course", "v-1", null),
         Place.Automation("a-1", "z-course"), Place.Execution("s-1", "a-1", "z-course"), Place.Seed("s-2", "z-course"),
-        Place.Chat
+        Place.Guide, Place.Chapter("first_steps"), Place.Chat
     )
 
     @Test
