@@ -128,8 +128,9 @@ object SchemaValidator {
      *
      * CRITICAL: Empty strings are NOT filtered (they are valid values to intentionally clear a field)
      * Only null values are filtered for partial updates
-     * A list is filtered only if all its contents were filtered out: one sent empty is a value
-     * (a home screen without zone groups), which a required list must find
+     * A list is checked as sent: what is validated here is a copy, the data stored is the one sent,
+     * so a null left out of a list would be stored unchecked; an empty list is a value (a home
+     * screen without zone groups). The objects inside it are filtered as any object
      */
     private fun filterEmptyValue(value: Any?): Any? {
         return when (value) {
@@ -145,10 +146,7 @@ object SchemaValidator {
                 // The schema validation will catch if it shouldn't be empty
                 filteredMap
             }
-            is List<*> -> {
-                val filteredList = value.mapNotNull { filterEmptyValue(it) }
-                if (filteredList.isEmpty() && value.isNotEmpty()) null else filteredList
-            }
+            is List<*> -> value.map { if (it is Map<*, *>) filterEmptyValue(it) else it }
             else -> value
         }
     }
