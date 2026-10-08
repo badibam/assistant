@@ -387,10 +387,17 @@ Creates entries in one tool.
 **Parameters**:
 
 - `tool_instance_id` (string, **required**)
-- `entries` (array, **required**): the entries to create, each `{ name?, timestamp?, data?, extra? }`
+- `entries` (array, **required**): the entries to create, each `{ name?, timestamp?, data?, extra?, state? }`
   - `name` and `timestamp`: whether a tool\'s entries take them, and whether they are required, is in its data schema (a note has no name)
   - `data`: the tool type\'s fields; `extra`: the user\'s extra fields, named under `extra_fields` for each tool in the app\'s overview
-  - A field you leave out stays empty: the app never fills in a value you did not give. The result names the extra fields left empty, under `extra_left_empty`]]></string>
+  - `state`: only where the tool\'s data schema asks for a status at creation (a message, a questionnaire): `{ "status": … }` alone, one of the statuses it lists; the app writes the rest of the state. An entry without it is refused. Where the schema says entries are not created, the tool makes them itself (a goal\'s attempts): do what it says instead
+  - A field you leave out stays empty: the app never fills in a value you did not give. The result names the extra fields left empty, under `extra_left_empty`
+
+A message to send at 14:30, which the app sends at its time:
+
+```json
+{ "type": "CREATE_DATA", "params": { "tool_instance_id": "messages_water_123", "entries": [ { "name": "Water", "timestamp": "2025-03-15T14:30:00+01:00", "data": { "title": "Drink a glass of water" }, "state": { "status": "pending" } } ] } }
+```]]></string>
     <string name="ai_command_update_data"><![CDATA[### UPDATE_DATA
 
 Changes entries of one tool.

@@ -103,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 64
+        const val VERSION = 65
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1724,6 +1724,28 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Every questionnaire entry has its status: one with none is filled (QuestionnaireStateAtV65). */
+        private val MIGRATION_64_65 = object : Migration(64, 65) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                var given = 0
+                database.query("SELECT id, state FROM tool_data WHERE tooltype = ?", arrayOf<Any?>(app.treelune.core.versioning.QuestionnaireStateAtV65.TOOLTYPE)).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        try {
+                            val state = if (cursor.isNull(1)) null else cursor.getString(1)
+                            app.treelune.core.versioning.QuestionnaireStateAtV65.state(app.treelune.core.versioning.QuestionnaireStateAtV65.TOOLTYPE, state)?.let {
+                                database.execSQL("UPDATE tool_data SET state = ? WHERE id = ?", arrayOf<Any?>(it, id))
+                                given++
+                            }
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 64->65: state of entry $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 64->65: $given questionnaire entr(ies) without a status now filled", "INFO")
+            }
+        }
+
         /** A zone's icon colour (docs/design/icon-colors.md): a new column, empty, every icon staying neutral. */
         private val MIGRATION_63_64 = object : Migration(63, 64) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2448,7 +2470,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_60_61,
                     MIGRATION_61_62,
                     MIGRATION_62_63,
-                    MIGRATION_63_64
+                    MIGRATION_63_64,
+                    MIGRATION_64_65
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

@@ -85,10 +85,8 @@ class MessageService(private val context: Context) : ExecutableService {
 
         val now = System.currentTimeMillis()
 
-        val state = JSONObject().apply {
-            put("status", "pending")
-            put("triggered_by", "MANUAL")
-        }
+        // The state a message written by hand starts with, as the tool type declares it
+        val state = MessageToolType.START.state("pending", now)
         val data = JSONObject().apply {
             params.optString("title").takeIf { it.isNotEmpty() }?.let { put("title", it) }
             params.optString("content").takeIf { it.isNotEmpty() }?.let { put("content", it) }

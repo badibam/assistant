@@ -24,9 +24,8 @@ Celui qui crée l'entrée dit son statut de départ ; l'outil répond par l'éta
 
 - Toute création venue d'un écran, de l'IA, d'un client MCP ou d'un import : elle donne au plus un `status` ; tout autre champ d'état qu'elle envoie est refusé.
 - Les écrans de l'outil lui-même aussi (l'écran Questionnaire, l'opération « envoyer » de Messages) : ils donnent le statut et l'outil pose le reste, pour qu'un même geste n'ait qu'une façon de s'écrire.
-- Ne passent pas par elle : ce que l'app écrit elle-même (`byTheApp` : un programmateur par `processScheduledTask`, la démo, une migration), qui écrit l'état entier comme aujourd'hui.
-
-Trois programmateurs créent aujourd'hui leurs entrées par `processUserAction`, comme un écran : Messages, Questionnaire, Séance. Ils passent à `processScheduledTask`, ce qu'ils sont.
+- Ne passent pas par elle : ce que l'app écrit elle-même (`byTheApp`), qui écrit l'état entier comme aujourd'hui. Un appel fait depuis l'intérieur d'une opération en est : les programmateurs, que le tick lance sous son origine, l'opération d'un outil, la démo.
+- Une entrée sans statut est refusée d'où qu'elle vienne, l'app comprise : un import tourne dans son opération, donc comme l'app, et ses lignes sans statut sont refusées.
 
 ## Ce que répond chaque outil
 
@@ -48,7 +47,7 @@ Une entrée créée sans statut, dans un outil qui en a, est refusée ; l'erreur
 ## Ce qui change ailleurs
 
 - Questionnaire : la lecture « absent = rempli » de l'écran disparaît ; une migration donne `filled` aux entrées sans état.
-- L'import : une table importée dans un outil à statut doit porter une colonne `state.status`, sinon ses lignes sont refusées en le disant (à rapprocher de l'item du `TODO.md` sur les colonnes `state.*` de l'importeur).
+- L'import : ses lignes dans un outil à statut sont refusées, faute de statut ; l'importeur ne propose pas de colonne `state.*` (item du `TODO.md` sur ses colonnes).
 
 ## Tests
 
@@ -60,6 +59,8 @@ Une entrée créée sans statut, dans un outil qui en a, est refusée ; l'erreur
 - Un programmateur (`byTheApp`) écrit son état entier sans passer par la réponse.
 
 ## Ce qui reste ouvert
+
+- Une modification écrit encore l'état tel quel, de tout appelant : l'IA pourrait passer un message à « envoyé ». La règle ne couvre que la création.
 
 - La démo écrit des tentatives d'Objectif avec un verdict (`DemoService`) : vérifier qu'elle passe bien comme écrite par l'app.
 - Une tentative passée d'un Objectif, enregistrée à la main ou importée : refusée pour l'instant ; le jour du besoin, la réponse d'Objectif posera un état au lieu de refuser (la période où tombe la date, une tentative déjà là, le verdict, la définition à copier).

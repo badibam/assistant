@@ -1,6 +1,7 @@
 package app.treelune.core.services
 
 import app.treelune.core.fields.EntryFields
+import app.treelune.core.fields.EntryStart
 import android.content.Context
 import androidx.room.withTransaction
 import app.treelune.core.coordinator.CancellationToken
@@ -117,8 +118,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dataJson = (if (app.treelune.core.coordinator.calledByTheApp()) sent else SystemManagedFields.dropFromData(sent, target.schema.content)).toString()
         val extraJson = params.optJSONObject("extra")?.let { JsonNulls.withoutNullKeys(it) }?.takeIf { it.length() > 0 }?.toString()
         // State is written by the app and the entry's actions (a note's position, a message's
-        // status), never entered in a form
-        val stateJson = params.optJSONObject("state")?.let { JsonNulls.withoutNullKeys(it) }?.takeIf { it.length() > 0 }?.toString()
+        // status), never entered in a form; a status-driven tool type sets it from the status given
+        val stateJson = when (val started = startState(target, params.optJSONObject("state")?.let { JsonNulls.withoutNullKeys(it) })) {
+            is Started.Refused -> return OperationResult.error(started.error)
+            is Started.State -> started.json
+        }
 
         // Milliseconds are the contract. An absent timestamp means now, which is a default
         // written into the contract; any number is taken as milliseconds, Int and Double
@@ -181,6 +185,21 @@ class ToolDataService(private val context: Context) : ExecutableService {
             )
         )
     }
+
+    /** The state a new entry is written with, or why it is refused. */
+    private sealed interface Started {
+        data class State(val json: String?) : Started
+        data class Refused(val error: String) : Started
+    }
+
+    /** The state a new entry of [target] is written with, [sent] as its creator gave it (EntryStart.decide). */
+    private suspend fun startState(target: WriteTarget.Ready, sent: JSONObject?): Started =
+        when (val decided = EntryStart.decide(target.entryFields?.start, sent, app.treelune.core.coordinator.calledByTheApp(), System.currentTimeMillis())) {
+            is EntryStart.Decision.Write -> Started.State(decided.state?.toString())
+            is EntryStart.Decision.NoStatus -> Started.Refused(decided.start.refusal
+                ?: s.shared("service_error_start_status").format(decided.given ?: "", decided.start.statuses.joinToString(", ")))
+            is EntryStart.Decision.OtherFields -> Started.Refused(s.shared("service_error_start_state_fields").format(decided.fields.joinToString(", ")))
+        }
 
     /** A name another entry of the tool already has, where names are unique. */
     private class NameTaken(message: String) : Exception(message)

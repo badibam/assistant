@@ -89,7 +89,7 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
             QuestionnaireEntry(
                 id = e["id"] as String,
                 timestamp = (e["timestamp"] as Number).toLong(),
-                status = (e["state"] as? Map<*, *>)?.get(QuestionnaireToolType.STATUS) as? String ?: QuestionnaireToolType.Status.FILLED,
+                status = (e["state"] as? Map<*, *>)?.get(QuestionnaireToolType.STATUS) as? String ?: "",
                 answers = (e["extra"] as? Map<*, *>)?.entries?.associate { it.key.toString() to it.value } ?: emptyMap()
             )
         }
@@ -145,7 +145,8 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
                     "timestamp" to now,
                     "data" to emptyMap<String, Any>(),
                     "extra" to answers,
-                    "state" to mapOf(QuestionnaireToolType.STATUS to QuestionnaireToolType.Status.FILLED, QuestionnaireToolType.FILLED_AT to now)
+                    // The status alone: the tool type sets the rest (QuestionnaireToolType.START)
+                    "state" to mapOf(QuestionnaireToolType.STATUS to QuestionnaireToolType.Status.FILLED)
                 ))
             }) { passing = null }
         })

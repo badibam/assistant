@@ -201,8 +201,17 @@ object MessageToolType : ToolTypeContract {
                     "SCHEDULE" to s.tool("triggered_by_schedule"),
                     "MANUAL" to s.tool("triggered_by_manual")
                 )), filterable = true)
-            )
+            ),
+            start = START
         )
+    }
+
+    /**
+     * A message written by someone, the AI or a screen, is one to send at its time, the same as
+     * one the recurrence creates but placed by hand: the scheduler sends it when it is due.
+     */
+    val START = app.treelune.core.fields.EntryStart(listOf("pending")) { status, _ ->
+        JSONObject().put(app.treelune.core.fields.EntryStart.STATUS, status).put("triggered_by", "MANUAL")
     }
 
     override fun getFormFieldName(fieldName: String, context: Context): String {

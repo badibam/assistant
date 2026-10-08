@@ -54,14 +54,71 @@ data class StateField(
  * @property nameUnique Whether no two entries of a tool instance share a name, the case and the
  *   spaces around not counted: the name is what finds an entry (a sheet of structured data), and
  *   the service refuses a duplicate, naming the entry that has it
+ * @property start What an entry starts as, when the entries live by a status (EntryStart)
  */
 data class EntryFields(
     val name: CoreFieldUsage = CoreFieldUsage.REQUIRED,
     val nameUnique: Boolean = false,
     val timestamp: CoreFieldUsage = CoreFieldUsage.OPTIONAL,
     val data: List<FixedField> = emptyList(),
-    val state: List<StateField> = emptyList()
+    val state: List<StateField> = emptyList(),
+    val start: EntryStart? = null
 )
+
+/**
+ * What an entry starts as, for a tool type whose entries live by a status in their state
+ * (docs/design/entry-start-state.md): whoever creates one gives its status, among [statuses], and
+ * the tool type sets the whole state from it with [state]. What the app writes itself keeps the
+ * state it gives.
+ *
+ * With no status at all, the tool type's entries are made by the tool alone (a goal's attempts,
+ * a sequence's runs) and every other creation is refused, [refusal] saying what to do instead.
+ *
+ * @property statuses The statuses an entry may be created with, from outside the app's own work
+ * @property refusal Why a creation is refused when [statuses] is empty; null otherwise
+ * @property state The whole state of an entry created with a status of [statuses], at [now]
+ */
+class EntryStart(
+    val statuses: List<String>,
+    val refusal: String? = null,
+    val state: (status: String, now: Long) -> org.json.JSONObject = { status, _ -> org.json.JSONObject().put(STATUS, status) }
+) {
+    /** What a creation's state comes to (decide). */
+    sealed interface Decision {
+        /** The entry is written with [state], none when null */
+        data class Write(val state: org.json.JSONObject?) : Decision
+        /** Refused: no status of [start] was given, [given] being what was, if anything */
+        data class NoStatus(val start: EntryStart, val given: String?) : Decision
+        /** Refused: fields of the state other than the status were given, which the app writes */
+        data class OtherFields(val fields: List<String>) : Decision
+    }
+
+    companion object {
+        /** The key of the status in an entry's state */
+        const val STATUS = "status"
+
+        /**
+         * The state of an entry created with [sent] as its state, in a tool type that declares
+         * [start] (docs/design/entry-start-state.md). Without a declaration, the state goes as it
+         * came. With one, an entry with no status is refused whoever writes it, nothing would ever
+         * pick it up; what the app writes itself ([byTheApp]: a scheduler, the tool's own
+         * operation, the demo) keeps the state it gives; any other creator, a screen, the AI, a
+         * client of the MCP server, gives the status alone, among the declared ones, and the tool
+         * type sets the rest.
+         */
+        fun decide(start: EntryStart?, sent: org.json.JSONObject?, byTheApp: Boolean, now: Long): Decision {
+            val given = sent?.takeIf { it.length() > 0 }
+            if (start == null) return Decision.Write(given)
+            val status = given?.optString(STATUS)?.takeIf { it.isNotEmpty() }
+                ?: return Decision.NoStatus(start, null)
+            if (byTheApp) return Decision.Write(given)
+            if (status !in start.statuses) return Decision.NoStatus(start, status)
+            val others = given.keys().asSequence().filter { it != STATUS }.toList()
+            if (others.isNotEmpty()) return Decision.OtherFields(others)
+            return Decision.Write(start.state(status, now))
+        }
+    }
+}
 
 /**
  * The fields the core declares for every entry, described with the vocabulary of the fields so
@@ -183,14 +240,26 @@ object EntrySchemaGenerator {
             description = text("entry_schema_extra")
         ))
 
-        // The entry's state, and the DURATION fields running now
+        // The entry's state, and the DURATION fields running now. Written by the app, but for the
+        // status an entry is created with where the tool type lets its creator give one (EntryStart)
+        val start = declared.start
+        val givenStatus = start?.statuses?.isNotEmpty() == true
         val state = objectOf(
-            fields = declared.state.associate { it.definition.name to FieldValueSchema.forReader(it.definition, text) },
+            fields = declared.state.associate { field ->
+                field.definition.name to FieldValueSchema.forReader(field.definition, text).also {
+                    if (givenStatus && field.definition.name != EntryStart.STATUS) it.put("system_managed", true)
+                }
+            },
             required = emptyList(),
-            description = text("entry_schema_state")
+            description = when {
+                givenStatus -> text("entry_schema_state_start").format(start!!.statuses.joinToString(", "))
+                start != null -> text("entry_schema_state") + " " + start.refusal
+                else -> text("entry_schema_state")
+            }
         )
-        runningSchema(declared, extra, text)?.let { state.getJSONObject("properties").put(RUNNING_KEY, it) }
-        properties.put("state", state.put("system_managed", true))
+        runningSchema(declared, extra, text)?.let { state.getJSONObject("properties").put(RUNNING_KEY, it.put("system_managed", true)) }
+        if (!givenStatus) state.put("system_managed", true)
+        properties.put("state", state)
 
         return JSONObject()
             .put("type", "object")

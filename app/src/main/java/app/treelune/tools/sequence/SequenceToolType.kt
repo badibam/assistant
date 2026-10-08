@@ -179,7 +179,9 @@ object SequenceToolType : ToolTypeContract {
                 StateField(field(STARTED_AT, s.tool("field_started_at"), FieldType.DATETIME), filterable = false),
                 StateField(field(ENDED_AT, s.tool("field_ended_at"), FieldType.DATETIME), filterable = false),
                 StateField(field(RUN, s.tool("field_run"), FieldType.TEXT, s.tool("schema_run"), mapOf("length" to TextLength.UNLIMITED.name)), filterable = false)
-            )
+            ),
+            // A session is planned, started or noted by the tool's own operations
+            start = app.treelune.core.fields.EntryStart(emptyList(), refusal = s.tool("start_refused"))
         )
     }
 

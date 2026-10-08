@@ -948,6 +948,9 @@ class BackupService(private val context: Context) : ExecutableService {
             if (fromVersion < 62 && toVersion >= 62) {
                 GroupsAtV62.backup(data)
             }
+            if (fromVersion < 65 && toVersion >= 65) {
+                app.treelune.core.versioning.QuestionnaireStateAtV65.backup(data)
+            }
 
             // Transform app settings
             data.optJSONArray("app_settings_categories")?.let { array ->

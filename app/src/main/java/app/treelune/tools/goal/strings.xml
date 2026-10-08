@@ -83,4 +83,5 @@
     <string name="error_criterion_field">The criterion %1$s compares a field, which only an entered criterion has: declare the value entered, or compare a reading or a variable.</string>
     <string name="error_criterion_constants">The criterion %1$s compares two written values: one side must be read (a reading, a variable) or entered.</string>
     <string name="error_no_definition">This attempt kept no copy of the goal it was judged by: it was opened before the copy was kept</string>
+    <string name="start_refused">An attempt is not created: the goal opens it itself, switched on (enabled) from its start, for each period of its schedule. To start one, switch the goal on or set its start (UPDATE_TOOL).</string>
 </resources>

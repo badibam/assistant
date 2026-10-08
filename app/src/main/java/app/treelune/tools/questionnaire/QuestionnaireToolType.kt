@@ -80,8 +80,18 @@ object QuestionnaireToolType : ToolTypeContract {
                 StateField(FieldDefinition(STATUS, s.tool("field_status"), s.tool("schema_status"), FieldType.CHOICE, false,
                     mapOf("options" to ChoiceSettings.storedOptions(Status.ALL, Status.ALL.associateWith { s.tool("status_$it") }, emptyMap()))), filterable = true),
                 StateField(FieldDefinition(FILLED_AT, s.tool("field_filled_at"), s.tool("schema_filled_at"), FieldType.DATETIME, false, null), filterable = false)
-            )
+            ),
+            start = START
         )
+    }
+
+    /**
+     * A questionnaire written by someone is either passed, its answers in it (blank ones
+     * included, a question left unanswered is still answered so), or put to fill later. Ignoring
+     * is a gap chosen on one the app planned (QuestionnaireService), never a start.
+     */
+    val START = app.treelune.core.fields.EntryStart(listOf(Status.TO_FILL, Status.FILLED)) { status, now ->
+        JSONObject().put(STATUS, status).apply { if (status == Status.FILLED) put(FILLED_AT, now) }
     }
 
     /** Filling and ignoring an entry, for the screen and the AI alike. */

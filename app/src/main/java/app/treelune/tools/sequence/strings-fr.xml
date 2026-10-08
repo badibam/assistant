@@ -118,4 +118,5 @@
     <string name="error_counts_negative">Un nombre d\'étapes ne peut pas être négatif</string>
     <string name="action_mark_done">Faite</string>
     <string name="correct_total">Faites, sautées et non atteintes font %1$d étapes</string>
+    <string name="start_refused">Une séance ne se crée pas directement : en marquer une faite par l\'opération complete (TOOL_OPERATION), une prévue ou une à l\'heure donnée ; l\'app planifie les autres.</string>
 </resources>

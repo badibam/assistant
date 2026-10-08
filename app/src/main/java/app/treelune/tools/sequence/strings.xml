@@ -118,4 +118,5 @@
     <string name="error_counts_negative">A count of steps cannot be below zero</string>
     <string name="action_mark_done">Done</string>
     <string name="correct_total">Done, skipped and not reached add up to %1$d steps</string>
+    <string name="start_refused">A session is not created directly: mark one done with the operation complete (TOOL_OPERATION), a planned one or one at the time given; the app plans the others.</string>
 </resources>

@@ -771,6 +771,9 @@
     <string name="tools_base_schema_data_data">Data specific to the tool type</string>
     <string name="entry_schema_extra">Fields the user added to this tool</string>
     <string name="entry_schema_state">State of the entry, written by its actions and by the app, never directly</string>
+    <string name="entry_schema_state_start">State of the entry, written by the app. Creating an entry, give its status alone, one of: %s; the app sets the rest. Changing an entry, never write it</string>
+    <string name="service_error_start_status">An entry of this tool is created with its status in state.status, one of: %2$s (given: %1$s)</string>
+    <string name="service_error_start_state_fields">Creating an entry, only its status is given in its state; the app writes the rest (given: %s)</string>
     <string name="entry_schema_running">The duration fields running now, with the moment each started</string>
     <string name="entry_schema_running_container">Running duration fields of %1$s, by name</string>
 

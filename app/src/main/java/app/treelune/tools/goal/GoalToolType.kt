@@ -165,7 +165,9 @@ object GoalToolType : ToolTypeContract {
                 StateField(field(VALIDATED_AT, s.tool("field_validated_at"), FieldType.DATETIME), filterable = false),
                 StateField(field(REOPENED_AT, s.tool("field_reopened_at"), FieldType.DATETIME), filterable = false),
                 StateField(field(NOTIFIED, s.tool("field_notified"), FieldType.BOOLEAN), filterable = false)
-            )
+            ),
+            // An attempt is opened by the goal itself, which sets its period and copies its definition
+            start = app.treelune.core.fields.EntryStart(emptyList(), refusal = s.tool("start_refused"))
         )
     }
 

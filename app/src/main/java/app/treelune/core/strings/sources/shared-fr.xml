@@ -771,6 +771,9 @@
     <string name="tools_base_schema_data_data">Données spécifiques au type d\'outil</string>
     <string name="entry_schema_extra">Champs ajoutés à cet outil par l\'utilisateur</string>
     <string name="entry_schema_state">État de l\'entrée, écrit par ses actions et par l\'app, jamais directement</string>
+    <string name="entry_schema_state_start">État de l\'entrée, écrit par l\'app. À la création d\'une entrée, donner son statut seul, parmi : %s ; l\'app pose le reste. À la modification, ne jamais l\'écrire</string>
+    <string name="service_error_start_status">Une entrée de cet outil se crée avec son statut dans state.status, parmi : %2$s (donné : %1$s)</string>
+    <string name="service_error_start_state_fields">À la création d\'une entrée, seul son statut se donne dans son état ; l\'app écrit le reste (donné : %s)</string>
     <string name="entry_schema_running">Les champs de durée en cours, avec l\'instant où chacun a démarré</string>
     <string name="entry_schema_running_container">Champs de durée en cours de %1$s, par nom</string>
 
