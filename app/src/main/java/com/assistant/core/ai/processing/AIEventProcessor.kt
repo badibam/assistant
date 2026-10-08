@@ -22,6 +22,13 @@ import java.util.UUID
 /** The AI's commands that write values into a tool's entries, and so wait on its entries schema. */
 private val WRITES_READING_SCHEMA = com.assistant.core.ai.data.AICommands.ALL.filter { it.writesEntries }.map { it.type }.toSet()
 
+/** The phases of a round under way, the AI working without waiting for the user. */
+private val ROUND_PHASES = setOf(
+    Phase.EXECUTING_ENRICHMENTS, Phase.CALLING_AI, Phase.PARSING_AI_RESPONSE, Phase.PREPARING_CONTINUATION,
+    Phase.EXECUTING_DATA_QUERIES, Phase.WAITING_NETWORK_RETRY, Phase.RETRYING_AFTER_FORMAT_ERROR,
+    Phase.RETRYING_AFTER_ACTION_FAILURE
+)
+
 /**
  * Event processor with side effects for AI execution.
  *
@@ -49,7 +56,12 @@ class AIEventProcessor(
     private val validationResolver: ValidationResolver,
     private val commandExecutor: CommandExecutor
 ) {
-    private val processingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    // An error escaping a job of this scope (the AI call, the actions, a retry) stops the round
+    // instead of killing the app: the state, restored at the next start, would kill it again
+    private val roundFailure = kotlinx.coroutines.CoroutineExceptionHandler { _, e ->
+        processingScope.launch { stopRoundOnError(e) }
+    }
+    private val processingScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + roundFailure)
     private var networkRetryJob: Job? = null
     // The AI call in flight, run apart from the state loop so Stop and Interrupt can cancel it
     @Volatile private var aiCallJob: Job? = null
@@ -81,10 +93,18 @@ class AIEventProcessor(
         )
 
         stateCollectorJob = processingScope.launch {
-            // Before the restored state is handled: its actions must not run a second time
-            settleActionsCutByAppClosing()
+            // Before the restored state is handled: a round cut by the app closing is not taken
+            // up again, nor its actions run a second time
+            settleRoundCutByAppClosing()
             stateRepository.state.collect { state ->
-                handleStateChange(state)
+                // Caught here so that the loop outlives the error and handles the next states
+                try {
+                    handleStateChange(state)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    stopRoundOnError(e)
+                }
             }
         }
 
@@ -253,8 +273,44 @@ class AIEventProcessor(
                 e
             )
 
-            // Emit system error event
-            emit(AIEvent.SystemErrorOccurred(e.message ?: "Unknown error"))
+            // Emit system error event, once: the error event failing in turn would loop
+            if (incoming !is AIEvent.SystemErrorOccurred) emit(AIEvent.SystemErrorOccurred(e.message ?: "Unknown error"))
+        }
+    }
+
+    /**
+     * An error nothing else caught, in [e], stops the current round: a CHAT goes back to idle,
+     * its session open, with the error said in its messages (not to the AI: the app failed, not
+     * its answer); an AUTOMATION ends in error. Its own failure is only logged.
+     */
+    private suspend fun stopRoundOnError(e: Throwable) {
+        LogManager.aiSession("AI round stopped by an unexpected error: ${e.message}", "ERROR", e)
+        try {
+            val state = stateRepository.currentState
+            val sessionId = state.sessionId ?: return
+            val reason = e.message ?: e.javaClass.simpleName
+            if (state.sessionType == SessionType.AUTOMATION) {
+                emit(AIEvent.SystemErrorOccurred(reason))
+                return
+            }
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+            messageRepository.storeMessage(sessionId, SessionMessage(
+                id = UUID.randomUUID().toString(),
+                timestamp = System.currentTimeMillis(),
+                sender = MessageSender.SYSTEM,
+                richContent = null,
+                textContent = s.shared("ai_round_failed").format(reason),
+                aiMessage = null,
+                aiMessageJson = null,
+                systemMessage = null,
+                executionMetadata = null,
+                excludeFromPrompt = true
+            ))
+            emit(AIEvent.AIRoundInterrupted)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            LogManager.aiSession("Stopping the round after an error failed too: ${failure.message}", "ERROR", failure)
         }
     }
 
@@ -1526,13 +1582,22 @@ class AIEventProcessor(
      * Reads (enrichments, data queries) and the AI call are resumed as before: running them
      * again changes nothing.
      */
-    private suspend fun settleActionsCutByAppClosing() {
+    private suspend fun settleRoundCutByAppClosing() {
         val state = stateRepository.currentState
-        if (state.phase != Phase.EXECUTING_ACTIONS) return
-        LogManager.aiSession("Session ${state.sessionId} restored while executing actions: not run again", "WARN")
-        storeActionsCutMessage(state, "ai_actions_cut_by_app_closing")
-        if (state.sessionType == SessionType.AUTOMATION) emit(AIEvent.SessionCompleted(SessionEndReason.INTERRUPTED))
-        else emit(AIEvent.AIRoundInterrupted)
+        if (state.phase == Phase.EXECUTING_ACTIONS) {
+            LogManager.aiSession("Session ${state.sessionId} restored while executing actions: not run again", "WARN")
+            storeActionsCutMessage(state, "ai_actions_cut_by_app_closing")
+            if (state.sessionType == SessionType.AUTOMATION) emit(AIEvent.SessionCompleted(SessionEndReason.INTERRUPTED))
+            else emit(AIEvent.AIRoundInterrupted)
+            return
+        }
+        // A CHAT restored in the middle of a round waits for the user rather than taking the
+        // round up at start: a round that brought the app down would bring it down at every
+        // start. An AUTOMATION is taken up, the scheduler's way; an error stops it (stopRoundOnError).
+        if (state.sessionType == SessionType.CHAT && state.phase in ROUND_PHASES) {
+            LogManager.aiSession("CHAT ${state.sessionId} restored in ${state.phase}: round interrupted", "WARN")
+            emit(AIEvent.AIRoundInterrupted)
+        }
     }
 
     /** A message, sent to the AI too, that the actions of [state]'s session were cut, in the words of [key]. */

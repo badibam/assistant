@@ -402,6 +402,7 @@
 
     <!-- AI Round Interruption -->
     <string name="ai_round_interrupted">AI round interrupted</string>
+    <string name="ai_round_failed">AI round stopped by an error in the app: %1$s</string>
     <string name="ai_actions_stopped">Actions stopped while running: those finished before the stop took place, the one in progress was abandoned, the next ones did not run. Check what is there before running them again.</string>
     <string name="ai_actions_cut_by_app_closing">Actions cut by the app closing while they ran: those finished before took place, the one in progress was abandoned, the next ones did not run. Check what is there before running them again.</string>
     <string name="ai_call_cut_after_sending">The request had already gone out when it was cut: its cost is unknown</string>
