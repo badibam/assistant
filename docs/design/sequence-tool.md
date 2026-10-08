@@ -56,8 +56,9 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 
 - `start` (crée l'entrée ou reprend une entrée prévue) : écran et notification seulement — Android refuse de démarrer un service au premier plan depuis l'arrière-plan, où tourne l'IA d'une automation.
 - `log_after` : une entrée `done`, datée au choix, toutes ses étapes comptées faites, sa durée facultative. Écran et IA.
-- `done`, `skip`, `back`, `pause`, `resume`, `extend` (+15 s), `stop` : écran et notification seulement ; elles n'ont de sens que pour qui fait la séance.
-- `back` revient à l'étape précédente, qui ne compte plus comme faite ; son minuteur repart du début.
+- `done`, `skip`, `back`, `restart`, `pause`, `resume`, `extend` (+15 s), `stop` : écran et notification seulement ; elles n'ont de sens que pour qui fait la séance.
+- `back` annule le dernier passage d'étape, comme si le geste n'avait pas eu lieu : l'étape précédente reprend où elle en était, le temps écoulé depuis lui revient, l'étape quittée n'a pas commencé, les compteurs reviennent en arrière. Une étape au temps finie d'elle-même revient arrêtée à zéro, en attente de « Fait » ou de `restart` — sinon elle repasserait aussitôt.
+- `restart` relance l'étape en cours depuis le début.
 - Pas d'ajout d'étape ni de tour pendant une séance.
 
 ## Pendant la séance
