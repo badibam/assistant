@@ -5,6 +5,8 @@
     <!-- Metadata -->
     <string name="display_name">Structured data</string>
     <string name="description">Sheets of your own fields, each found by its name: foods and their calories, books, contacts</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Sheets of your own fields, each found by its name: foods, books, plants</string>
 
     <!-- Setting -->
     <string name="field_table_columns">Columns of the table</string>

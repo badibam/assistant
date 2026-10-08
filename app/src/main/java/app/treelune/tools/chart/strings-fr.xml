@@ -3,6 +3,8 @@
     <!-- Strings of the chart tooltype -->
     <string name="display_name">Graphique</string>
     <string name="description">Un graphique des entrées d\'autres outils et des variables, dessiné et jamais calculé : un sous-ensemble de Vega-Lite (layer, vconcat, hconcat, concat, facet, repeat ; marques line, point, bar, area, text, arc, tick, rect ; canaux d\'encoding) dont les données viennent d\'une source par couche, jamais écrites dans la config : les entrées d\'un outil, ou une grille qui lit des variables et des lectures de champ à chaque pas de la période affichée. Un total par jour est une colonne de grille, jamais une agrégation. Les couleurs sont des noms de la palette. Ne garde pas d\'entrées à lui.</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Vos entrées et vos chiffres dessinés en courbes, barres, camemberts ou calendriers</string>
     <string name="section_chart">Graphique</string>
     <string name="field_period">Période affichée</string>
     <string name="reference_display">le moment où le graphique s\'affiche</string>

@@ -5,6 +5,8 @@
     <!-- Metadata -->
     <string name="display_name">Messages</string>
     <string name="description">Scheduled or event-driven notifications and reminders</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Reminders and notifications, once or on a schedule</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
     <string name="schema_config_display_name">Message configuration</string>

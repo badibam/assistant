@@ -3,6 +3,8 @@
     <!-- Strings of the chart tooltype -->
     <string name="display_name">Chart</string>
     <string name="description">A chart of other tools\' entries and of variables, drawn and never computed: a subset of Vega-Lite (layer, vconcat, hconcat, concat, facet, repeat; marks line, point, bar, area, text, arc, tick, rect; encoding channels) whose data come from a source per layer, never written in the config: a tool\'s entries, or a grid reading variables and field readings at each step of the displayed period. A total per day is a grid column, never an aggregate. Colors are palette names. Keeps no entries of its own.</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Your entries and figures drawn as lines, bars, pies or calendars</string>
     <string name="section_chart">Chart</string>
     <string name="field_period">Period shown</string>
     <string name="reference_display">the moment the chart is shown</string>

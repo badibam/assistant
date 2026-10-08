@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="name">Par défaut</string>
+    <!-- What the theme looks like, said to the user: the README -->
+    <string name="tagline">Clair et sobre, dans la teinte de votre choix</string>
 </resources>

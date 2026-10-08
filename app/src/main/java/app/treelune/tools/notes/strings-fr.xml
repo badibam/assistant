@@ -5,6 +5,8 @@
     <!-- Métadonnées -->
     <string name="display_name">Notes</string>
     <string name="description">Prise de notes simple et rapide avec organisation flexible</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Des notes, chacune avec son titre, rangées là où elles servent</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
     <string name="schema_config_display_name">Configuration de notes</string>

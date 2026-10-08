@@ -3,6 +3,8 @@
     <!-- Strings of the questionnaire tooltype -->
     <string name="display_name">Questionnaire</string>
     <string name="description">Questions answered one per screen, on demand or at planned times, by you or with the AI</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Questions asked one per screen, when you want or at planned times</string>
     <string name="field_schedule">Invitations</string>
     <string name="field_enabled">On</string>
     <string name="schema_enabled">Switched off, no invitation is created</string>

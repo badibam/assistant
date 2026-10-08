@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="name">Default</string>
+    <!-- What the theme looks like, said to the user: the README -->
+    <string name="tagline">Clear and sober, in the colour of your choice</string>
 </resources>

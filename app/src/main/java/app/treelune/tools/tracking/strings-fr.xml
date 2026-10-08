@@ -5,6 +5,8 @@
     <!-- Métadonnées -->
     <string name="display_name">Suivi</string>
     <string name="description">Capture et analyse de données quantitatives et qualitatives au fil du temps</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Des chiffres, des notes, des choix, des chronos ou des mémos vocaux, notés au fil des jours : poids, sommeil, humeur, séances</string>
 
     <!-- CONFIG - Labels de paramètres spécifiques -->
     <string name="config_label_tracking_type">Type de tracking</string>

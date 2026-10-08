@@ -3,6 +3,8 @@
     <!-- Strings of the questionnaire tooltype -->
     <string name="display_name">Questionnaire</string>
     <string name="description">Des questions posées une par écran, à la demande ou à heures prévues, par vous ou avec l\'IA</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Des questions posées une par écran, quand vous voulez ou à heures prévues</string>
     <string name="field_schedule">Invitations</string>
     <string name="field_enabled">Actif</string>
     <string name="schema_enabled">Arrêté, aucune invitation n\'est créée</string>
