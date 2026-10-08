@@ -2,7 +2,7 @@
 
 Conçu à partir du 2026-10-06. Un troisième thème, à côté du défaut et du rétro : l'app comme un téléphone dans un jeu doux (Animal Crossing, Stardew Valley). Tout est rond et dodu, et c'est le seul thème dont le mouvement est un ressort : là où le rétro saute d'une cellule, le cosy s'écrase et rebondit.
 
-Maquettes (écran d'une zone, à côté des autres pistes de thème écartées) : https://claude.ai/artifact/XjCGGf19j1ZFGuDmhF2GbZ, planche « Cosy ». Lien privé, ouvert par son propriétaire ; Claude le relit avec l'outil Artifact (`read`).
+Maquettes (écran d'une zone, à côté des autres pistes de thème écartées) : `docs/theme-tracks/board-1.html`, planche « Cosy ».
 
 ## Le registre, d'après la maquette
 
