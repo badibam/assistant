@@ -95,7 +95,9 @@ class GridEditor internal constructor(
     private fun next(direction: Grid.Direction): List<Grid.Tile>? {
         val key = section.value ?: return null
         val id = selected.value ?: return null
-        return Grid.move(places(key) ?: return null, id, direction)
+        val places = places(key) ?: return null
+        // In one column the arrows move along the column (Grid.moveInOneColumn)
+        return if (app.treelune.core.themes.CurrentTheme.oneColumn) Grid.moveInOneColumn(places, id, direction) else Grid.move(places, id, direction)
     }
 
     /** The edit mode closed, the move in progress written. */

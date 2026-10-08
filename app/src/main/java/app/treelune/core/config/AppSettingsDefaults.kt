@@ -38,7 +38,8 @@ object AppSettingsDefaults {
             .put(AppSettings.UI_THEME, DEFAULT_THEME)
             .put(AppSettings.UI_MODE, app.treelune.core.themes.AppearanceMode.SYSTEM.name)
             .put(AppSettings.UI_HUE_SHIFT, 0)
-            .put(AppSettings.UI_SIZE_STEP, 0).toString()
+            .put(AppSettings.UI_SIZE_STEP, 0)
+            .put(AppSettings.UI_ONE_COLUMN, false).toString()
         // No relay until the user gives one
         AppSettingCategories.EXTERNAL_ACCESS -> JSONObject().toString()
         // Nothing seen, nothing started: the first-launch screen comes, then First steps

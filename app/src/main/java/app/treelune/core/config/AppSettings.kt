@@ -86,6 +86,9 @@ object AppSettings {
     /** The size steps: the theme's own, then three larger. */
     val SIZE_STEP_RANGE = 0..3
 
+    /** Whether the grids show in one column, for a narrow screen (Appearance.oneColumn). */
+    const val UI_ONE_COLUMN = "one_column"
+
     fun nodes(category: String, context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
         val text = s::shared
@@ -171,6 +174,7 @@ object AppSettings {
                         labels = modes.associateWith { text("settings_ui_mode_${it.lowercase()}") }, required = true),
                     scale(UI_HUE_SHIFT, text("settings_ui_hue_shift"), text("settings_ui_hue_shift_help"), HUE_SHIFT_RANGE),
                     scale(UI_SIZE_STEP, text("settings_ui_size_step"), text("settings_ui_size_step_help"), SIZE_STEP_RANGE),
+                    field(UI_ONE_COLUMN, text("settings_ui_one_column"), text("settings_ui_one_column_help"), FieldType.BOOLEAN, required = true),
                     field(UI_SOUNDS, text("settings_ui_sounds"), text("settings_ui_sounds_help"), FieldType.BOOLEAN, required = true)
                 )
             }

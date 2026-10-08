@@ -157,6 +157,7 @@ object JsonTransformers {
                     32 -> SettingsAtV33.rewrite(category, transformed) ?: transformed
                     33 -> if (category == AppSettingCategories.AI_LIMITS) AILimitsAtV34.rewrite(transformed) else transformed
                     63 -> if (category == AppSettingCategories.AI_LIMITS) AILimitsAtV64.rewrite(transformed) else transformed
+                    66 -> UiOneColumnAtV67.rewrite(category, transformed)
                     // Example future migration:
                     // 10 -> migrateAppConfigFrom10To11(transformed)
                     else -> transformed // No migrations

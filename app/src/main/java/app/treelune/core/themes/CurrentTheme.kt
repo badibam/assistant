@@ -40,6 +40,10 @@ object CurrentTheme {
     var sizeStep: Int by mutableStateOf(0)
         private set
 
+    /** Whether the grids show in one column (Appearance.oneColumn). */
+    var oneColumn: Boolean by mutableStateOf(false)
+        private set
+
     /** The mode shown, the phone's resolved. */
     val paletteMode: PaletteMode
         get() = when (mode) {
@@ -63,6 +67,7 @@ object CurrentTheme {
         hueShift = appearance.hueShift
         mode = appearance.mode
         sizeStep = appearance.sizeStep
+        oneColumn = appearance.oneColumn
     }
 
     /** Every theme, by id. */

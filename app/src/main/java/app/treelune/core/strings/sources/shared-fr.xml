@@ -952,6 +952,8 @@
     <string name="settings_ui_mode_system">Comme le téléphone</string>
     <string name="settings_ui_size_step">Taille de l\'interface</string>
     <string name="settings_ui_size_step_help">Agrandit l\'interface par crans entiers, dans les thèmes dessinés au pixel, pour que leurs pixels restent nets : ils ignorent la taille de texte d\'Android. Les autres thèmes gardent leur taille.</string>
+    <string name="settings_ui_one_column">Une colonne</string>
+    <string name="settings_ui_one_column_help">Les tuiles l\'une sous l\'autre, chaque moitié de l\'écran prenant toute sa largeur, pour un écran étroit. Les flèches du mode d\'édition déplacent alors une tuile dans la colonne, et la section est rangée de nouveau dans cet ordre : sa disposition sur la grille n\'est pas gardée.</string>
     <string name="settings_ui_sounds">Sons de l\'interface</string>
     <string name="settings_ui_sounds_help">Les sons que le thème joue quand vous touchez l\'écran. Le thème par défaut n\'en a pas.</string>
 

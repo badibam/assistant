@@ -52,6 +52,9 @@ val LocalGridRow = androidx.compose.runtime.staticCompositionLocalOf<androidx.co
  * measured by its constraints (BoxWithConstraints, a lazy list) cannot give. An empty cell stays
  * empty.
  *
+ * In one column (CurrentTheme.oneColumn) the tiles stand where Grid.oneColumn puts them, one
+ * under the other, two of a quarter side by side.
+ *
  * In edit mode ([edit]), the tiles stand at its places, the theme's cells show under them, and
  * the tiles keep their content but no longer react to their own gestures: a touch selects. The
  * tile being moved is kept in view, a line of margin above and below, the screen scrolling only
@@ -62,7 +65,9 @@ val LocalGridRow = androidx.compose.runtime.staticCompositionLocalOf<androidx.co
 fun GridLayout(stored: List<Grid.Tile>, grows: List<Boolean>, edit: GridEdit?, item: @Composable (Int) -> Unit) {
     if (stored.isEmpty()) return
     val placesById = edit?.places?.associateBy { it.id }
-    val tiles = stored.map { placesById?.get(it.id) ?: it }
+    // In one column (Appearance.oneColumn), the grid as that column shows it, its places read from the grid's
+    val grid = stored.map { placesById?.get(it.id) ?: it }
+    val tiles = if (CurrentTheme.oneColumn) Grid.oneColumn(grid, grid.filterIndexed { i, _ -> grows[i] }.map { it.id }.toSet()) else grid
     val rowCount = Grid.rowCount(tiles)
     val cells = if (edit != null) rowCount * Grid.COLUMNS else 0
 

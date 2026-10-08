@@ -662,7 +662,11 @@ object UI {
                 }
                 DisplayMode.MINIMAL -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) { Header() }
                 // The smallest space between the two halves, so that their texts never touch
-                DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Space.XS), verticalAlignment = Alignment.CenterVertically) {
+                // In one column, as CONDENSED: the header over the description (Grid.oneColumnSize)
+                DisplayMode.LINE -> if (CurrentTheme.oneColumn) Column(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) { Header() }
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) { Description() }
+                } else Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Space.XS), verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) { Header() }
                     Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) { Description() }
                 }
@@ -751,16 +755,25 @@ object UI {
             onClick = onClick,
             onLongClick = onLongClick
         ) {
-            // The header and the summary side by side, each on half the width
+            // In one column a half of the screen takes its whole width: the two halves of a row, one
+            // under the other, the tile a row taller (Grid.oneColumnSize)
+            val oneColumn = CurrentTheme.oneColumn
+
+            /** [first] and [other], each on half the width, or one over the other in one column. */
             @Composable
-            fun HeaderAndSummary(modifier: Modifier) = Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(Space.XS), verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
-                    ToolCardHeader(tool, context, waiting, running)
-                }
-                Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                    tile.Summary()
+            fun Halves(modifier: Modifier, first: @Composable () -> Unit, other: @Composable () -> Unit) {
+                if (oneColumn) Column(modifier = modifier) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) { first() }
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { other() }
+                } else Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(Space.XS), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) { first() }
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { other() }
                 }
             }
+
+            // The header and the summary side by side, each on half the width
+            @Composable
+            fun HeaderAndSummary(modifier: Modifier) = Halves(modifier, { ToolCardHeader(tool, context, waiting, running) }, { tile.Summary() })
 
             when (displayMode) {
                 DisplayMode.ICON -> {
@@ -776,14 +789,7 @@ object UI {
                     }
                 }
                 // The smallest space between the two halves, so that their texts never touch
-                DisplayMode.LINE -> Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(Space.XS), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
-                        ToolCardHeader(tool, context, waiting, running)
-                    }
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                        tile.Glance()
-                    }
-                }
+                DisplayMode.LINE -> Halves(Modifier.fillMaxSize(), { ToolCardHeader(tool, context, waiting, running) }, { tile.Glance() })
                 DisplayMode.CONDENSED -> {
                     Column(modifier = Modifier.fillMaxSize()) {
                         Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
@@ -795,10 +801,10 @@ object UI {
                     }
                 }
                 DisplayMode.EXTENDED, DisplayMode.SQUARE -> {
-                    // One row of cells for the header and the summary, the others for the body
+                    // One row of cells for the header and the summary (two in one column), the others for the body
                     val rows = if (displayMode == DisplayMode.EXTENDED) 1 else 3
                     Column(modifier = Modifier.fillMaxSize()) {
-                        HeaderAndSummary(Modifier.weight(1f).fillMaxWidth())
+                        HeaderAndSummary(Modifier.weight(if (oneColumn) 2f else 1f).fillMaxWidth())
                         Box(modifier = Modifier.weight(rows.toFloat()).fillMaxWidth()) {
                             tile.Body(rows)
                         }
@@ -808,7 +814,8 @@ object UI {
                     // As tall as the body needs, to a whole pixel of the theme (GridLayout). The header
                     // and the summary as tall as in EXTENDED: a row less the tile's frame
                     Column(modifier = Modifier.fillMaxSize()) {
-                        HeaderAndSummary(Modifier.fillMaxWidth().height(app.treelune.core.ui.components.LocalGridRow.current - CurrentTheme.current.tileFrame(DisplayMode.FULL)))
+                        val headerRows = if (oneColumn) 2 else 1
+                        HeaderAndSummary(Modifier.fillMaxWidth().height(app.treelune.core.ui.components.LocalGridRow.current * headerRows - CurrentTheme.current.tileFrame(DisplayMode.FULL)))
                         tile.Body(null)
                     }
                 }

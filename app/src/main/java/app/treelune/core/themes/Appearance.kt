@@ -14,24 +14,28 @@ enum class AppearanceMode { LIGHT, DARK, SYSTEM }
 
 /**
  * The look the interface settings choose (AppSettings, category UI): a theme, the mode, how far
- * round the hue circle its colours are turned, the size step.
+ * round the hue circle its colours are turned, the size step, one column or the grid.
  *
  * @property hueShift Degrees, 0 to 359, added to the hue of every colour of the theme but those
  *   that say something whatever the hue (states, tags): 0 shows the theme's own colours
+ * @property oneColumn The grids shown in one column, a half of the screen taking its whole width
+ *   (Grid.oneColumn), for a narrow screen; the places stored stay those of the grid
  */
 data class Appearance(
     val theme: String,
     val mode: AppearanceMode,
     val hueShift: Int,
-    val sizeStep: Int
+    val sizeStep: Int,
+    val oneColumn: Boolean
 ) {
     companion object {
         /** The look [settings] choose, the interface settings as stored or as being edited; null while a choice is missing. */
         fun from(settings: JSONObject): Appearance? {
             val theme = settings.optString(AppSettings.UI_THEME).ifEmpty { return null }
             val mode = settings.optString(AppSettings.UI_MODE).ifEmpty { return null }
-            if (!settings.has(AppSettings.UI_HUE_SHIFT) || !settings.has(AppSettings.UI_SIZE_STEP)) return null
-            return Appearance(theme, AppearanceMode.valueOf(mode), settings.getInt(AppSettings.UI_HUE_SHIFT), settings.getInt(AppSettings.UI_SIZE_STEP))
+            if (!settings.has(AppSettings.UI_HUE_SHIFT) || !settings.has(AppSettings.UI_SIZE_STEP) || !settings.has(AppSettings.UI_ONE_COLUMN)) return null
+            return Appearance(theme, AppearanceMode.valueOf(mode), settings.getInt(AppSettings.UI_HUE_SHIFT), settings.getInt(AppSettings.UI_SIZE_STEP),
+                settings.getBoolean(AppSettings.UI_ONE_COLUMN))
         }
     }
 }

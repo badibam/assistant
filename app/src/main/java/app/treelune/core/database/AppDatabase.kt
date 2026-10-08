@@ -103,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 66
+        const val VERSION = 67
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1724,6 +1724,27 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** The interface settings gain « One column », off: see UiOneColumnAtV67. */
+        private val MIGRATION_66_67 = object : Migration(66, 67) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.query("SELECT settings FROM app_settings_categories WHERE category = ?", arrayOf<Any?>(app.treelune.core.database.entities.AppSettingCategories.UI)).use { cursor ->
+                    if (!cursor.moveToFirst()) {
+                        LogManager.database("MIGRATION 66->67: no interface settings stored, the defaults are written on first read", "INFO")
+                        return
+                    }
+                    // Settings that cannot be read stay as they are; reading them then fails with the reason
+                    try {
+                        val settings = app.treelune.core.versioning.UiOneColumnAtV67.rewrite(app.treelune.core.database.entities.AppSettingCategories.UI, org.json.JSONObject(cursor.getString(0)))
+                        database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), app.treelune.core.database.entities.AppSettingCategories.UI))
+                    } catch (e: Exception) {
+                        LogManager.database("MIGRATION 66->67: interface settings left as they were: ${e.message}", "ERROR", e)
+                        return
+                    }
+                }
+                LogManager.database("MIGRATION 66->67: interface settings gain one_column, off", "INFO")
+            }
+        }
+
         /**
          * An MCP token names the refresh token its pair was handed out for, until the pair is used
          * (StoredToken.replaces): a new column, empty, every token held replacing nothing.
@@ -2483,7 +2504,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_62_63,
                     MIGRATION_63_64,
                     MIGRATION_64_65,
-                    MIGRATION_65_66
+                    MIGRATION_65_66,
+                    MIGRATION_66_67
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

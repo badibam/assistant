@@ -166,6 +166,89 @@ object Grid {
         }
     }
 
+    /** [tiles] in the order a screen reads them: by row, then by column. */
+    fun readingOrder(tiles: List<Tile>): List<Tile> = tiles.sortedWith(compareBy({ it.row }, { it.column }))
+
+    /**
+     * [order] laid on the grid in that order, at their sizes: each tile at the first free place at
+     * or after the one before it, along its row then on the next ones, from the left. Read again
+     * ([readingOrder]), the tiles come back in [order]. Whatever stood before (gaps, two tiles set
+     * side by side) is not kept.
+     */
+    fun pack(order: List<Tile>): List<Tile> {
+        val placed = mutableListOf<Tile>()
+        var row = 0
+        var column = 0
+        for (tile in order) {
+            while (true) {
+                if (column + tile.width > COLUMNS) { row++; column = 0; continue }
+                val here = tile.copy(column = column, row = row)
+                if (placed.none { it.overlaps(here) }) { placed += here; break }
+                column++
+            }
+        }
+        return placed
+    }
+
+    /**
+     * The size a tile of [width] × [height] takes in one column (the « Une colonne » setting): a
+     * half of the grid becomes its whole width, a quarter a half; a tile of the whole width,
+     * whose first row holds two halves side by side (its header and its summary), stacks them,
+     * one row taller.
+     */
+    fun oneColumnSize(width: Int, height: Int): Size =
+        if (width >= COLUMNS) Size(COLUMNS, height + 1) else Size(width * 2, height)
+
+    /**
+     * [tiles] as one column shows them: in their reading order, each at its size in one column
+     * ([oneColumnSize]), packed: a tile on each row, two of a quarter side by side. A tile of
+     * [grows] (FULL) keeps its single row, whose height is its content's. Returned in the order
+     * of [tiles]. Nothing of it is stored: it is read from the grid each time.
+     */
+    fun oneColumn(tiles: List<Tile>, grows: Set<String> = emptySet()): List<Tile> {
+        val shown = pack(readingOrder(tiles).map { tile ->
+            val size = if (tile.id in grows) Size(tile.width, tile.height) else oneColumnSize(tile.width, tile.height)
+            tile.copy(width = size.width, height = size.height)
+        }).associateBy { it.id }
+        return tiles.map { shown.getValue(it.id) }
+    }
+
+    /**
+     * Tile [id] moved by an arrow in one column, or null when that way changes nothing. The
+     * column's rows are read in order: up puts the tile before the row above, down after the row
+     * below; left and right swap it with its neighbour on its row (two tiles of a quarter). The
+     * grid is then packed in that new order ([pack]): what one column shows is what is stored,
+     * and the grid's own layout of the section is not kept.
+     */
+    fun moveInOneColumn(tiles: List<Tile>, id: String, direction: Direction): List<Tile>? {
+        val order = readingOrder(tiles).map { it.id }
+        val shownRow = oneColumn(tiles).associate { it.id to it.row }
+        // The column's rows, each the ids it starts, in order
+        val rows = order.groupBy { shownRow.getValue(it) }.values.toList()
+        val k = rows.indexOfFirst { id in it }
+        val onRow = rows[k]
+        val next: List<String> = when (direction) {
+            Direction.LEFT, Direction.RIGHT -> {
+                val at = onRow.indexOf(id)
+                val other = onRow.getOrNull(if (direction == Direction.LEFT) at - 1 else at + 1) ?: return null
+                order.map { when (it) { id -> other; other -> id; else -> it } }
+            }
+            Direction.UP -> {
+                if (k == 0) return null
+                val rest = order - id
+                rest.toMutableList().apply { add(rest.indexOf(rows[k - 1].first()), id) }
+            }
+            Direction.DOWN -> {
+                if (k == rows.lastIndex) return null
+                val rest = order - id
+                rest.toMutableList().apply { add(rest.indexOf(rows[k + 1].last()) + 1, id) }
+            }
+        }
+        val byId = tiles.associateBy { it.id }
+        val packed = pack(next.map { byId.getValue(it) })
+        return packed.takeIf { layout(it) != layout(tiles) }
+    }
+
     /**
      * True when [tiles] are a grid as the rules keep it: each inside the columns, none over
      * another, no row left empty.
