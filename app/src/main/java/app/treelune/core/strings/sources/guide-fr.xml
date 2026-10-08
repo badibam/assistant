@@ -115,7 +115,7 @@
     <string name="guide_automate_4_goal">Lisez son exécution</string>
     <string name="guide_automate_4_text">L\'historique de l\'automation garde chaque passage : ce que l\'IA a lu, fait et répondu, et ce que ça a coûté. Puis Suivant.</string>
     <string name="guide_organize_title">Organiser</string>
-    <string name="guide_organize_intro">Groupes de zones, zones, disposition des tuiles.</string>
+    <string name="guide_organize_intro">Groupes de zones sur l\'accueil, groupes d\'outils dans une zone, disposition des tuiles.</string>
     <string name="guide_connect_title">Relier les outils</string>
     <string name="guide_connect_intro">Variables, lectures, pointeurs d\'une entrée à une autre.</string>
     <string name="guide_talk_to_ai_title">Parler à l\'IA</string>

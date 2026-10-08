@@ -115,7 +115,7 @@
     <string name="guide_automate_4_goal">Read its run</string>
     <string name="guide_automate_4_text">The automation\'s history keeps each run: what the AI read, did and answered, and what it cost. Then Next.</string>
     <string name="guide_organize_title">Organize</string>
-    <string name="guide_organize_intro">Groups of zones, zones, the layout of their tiles.</string>
+    <string name="guide_organize_intro">Groups of zones on the home screen, groups of tools in a zone, the layout of the tiles.</string>
     <string name="guide_connect_title">Connect tools</string>
     <string name="guide_connect_intro">Variables, readings, pointers from one entry to another.</string>
     <string name="guide_talk_to_ai_title">Talk to the AI</string>

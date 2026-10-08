@@ -105,7 +105,7 @@ Le contenu des tutoriels 2 à 4 s'écrit à leur construction : il nomme des éc
 
 Un chapitre par sujet, lu dans l'ordre qu'on veut, tutoriel facultatif :
 
-- Organiser : groupes de zones, zones, disposition des tuiles.
+- Organiser : groupes de zones sur l'accueil, groupes d'outils dans une zone, disposition des tuiles — le même geste à deux niveaux, dans un seul chapitre.
 - Les outils : un chapitre par type, fourni par le type d'outil dans son dossier (`tools/<type>/`), à côté de ses textes, et découvert comme l'outil l'est ; un nouvel outil arrive avec son chapitre.
 - Relier : variables, lectures, pointeurs.
 - Parler à l'IA : le pointeur, les questions et validations, le coût.
