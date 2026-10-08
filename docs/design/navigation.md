@@ -6,6 +6,19 @@ Conçu le 2026-10-08, en partie. Aujourd'hui, ce qui est affiché découle d'une
 
 Une seule liste d'écrans, l'accueil en bas, l'écran visible en haut (Accueil › zone Course › outil Sorties › config). Ouvrir un écran l'ajoute, revenir le retire. Chaque sorte d'écran connaît son parent et la phrase qui y mène, pour le chemin du Guide.
 
+## Lieux et fenêtres
+
+- Entre dans la pile un **lieu** : un écran où l'on peut vouloir envoyer quelqu'un (tutoriel, notification, IA) ou revenir. L'accueil, une zone, un outil, la config d'une zone ou d'un outil, chaque page des Réglages, une session d'IA, une automation et ses exécutions, la conversation.
+- Reste hors de la pile une **fenêtre** de passage : confirmation, saisie d'une entrée, sélecteur de date, image agrandie. Elle appartient à l'écran qui l'ouvre et joue déjà son son à son apparition (`UI.Dialog`, `ConfirmDialog`, `FullScreenDialog`). Une étape de tutoriel n'en a pas besoin : elle attend l'opération, sa cible reste l'écran.
+- Le fil d'Ariane est la pile : il montre par où l'on est passé, et le retour en retire le dernier lieu.
+
+## La conversation
+
+- Un lieu posé par-dessus celui d'où on l'ouvre : « Accueil › Course › Sorties › Conversation », et la fermer ramène à Sorties. Seule elle flotte ainsi ; tout autre lieu remplace le précédent.
+- Son bouton est sur tous les écrans, plus seulement l'accueil.
+- Une conversation demandée depuis un écran (`ChatRequests`) ne ferme plus la zone ouverte (`selectedZoneId = null` dans `MainScreen`) : elle s'empile au-dessus.
+- Elle reste unique et commune à l'app, et montre toujours une automation en cours.
+
 ## Ce qu'elle apporte
 
 - L'écran ouvert, que lit la bande d'un tutoriel.
@@ -19,13 +32,12 @@ Une seule liste d'écrans, l'accueil en bas, l'écran visible en haut (Accueil �
 
 Les sons d'aller et retour se jouent dans la pile, plus dans les gestes. Aujourd'hui ENTER ne se joue qu'à quatre endroits (carte de zone, carte générique `core/ui/UI.kt:737`, entrées des Réglages, boutons configurer et voir), BACK seulement dans un des 10 gestionnaires du retour (`core/ui/UI.kt:695`), et le bouton de conversation joue OPEN pour un écran entier : un même écran sonne différemment selon le chemin, ou pas du tout.
 
-- Un écran ajouté joue ENTER, un écran retiré BACK ; un écran posé par-dessus le précédent joue OPEN et CLOSE.
+- Un lieu ajouté joue ENTER, un lieu retiré BACK ; la conversation, posée par-dessus, joue OPEN et CLOSE.
 - Les gestes de navigation ne jouent plus rien (`ButtonAction.signal()` perd BACK, CANCEL, CONFIGURE, VIEW, AI_CHAT), sinon deux sons se suivent.
 - CONFIRM, TOGGLE, STEP, SCROLL_END et REFUSE restent aux gestes.
 
 ## Ce qui reste ouvert
 
-- Quels écrans se posent par-dessus le précédent et lesquels le remplacent ; si un dialogue est dans la pile.
 - La forme du fil d'Ariane et sa place.
 - Ce que l'ouverture depuis l'extérieur accepte (quels écrans, quels paramètres), et qui peut la demander.
 - La survie de la pile à la mort du processus (les interrupteurs sont aujourd'hui `rememberSaveable`).
