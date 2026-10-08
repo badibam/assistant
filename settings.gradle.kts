@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Assistant Personnel"
+rootProject.name = "Treelune"
 include(":app")

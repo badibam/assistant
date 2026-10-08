@@ -1,6 +1,6 @@
 # Gestion des Données
 
-Guide technique pour la navigation, validation et manipulation des données dans l'architecture Assistant.
+Guide technique pour la navigation, validation et manipulation des données dans l'architecture Treelune.
 
 ##
 ## Navigation Hiérarchique

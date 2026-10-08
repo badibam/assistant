@@ -8,12 +8,12 @@ set -e
 # The key lives here rather than in the repository: a gitignored file at the root would
 # still be swept away by `git clean -xdf`, and this key cannot be regenerated -- it is the
 # app's identity to every phone that installed it.
-CONFIG_DIR="$HOME/.config/assistant"
+CONFIG_DIR="$HOME/.config/treelune"
 KEYSTORE_FILE="$CONFIG_DIR/release.keystore"
 SIGNING_ENV="$CONFIG_DIR/signing.env"
-KEY_ALIAS="assistant-release"
+KEY_ALIAS="treelune-release"
 
-echo "Generating the release key for Assistant"
+echo "Generating the release key for Treelune"
 
 mkdir -p "$CONFIG_DIR"
 chmod 700 "$CONFIG_DIR"
@@ -57,7 +57,7 @@ keytool -genkeypair \
 # What ./run release reads. Written here so the passwords are never retyped, and never
 # printed.
 cat > "$SIGNING_ENV" <<EOF
-# La clé de release d'Assistant. Hors du dépôt, et hors de sa portée : un fichier
+# La clé de release de Treelune. Hors du dépôt, et hors de sa portée : un fichier
 # gitignoré à la racine se ferait quand même emporter par un \`git clean -xdf\`.
 #
 #   ./run release
@@ -65,10 +65,10 @@ cat > "$SIGNING_ENV" <<EOF
 # Cette clé est l'identité de l'app pour qui l'installe depuis GitHub. Perdue, plus
 # aucune mise à jour ne s'installe par-dessus — il faut désinstaller, ce qui efface
 # les données. À sauvegarder ailleurs que sur ce disque.
-export ASSISTANT_KEYSTORE=$KEYSTORE_FILE
-export ASSISTANT_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
-export ASSISTANT_KEY_ALIAS=$KEY_ALIAS
-export ASSISTANT_KEY_PASSWORD=$KEY_PASSWORD
+export TREELUNE_KEYSTORE=$KEYSTORE_FILE
+export TREELUNE_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
+export TREELUNE_KEY_ALIAS=$KEY_ALIAS
+export TREELUNE_KEY_PASSWORD=$KEY_PASSWORD
 EOF
 
 chmod 600 "$KEYSTORE_FILE" "$SIGNING_ENV"

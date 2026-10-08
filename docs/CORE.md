@@ -126,9 +126,9 @@ coordinator.processUserAction(), processAICommand(), processScheduledTask() avec
 
 **Imports requis** :
 ```kotlin
-import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.commands.CommandStatus
-import com.assistant.core.strings.Strings
+import app.treelune.core.coordinator.Coordinator
+import app.treelune.core.commands.CommandStatus
+import app.treelune.core.strings.Strings
 ```
 
 **Exemples** :

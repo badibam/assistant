@@ -45,7 +45,7 @@ Ouvert depuis l'écran d'après plantage, ou à la demande par la tuile « Signa
 - En haut, le champ libre « Ce qui s'est passé », facultatif.
 - Puis le rapport, en texte brut, défilant, exactement ce qui part — champ libre compris, mis à jour quand on l'écrit.
 - La phrase sur le nettoyage.
-- **Envoyer** : le menu de partage d'Android (`ACTION_SEND`, `text/plain`) avec le rapport en texte et un sujet « Rapport de bug Assistant <version> ». Aucun destinataire imposé : la personne choisit l'app et le destinataire.
+- **Envoyer** : le menu de partage d'Android (`ACTION_SEND`, `text/plain`) avec le rapport en texte et un sujet « Rapport de bug Treelune <version> ». Aucun destinataire imposé : la personne choisit l'app et le destinataire.
 
 Pas de retrait ligne par ligne : on envoie ou non, et on coupe au besoin dans l'app qui reçoit.
 
@@ -57,6 +57,6 @@ Pas de retrait ligne par ligne : on envoie ou non, et on coupe au besoin dans l'
 
 ## Sur l'appareil
 
-- Provoquer un plantage (`adb shell am crash com.assistant.debug` pour la version debug, à vérifier qu'il passe par le gestionnaire), relancer : l'écran d'après plantage, le rapport avec la pile d'appels, le partage vers une app de messagerie.
+- Provoquer un plantage (`adb shell am crash app.treelune.debug` pour la version debug, à vérifier qu'il passe par le gestionnaire), relancer : l'écran d'après plantage, le rapport avec la pile d'appels, le partage vers une app de messagerie.
 - « Continuer » : l'app démarre, l'écran ne revient pas au lancement suivant.
 - La tuile « Signaler un bug » sans plantage : le rapport sans section plantage.

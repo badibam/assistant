@@ -6,14 +6,14 @@ plugins {
 }
 
 android {
-    namespace = "com.assistant"
+    namespace = "app.treelune"
     compileSdk = 37
     // Pinned rather than left to the AGP default: the F-Droid build server must resolve the
     // same toolchain, or the APKs cannot be compared.
     buildToolsVersion = "37.0.0"
 
     defaultConfig {
-        applicationId = "com.assistant"
+        applicationId = "app.treelune"
         minSdk = 26
         targetSdk = 34
         versionCode = 27
@@ -33,13 +33,13 @@ android {
     // No config at all when the environment is silent, rather than a placeholder password:
     // a release signed with the wrong key installs nowhere and says nothing about why.
     signingConfigs {
-        val store = System.getenv("ASSISTANT_KEYSTORE")
+        val store = System.getenv("TREELUNE_KEYSTORE")
         if (store != null) {
             create("release") {
                 storeFile = file(store)
-                storePassword = System.getenv("ASSISTANT_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("ASSISTANT_KEY_ALIAS")
-                keyPassword = System.getenv("ASSISTANT_KEY_PASSWORD")
+                storePassword = System.getenv("TREELUNE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("TREELUNE_KEY_ALIAS")
+                keyPassword = System.getenv("TREELUNE_KEY_PASSWORD")
             }
         }
     }
@@ -102,7 +102,7 @@ androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->
             (output as com.android.build.api.variant.impl.VariantOutputImpl)
-                .outputFileName.set("assistant-v${output.versionName.get()}.apk")
+                .outputFileName.set("treelune-v${output.versionName.get()}.apk")
         }
     }
 }
@@ -122,9 +122,9 @@ tasks.register("generateStringResources") {
     description = "Generate string resources from tool, theme and shared XML files, one output per locale"
     group = "build"
     
-    val toolsDir = file("src/main/java/com/assistant/tools")
-    val themesDir = file("src/main/java/com/assistant/themes")
-    val sharedStringsDir = file("src/main/java/com/assistant/core/strings/sources") // Sources strings shared
+    val toolsDir = file("src/main/java/app/treelune/tools")
+    val themesDir = file("src/main/java/app/treelune/themes")
+    val sharedStringsDir = file("src/main/java/app/treelune/core/strings/sources") // Sources strings shared
     val resDir = file("src/main/res")
     
     // Gradle cache: run if any source changed
@@ -343,5 +343,5 @@ tasks.withType<Test>().configureEach {
     inputs.dir("src/main/assets/icons")
     inputs.dir("src/main/assets/demo")
     inputs.dir("src/main/res/drawable")
-    inputs.file("src/main/java/com/assistant/core/strings/sources/ai_prompt_chunks.xml")
+    inputs.file("src/main/java/app/treelune/core/strings/sources/ai_prompt_chunks.xml")
 }

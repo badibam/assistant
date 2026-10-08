@@ -25,9 +25,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TOOLS = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "tools"
-THEMES = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "themes"
-SHARED = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "core" / "strings" / "sources"
+TOOLS = ROOT / "app" / "src" / "main" / "java" / "app" / "treelune" / "tools"
+THEMES = ROOT / "app" / "src" / "main" / "java" / "app" / "treelune" / "themes"
+SHARED = ROOT / "app" / "src" / "main" / "java" / "app" / "treelune" / "core" / "strings" / "sources"
 
 # The same shapes the gradle task reads, kept in step with it by hand: a source file is a
 # locale of a namespace, and a string is a name with a body.

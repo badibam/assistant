@@ -29,9 +29,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "app" / "src" / "main" / "java"
-SHARED = SOURCES / "com" / "assistant" / "core" / "strings" / "sources"
-TOOLS = SOURCES / "com" / "assistant" / "tools"
-THEMES = SOURCES / "com" / "assistant" / "themes"
+SHARED = SOURCES / "app" / "treelune" / "core" / "strings" / "sources"
+TOOLS = SOURCES / "app" / "treelune" / "tools"
+THEMES = SOURCES / "app" / "treelune" / "themes"
 
 KEY = re.compile(r'<string name="([^"]+)"')
 CALL = re.compile(r'\.(shared|tool|theme)\("([A-Za-z0-9_]+)"\)')
@@ -68,8 +68,8 @@ def main():
     for path in sorted(SOURCES.rglob("*.kt")):
         relative = path.relative_to(SOURCES)
         parts = relative.parts
-        own_tool = parts[3] if len(parts) > 3 and parts[:3] == ("com", "assistant", "tools") else None
-        own_theme = parts[3] if len(parts) > 3 and parts[:3] == ("com", "assistant", "themes") else None
+        own_tool = parts[3] if len(parts) > 3 and parts[:3] == ("app", "treelune", "tools") else None
+        own_theme = parts[3] if len(parts) > 3 and parts[:3] == ("app", "treelune", "themes") else None
         for number, line in code_lines(path.read_text(encoding="utf-8")):
             for kind, key in CALL.findall(line):
                 if kind == "shared":

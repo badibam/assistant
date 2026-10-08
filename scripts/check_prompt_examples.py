@@ -57,10 +57,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-PROMPT = ROOT / "app/src/main/java/com/assistant/core/strings/sources/ai_prompt_chunks.xml"
-FIELD_TYPE = ROOT / "app/src/main/java/com/assistant/core/fields/FieldType.kt"
-ENTRY_FIELDS = ROOT / "app/src/main/java/com/assistant/core/fields/EntryFields.kt"
-MESSAGE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/AIMessageSchemas.kt"
+PROMPT = ROOT / "app/src/main/java/app/treelune/core/strings/sources/ai_prompt_chunks.xml"
+FIELD_TYPE = ROOT / "app/src/main/java/app/treelune/core/fields/FieldType.kt"
+ENTRY_FIELDS = ROOT / "app/src/main/java/app/treelune/core/fields/EntryFields.kt"
+MESSAGE_SCHEMAS = ROOT / "app/src/main/java/app/treelune/core/ai/data/AIMessageSchemas.kt"
 ICON_INDEX = ROOT / "app/src/main/assets/icons/index.json"
 
 # What AICommandProcessor adds to an entry command itself, from the tool it names.

@@ -76,9 +76,9 @@
 
 ```
 ./db_backups/
-├── assistant_database_20241207_143022 # Backup timestamp
-├── assistant_database_avant_migration # Backup nommé
-└── assistant_database_pre_migration_test # Auto-backup test
+├── treelune_database_20241207_143022 # Backup timestamp
+├── treelune_database_avant_migration # Backup nommé
+└── treelune_database_pre_migration_test # Auto-backup test
 ```
 
 ---

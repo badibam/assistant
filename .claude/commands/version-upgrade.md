@@ -25,7 +25,7 @@ On passe à la version $1
 9. **Release GitHub** :
    - Utiliser `gh release create v$1` timeout:10min
    - Ajouter notes de version (fichier corrigé)
-   - Attacher APK : `app/build/outputs/apk/release/assistant-v$1.apk`
+   - Attacher APK : `app/build/outputs/apk/release/treelune-v$1.apk`
 10. **Cleanup** : Supprimer fichier notes de version temporaire
 11. **Merge main** :
    - `git checkout main`

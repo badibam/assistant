@@ -10,7 +10,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Après la migration 63 : les zones s'ouvrent, leurs icônes neutres ; une sauvegarde faite avant s'importe de même.
 - Importer une sauvegarde faite avant la mise à jour (base 52 ou plus ancienne) : chaque zone montre ses outils dans le même ordre, l'accueil ses zones de même ; les récurrences et les pointeurs se relisent. Juste après, l'écran des journaux filtré sur « Error » ne montre aucune ligne `MIGRATION`.
 - Un pointeur qui filtrait un instant par « = » (avant la migration 52) est refusé en le disant : rien ne part en silence.
-- Après un plantage (`adb shell am crash com.assistant.debug`, à vérifier qu'il passe par le gestionnaire de l'app ; `bug-report.md`) : au lancement suivant, l'écran « L'app s'est arrêtée » avant tout le reste ; « Voir le rapport » montre la pile d'appels, « Envoyer » ouvre le menu de partage avec le rapport entier ; « Continuer » démarre l'app, et l'écran ne revient pas au lancement d'après.
+- Après un plantage (`adb shell am crash app.treelune.debug`, à vérifier qu'il passe par le gestionnaire de l'app ; `bug-report.md`) : au lancement suivant, l'écran « L'app s'est arrêtée » avant tout le reste ; « Voir le rapport » montre la pile d'appels, « Envoyer » ouvre le menu de partage avec le rapport entier ; « Continuer » démarre l'app, et l'écran ne revient pas au lancement d'après.
 - Après la migration 64 : Réglages › IA › Limites montre « Taille des outils toujours envoyés avant confirmation » à 15 000.
 - Fermer l'app de force pendant que l'IA répond dans une discussion, la relancer : « Round IA interrompu » dans la discussion, l'IA au repos, rien ne repart seul.
 

@@ -1,0 +1,283 @@
+package app.treelune.core.ai.domain
+
+import app.treelune.core.ai.data.AIMessage
+import app.treelune.core.ai.data.CommandResult
+import app.treelune.core.ai.data.SessionEndReason
+
+/**
+ * Events that drive the AI state machine.
+ *
+ * Each event represents something that happened and triggers a state transition.
+ * Events are immutable data describing what occurred.
+ *
+ * Architecture: Event-Driven State Machine (V2)
+ * - Events are emitted by external actors (UI, network, timers, etc.)
+ * - AIEventProcessor processes events and triggers side effects
+ * - AIStateMachine handles pure state transitions
+ * - AIStateRepository ensures atomic memory + DB updates
+ */
+sealed class AIEvent {
+
+    // ==================== Session Lifecycle ====================
+
+    /**
+     * Request to activate a session (make it the active session).
+     * Can be CHAT or AUTOMATION session.
+     *
+     * Scheduler decides if activation is immediate (slot free)
+     * or requires eviction/queueing (slot occupied).
+     *
+     * @param sessionId ID of session to activate
+     * @param sessionType Type of session (CHAT, AUTOMATION, SEED)
+     * @param awaitingAnswer Whether the CHAT's last message is the AI's communication module, left
+     *   unanswered: set by AIEventProcessor from the stored messages, never by the caller
+     */
+    data class SessionActivationRequested(
+        val sessionId: String,
+        val sessionType: app.treelune.core.ai.data.SessionType,
+        val awaitingAnswer: Boolean = false
+    ) : AIEvent()
+
+    /**
+     * Session completed and should be closed.
+     *
+     * @param reason Why the session ended (COMPLETED, CANCELLED, TIMEOUT, ERROR, etc.)
+     */
+    data class SessionCompleted(val reason: SessionEndReason) : AIEvent()
+
+    // ==================== User Message ====================
+
+    /**
+     * User message enrichments executed successfully.
+     *
+     * Enrichments are blocks added by user (POINTER, FILE)
+     * that generate data commands executed before calling AI.
+     *
+     * @param results Results of enrichment command executions
+     */
+    data class EnrichmentsExecuted(val results: List<CommandResult>) : AIEvent()
+
+    // ==================== AI Interaction ====================
+
+    /**
+     * AI provider returned a response (raw content string).
+     *
+     * Next phase will parse this content into AIMessage structure.
+     *
+     * @param content Raw AI response content (JSON string expected)
+     */
+    data class AIResponseReceived(val content: String) : AIEvent()
+
+    /**
+     * AI response successfully parsed into AIMessage.
+     *
+     * Decision logic based on AIMessage fields determines next transition:
+     * - validationRequest=true → WAITING_VALIDATION
+     * - communicationModule → WAITING_COMMUNICATION_RESPONSE (CHAT only)
+     * - dataCommands → EXECUTING_DATA_QUERIES
+     * - actionCommands → EXECUTING_ACTIONS
+     * - else → COMPLETED
+     *
+     * @param message Parsed AI message structure
+     */
+    data class AIResponseParsed(val message: AIMessage) : AIEvent()
+
+    // ==================== Continuation ====================
+
+    /**
+     * Continuation guidance message prepared and ready to continue.
+     *
+     * Emitted after PREPARING_CONTINUATION phase completes.
+     * Transition back to CALLING_AI to send guidance message to AI.
+     */
+    object ContinuationReady : AIEvent()
+
+    // ==================== User Interactions ====================
+
+    /**
+     * Validation not required after checking with ValidationResolver.
+     *
+     * Triggered when entering WAITING_VALIDATION but no validation actually needed.
+     * Transitions directly to EXECUTING_ACTIONS.
+     */
+    object ValidationNotRequired : AIEvent()
+
+    /**
+     * User validated or rejected actions (CHAT only).
+     *
+     * @param approved true if user approved, false if rejected
+     */
+    data class ValidationReceived(val approved: Boolean) : AIEvent()
+
+    /**
+     * Data fetched for the AI went over the CHAT threshold: it is stored out of the prompt,
+     * and the user decides whether it is sent (CHAT only).
+     */
+    object DataConfirmationRequested : AIEvent()
+
+    /**
+     * User sent or refused data above the threshold (CHAT only). Either way the AI is called:
+     * with the data, or with the refusal and the requests it concerned.
+     */
+    data class DataConfirmationReceived(val approved: Boolean) : AIEvent()
+
+    /**
+     * User responded to communication module (CHAT only).
+     *
+     * @param response User's text response
+     * @param note A note the user added to the answer, sent after it
+     */
+    data class CommunicationResponseReceived(val response: String, val note: String? = null) : AIEvent()
+
+    /**
+     * User cancelled communication module (CHAT only).
+     *
+     * Creates COMMUNICATION_CANCELLED system message and transitions to IDLE.
+     */
+    object CommunicationCancelled : AIEvent()
+
+    /**
+     * User interrupted current AI round (CHAT only).
+     *
+     * Cancels the AI call in flight, if any, but keeps the session active: it passes through
+     * INTERRUPTED, where the interruption is recorded, then waits for the next user message.
+     */
+    object AIRoundInterrupted : AIEvent()
+
+    /**
+     * Interruption recorded in the session's messages (CHAT only).
+     *
+     * Emitted by AIEventProcessor on INTERRUPTED. Transitions back to IDLE.
+     */
+    object InterruptionRecorded : AIEvent()
+
+    /**
+     * User message sent (triggers enrichment execution), from IDLE or in place of the answer to
+     * a pending communication module.
+     *
+     * First step of user message processing flow.
+     */
+    object UserMessageSent : AIEvent()
+
+    // ==================== Command Execution ====================
+
+    /**
+     * Data query commands executed successfully.
+     *
+     * Results are formatted and will be sent back to AI in next round.
+     *
+     * @param results Command execution results
+     */
+    data class DataQueriesExecuted(val results: List<CommandResult>) : AIEvent()
+
+    /**
+     * The AI's writes touch tools whose entries schema it has not received in the session.
+     *
+     * Nothing was carried out and the user was asked nothing: the schemas go back to the AI,
+     * which sends its writes again.
+     */
+    object SchemaRequired : AIEvent()
+
+    /**
+     * Action commands executed (successfully or with failures).
+     *
+     * If all successful and keepControl=true (or AUTOMATION), AI continues.
+     * If failures, retry logic applies.
+     *
+     * @param results Command execution results
+     * @param allSuccess true if all actions succeeded
+     * @param keepControl keepControl flag from AIMessage (null if not specified)
+     */
+    data class ActionsExecuted(
+        val results: List<CommandResult>,
+        val allSuccess: Boolean,
+        val keepControl: Boolean?
+    ) : AIEvent()
+
+    // ==================== Completion (AUTOMATION only) ====================
+
+    // ==================== Errors & Retry ====================
+
+    /**
+     * Provider error occurred (provider not configured, invalid config, etc.).
+     *
+     * This is a permanent error that should not retry.
+     * Session ends with ERROR reason and user is notified via toast.
+     *
+     * @param message Error description for user
+     */
+    data class ProviderErrorOccurred(val message: String) : AIEvent()
+
+    /**
+     * Network error occurred while calling AI.
+     *
+     * CHAT: Stop immediately, no retry.
+     * AUTOMATION: Infinite retry with 30s delay.
+     *
+     * @param attempt Retry attempt number (0 = first failure)
+     */
+    data class NetworkErrorOccurred(val attempt: Int) : AIEvent()
+
+    /**
+     * AI response parsing failed (format error).
+     *
+     * Store error system message and retry with error details.
+     * No artificial limit, maxRoundtrips will stop if AI loops.
+     *
+     * @param error Parse error description
+     */
+    data class ParseErrorOccurred(val error: String) : AIEvent()
+
+    /**
+     * Action execution had failures.
+     *
+     * Store results system message and retry with failure details.
+     * No artificial limit, maxRoundtrips will stop if AI loops.
+     *
+     * @param errors Failed command results
+     */
+    data class ActionFailureOccurred(val errors: List<CommandResult>) : AIEvent()
+
+    /**
+     * Network retry scheduled (after 30s delay).
+     *
+     * Transition back to CALLING_AI phase to retry.
+     */
+    object NetworkRetryScheduled : AIEvent()
+
+    /**
+     * Retry scheduled after format error or action failure.
+     *
+     * Transition back to CALLING_AI phase to retry with error context.
+     */
+    object RetryScheduled : AIEvent()
+
+    /**
+     * Network became available after being offline.
+     *
+     * Used to trigger immediate retry instead of waiting full 30s delay.
+     */
+    object NetworkAvailable : AIEvent()
+
+    /**
+     * System error occurred (unexpected exception).
+     *
+     * Triggers session completion with ERROR reason.
+     *
+     * @param message Error description
+     */
+    data class SystemErrorOccurred(val message: String) : AIEvent()
+
+    // ==================== System ====================
+
+    /**
+     * Scheduler heartbeat
+     * Double trigger: internal coroutine (1 min, app-open) + WorkManager (15 min, app-closed)
+     *
+     * Triggers:
+     * - Watchdog check (timeout detection)
+     * - Queue processing (if slot free)
+     * - Scheduled automation check (if slot free + queue empty)
+     */
+    object SchedulerHeartbeat : AIEvent()
+}

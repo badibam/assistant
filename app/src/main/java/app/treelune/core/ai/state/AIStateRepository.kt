@@ -1,0 +1,304 @@
+package app.treelune.core.ai.state
+
+import android.content.Context
+import app.treelune.core.ai.database.AIDao
+import app.treelune.core.ai.database.AISessionEntity
+import app.treelune.core.ai.data.SessionEndReason
+import app.treelune.core.ai.data.SessionType
+import app.treelune.core.ai.domain.AIEvent
+import app.treelune.core.ai.domain.AILimitsConfig
+import app.treelune.core.ai.domain.AIState
+import app.treelune.core.ai.domain.AIStateMachine
+import app.treelune.core.ai.domain.Phase
+import app.treelune.core.ai.domain.WaitingContext
+import app.treelune.core.utils.AppConfigManager
+import app.treelune.core.utils.LogManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+/**
+ * Repository for AI state management with atomic memory + DB synchronization.
+ *
+ * Single source of truth pattern:
+ * - Memory (_state) is the source of truth during execution
+ * - DB is backup for recovery and audit
+ * - All transitions are atomic (memory + DB updated together)
+ *
+ * Architecture: Event-Driven State Machine (V2)
+ * - Receives events via emit()
+ * - Delegates transition logic to AIStateMachine
+ * - Synchronizes state to DB transactionally
+ * - Emits state changes via StateFlow
+ */
+class AIStateRepository(
+    private val context: Context,
+    private val aiDao: AIDao
+) {
+    /**
+     * In-memory state (source of truth during execution)
+     */
+    private val _state = MutableStateFlow(AIState.idle())
+
+    /**
+     * Observable state flow for UI and components
+     */
+    val state: StateFlow<AIState> = _state.asStateFlow()
+
+    /**
+     * Current state value (convenience accessor)
+     */
+    val currentState: AIState
+        get() = _state.value
+
+    /**
+     * Process an event and transition to new state.
+     *
+     * This operation is atomic:
+     * 1. Calculate new state via AIStateMachine
+     * 2. Update memory state
+     * 3. Sync to DB
+     * 4. Emit state change
+     *
+     * @param event Event to process
+     * @return New state after transition
+     */
+    suspend fun emit(event: AIEvent): AIState {
+        val oldState = currentState
+        val currentTime = System.currentTimeMillis()
+
+        // Get limits configuration for current session type
+        val limits = if (oldState.sessionType != null) {
+            AppConfigManager.getAILimits().getLimitsForSessionType(oldState.sessionType)
+        } else {
+            // No active session - use default CHAT limits
+            AppConfigManager.getAILimits().getLimitsForSessionType(SessionType.CHAT)
+        }
+
+        // Calculate new state via pure state machine
+        val newState = AIStateMachine.transition(oldState, event, limits, currentTime)
+
+        // Update memory state
+        _state.value = newState
+
+        // Sync to DB if there's an active session
+        if (newState.sessionId != null) {
+            syncStateToDb(newState)
+        }
+
+        // Log transition for debugging
+        LogManager.aiSession(
+            "State transition: ${oldState.phase} -> ${newState.phase} (event: ${event::class.simpleName})",
+            "INFO"
+        )
+
+        return newState
+    }
+
+    /**
+     * Initialize state from DB on app startup.
+     *
+     * Loads active session from DB and reconstructs state.
+     * If no active session, starts with idle state.
+     */
+    suspend fun initializeFromDb() {
+        val activeSession = aiDao.getActiveSession()
+
+        if (activeSession != null) {
+            // Check if session was stuck in AWAITING_SESSION_CLOSURE
+            // This happens if app was closed while timer was running
+            if (activeSession.phase == "AWAITING_SESSION_CLOSURE") {
+                LogManager.aiSession(
+                    "Session ${activeSession.id} was stuck in AWAITING_SESSION_CLOSURE - completing and deactivating",
+                    "WARN"
+                )
+                // Complete session with proper endReason
+                val completedEntity = activeSession.copy(
+                    phase = Phase.CLOSED.name,
+                    endReason = activeSession.endReason ?: SessionEndReason.COMPLETED.name,
+                    isActive = false
+                )
+                aiDao.updateSession(completedEntity)
+
+                // Start with IDLE state
+                _state.value = AIState.idle()
+                LogManager.aiSession("Started IDLE after fixing stuck session", "INFO")
+            } else {
+                // Normal restoration
+                val restoredState = entityToState(activeSession)
+                _state.value = restoredState
+
+                LogManager.aiSession(
+                    "State restored from DB: session=${activeSession.id}, phase=${activeSession.phase}",
+                    "INFO"
+                )
+            }
+        } else {
+            _state.value = AIState.idle()
+
+            LogManager.aiSession("No active session in DB - starting idle", "INFO")
+        }
+    }
+
+    /**
+     * Sync current state to DB.
+     *
+     * Updates the active session entity with current state values.
+     * This is called automatically after each state transition.
+     *
+     * Important: When a session becomes active (phase != IDLE and != CLOSED),
+     * all other sessions are deactivated to ensure only one active session at a time.
+     *
+     * Uses NonCancellable context to ensure DB sync completes even if parent scope is cancelled.
+     * This is critical for session completion cleanup.
+     */
+    private suspend fun syncStateToDb(state: AIState) {
+        // Use NonCancellable to ensure DB sync completes even if parent coroutine is cancelled
+        // This is essential when session completion triggers scope cancellation
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            try {
+                val sessionId = state.sessionId ?: return@withContext
+
+                // Load existing session entity to preserve fields not in AIState
+                val existingSession = aiDao.getSession(sessionId) ?: run {
+                    LogManager.aiSession(
+                        "Cannot sync state to DB: session $sessionId not found",
+                        "ERROR"
+                    )
+                    return@withContext
+                }
+
+                // Determine if this session should be active
+                val shouldBeActive = state.phase != Phase.CLOSED
+
+                // If this session is becoming active, deactivate all other sessions first
+                // This ensures only one session has isActive=1 at any time
+                if (shouldBeActive && !existingSession.isActive) {
+                    aiDao.deactivateAllSessions()
+                    LogManager.aiSession(
+                        "Deactivated all sessions before activating session: $sessionId",
+                        "DEBUG"
+                    )
+                }
+
+                // Update entity with new state values
+                val updatedEntity = existingSession.copy(
+                    phase = state.phase.name,
+                    totalRoundtrips = state.totalRoundtrips,
+                    lastEventTime = state.lastEventTime,
+                    lastUserInteractionTime = state.lastUserInteractionTime,
+                    lastActivity = System.currentTimeMillis(),
+                    isActive = shouldBeActive,
+                    endReason = if (state.phase == Phase.CLOSED) state.endReason?.name else existingSession.endReason
+                )
+
+                aiDao.updateSession(updatedEntity)
+
+            } catch (e: Exception) {
+                LogManager.aiSession(
+                    "Failed to sync state to DB: ${e.message}",
+                    "ERROR",
+                    e
+                )
+            }
+        }
+    }
+
+    /**
+     * Convert AISessionEntity to AIState.
+     *
+     * Used for state restoration from DB.
+     */
+    private fun entityToState(entity: AISessionEntity): AIState {
+        return AIState(
+            sessionId = entity.id,
+            phase = Phase.valueOf(entity.phase),
+            sessionType = entity.type,
+            automationId = entity.automationId,
+            totalRoundtrips = entity.totalRoundtrips,
+            lastEventTime = entity.lastEventTime,
+            lastUserInteractionTime = entity.lastUserInteractionTime,
+            // Not stored: AIEventProcessor builds it again from the last AI message when the
+            // restored phase is a waiting one, as it did on entering that phase.
+            waitingContext = null
+        )
+    }
+
+    /**
+     * Force state to idle (used for cleanup after session completion).
+     * Deactivates current session in DB before setting state to IDLE.
+     *
+     * Uses NonCancellable context to ensure cleanup completes.
+     * Uses direct SQL update to avoid race condition with syncStateToDb.
+     */
+    suspend fun forceIdle() {
+        // Use NonCancellable to ensure cleanup completes even if parent coroutine is cancelled
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            // Deactivate current session in DB (if any)
+            val currentSessionId = currentState.sessionId
+            if (currentSessionId != null) {
+                try {
+                    // Direct SQL update to avoid reloading entity and overwriting endReason
+                    aiDao.deactivateSession(currentSessionId)
+                    LogManager.aiSession(
+                        "Deactivated session $currentSessionId in DB before IDLE",
+                        "DEBUG"
+                    )
+                } catch (e: Exception) {
+                    LogManager.aiSession(
+                        "Failed to deactivate session in DB: ${e.message}",
+                        "ERROR",
+                        e
+                    )
+                }
+            }
+
+            // Set memory state to IDLE
+            _state.value = AIState.idle()
+            LogManager.aiSession("State forced to IDLE", "INFO")
+        }
+    }
+
+    /**
+     * Update waiting context without full state transition.
+     *
+     * Used by event processor to set waiting context after ValidationResolver
+     * or communication module processing.
+     */
+    suspend fun updateWaitingContext(waitingContext: WaitingContext?) {
+        val updatedState = currentState.copy(waitingContext = waitingContext)
+        _state.value = updatedState
+
+        // Sync to DB
+        if (updatedState.sessionId != null) {
+            syncStateToDb(updatedState)
+        }
+
+        LogManager.aiSession(
+            "Waiting context updated: ${waitingContext?.javaClass?.simpleName ?: "null"}",
+            "INFO"
+        )
+    }
+
+    /**
+     * Store APP_STATE snapshot for the active session.
+     * Called once on first user message to capture initial state for cache stability.
+     *
+     * @param snapshot JSON string containing zones + tool instances snapshot
+     */
+    suspend fun storeAppStateSnapshot(snapshot: String) {
+        val sessionId = currentState.sessionId
+        if (sessionId == null) {
+            LogManager.aiSession("storeAppStateSnapshot: No active session", "WARN")
+            return
+        }
+
+        // Update DB directly (snapshot is not part of AIState memory model)
+        aiDao.updateAppStateSnapshot(sessionId, snapshot)
+
+        LogManager.aiSession(
+            "APP_STATE snapshot stored for session $sessionId (${snapshot.length} chars)",
+            "INFO"
+        )
+    }
+}

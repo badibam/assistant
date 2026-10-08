@@ -41,9 +41,9 @@ MAIN_ROOT = Path(subprocess.run(["git", "rev-parse", "--path-format=absolute", "
 # worktree's folders go with it when it is removed
 OUT = MAIN_ROOT / "bench-results"
 
-APP = "com.assistant.debug"
+APP = "app.treelune.debug"
 RUNNER = f"{APP}.test/androidx.test.runner.AndroidJUnitRunner"
-TEST = "com.assistant.bench.BenchScenario"
+TEST = "app.treelune.bench.BenchScenario"
 BASE_URL = "https://openrouter.ai/api/v1"
 FORCING = "schema"
 # The campaign's levels: forcing helps one model and breaks another, so each plays both

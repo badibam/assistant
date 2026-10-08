@@ -1,0 +1,589 @@
+package app.treelune.tools.messages.ui
+
+import app.treelune.core.utils.StoredSchedule
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import app.treelune.core.coordinator.Coordinator
+import app.treelune.core.coordinator.isSuccess
+import app.treelune.core.coordinator.executeWithLoading
+import app.treelune.core.coordinator.mapSingleData
+import app.treelune.core.utils.DataChangeEvent
+import app.treelune.core.utils.DataChangeNotifier
+import app.treelune.core.strings.Strings
+import app.treelune.core.strings.StringsContext
+import app.treelune.core.ui.*
+import app.treelune.core.utils.AppConfigManager
+import app.treelune.tools.messages.ui.components.EditOccurrenceDialog
+import app.treelune.core.utils.DateTimeConverter
+import app.treelune.core.utils.LogManager
+import kotlinx.coroutines.launch
+import app.treelune.core.utils.JsonUtils
+import org.json.JSONObject
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+
+/**
+ * One send of this message, as the screen needs it.
+ *
+ * A pending occurrence carries only what was written for it; a resolved one also carries the
+ * common part copied in when it went out. Both shapes are the same entry at different points
+ * of its life, which is why one type covers them.
+ */
+data class Occurrence(
+    val id: String,
+    val dueAt: Long,
+    val status: String,
+    val commonTitle: String?,
+    val commonContent: String?,
+    val ownTitle: String?,
+    val ownContent: String?,
+    val read: Boolean,
+    val archived: Boolean,
+    val notificationSent: Boolean,
+    val extra: Map<String, Any?>
+) {
+    /** What actually went out, or would go out: the common part joined with the day's. */
+    val displayTitle: String
+        get() = listOfNotNull(commonTitle, ownTitle).joinToString(" · ")
+
+    val displayContent: String?
+        get() = listOfNotNull(commonContent, ownContent).joinToString("\n\n").takeIf { it.isNotEmpty() }
+}
+
+/**
+ * Main screen of a Messages tool instance.
+ *
+ * The instance is one notification template and this screen shows what it has produced: the
+ * sends already resolved, and the ones still to come. The template itself is not edited here —
+ * it is the config, reached through the configure button.
+ *
+ * Two tabs, because the two populations answer different questions. "Reçus" is the inbox,
+ * filtered the way an inbox is. "À venir" is what the recurrence has laid out ahead, each one
+ * open to being written before it goes.
+ */
+@Composable
+fun MessagesScreen(
+    toolInstanceId: String,
+    zoneName: String,
+    onNavigateBack: () -> Unit,
+    onConfigureClick: () -> Unit = {},
+    openEntryId: String? = null
+) {
+    LogManager.ui("MessagesScreen called with toolInstanceId: $toolInstanceId")
+
+    val context = LocalContext.current
+    val coordinator = remember { Coordinator(context) }
+    val s = remember { Strings.`for`(tool = "messages", context = context) }
+
+    var toolInstance by remember { mutableStateOf<Map<String, Any>?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+
+    LaunchedEffect(toolInstanceId) {
+        coordinator.executeWithLoading(
+            operation = "tools.get",
+            params = mapOf("tool_instance_id" to toolInstanceId),
+            onLoading = { isLoading = it },
+            onError = { error -> errorMessage = error }
+        )?.let { result ->
+            toolInstance = result.mapSingleData("tool_instance") { map -> map }
+        }
+    }
+
+    LaunchedEffect(toolInstanceId) {
+        DataChangeNotifier.changes.collect { event ->
+            when (event) {
+                is DataChangeEvent.ToolDataChanged -> {
+                    if (event.toolInstanceId == toolInstanceId) refreshTrigger++
+                }
+                else -> {}
+            }
+        }
+    }
+
+    val config = remember(toolInstance) {
+        val configJson = JsonUtils.toJSONObject(toolInstance?.get("config") as? Map<String, Any?> ?: emptyMap()).toString()
+        try {
+            JSONObject(configJson)
+        } catch (e: Exception) {
+            LogManager.ui("Unreadable config for $toolInstanceId: ${e.message}", "ERROR", e)
+            JSONObject()
+        }
+    }
+
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            UI.Toast(context, message, Duration.LONG)
+            errorMessage = null
+        }
+    }
+
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            UI.Text(s.shared("tools_loading"), TextType.BODY)
+        }
+        return
+    }
+
+    val settings = app.treelune.core.tools.ToolConfigSettings.read(app.treelune.tools.messages.MessageToolType, config, context)
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.padding(UI.Space.L)) {
+            UI.PageHeader(
+                title = settings.string("name")!!,
+                subtitle = settings.string("description")?.takeIf { it.isNotBlank() },
+                icon = settings.string("icon_name")!!,
+                iconColor = app.treelune.core.themes.IconColor.of(settings.string(app.treelune.core.themes.IconColor.KEY)),
+                leftButton = ButtonAction.BACK,
+                rightButton = ButtonAction.CONFIGURE,
+                onLeftClick = onNavigateBack,
+                onRightClick = onConfigureClick
+            )
+
+            // A recurrence the scheduler cannot read creates nothing: said here, where the
+            // missing messages would otherwise just be missing
+            (StoredSchedule.of(config) as? StoredSchedule.Unreadable)?.let { unreadable ->
+                Spacer(modifier = Modifier.height(UI.Space.S))
+                UI.Card(type = CardType.DEFAULT) {
+                    Box(modifier = Modifier.padding(UI.Space.M)) {
+                        UI.Text(s.tool("schedule_unreadable_warning").format(unreadable.cause), TextType.ERROR)
+                    }
+                }
+            }
+        }
+
+        UI.Tabs(
+            labels = listOf(s.tool("tab_received_messages"), s.tool("tab_upcoming")),
+            selected = selectedTab,
+            onSelect = { selectedTab = it }
+        )
+
+        when (selectedTab) {
+            0 -> ReceivedTab(
+                toolInstanceId = toolInstanceId,
+                coordinator = coordinator,
+                refreshTrigger = refreshTrigger,
+                openId = openEntryId,
+                onError = { errorMessage = it }
+            )
+            1 -> UpcomingTab(
+                toolInstanceId = toolInstanceId,
+                coordinator = coordinator,
+                refreshTrigger = refreshTrigger,
+                onError = { errorMessage = it }
+            )
+        }
+    }
+}
+
+// ========================================
+// Received: what has already been resolved
+// ========================================
+
+private enum class ReceivedFilter { UNREAD, READ, ARCHIVED, NOT_DELIVERED }
+
+@Composable
+private fun ReceivedTab(
+    toolInstanceId: String,
+    coordinator: Coordinator,
+    refreshTrigger: Int,
+    openId: String?,
+    onError: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(tool = "messages", context = context) }
+    val scope = rememberCoroutineScope()
+
+    var filter by rememberSaveable { mutableStateOf(ReceivedFilter.UNREAD) }
+
+    // A message opened from the tile: shown first whatever the filter, and read by being opened, once
+    var opened by remember { mutableStateOf<Occurrence?>(null) }
+    var markedRead by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(openId, refreshTrigger) {
+        if (openId == null) return@LaunchedEffect
+        val found = loadByStatus(context, coordinator, toolInstanceId, "sent", onError)?.find { it.id == openId } ?: return@LaunchedEffect
+        opened = found
+        if (!markedRead && !found.read) {
+            markedRead = true
+            updateFlags(context, coordinator, found, read = true, onError = onError)
+        }
+    }
+    // null while read; a read that fails is said, never shown as an empty inbox
+    var occurrences by remember { mutableStateOf<List<Occurrence>?>(null) }
+    var failed by remember { mutableStateOf(false) }
+
+    // Expired and cancelled are two different facts, so they are loaded together only under the
+    // filter that asks for "what never reached me" — never merged into the inbox itself.
+    LaunchedEffect(toolInstanceId, refreshTrigger, filter) {
+        val loaded = if (filter == ReceivedFilter.NOT_DELIVERED) {
+            val expired = loadByStatus(context, coordinator, toolInstanceId, "expired", onError)
+            val cancelled = loadByStatus(context, coordinator, toolInstanceId, "cancelled", onError)
+            if (expired == null || cancelled == null) null
+            else (expired + cancelled).sortedByDescending { it.dueAt }
+        } else {
+            loadByStatus(context, coordinator, toolInstanceId, "sent", onError)
+                ?.filter { occurrence ->
+                    when (filter) {
+                        ReceivedFilter.UNREAD -> !occurrence.read && !occurrence.archived
+                        ReceivedFilter.READ -> occurrence.read && !occurrence.archived
+                        ReceivedFilter.ARCHIVED -> occurrence.archived
+                        ReceivedFilter.NOT_DELIVERED -> false
+                    }
+                }
+                ?.sortedByDescending { it.dueAt }
+        }
+        failed = loaded == null
+        occurrences = loaded ?: emptyList()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
+    ) {
+        UI.FormSelection(
+            required = false,
+            label = "",
+            options = listOf(
+                s.tool("filter_unread"),
+                s.tool("filter_read"),
+                s.tool("filter_archived"),
+                s.tool("filter_not_delivered")
+            ),
+            selected = when (filter) {
+                ReceivedFilter.UNREAD -> s.tool("filter_unread")
+                ReceivedFilter.READ -> s.tool("filter_read")
+                ReceivedFilter.ARCHIVED -> s.tool("filter_archived")
+                ReceivedFilter.NOT_DELIVERED -> s.tool("filter_not_delivered")
+            },
+            onSelect = { selected ->
+                filter = when (selected) {
+                    s.tool("filter_read") -> ReceivedFilter.READ
+                    s.tool("filter_archived") -> ReceivedFilter.ARCHIVED
+                    s.tool("filter_not_delivered") -> ReceivedFilter.NOT_DELIVERED
+                    else -> ReceivedFilter.UNREAD
+                }
+            }
+        )
+
+        opened?.let { occurrence ->
+            ReceivedCard(
+                occurrence = occurrence,
+                s = s,
+                onToggleRead = { scope.launch { updateFlags(context, coordinator, occurrence, read = !occurrence.read, onError = onError) } },
+                onToggleArchived = { scope.launch { updateFlags(context, coordinator, occurrence, archived = !occurrence.archived, onError = onError) } }
+            )
+        }
+
+        // No early return here: Column's content lambda is inline, so a non-local return skips
+        // the rest of the lambda and leaves the composition groups unbalanced — it crashes on
+        // the next recomposition rather than where the mistake is.
+        val shown = occurrences
+        if (failed) {
+            UI.Text(s.tool("error_load_occurrences"), TextType.CAPTION, fillMaxWidth = true)
+        } else if (shown == null) {
+            UI.LoadingIndicator()
+        } else if (shown.isEmpty()) {
+            UI.Text(s.tool("empty_received_messages"), TextType.CAPTION, fillMaxWidth = true)
+        } else shown.forEach { occurrence ->
+            ReceivedCard(
+                occurrence = occurrence,
+                s = s,
+                onToggleRead = {
+                    scope.launch {
+                        updateFlags(context, coordinator, occurrence, read = !occurrence.read, onError = onError)
+                    }
+                },
+                onToggleArchived = {
+                    scope.launch {
+                        updateFlags(context, coordinator, occurrence, archived = !occurrence.archived, onError = onError)
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReceivedCard(
+    occurrence: Occurrence,
+    s: StringsContext,
+    onToggleRead: () -> Unit,
+    onToggleArchived: () -> Unit
+) {
+    UI.Card(type = CardType.DEFAULT) {
+        Column(
+            modifier = Modifier.padding(UI.Space.L),
+            verticalArrangement = Arrangement.spacedBy(UI.Space.S)
+        ) {
+            UI.Text(formatMoment(occurrence.dueAt), TextType.CAPTION)
+            UI.Text(occurrence.displayTitle, TextType.SUBTITLE)
+            occurrence.displayContent?.let { UI.Text(it, TextType.BODY) }
+
+            // Each badge states a fact the history would otherwise lose
+            val badges = buildList {
+                when (occurrence.status) {
+                    "expired" -> add(s.tool("status_expired"))
+                    "cancelled" -> add(s.tool("status_cancelled"))
+                }
+                if (occurrence.status == "sent" && !occurrence.notificationSent) {
+                    add(s.tool("status_notification_failed"))
+                }
+                if (occurrence.status == "sent" && !occurrence.read) add(s.tool("badge_unread"))
+            }
+            if (badges.isNotEmpty()) {
+                UI.Text(badges.joinToString(" · "), TextType.CAPTION)
+            }
+
+            // Only something that actually went out can be read or filed away
+            if (occurrence.status == "sent") {
+                Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+                    UI.Button(type = ButtonType.DEFAULT, size = Size.S, onClick = onToggleRead) {
+                        UI.Text(
+                            if (occurrence.read) s.tool("action_mark_unread") else s.tool("action_mark_read"),
+                            TextType.LABEL
+                        )
+                    }
+                    UI.Button(type = ButtonType.DEFAULT, size = Size.S, onClick = onToggleArchived) {
+                        UI.Text(
+                            if (occurrence.archived) s.tool("action_unarchive") else s.tool("action_archive"),
+                            TextType.LABEL
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ========================================
+// Upcoming: what has been laid out ahead
+// ========================================
+
+@Composable
+private fun UpcomingTab(
+    toolInstanceId: String,
+    coordinator: Coordinator,
+    refreshTrigger: Int,
+    onError: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(tool = "messages", context = context) }
+    val scope = rememberCoroutineScope()
+
+    // null while read; a read that fails is said, never shown as nothing planned
+    var occurrences by remember { mutableStateOf<List<Occurrence>?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    // The occurrence being edited is kept by id and resolved from the loaded list, so the
+    // edit dialog survives a rotation
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = editingId?.let { id -> occurrences?.find { it.id == id } }
+
+    LaunchedEffect(toolInstanceId, refreshTrigger) {
+        val loaded = loadByStatus(context, coordinator, toolInstanceId, "pending", onError)
+        failed = loaded == null
+        occurrences = loaded?.sortedBy { it.dueAt } ?: emptyList()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(UI.Space.L),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
+    ) {
+        val shown = occurrences
+        if (failed) {
+            UI.Text(s.tool("error_load_occurrences"), TextType.CAPTION, fillMaxWidth = true)
+        } else if (shown == null) {
+            UI.LoadingIndicator()
+        } else if (shown.isEmpty()) {
+            UI.Text(s.tool("empty_upcoming"), TextType.CAPTION, fillMaxWidth = true)
+        } else shown.forEach { occurrence ->
+            UI.Card(type = CardType.DEFAULT) {
+                Column(
+                    modifier = Modifier.padding(UI.Space.L),
+                    verticalArrangement = Arrangement.spacedBy(UI.Space.S)
+                ) {
+                    UI.Text(s.tool("occurrence_due_at").format(formatMoment(occurrence.dueAt)), TextType.CAPTION)
+
+                    // A pending occurrence shows only what was written for it. The common part is
+                    // not shown as if it were already copied in, because it is not: it is read
+                    // from the template at send time, so editing the template still reaches this.
+                    val ownParts = listOfNotNull(occurrence.ownTitle, occurrence.ownContent)
+                    if (ownParts.isEmpty()) {
+                        UI.Text(s.tool("occurrence_nothing_written"), TextType.CAPTION)
+                    } else {
+                        occurrence.ownTitle?.let { UI.Text(it, TextType.SUBTITLE) }
+                        occurrence.ownContent?.let { UI.Text(it, TextType.BODY) }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+                        UI.ActionButton(
+                            action = ButtonAction.EDIT,
+                            display = ButtonDisplay.ICON,
+                            onClick = { editingId = occurrence.id }
+                        )
+                        UI.ActionButton(
+                            action = ButtonAction.DELETE,
+                            display = ButtonDisplay.ICON,
+                            requireConfirmation = true,
+                            confirmMessage = s.tool("delete_occurrence_confirm"),
+                            onClick = {
+                                scope.launch {
+                                    val result = coordinator.processUserAction(
+                                        "tool_data.delete",
+                                        mapOf("id" to occurrence.id)
+                                    )
+                                    if (!result.isSuccess) {
+                                        onError(result.error ?: s.tool("error_delete"))
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    editing?.let { occurrence ->
+        EditOccurrenceDialog(
+            toolInstanceId = toolInstanceId,
+            occurrence = occurrence,
+            onDismiss = { editingId = null },
+            onSaved = { editingId = null },
+            onError = onError
+        )
+    }
+}
+
+// ========================================
+// Reading and writing occurrences
+// ========================================
+
+/**
+ * Loads the occurrences of one instance in a given state.
+ *
+ * Goes through the status filter rather than pulling everything and sorting it out here: the
+ * history of a long-running reminder is unbounded, and the screen only ever shows one state.
+ */
+internal suspend fun loadByStatus(
+    context: android.content.Context,
+    coordinator: Coordinator,
+    toolInstanceId: String,
+    status: String,
+    onError: (String) -> Unit
+): List<Occurrence>? {
+    val result = coordinator.processUserAction(
+        "tool_data.get",
+        mapOf(
+            "tool_instance_id" to toolInstanceId,
+            "filters" to listOf(app.treelune.core.conditions.Conditions.onField("state.status", "in", listOf(status)))
+        )
+    )
+
+    if (!result.isSuccess) {
+        LogManager.ui("Failed to load $status occurrences: ${result.error}", "ERROR")
+        onError(result.error ?: Strings.`for`(tool = "messages", context = context).tool("error_load_occurrences"))
+        return null
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    val entries = (result.data?.get("entries") as? List<Map<String, Any>>) ?: emptyList()
+    val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+
+    return entries.mapNotNull { entry ->
+        val id = entry["id"] as? String ?: return@mapNotNull null
+        val dueAtMillis = (entry["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null
+        val dataMap = entry["data"] as? Map<*, *> ?: return@mapNotNull null
+
+        try {
+            val data = JsonUtils.toJSONObject(dataMap.entries.associate { (k, v) -> k.toString() to v })
+            val state = JsonUtils.toJSONObject(((entry["state"] as? Map<*, *>) ?: emptyMap<Any, Any>()).entries.associate { (k, v) -> k.toString() to v })
+            val customFields = (entry["extra"] as? Map<*, *>)
+                ?.entries?.associate { (k, v) -> k.toString() to v }
+                ?: emptyMap()
+
+            Occurrence(
+                id = id,
+                dueAt = dueAtMillis,
+                status = state.optString("status", "pending"),
+                commonTitle = data.optString("common_title").takeIf { it.isNotEmpty() },
+                commonContent = data.optString("common_content").takeIf { it.isNotEmpty() },
+                ownTitle = data.optString("title").takeIf { it.isNotEmpty() },
+                ownContent = data.optString("content").takeIf { it.isNotEmpty() },
+                read = state.optBoolean("read", false),
+                archived = state.optBoolean("archived", false),
+                notificationSent = state.optBoolean("notification_sent", true),
+                extra = customFields
+            )
+        } catch (e: Exception) {
+            LogManager.ui("Unreadable occurrence $id, skipped: ${e.message}", "ERROR", e)
+            null
+        }
+    }
+}
+
+/**
+ * Flips a read or archived flag on a resolved occurrence.
+ *
+ * A plain tool_data.update of the occurrence's state, like any other entry's, so it needs no
+ * dedicated service operation to be marked read.
+ */
+private suspend fun updateFlags(
+    context: android.content.Context,
+    coordinator: Coordinator,
+    occurrence: Occurrence,
+    read: Boolean? = null,
+    archived: Boolean? = null,
+    onError: (String) -> Unit
+) {
+    val state = JSONObject().apply {
+        read?.let { put("read", it) }
+        archived?.let { put("archived", it) }
+    }
+
+    val result = coordinator.processUserAction(
+        "tool_data.update",
+        mapOf("id" to occurrence.id, "state" to state)
+    )
+
+    if (!result.isSuccess) {
+        LogManager.ui("Failed to update occurrence ${occurrence.id}: ${result.error}", "ERROR")
+        onError(result.error ?: Strings.`for`(tool = "messages", context = context).tool("error_mark_read"))
+    }
+}
+
+/** Recursive JSONObject to a plain map, for custom field values. */
+private fun JSONObject.toValueMap(): Map<String, Any?> {
+    val map = mutableMapOf<String, Any?>()
+    keys().forEach { key ->
+        map[key] = when (val value = get(key)) {
+            is JSONObject -> value.toValueMap()
+            JSONObject.NULL -> null
+            else -> value
+        }
+    }
+    return map
+}
+
+/** A moment as the user reads it, in the timezone the app is configured for. */
+private fun formatMoment(timestamp: Long): String {
+    val zone = AppConfigManager.getDateTimeConfig().getZoneId()
+    return DateTimeFormatter
+        .ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+        .withZone(zone)
+        .format(Instant.ofEpochMilli(timestamp))
+}

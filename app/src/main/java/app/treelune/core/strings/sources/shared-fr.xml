@@ -1,0 +1,1887 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings partagées core app + modules -->
+
+    <!-- App -->
+    <string name="app_name">Treelune</string>
+
+    <!-- App config - Temporal -->
+    <string name="app_config_temporal_week_start_day">Premier jour de la semaine</string>
+    <string name="app_config_temporal_day_start_hour">Heure de début de journée</string>
+
+    <!-- Actions utilisateur -->
+    <string name="action_save">Sauvegarder</string>
+    <string name="action_create">Créer</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_quit">Quitter</string>
+    <string name="exit_confirm_message">Fermer l\'application ?</string>
+    <string name="action_delete">Supprimer</string>
+
+    <!-- Success messages -->
+    <string name="settings_saved">Paramètres sauvegardés</string>
+    <string name="action_validate">Valider</string>
+    <string name="action_confirm">Confirmer</string>
+    <string name="action_send">Envoyer</string>
+    <string name="action_select_icon">Choisir une icône</string>
+    <string name="action_create_zone">Créer Zone</string>
+    <string name="action_edit_zone">Modifier Zone</string>
+    <string name="action_ok">OK</string>
+    <string name="action_update">Modifier</string>
+    <string name="action_back">Retour</string>
+    <string name="action_configure">Configurer</string>
+    <string name="action_add">Ajouter</string>
+    <string name="action_edit">Modifier</string>
+    <string name="action_refresh">Actualiser</string>
+    <string name="action_reset">Réinitialiser</string>
+    <string name="action_clear">Effacer</string>
+    <string name="action_select">Sélectionner</string>
+    <string name="action_up">Monter</string>
+    <string name="action_down">Descendre</string>
+    <string name="action_left">Précédent</string>
+    <string name="action_right">Suivant</string>
+    <string name="action_ai_chat">Assistant IA</string>
+    <string name="action_interrupt">Interrompre</string>
+    <string name="action_stop">Arrêter</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Reprendre</string>
+    <string name="action_start">Démarrer</string>
+    <string name="action_view">Voir</string>
+    <string name="action_duplicate">Dupliquer</string>
+    <string name="action_duplicate_tool">Dupliquer un outil</string>
+    <string name="action_duplicate_automation">Dupliquer une automation</string>
+
+    <!-- AI Interface - Composer and Enrichments -->
+    <string name="ai_composer_placeholder">Écris ton message...</string>
+    <string name="ai_composer_add_text">Texte</string>
+    <string name="ai_image_block">Image</string>
+    <string name="ai_image_missing">Le fichier de cette image est introuvable</string>
+    <string name="ai_image_no_camera">Aucune application de ce téléphone ne prend de photo pour une autre</string>
+    <string name="ai_image_model_does_not_read">Ce modèle ne lit pas les images : le message ne partira pas avec elle</string>
+    <string name="ai_image_model_unknown">Rien ne dit si ce modèle lit les images : le message ne partira pas avec elle</string>
+    <string name="pointer_enrichment_selector_title">Sélectionner données</string>
+    <string name="pointer_level_app">App</string>
+    <string name="pointer_attach_config">Config</string>
+    <string name="pointer_attach_entries">Entrées</string>
+    <string name="pointer_period">Période</string>
+    <string name="pointer_filters_and_fields">Filtres et champs…</string>
+    <string name="pointer_filters_title">Filtres et champs</string>
+    <string name="selection_change">Changer</string>
+    <string name="selection_filters">Filtres…</string>
+    <string name="selection_filters_title">Filtres</string>
+    <string name="selection_place_in_zone">%1$s (%2$s)</string>
+    <string name="pointer_filter_new">Nouveau filtre</string>
+    <string name="pointer_filter_field">Champ</string>
+    <string name="pointer_filter_present_values">Valeurs déjà saisies</string>
+    <string name="pointer_filter_condition">Condition</string>
+    <string name="condition_side">Comparé à</string>
+    <string name="pointer_choose_fields">Choisir les champs</string>
+    <string name="pointer_part_config">la config de %1$s</string>
+    <string name="pointer_part_entries">les entrées de %1$s</string>
+    <string name="pointer_part_fields">champs : %1$s</string>
+    <string name="pointer_summary_mention">Mention seule : l\'IA voit le nom, rien n\'est joint</string>
+    <string name="pointer_summary_mention_entries">Mention : %1$s. Rien n\'est joint, l\'IA peut les demander</string>
+    <string name="pointer_summary_attached">Joint : %1$s</string>
+    <string name="pointer_prompt_query">entrées non jointes, à lire avec : %1$s (ajoute les champs utiles)</string>
+    <string name="pointer_prompt_zone_period">entrées non jointes, à lire outil par outil (TOOL_DATA) sur cette période : %1$s</string>
+    <string name="pointer_target_deleted">supprimé</string>
+    <string name="filter_between">%1$s entre %2$s et %3$s</string>
+    <string name="filter_low">De</string>
+    <string name="filter_high">À</string>
+    <string name="filter_value">Valeur</string>
+    <string name="filter_op_less">&lt;</string>
+    <string name="filter_op_less_or_equal">≤</string>
+    <string name="filter_op_equal">=</string>
+    <string name="filter_op_greater_or_equal">≥</string>
+    <string name="filter_op_greater">&gt;</string>
+    <string name="filter_op_between">entre</string>
+    <string name="filter_op_contains">contient</string>
+    <string name="filter_op_in">est l\'une de</string>
+    <string name="filter_op_absent">sans réponse</string>
+    <string name="filter_op_present">avec réponse</string>
+    <string name="filter_op_period">sur la période</string>
+    <string name="pointer_enrichment_config">Configuration Pointer</string>
+    <string name="ai_importance_optional">optionnel</string>
+    <string name="ai_importance_important">important</string>
+    <string name="ai_importance_essential">essentiel</string>
+
+    <string name="ai_enrichment_invalid">enrichissement invalide</string>
+    <string name="ai_enrichment_unreadable">noms illisibles</string>
+    <string name="ai_schema_already_included">Schéma %1$s déjà inclus précédemment</string>
+    <string name="label_coming_soon">À venir</string>
+
+    <!-- AI Interface - Session Management -->
+    <string name="ai_session_stop_title">Arrêter la session</string>
+    <string name="ai_session_stop_message">Voulez-vous arrêter cette session ? La session pourra être récupérée et reprise via l\'historique des sessions.</string>
+    <string name="ai_chat_new">Nouveau chat</string>
+    <string name="ai_chat_start_conversation">Commencer une conversation...</string>
+    <string name="ai_session_default_name">Chat Session</string>
+
+    <!-- AI Interface - Settings Menu -->
+    <string name="ai_settings_menu_title">Paramètres</string>
+    <string name="ai_settings_costs">Coûts</string>
+    <string name="ai_settings_session">Paramètres session</string>
+
+    <!-- AI Status - Processing and State -->
+    <string name="ai_status_processing">Traitement en cours...</string>
+    <string name="ai_status_ready">Prêt</string>
+    <string name="ai_status_send_to_start">Envoyer un message pour commencer</string>
+    <string name="ai_status_inactive">Inactif</string>
+    <string name="ai_status_thinking">L\'IA réfléchit...</string>
+    <string name="ai_status_interrupted">Interrompu par l\'utilisateur</string>
+    <string name="ai_status_interrupting">Interruption en cours...</string>
+
+    <!-- AI Messages - Display -->
+    <string name="ai_sender_user">Vous</string>
+    <string name="ai_sender_ai">IA</string>
+    <string name="ai_sender_system">Système</string>
+    <string name="ai_message_enrichments_count">Enrichissements: %1$d</string>
+
+    <!-- AI Interaction - Validation and Communication Modules -->
+    <string name="ai_validation_title">Validation requise</string>
+    <string name="ai_validation_status">Statut</string>
+    <string name="ai_module_validation_title">Confirmation</string>
+    <string name="ai_module_cancelled">Module de communication annulé par l\'utilisateur</string>
+    <string name="ai_module_response_prefix">Réponse :</string>
+    <string name="ai_module_free_reply">Répondre par un message</string>
+    <string name="ai_module_free_reply_hint">Écrivez votre réponse en bas : l\'envoyer remplace ce formulaire.</string>
+    <string name="ai_module_missing">Il manque : %s</string>
+    <string name="ai_response_refused">Réponse refusée : le message suivant dit pourquoi.</string>
+    <string name="ai_error_empty_answer_retried">Réponse sans texte (%1$s) : la demande est renvoyée, une fois.</string>
+    <string name="ai_error_empty_answer_again">Réponse sans texte une seconde fois (%1$s) : renvoyez votre message pour réessayer.</string>
+    <string name="ai_module_add_note">Ajouter une précision</string>
+    <string name="ai_module_note">Précision</string>
+    <string name="ai_module_note_prefix">Précision de l\'utilisateur :</string>
+    <string name="ai_module_replaced_by_message">Module de communication remplacé par un message de l\'utilisateur</string>
+    <string name="ai_module_question_title">Question</string>
+    <string name="ai_module_confirmed">Confirmé</string>
+    <string name="ai_module_fields">Champs</string>
+    <string name="ai_module_field_name_description">La clé sous laquelle revient la réponse à ce champ, en snake_case : à toi de la choisir, unique dans le module</string>
+    <string name="ai_module_field_required">Obligatoire</string>
+    <string name="ai_module_field_required_description">Si l\'utilisateur doit répondre à ce champ avant d\'envoyer</string>
+    <string name="ai_schema_communication_module_name">Module de communication</string>
+    <string name="ai_schema_communication_module_desc">Les champs que demande une question à l\'utilisateur ; aucun pour une confirmation</string>
+
+    <!-- AI Interaction - System Messages for Cancellations -->
+    <string name="ai_system_communication_no_response">Aucune réponse fournie au module de communication</string>
+    <string name="ai_system_validation_refused">Validation refusée ou non fournie</string>
+    <string name="ai_system_round_interrupted">Round interrompu par l\'utilisateur</string>
+    <string name="ai_system_completed_confirmation">Tu as inclus le flag \'completed: true\' dans ta réponse. Cela signifie-t-il que tu as terminé l\'intégralité de toutes les tâches à accomplir pour répondre à la demande initiale de l\'utilisateur ? Si c\'était juste pour indiquer la complétion d\'une étape, continue directement avec les étapes suivantes. Si tu as effectivement TOUT terminé, alors écris un message de confirmation avec le flag \'completed: true\' à nouveau inclus dans ta réponse.</string>
+
+    <!-- Validation UI -->
+    <string name="validation_title">L\'IA souhaite effectuer les actions suivantes</string>
+    <string name="validation_values_unreadable">Les valeurs proposées ne peuvent pas s\'afficher : %1$s</string>
+    <string name="validation_action_confirm">Autoriser</string>
+    <string name="validation_action_refuse">Refuser</string>
+
+    <!-- Validation reasons -->
+    <string name="validation_reason_app_config">Configuration application</string>
+    <string name="validation_reason_tool_config">Outil %1$s</string>
+    <string name="validation_reason_session">Validation de session activée</string>
+    <string name="validation_reason_ai_request">Demande de l\'IA</string>
+
+    <!-- AI Response Parsing -->
+    <string name="ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>
+    <string name="ai_text_outside_json_set_apart">Texte écrit par l\'IA hors de sa réponse, ignoré : « %1$s »</string>
+    <string name="ai_text_outside_json_notice">Ta dernière réponse contenait du texte hors de l\'objet JSON. Il a été ignoré. Écris tout dans le JSON (pre_text, post_text), rien avant ni après, sans bloc de code.</string>
+    <string name="ai_error_format_text_before_json">Ta réponse commence par du texte au lieu de `{` : « %1$s ». Réponds à nouveau en commençant par `{` : rien avant le JSON, ni raisonnement, ni balise.</string>
+    <string name="ai_error_format_invalid_json">Ta réponse n\'est pas un JSON valide selon le schéma AIMessage. Réponds à nouveau avec ce JSON seul.</string>
+    <string name="ai_error_format_errors">Erreurs de format dans ta réponse : %1$s. Réponds à nouveau en les corrigeant.</string>
+    <string name="ai_error_parsing_technical">Erreur technique à la lecture de ta réponse : %1$s</string>
+    <string name="ai_error_communication_module_invalid">Module de communication invalide : %1$s</string>
+
+    <!-- AI Response Validation Errors -->
+    <string name="ai_error_validation_multiple_action_types">Plusieurs types de commandes présents: %1$s. Un seul type autorisé par réponse.</string>
+    <string name="ai_error_validation_request_without_actions">validation_request présent sans action_commands. validation_request n\'est autorisé qu\'avec action_commands.</string>
+    <string name="ai_error_posttext_without_actions">post_text présent sans action_commands. post_text n\'est autorisé qu\'avec action_commands.</string>
+
+    <!-- Custom fields - Technical name -->
+    <string name="error_field_name_unknown">Nom technique inconnu : %1$s. Un nom technique est attribué par l\'app et ne se choisit pas : omets \'name\' pour créer un champ, reprends-le tel quel pour désigner un champ existant. Le renommer détruirait les valeurs déjà enregistrées ; c\'est \'display_name\' qui se modifie librement.</string>
+
+    <!-- Tool data - Pagination -->
+    <string name="service_error_page_without_limit">Page %1$d demandée sans \'limit\' : sans limite par page, tout tient sur la page 1. Précise \'limit\' pour paginer.</string>
+    <string name="service_error_param_unknown">Paramètre \'%1$s\' inconnu. Paramètres : %2$s</string>
+    <string name="service_error_filter_unreadable">Filtre illisible : %1$s. Un filtre s\'écrit {\"left\": {\"field\": \"data.value\"}, \"op\": \"&lt;\", \"right\": {\"constant\": 10}}.</string>
+    <string name="service_error_filter_not_written">Le filtre sur %1$s compare à %2$s : un filtre prend des valeurs écrites, {\"constant\": …} ; lire d\'abord une variable ou une lecture.</string>
+    <string name="condition_error_side">La condition de %1$s a un côté illisible : %2$s. Un côté est {\"field\": …}, {\"constant\": …}, {\"variable\": …} ou {\"reading\": …}.</string>
+    <string name="condition_error_op">La condition de %1$s a un opérateur inconnu : %2$s.</string>
+    <string name="condition_error_right">La condition de %1$s avec %2$s prend %3$d côté(s) à droite.</string>
+    <string name="condition_schema_description">Une condition jugée une fois : {\"left\": côté, \"op\": ..., \"right\": côté}, chaque côté un terme, {\"constant\": ...}, {\"variable\": \"id\"} ou {\"reading\": {\"selection\", \"field\"?, \"reduction\"}} ; right est une paire de côtés pour between, absent pour absent et present. Une constante s\'écrit comme l\'autre côté stocke ses valeurs.</string>
+    <string name="condition_schema_entered_description">Une condition sur la valeur saisie dans chaque tentative : {\"op\": ..., \"right\": côté} ; l\'app écrit left, le champ saisi. Un côté est {\"constant\": ...}, {\"variable\": \"id\"} ou {\"reading\": ...} ; right est une paire pour between, absent pour absent et present.</string>
+    <string name="condition_schema_row_description">Une condition sur chaque ligne dessinée : {\"left\": côté, \"op\": ..., \"right\": côté}, chaque côté une colonne de la ligne, {\"field\": \"kcal\"}, ou une valeur écrite, {\"constant\": ...}, écrite comme la colonne d\'en face stocke ses valeurs ; right est une paire de côtés pour between, absent pour absent et present.</string>
+    <string name="term_schema_description">Un terme, une clé parmi : %1$s.</string>
+    <string name="term_schema_constant">{\"constant\": ...}, une valeur écrite comme elle est stockée</string>
+    <string name="term_schema_variable">{\"variable\": \"id\"}, une variable par son id</string>
+    <string name="term_schema_reading">{\"reading\": {\"selection\", \"field\"?, \"reduction\"}}, un champ d\'un outil réduit sur ses entrées, compté sans champ ; la période de sa sélection est relative à l\'instant lu, et sans période elle lit celle que donne le contexte</string>
+    <string name="selection_schema_description">Des entrées d\'un outil : {\"target\": {\"kind\": \"TOOL_INSTANCE\", \"id\"}, \"filters\"?: [conditions sur chaque entrée], \"fields\"?: [chemins gardés]} ; sa période est donnée ailleurs.</string>
+    <string name="period_schema_description">Une période, {\"start\"?, \"end\"?}, bornes comprises, une borne absente pour sans limite : un instant fixe, ou une date relative, {\"relative\": {\"unit\": \"DAY\", \"offset\": -29, \"edge\": \"START\"}} ou {\"relative\": \"NOW\"}.</string>
+    <string name="service_error_filter_unknown_field">Filtre sur \'%1$s\' : les entrées de cet outil n\'ont pas ce champ à filtrer. Champs : %2$s</string>
+    <string name="service_error_values_not_text">« %1$s » n\'est pas un champ texte : seul un texte a des valeurs à proposer</string>
+    <string name="service_error_filter_operator">Filtre sur \'%1$s\' : la condition \'%2$s\' ne s\'applique pas à un champ %3$s. Conditions : %4$s</string>
+    <string name="service_error_filter_value">Filtre sur \'%1$s\' avec \'%2$s\' : valeur %3$s illisible, attendu %4$s</string>
+    <string name="filter_value_none">aucune valeur</string>
+    <string name="filter_value_options">une liste d\'options non vide</string>
+    <string name="filter_value_pair">une liste de deux valeurs, la plus petite d\'abord</string>
+    <string name="filter_value_text">un texte</string>
+    <string name="filter_value_number">un nombre</string>
+    <string name="filter_value_millis">des millisecondes</string>
+    <string name="filter_value_date">une date, AAAA-MM-JJ</string>
+    <string name="filter_value_time">une heure, HH:MM</string>
+    <string name="filter_value_boolean">true ou false</string>
+
+    <!-- Automations - Catch-up settings -->
+    <string name="automation_catch_up_title">Si l\'app n\'a pas tourné à l\'heure prévue</string>
+    <string name="automation_catch_up_window">Rattraper jusqu\'à</string>
+    <string name="automation_catch_up_unlimited">Sans limite</string>
+    <string name="automation_catch_up_run_every">Exécutions manquées</string>
+    <string name="automation_catch_up_every_occurrence">Chacune</string>
+    <string name="automation_catch_up_latest_only">La plus récente</string>
+    <string name="automation_catch_up_required">Indique jusqu\'où rattraper une exécution manquée avant d\'enregistrer.</string>
+    <string name="automation_dialog_edit_hint">Modifie le nom, le fournisseur, le groupe et la zone de l\'automation.</string>
+    <string name="automation_dialog_create_hint">Une fois créée, le message et la planification de l\'automation se règlent dans son éditeur.</string>
+    <string name="automation_catch_up_without_schedule">Une automation sans planification n\'a rien à rattraper : ses réglages de rattrapage vont avec une planification.</string>
+    <string name="automation_catch_up_limited">Jusqu\'à un délai</string>
+    <string name="automation_catch_up_delay">Délai</string>
+    <string name="automation_is_enabled">Activée</string>
+    <string name="automation_schedule">Planification</string>
+
+    <!-- AI Errors - Command transformation -->
+    <string name="ai_error_command_prefix">Commande[%1$d] (%2$s) : %3$s</string>
+    <string name="ai_error_command_unknown_type">Type de commande inconnu : %1$s</string>
+    <string name="ai_error_command_invalid_params">Paramètres invalides ou manquants</string>
+    <string name="ai_error_command_transformation_null">La transformation n\'a produit aucune commande exécutable</string>
+    <string name="ai_error_command_unexpected">Erreur inattendue</string>
+    <string name="ai_error_param_missing">Paramètre obligatoire \'%1$s\' manquant.</string>
+    <string name="ai_error_param_type">Le paramètre \'%1$s\' doit être de type %2$s.</string>
+    <string name="ai_error_tool_data_fields_not_array">Le paramètre \'fields\' doit être un tableau non vide. Exemple : \"fields\": [\"id\", \"timestamp\", \"data.value\"]</string>
+
+    <!-- AI Errors - Field grammar -->
+    <string name="field_reading_unit">En %1$s.</string>
+    <string name="field_reading_whole">Un nombre entier : une valeur à décimales est arrondie.</string>
+    <string name="field_reading_decimals">%1$d décimale(s) : une valeur qui en a plus est arrondie.</string>
+    <string name="field_reading_scale">Échelle de %1$s à %2$s.</string>
+    <string name="field_reading_bound">%1$s (%2$s)</string>
+    <string name="field_reading_boolean">true : %1$s ; false : %2$s.</string>
+    <string name="field_reading_options">Options : %1$s.</string>
+    <string name="field_reading_open">D\'autres valeurs sont acceptées et deviennent des options.</string>
+    <string name="field_reading_ordered">Un classement : les options dans l\'ordre choisi, la première classée en tête.</string>
+    <string name="ai_error_duration_field_path">Champ DURÉE illisible : %1$s. Il se nomme par son chemin, data.nom_du_champ ou extra.nom_du_champ.</string>
+    <string name="ai_error_result_unformattable">Le résultat n\'a pas pu être mis dans la forme que tu lis : %1$s</string>
+    <string name="ai_error_field_invalid_pattern">Champ illisible : %1$s. Un champ est soit un champ racine sans point (id, timestamp, name), soit data.nom_du_champ, soit extra.nom_du_champ, soit state.clé. \'data\', \'extra\' et \'state\' seuls sont refusés : ce sont des conteneurs, il faut nommer un champ dedans. Un champ qui contient un objet ou une liste se demande en entier : extra.nom_du_champ, pas extra.nom_du_champ.start.</string>
+
+    <!-- AI Errors - Rejected parameters -->
+
+    <!-- AI Errors - Temporal parameters -->
+    <string name="ai_error_period_invalid_iso">Date ISO 8601 illisible : %1$s. Format attendu : 2025-11-23T09:00:00+01:00</string>
+    <string name="ai_error_date_unreadable">Date illisible : %1$s. Formats acceptés : un jour (2026-09-15), ou une date relative ({"relative": {"unit": "DAY", "offset": -1, "edge": "START"}}, ou {"relative": "NOW"}).</string>
+    <string name="ai_error_period_unknown_type">Type de période inconnu : %1$s. Types acceptés : %2$s</string>
+    <string name="error_relative_date_invalid">Date relative illisible : %1$s. Attendu : {"relative": {"unit": "DAY", "offset": -1, "edge": "START"}} (edge START ou END), ou {"relative": "NOW"}</string>
+
+    <!-- AI Data Types - Enrichment descriptions -->
+    <string name="ai_data_zone">données zone</string>
+    <string name="ai_data_tool">données outil</string>
+    <string name="ai_data_field">champ données</string>
+    <string name="ai_data_generic">données</string>
+    <string name="ai_period_filtered">période filtrée</string>
+    <string name="ai_values_filtered">valeurs filtrées</string>
+    <string name="ai_period_specific">période spécifique</string>
+    <string name="ai_period_extended">période étendue</string>
+
+    <!-- AI Errors - Orchestration -->
+    <string name="ai_error_store_user_message">Échec de la sauvegarde du message utilisateur: %1$s</string>
+    <string name="ai_error_ai_query_failed">Échec de la requête IA: %1$s</string>
+    <string name="ai_error_orchestration">Erreur d\'orchestration: %1$s</string>
+    <string name="ai_error_store_ai_response">Échec de la sauvegarde de la réponse IA: %1$s</string>
+
+    <!-- AI Errors - Session Management -->
+    <string name="ai_error_create_session">Échec de la création de session: %1$s</string>
+    <string name="ai_error_session_not_found">Session introuvable: %1$s</string>
+    <string name="ai_error_load_session">Échec du chargement de session: %1$s</string>
+    <string name="ai_error_check_session">Échec de la vérification de session</string>
+    <string name="ai_error_stop_session">Échec de l\'arrêt de session</string>
+    <string name="ai_error_set_active_session">Échec de l\'activation de session: %1$s</string>
+    <string name="ai_error_get_active_session">Échec de la récupération de session active: %1$s</string>
+    <string name="ai_error_send_message">Échec de l\'envoi du message: %1$s</string>
+    <string name="ai_error_session_stopped">Session arrêtée</string>
+    <string name="ai_error_toggle_validation">Échec du changement de validation</string>
+
+    <!-- AI Errors - Parameters -->
+    <string name="ai_error_param_name_required">Paramètre obligatoire: name</string>
+    <string name="ai_error_param_type_required">Paramètre obligatoire: type</string>
+    <string name="ai_error_param_provider_id_required">Paramètre obligatoire: providerId</string>
+    <string name="ai_error_param_session_id_required">Paramètre obligatoire: sessionId</string>
+    <string name="ai_error_param_sender_required">Paramètre obligatoire: sender</string>
+    <string name="ai_error_param_automation_id_required">Paramètre obligatoire: automationId</string>
+    <string name="ai_error_invalid_sender">Expéditeur invalide: %1$s</string>
+
+    <!-- AI Errors - Messages -->
+    <string name="ai_error_create_message">Échec de la création de message: %1$s</string>
+
+    <!-- AI Errors - Provider Configuration -->
+    <string name="ai_error_provider_config">Échec de l\'opération de configuration du fournisseur: %1$s</string>
+    <string name="ai_error_unknown_provider">Fournisseur inconnu: %1$s</string>
+    <string name="ai_error_param_config_required">Paramètre obligatoire: config</string>
+
+    <!-- AI Errors - General -->
+    <string name="service_error_ai_session">Erreur AISessionService: %1$s</string>
+    <string name="error_not_implemented">Pas encore implémenté</string>
+    <string name="ai_error_label">Erreur : %1$s</string>
+    <string name="ai_written_entries_unreadable">Les valeurs écrites ne peuvent plus s\'afficher : leur outil est illisible</string>
+
+    <!-- Action verbalization (substantive form for validation + SystemMessage) -->
+    <string name="action_verbalize_create_zone">Création de la zone \"%1$s\"</string>
+    <string name="action_verbalize_update_zone">Modification de la zone \"%1$s\"</string>
+    <string name="action_verbalize_delete_zone">Suppression de la zone \"%1$s\"</string>
+    <string name="action_verbalize_create_tool">Création de l\'outil \"%1$s\" dans la zone \"%2$s\"</string>
+    <string name="action_verbalize_update_tool_config">Modification de la configuration de l\'outil \"%1$s\"</string>
+    <string name="action_verbalize_delete_tool">Suppression de l\'outil \"%1$s\"</string>
+    <string name="action_verbalize_create_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : ajout de %3$d entrée(s)</string>
+    <string name="action_verbalize_update_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : modification de %3$d entrée(s)</string>
+    <string name="action_verbalize_start_duration">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : chronomètre démarré</string>
+    <string name="action_verbalize_stop_duration">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : chronomètre arrêté</string>
+    <string name="action_verbalize_delete_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : suppression de %3$d entrée(s)</string>
+    <string name="action_verbalize_update_app_config">Modification de la configuration de l\'application</string>
+    <string name="action_verbalize_schema_get">Récupération du schéma \"%1$s\"</string>
+    <string name="action_verbalize_schema_list">Récupération de la liste des schémas</string>
+    <string name="action_verbalize_unknown">Action inconnue</string>
+    <string name="action_verbalize_tools_running">Recherche des chronomètres en cours dans les outils</string>
+    <string name="action_verbalize_zones_place">Déplacement de zones dans leur groupe</string>
+    <string name="action_verbalize_tools_place">Déplacement d\'outils dans leur groupe</string>
+    <string name="action_verbalize_tools_waiting">Compte de ce qui attend dans les outils</string>
+
+    <!-- AI Errors - Network and System -->
+    <string name="ai_error_network_unavailable">Réseau indisponible</string>
+    <string name="ai_error_network_timeout_retries">Timeout réseau après %1$d tentatives: %2$s</string>
+    <string name="ai_error_network_call_failed">Échec de l\'appel IA</string>
+    <string name="ai_error_response_lost">Requête envoyée, réponse perdue : son coût est inconnu</string>
+    <string name="ai_error_session_timeout_automation">Durée maximale de session automation dépassée (%1$d min), arrêt forcé</string>
+    <string name="ai_error_timeout">Délai dépassé</string>
+    <string name="ai_error_limit_reached">Limite atteinte</string>
+    <string name="ai_error_system_generic">Erreur système</string>
+    <string name="ai_error_missing_required_field">Champ obligatoire manquant: %1$s</string>
+    <string name="ai_error_unknown">Erreur inconnue</string>
+
+    <!-- AI Phases (V2) - getPhaseLabel() for header display -->
+    <string name="ai_phase_idle">En attente</string>
+    <string name="ai_phase_executing_enrichments">Enrichissements...</string>
+    <string name="ai_phase_calling_ai">Appel IA...</string>
+    <string name="ai_phase_parsing">Analyse réponse...</string>
+    <string name="ai_phase_executing_queries">Récupération données...</string>
+    <string name="ai_phase_executing_actions">Exécution actions...</string>
+    <string name="ai_phase_waiting_validation">Validation requise</string>
+    <string name="ai_phase_waiting_communication">En attente de réponse</string>
+    <string name="ai_phase_waiting_data_confirmation">En attente de ta décision sur les données</string>
+    <string name="ai_system_data_too_large_automation">Données non envoyées : %1$d caractères, au-delà du seuil des automations de %2$d. Resserre la requête (moins de champs, une période plus courte) ou découpe ce qui est vraiment nécessaire.</string>
+    <string name="ai_system_data_refused_by_user">Données non envoyées : l\'utilisateur a refusé %1$d caractères de données. Resserre la requête (moins de champs, une période plus courte) ou demande-lui ce qui est nécessaire.</string>
+    <string name="ai_system_result_cut">[… %1$s caractères non envoyés]</string>
+    <string name="ai_data_confirmation_title">Données volumineuses</string>
+    <string name="ai_data_confirmation_text">Les données demandées font %1$d caractères, au-delà de ton seuil de %2$d. Les envoyer à l\'IA ?</string>
+    <string name="ai_data_confirmation_send">Envoyer</string>
+    <string name="ai_data_confirmation_refuse">Refuser</string>
+    <string name="ai_always_send_title">Outils toujours envoyés</string>
+    <string name="ai_phase_waiting_network">Attente réseau...</string>
+    <string name="ai_phase_retrying">Nouvelle tentative...</string>
+    <string name="ai_phase_interrupted">Interrompu</string>
+    <string name="ai_phase_completed">Terminé</string>
+
+    <!-- AI Session Phase Labels (for SessionStatusBar bottom display) -->
+    <string name="ai_phase_idle_chat">En attente</string>
+    <string name="ai_phase_idle_automation">Prêt</string>
+    <string name="ai_phase_executing">Traitement...</string>
+    <string name="ai_phase_preparing_continuation">Préparation continuation...</string>
+    <string name="ai_phase_awaiting_closure">Fermeture dans 5s...</string>
+    <string name="ai_phase_closed">Session terminée</string>
+
+    <!-- AI Session End Reasons -->
+    <string name="ai_end_reason_completed">Terminé</string>
+    <string name="ai_end_reason_limit_reached">Limite atteinte</string>
+    <string name="ai_end_reason_timeout">Délai dépassé</string>
+    <string name="ai_end_reason_error">Erreur</string>
+    <string name="ai_end_reason_cancelled">Annulé</string>
+    <string name="ai_end_reason_interrupted">Interrompu</string>
+    <string name="ai_end_reason_network_error">Erreur réseau</string>
+    <string name="ai_end_reason_suspended">Suspendu</string>
+
+    <!-- AI Round Interruption -->
+    <string name="ai_round_interrupted">Round IA interrompu</string>
+    <string name="ai_round_failed">Round IA arrêté par une erreur de l\'app : %1$s</string>
+    <string name="ai_actions_stopped">Actions arrêtées pendant leur exécution : celles terminées avant l\'arrêt ont eu lieu, celle en cours a été abandonnée, les suivantes n\'ont pas eu lieu. Vérifier ce qui existe avant de les relancer.</string>
+    <string name="ai_actions_cut_by_app_closing">Actions coupées par la fermeture de l\'app pendant leur exécution : celles terminées avant ont eu lieu, celle en cours a été abandonnée, les suivantes n\'ont pas eu lieu. Vérifier ce qui existe avant de les relancer.</string>
+    <string name="ai_call_cut_after_sending">La requête était déjà partie quand elle a été coupée : son coût est inconnu</string>
+
+    <!-- AI Session Scheduler -->
+    <string name="ai_scheduler_slot_occupied">Slot occupé</string>
+
+    <!-- AI COSTS - Token usage and pricing -->
+    <string name="ai_cost_total">Coût total</string>
+    <string name="ai_cost_input">Entrée</string>
+    <string name="ai_cost_cache_write">Écriture cache</string>
+    <string name="ai_cost_cache_read">Lecture cache</string>
+    <string name="ai_cost_output">Sortie</string>
+    <string name="ai_cost_tokens">tokens</string>
+    <string name="ai_cost_unknown_calls">Appels au coût inconnu : %d</string>
+    <string name="ai_cost_at_least">≥ %s</string>
+    <string name="ai_cost_loading">Chargement des coûts…</string>
+    <string name="ai_cost_currency_usd">USD</string>
+    <string name="ai_cost_breakdown_title">Détail des coûts</string>
+    <string name="ai_cost_session_total">Coût session</string>
+
+    <!-- AI COSTS - Errors -->
+    <string name="error_session_id_required">ID de session requis</string>
+    <string name="error_cost_calculation_failed">Échec du calcul des coûts</string>
+    <string name="error_model_prices_fetch_failed">Échec du téléchargement des prix des modèles</string>
+    <string name="error_model_price_not_found">Prix du modèle introuvable</string>
+    <string name="error_model_id_extraction_failed">Échec de l\'extraction de l\'ID du modèle</string>
+
+    <!-- Time formatting - Relative time -->
+    <string name="time_now">maintenant</string>
+    <string name="time_in_seconds">dans %1$ds</string>
+    <string name="time_in_minutes">dans %1$d min</string>
+    <string name="time_in_hours">dans %1$dh</string>
+    <string name="time_in_days">dans %1$d jours</string>
+    <string name="time_ago_seconds">il y a %1$ds</string>
+    <string name="time_ago_minutes">il y a %1$d min</string>
+    <string name="time_ago_hours">il y a %1$dh</string>
+    <string name="time_ago_day_one">il y a 1 jour</string>
+    <string name="time_ago_days">il y a %1$d jours</string>
+
+    <!-- Labels de formulaire -->
+    <string name="label_zone_name">Nom de la zone</string>
+    <string name="label_description">Description</string>
+    <string name="label_icon">Icône</string>
+    <string name="label_icon_color">Couleur de l\'icône</string>
+    <string name="label_page_info">Page %1$d sur %2$d</string>
+    <string name="label_disabled">Désactivé</string>
+    <string name="label_field_generic">Champ</string>
+    <string name="label_field_parameter">Paramètre</string>
+    <string name="label_date">Date</string>
+    <string name="label_time">Heure</string>
+    <string name="label_name">Nom</string>
+    <string name="label_created_at">Créée</string>
+    <string name="label_updated_at">Modifiée</string>
+    <string name="label_actions">Actions</string>
+    <string name="label_configuration">Configuration</string>
+    <string name="label_validation">Validation</string>
+    <string name="label_tools">Outils</string>
+    <string name="label_zone">Zone</string>
+    <string name="label_tool">Outil</string>
+    <string name="label_no_value">Aucune valeur</string>
+    <string name="list_item_untitled">Sans nom</string>
+    <string name="list_item_summary_separator">·</string>
+    <string name="settings_path_root">Réglages</string>
+    <string name="settings_path_separator">›</string>
+    <string name="settings_count">%1$s : %2$s</string>
+    <string name="settings_phrase_filters">Filtres : %1$s</string>
+    <string name="settings_leave_unsaved">Quitter sans enregistrer ? Vos changements seront perdus.</string>
+    <string name="field_label_inline">%1$s :</string>
+    <string name="tag_color_red">Rouge</string>
+    <string name="tag_color_orange">Orange</string>
+    <string name="tag_color_yellow">Jaune</string>
+    <string name="tag_color_green">Vert</string>
+    <string name="tag_color_teal">Bleu-vert</string>
+    <string name="tag_color_blue">Bleu</string>
+    <string name="tag_color_purple">Violet</string>
+    <string name="tag_color_pink">Rose</string>
+    <string name="tag_color_grey">Gris</string>
+
+    <!-- App Config - Format Settings labels -->
+    <string name="app_config_format_week_start_day">Jour de début de semaine</string>
+    <string name="app_config_format_day_start_hour">Heure de début de journée</string>
+    <string name="app_config_format_locale_override">Locale personnalisée</string>
+    <string name="app_config_format_timezone_override">Fuseau horaire personnalisé</string>
+    <string name="app_config_format_date_format_pattern">Pattern de format de date</string>
+    <string name="app_config_format_time_separator">Séparateur d\'heure</string>
+    <string name="app_config_format_hour_limit">Limite heures</string>
+    <string name="app_config_format_day_limit">Limite jours</string>
+    <string name="app_config_format_week_limit">Limite semaines</string>
+    <string name="app_config_format_month_limit">Limite mois</string>
+    <string name="app_config_format_year_limit">Limite années</string>
+
+    <!-- UI Component defaults -->
+    
+    <!-- Messages et feedback -->
+    <string name="message_loading">Chargement...</string>
+    <string name="message_loading_tools">Chargement des outils...</string>
+    <string name="message_validation_error">Erreur de validation: %1$s</string>
+    <string name="message_validation_error_simple">Erreur de validation</string>
+    <string name="message_error">Erreur: %1$s</string>
+    <string name="message_irreversible_action">Cette action est irréversible.</string>
+    <string name="message_delete_zone_confirmation">Supprimer la zone "%1$s" ?</string>
+    <string name="message_no_zones_created">Aucune zone créée</string>
+    <string name="message_available_tool_types">Types d'outils disponibles</string>
+    <string name="message_no_tools_in_zone">Aucun outil dans cette zone</string>
+    <string name="message_no_items_in_group">Aucun élément dans ce groupe</string>
+    <string name="error_tooltype_not_found">Type d'outil '%1$s' introuvable</string>
+    <string name="message_copied">Message copié</string>
+    <string name="duplicate_success_tool">Outil dupliqué avec succès</string>
+    <string name="duplicate_success_automation">Automation dupliquée avec succès</string>
+    <string name="duplicate_no_tools">Aucun outil disponible à dupliquer</string>
+    <string name="duplicate_no_automations">Aucune automation disponible à dupliquer</string>
+    <string name="duplicate_error">Erreur lors de la duplication: %1$s</string>
+
+    <!-- Confirmation messages -->
+    <string name="confirm_action">Confirmer cette action ?</string>
+    <string name="confirm_delete">Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.</string>
+    <string name="confirm_reset">Voulez-vous réinitialiser la configuration ? Les données actuelles seront perdues.</string>
+
+    <!-- The one date input (InstantPicker) and its period -->
+    <string name="period_from">Depuis</string>
+    <string name="period_until">Jusqu\'à</string>
+    <string name="instant_mode_custom">Date personnalisée</string>
+    <string name="instant_mode_relative">Date relative</string>
+    <string name="instant_mode_now">Maintenant</string>
+    <string name="instant_mode_reference">Le moment même</string>
+    <string name="instant_mode_none">Sans limite</string>
+    <string name="instant_unit">Unité</string>
+    <string name="instant_edge">Moment</string>
+    <string name="instant_edge_start">Début</string>
+    <string name="instant_edge_end">Fin</string>
+    <string name="instant_reference">Par rapport à : %1$s</string>
+    <string name="instant_resolved">Soit : %1$s</string>
+    <string name="instant_reference_reading">l\'instant lu</string>
+    <string name="instant_reference_scheduled_run">l\'heure prévue de l\'exécution</string>
+
+    <!-- Périodes temporelles -->
+    <string name="period_all">Toutes</string>
+    <string name="period_hour">Heure</string>
+    <string name="period_day">Jour</string>
+    <string name="period_week">Semaine</string>
+    <string name="period_month">Mois</string>
+    <string name="period_year">Année</string>
+    <string name="period_this_hour">Cette heure-ci</string>
+    <string name="period_hours_ago_singular">Il y a %1$d heure</string>
+    <string name="period_hours_ago_plural">Il y a %1$d heures</string>
+    <string name="period_hours_from_now_singular">Dans %1$d heure</string>
+    <string name="period_hours_from_now_plural">Dans %1$d heures</string>
+    <string name="period_today">Aujourd'hui</string>
+    <string name="period_yesterday">Hier</string>
+    <string name="period_tomorrow">Demain</string>
+    <string name="period_days_ago_singular">Il y a %1$d jour</string>
+    <string name="period_days_ago_plural">Il y a %1$d jours</string>
+    <string name="period_days_from_now_singular">Dans %1$d jour</string>
+    <string name="period_days_from_now_plural">Dans %1$d jours</string>
+    <string name="period_this_week">Cette semaine</string>
+    <string name="period_last_week">La semaine dernière</string>
+    <string name="period_next_week">La semaine prochaine</string>
+    <string name="period_weeks_ago_singular">Il y a %1$d semaine</string>
+    <string name="period_weeks_ago_plural">Il y a %1$d semaines</string>
+    <string name="period_weeks_from_now_singular">Dans %1$d semaine</string>
+    <string name="period_weeks_from_now_plural">Dans %1$d semaines</string>
+    <string name="period_week_of">Semaine du %1$s</string>
+    <string name="period_this_month">Ce mois-ci</string>
+    <string name="period_last_month">Le mois dernier</string>
+    <string name="period_next_month">Le mois prochain</string>
+    <string name="period_months_ago">Il y a %1$d mois</string>
+    <string name="period_months_from_now">Dans %1$d mois</string>
+    <string name="period_this_year">Cette année</string>
+    <string name="period_last_year">L'année dernière</string>
+    <string name="period_next_year">L'année prochaine</string>
+
+    <!-- Range selectors -->
+    <string name="period_years_ago_singular">Il y a %1$d an</string>
+    <string name="period_years_ago_plural">Il y a %1$d ans</string>
+    <string name="period_years_from_now_singular">Dans %1$d an</string>
+    <string name="period_years_from_now_plural">Dans %1$d ans</string>
+
+    <!-- Period types for selectors -->
+    <string name="period_type_hour">Heure</string>
+    <string name="period_type_day">Jour</string>
+    <string name="period_type_week">Semaine</string>
+    <string name="period_type_month">Mois</string>
+    <string name="period_type_year">Année</string>
+
+    <!-- Relative period labels - Current period (offset = 0) -->
+    <string name="period_relative_current_hour">L\'heure en cours</string>
+    <string name="period_relative_current_day">Le jour-même</string>
+    <string name="period_relative_current_week">La semaine en cours</string>
+    <string name="period_relative_current_month">Le mois en cours</string>
+    <string name="period_relative_current_year">L\'année en cours</string>
+
+    <!-- Relative period labels - One before (offset = -1) -->
+    <string name="period_relative_one_hour_before">1 heure avant</string>
+    <string name="period_relative_one_day_before">La veille</string>
+    <string name="period_relative_one_week_before">La semaine précédente</string>
+    <string name="period_relative_one_month_before">Le mois précédent</string>
+    <string name="period_relative_one_year_before">L\'année précédente</string>
+
+    <!-- Relative period labels - One after (offset = 1) -->
+    <string name="period_relative_one_hour_after">1 heure après</string>
+    <string name="period_relative_one_day_after">Le lendemain</string>
+    <string name="period_relative_one_week_after">La semaine suivante</string>
+    <string name="period_relative_one_month_after">Le mois suivant</string>
+    <string name="period_relative_one_year_after">L\'année suivante</string>
+
+    <!-- Relative period labels - Multiple before (offset < -1) -->
+    <string name="period_relative_hours_before">%1$d heures avant</string>
+    <string name="period_relative_days_before">%1$d jours avant</string>
+    <string name="period_relative_weeks_before">%1$d semaines avant</string>
+    <string name="period_relative_months_before">%1$d mois avant</string>
+    <string name="period_relative_years_before">%1$d années avant</string>
+
+    <!-- Relative period labels - Multiple after (offset > 1) -->
+    <string name="period_relative_hours_after">%1$d heures après</string>
+    <string name="period_relative_days_after">%1$d jours après</string>
+    <string name="period_relative_weeks_after">%1$d semaines après</string>
+    <string name="period_relative_months_after">%1$d mois après</string>
+    <string name="period_relative_years_after">%1$d années après</string>
+
+    <!-- Actions -->
+
+    <!-- Mois -->
+    <string name="month_january">Janvier</string>
+    <string name="month_february">Février</string>
+    <string name="month_march">Mars</string>
+    <string name="month_april">Avril</string>
+    <string name="month_may">Mai</string>
+    <string name="month_june">Juin</string>
+    <string name="month_july">Juillet</string>
+    <string name="month_august">Août</string>
+    <string name="month_september">Septembre</string>
+    <string name="month_october">Octobre</string>
+    <string name="month_november">Novembre</string>
+    <string name="month_december">Décembre</string>
+
+    <!-- Divers -->
+
+    <string name="new_item">Nouvel élément</string>
+    <string name="unnamed">Sans nom</string>
+    <string name="content_unnamed">sans nom</string>
+    <string name="no_value">Aucune valeur</string>
+
+    <!-- Custom Fields -->
+    <string name="custom_fields_section_title">Champs supplémentaires</string>
+    <string name="custom_fields_add">Ajouter un champ</string>
+    <string name="custom_fields_display_name">Nom du champ</string>
+    <string name="custom_fields_description">Description (optionnel)</string>
+    <string name="custom_fields_type">Type de champ</string>
+    <string name="custom_fields_always_visible">Toujours afficher (même si vide)</string>
+
+    <!-- Custom Fields Configuration - Field-specific config labels -->
+    <string name="field_config_section_title">Configuration du champ</string>
+    <string name="field_config_default_value">Valeur par défaut</string>
+    <string name="field_config_unit">Unité</string>
+    <string name="field_config_min">Minimum</string>
+    <string name="field_config_max">Maximum</string>
+    <string name="field_config_decimals">Nombre de décimales</string>
+    <string name="field_config_step">Pas</string>
+    <string name="field_config_min_label">Label minimum</string>
+    <string name="field_config_max_label">Label maximum</string>
+    <string name="field_config_options">Options</string>
+    <string name="field_config_multiple">Sélection multiple</string>
+    <string name="field_config_ordered">Classement (les options dans un ordre choisi)</string>
+    <string name="field_config_open">Ouvert (une valeur nouvelle rejoint les options)</string>
+    <string name="field_choice_rank">%1$s. %2$s</string>
+    <string name="field_choice_none">Aucun</string>
+    <string name="field_choice_new_value">Nouvelle option</string>
+    <string name="field_config_option_value">Option</string>
+    <string name="field_config_option_label">Libellé affiché</string>
+    <string name="field_config_option_color">Couleur</string>
+    <string name="field_config_option_add">Ajouter une option</string>
+    <string name="field_config_option_delete">Supprimer l\'option</string>
+    <string name="field_config_option_placeholder">Nouvelle option</string>
+    <string name="field_config_true_label">Label pour vrai</string>
+    <string name="field_config_false_label">Label pour faux</string>
+    <string name="field_config_time_format">Format d\'heure</string>
+    <string name="field_config_duration_precision">Précision</string>
+    <string name="field_config_duration_form">Forme</string>
+    <string name="field_config_text_length">Longueur du texte</string>
+    <string name="field_config_no_config_required">Ce type de champ ne nécessite aucune configuration</string>
+
+    <!-- Custom Fields Validation Errors -->
+    <string name="error_custom_field_validation_failed">Champ \'%1$s\' : %2$s</string>
+
+    <!-- Tools CONFIG - Chaînes communes aux tooltypes pour la configuration -->
+    <string name="tools_config_label_name">Nom</string>
+    <string name="tools_config_label_description">Description</string>
+    <string name="tools_config_label_display_mode">Mode d\'affichage</string>
+    <string name="tools_config_label_icon">Icône</string>
+    <string name="tools_config_label_management">Gestion</string>
+
+    <!-- Base schemas - Config -->
+    <string name="tools_base_schema_config_custom_fields">Liste des champs personnalisables additionnels</string>
+    <string name="tools_base_schema_custom_field_name">Identifiant technique du champ (généré automatiquement)</string>
+    <string name="tools_base_schema_custom_field_display_name">Nom affiché du champ</string>
+    <string name="tools_base_schema_custom_field_description">Description du champ</string>
+    <string name="tools_base_schema_custom_field_type">Type de champ</string>
+    <string name="tools_base_schema_custom_field_always_visible">Toujours afficher le champ même s\'il est vide</string>
+    <string name="tools_base_schema_custom_field_config">Configuration spécifique au type de champ</string>
+    <string name="tools_config_label_config_validation">Validation config par IA</string>
+    <string name="tools_config_label_data_validation">Validation données par IA</string>
+    <string name="tools_config_label_always_send">Toujours envoyer à l\'IA</string>
+    <string name="tools_config_label_show_field_labels">Afficher le nom des champs</string>
+    <string name="tools_config_label_validate_config">Validation config</string>
+    <string name="tools_config_label_validate_data">Validation données</string>
+
+    <string name="tools_config_option_manual">Manuel</string>
+    <string name="tools_config_option_ai">IA</string>
+    
+    <string name="tools_config_section_general_params">Paramètres généraux</string>
+    
+    <!-- Tools CONFIG - Messages d'erreur -->
+    <string name="tools_config_error_validation">Erreur de validation</string>
+    <string name="tools_config_error_tooltype_not_found">Type d'outil introuvable</string>
+    <string name="tools_config_error_save">Erreur lors de la sauvegarde</string>
+    
+    <!-- Tools CONFIG - Options de display mode -->
+    <string name="tools_config_display_icon">Icône</string>
+    <string name="tools_config_display_minimal">Minimal</string>
+    <string name="tools_config_display_line">Ligne</string>
+    <string name="tools_config_display_condensed">Compact</string>
+    <string name="tools_config_display_extended">Étendu</string>
+    <string name="tools_config_display_square">Carré</string>
+    <string name="tools_config_display_full">Complet</string>
+    
+    <!-- Tools CONFIG - Dialog icônes -->
+    <string name="tools_config_dialog_choose_icon">Choisir une icône</string>
+    <string name="tools_config_dialog_suggested_icons">Suggérées</string>
+    <string name="tools_config_dialog_categories">Catégories</string>
+    <string name="tools_config_dialog_search">Rechercher (en anglais)</string>
+    <string name="tools_config_dialog_results">%1$d icône(s)</string>
+    <string name="tools_config_dialog_results_truncated">%1$d affichées sur %2$d : précisez la recherche</string>
+    <string name="tools_config_dialog_no_result">Aucune icône ne correspond</string>
+    <string name="tools_config_dialog_all_categories">Toutes les catégories</string>
+        
+    <!-- Tools USAGE - Chaînes communes aux tooltypes pour l'utilisation -->
+    <string name="tools_loading">Chargement...</string>
+    <string name="tools_loading_config">Chargement de la configuration...</string>
+    <string name="tools_error_load_tool">Impossible de charger l\'outil</string>
+    <string name="tools_error_loading">Erreur lors du chargement</string>
+
+    <!-- Tools BASE SCHEMA CONFIG - Descriptions communes pour validation des configurations -->
+    <string name="tools_base_schema_config_name">Nom de l\'outil, affiché dans sa zone</string>
+    <string name="tools_base_schema_config_description">Description facultative de l\'usage de l\'outil</string>
+    <string name="tools_base_schema_config_management">Qui gère l\'outil : l\'utilisateur (manual) ou l\'IA (ai)</string>
+    <string name="tools_base_schema_config_display_mode">Forme de l\'outil dans sa zone, de la plus petite (ICON) à la plus grande (FULL)</string>
+    <string name="tools_base_schema_config_icon_name">Nom de l\'icône de l\'outil (un nom d\'icône Lucide)</string>
+    <string name="tools_base_schema_config_icon_color">Couleur de l\'icône de l\'outil, parmi RED, ORANGE, YELLOW, GREEN, TEAL, BLUE, PURPLE, PINK ; null ou absente pour une icône neutre. Chaque thème la dessine à sa façon</string>
+    <string name="tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
+    <string name="tools_base_schema_config_show_field_labels">Si les champs de l\'utilisateur montrent leur nom à côté de leur valeur, partout où ils s\'affichent</string>
+    <string name="tools_base_schema_config_validate_config">Requiert validation utilisateur avant modification configuration</string>
+    <string name="tools_base_schema_config_validate_data">Requiert validation utilisateur avant modification données</string>
+
+    <!-- Tools BASE SCHEMA DATA - Descriptions communes pour validation des données -->
+    <string name="tools_base_schema_data_id">Identifiant de l\'entrée, posé par le système</string>
+    <string name="tools_base_schema_data_tool_instance_id">Identifiant de l\'outil auquel appartient l\'entrée</string>
+    <string name="tools_base_schema_data_tooltype">Type de l\'outil auquel appartient l\'entrée, posé par le système</string>
+    <string name="tools_base_schema_data_name">Nom de l\'entrée</string>
+    <string name="tools_base_schema_data_name_unique">Le nom de l\'entrée, unique dans l\'outil (sans compter la casse ni les espaces autour) : c\'est par lui qu\'on la retrouve</string>
+    <string name="service_error_name_taken">Une autre entrée de cet outil s\'appelle déjà « %1$s » (id %2$s) : les noms y sont uniques. Modifiez cette entrée plutôt que d\'en ajouter une seconde.</string>
+    <string name="tools_base_schema_data_timestamp">Moment auquel se rapporte l\'entrée ; maintenant s\'il est omis, et peut être dans le passé</string>
+    <string name="tools_base_schema_data_created_at">Date de création de l\'entrée, posée par le système</string>
+    <string name="tools_base_schema_data_updated_at">Date de dernière modification de l\'entrée, posée par le système</string>
+    <string name="tools_base_schema_data_data">Données spécifiques au type d\'outil</string>
+    <string name="entry_schema_extra">Champs ajoutés à cet outil par l\'utilisateur</string>
+    <string name="entry_schema_state">État de l\'entrée, écrit par ses actions et par l\'app, jamais directement</string>
+    <string name="entry_schema_running">Les champs de durée en cours, avec l\'instant où chacun a démarré</string>
+    <string name="entry_schema_running_container">Champs de durée en cours de %1$s, par nom</string>
+
+    <!-- Tools BASE SCHEMA EXECUTION - Descriptions communes pour validation des exécutions -->
+
+    <!-- SCHEMA DISPLAY NAMES - For schema identification in AI system -->
+    <string name="zone_config_schema_display_name">Configuration de zone</string>
+    <string name="zone_config_schema_description">Schéma de configuration pour les zones</string>
+
+    <!-- APP CONFIG SCHEMA - Descriptions pour validation configuration application -->
+    <string name="app_config_schema_format_week_start_day">Jour de début de semaine</string>
+    <string name="app_config_schema_format_day_start_hour">Heure de début de journée pour calcul des périodes</string>
+    <string name="app_config_schema_format_locale_override">Locale personnalisée (null pour utiliser locale système)</string>
+    <string name="app_config_schema_format_timezone_override">Fuseau horaire personnalisé (null pour utiliser fuseau système)</string>
+    <string name="app_config_schema_format_use_24_hour_format">Format 24h pour affichage heure (null pour utiliser défaut locale)</string>
+    <string name="app_config_schema_format_date_format_pattern">Pattern de format de date (null pour utiliser défaut locale)</string>
+    <string name="app_config_schema_format_time_separator">Séparateur pour affichage heure (: ou h)</string>
+    <string name="app_config_schema_format_hour_limit">Nombre d\'heures avant passage à jours</string>
+    <string name="app_config_schema_format_day_limit">Nombre de jours avant passage à semaines</string>
+    <string name="app_config_schema_format_week_limit">Nombre de semaines avant passage à mois</string>
+    <string name="app_config_schema_format_month_limit">Nombre de mois avant passage à années</string>
+    <string name="app_config_schema_format_year_limit">Nombre d\'années avant passage à date absolue</string>
+
+    <!-- ZONE SCHEMA - Descriptions pour validation zones -->
+    <string name="zone_schema_name">Nom de la zone</string>
+    <string name="zone_schema_description">Description facultative de ce que contient la zone</string>
+    <string name="zone_schema_icon_name">Nom de l\'icône de la zone (un nom d\'icône Lucide)</string>
+
+    <!-- SCOPE SELECTOR - Hierarchical navigation labels -->
+
+    <!-- DUPLICATE SELECTOR - Duplication navigation -->
+    <string name="duplicate_selector_title_tool">Sélectionner l\'outil à dupliquer</string>
+    <string name="duplicate_selector_title_automation">Sélectionner l\'automation à dupliquer</string>
+    <string name="duplicate_select_zone">Sélectionner la zone</string>
+    <string name="duplicate_select_instance">Sélectionner l\'instance</string>
+
+    <!-- SCOPE SELECTOR - Date range labels -->
+
+    <!-- SCOPE SELECTOR - Level labels -->
+
+    <!-- SCOPE SELECTOR - Available entry names -->
+
+    <!-- SCOPE SELECTOR - Navigation steps -->
+    <string name="scope_no_options">Aucune option disponible</string>
+
+    <!-- SCOPE SELECTOR - Context labels -->
+
+    <!-- SCOPE SELECTOR - Resource labels -->
+
+    <!-- SCOPE SELECTOR - Period labels (context-specific) -->
+
+    <!-- SCOPE SELECTOR - Error messages -->
+    <string name="error_loading_options">Erreur lors du chargement des options</string>
+
+    <!-- SERVICES ERROR MESSAGES - Messages d'erreur des services -->
+    <string name="service_error_unknown_operation">Opération inconnue: %1$s</string>
+    <string name="service_error_tool_data_service">Erreur ToolDataService: %1$s</string>
+    <string name="service_error_zone_service">Erreur ZoneService: %1$s</string>
+    <string name="service_error_tool_instance_service">Erreur ToolInstanceService: %1$s</string>
+    <string name="service_error_missing_required_params">Paramètres obligatoires manquants: %1$s</string>
+    <string name="service_error_validation_failed">Validation échouée: %1$s</string>
+    <string name="service_error_missing_id">Paramètre obligatoire manquant: id</string>
+    <string name="service_error_entry_not_found">Entrée introuvable: %1$s</string>
+    <string name="service_error_missing_tool_instance_id">Paramètre obligatoire manquant: tool_instance_id</string>
+    <string name="service_error_missing_entry_id">Paramètre obligatoire manquant: entry_id</string>
+    <string name="service_error_zone_name_required">Nom de zone obligatoire</string>
+    <string name="service_error_zone_id_required">ID de zone obligatoire</string>
+    <string name="service_error_grid_places">Les places données ne disposent pas les outils du groupe</string>
+    <string name="service_error_zone_not_found">Zone introuvable</string>
+    <string name="service_error_zone_id_tool_type_required">ID de zone et type d'outil obligatoires</string>
+    <string name="service_error_tool_instance_id_required">ID d'instance d'outil obligatoire</string>
+    <string name="service_error_tool_instance_not_found">Instance d'outil introuvable</string>
+    <string name="service_error_tool_no_data_schema">La config de l\'outil ne nomme aucun schéma de données (data_schema_id)</string>
+    <string name="service_error_data_schema_not_found">Aucun schéma de données \'%1$s\' pour le type d\'outil %2$s</string>
+    <string name="service_error_no_data_found">Aucune donnée trouvée pour l'opération %1$s</string>
+    <string name="service_error_no_results_found">Aucun résultat trouvé pour l'opération %1$s</string>
+    <string name="service_error_invalid_phase">Phase invalide: %1$s</string>
+    <string name="service_error_unknown_category">Catégorie inconnue: %1$s</string>
+    <string name="service_error_schema_target_missing">Un schéma se demande par un tooltype, un tool_instance_id ou un id</string>
+    <string name="service_error_schema_not_found">Aucun schéma pour %1$s</string>
+
+    <!-- AI SYSTEM MESSAGES - Messages système générés par CommandExecutor -->
+    <string name="ai_system_no_commands">Aucune commande à exécuter</string>
+    <string name="ai_system_query_no_data">Requête réussie mais aucune donnée retournée</string>
+    <string name="ai_system_queries_success">%1$d requête(s) de données ajoutée(s) au contexte</string>
+    <string name="ai_system_queries_all_failed">Échec de toutes les requêtes (%1$d)</string>
+    <string name="ai_system_queries_partial">%1$d requête(s) réussie(s), %2$d échouée(s)</string>
+    <string name="ai_system_actions_success">%1$d action(s) exécutée(s) avec succès</string>
+    <string name="ai_system_actions_all_failed">Échec de toutes les actions (%1$d)</string>
+    <string name="ai_system_actions_partial">%1$d action(s) réussie(s), %2$d échouée(s)</string>
+    <string name="ai_schema_required_summary">Les schémas de données suivants sont nécessaires pour formuler correctement la requête TOOL_DATA (%1$d schéma(s)) :\n%2$s\n\nLes schémas sont inclus ci-dessous. Merci de renouveler ta requête en en tenant compte.</string>
+    <string name="ai_schema_required_for_writes_summary">Tes écritures n\'ont pas été exécutées : elles touchent des outils dont tu n\'as pas reçu le schéma de données dans cette session (%1$d schéma(s)) :\n%2$s\n\nLes schémas sont inclus ci-dessous. Lis-les, puis renvoie tes écritures.</string>
+    <string name="ai_schema_always_send_summary">Schémas de données des outils que l\'utilisateur envoie toujours, dont les données sont au Level 2 (%1$d schéma(s)) :\n%2$s\n\nLes schémas sont inclus ci-dessous.</string>
+    <string name="ai_error_tool_operation_unknown">Le type d\'outil %2$s n\'a pas d\'opération « %1$s ». Ses opérations : %3$s</string>
+    <string name="ai_error_tool_operation_none">aucune</string>
+    <string name="ai_error_tool_operation_params_not_object">Les params de TOOL_OPERATION doivent être un objet</string>
+    <string name="ai_schema_required_details">Schéma %1$s requis pour l\'instance d\'outil %2$s</string>
+
+    <!-- AI PROMPT SYSTEM - Messages internes du système de prompts -->
+    <string name="ai_prompt_duplicate_ignored">Ignorée (duplication)</string>
+    <string name="ai_prompt_level2_intro">Les données ci-dessous sont configurées par l\'utilisateur pour être systématiquement incluses dans les sessions IA. Ces données reflètent des spécificités ou des préférences de l\'utilisateur et doivent être prises en compte dans toutes tes réponses.</string>
+    <string name="ai_prompt_level2_not_sent">Outils que l\'utilisateur a marqués pour être toujours envoyés, non envoyés dans cette session à cause de leur taille : %1$s. Lis-les avec TOOL_DATA quand tu en as besoin.</string>
+    <string name="ai_always_send_awaiting">Les outils toujours envoyés pèsent %1$s caractères à eux tous (seuil : %2$s) : %3$s. Ton choix vaut pour toute cette session : envoyés avec chaque message, ou plus du tout, l\'IA pouvant les lire au besoin. Une nouvelle session te le redemandera.</string>
+    <string name="ai_always_send_accepted">Outils toujours envoyés : envoyés avec chaque message de cette session (%1$s caractères)</string>
+    <string name="ai_always_send_refused">Outils toujours envoyés : non envoyés dans cette session (%1$s caractères), l\'IA peut les lire au besoin</string>
+    <string name="ai_always_send_automation_refused">Outils toujours envoyés : %1$s caractères, au-delà du seuil de %2$s, non envoyés ; l\'IA en a reçu la liste</string>
+    <string name="ai_prompt_level3_title">Snapshot de l\'état de l\'application</string>
+    <string name="ai_prompt_level3_snapshot_time">Snapshot pris au début de la session : **%1$s**</string>
+    <string name="ai_prompt_level3_snapshot_note">Note : Il s\'agit d\'un snapshot qui a pu évoluer depuis le début de la session.</string>
+    <string name="ai_prompt_level3_zone_groups_title">Groupes de zones de l\'accueil</string>
+    <string name="ai_prompt_level3_zones_title">Zones</string>
+    <string name="ai_prompt_level3_tools_title">Instances d\'outils</string>
+    <string name="ai_prompt_current_datetime">Date et heure actuelles : %1$s</string>
+    <string name="ai_prompt_scheduled_datetime">Date prévue pour cette exécution : %1$s. Les données relatives (hier, cette semaine) sont résolues sur cette date, pas sur l\'heure actuelle. Ce que tu fais ou dis reste au présent. Si tu écris une donnée qui appartient à la date prévue plutôt qu\'à aujourd\'hui, passe son timestamp explicitement : sans timestamp, l\'entrée est datée du moment où cette exécution tourne.</string>
+
+    <!-- AI TOKEN STATUS - Affichage statut tokens (TokenCalculator) -->
+
+    <!-- DATA NAVIGATION - Explorateur de données et navigation -->
+
+    <!-- SCOPE SELECTOR DETAILS - Labels détaillés pour sélection de scope -->
+
+    <!-- THEME/UI COMPONENTS - Labels pour composants d\'interface -->
+
+    <!-- SETTINGS - Configuration screens -->
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_section_app">App</string>
+    <string name="settings_section_ai">IA</string>
+    <string name="settings_section_data">Données</string>
+    <string name="settings_section_system">Système</string>
+    <string name="settings_ai_providers">Fournisseurs IA</string>
+    <string name="settings_ai_providers_description">Configurer les fournisseurs d\'intelligence artificielle</string>
+    <string name="settings_ai_providers_config">Configuration du fournisseur</string>
+
+    <string name="settings_format">Format et dates</string>
+    <string name="settings_format_description">Configurer les formats temporels et d\'affichage</string>
+    <string name="settings_format_subtitle">Configuration date/heure</string>
+    <string name="settings_format_timezone">Fuseau horaire</string>
+    <string name="settings_format_locale_section">Langue et région</string>
+    <string name="settings_format_display_section">Formats d\'affichage</string>
+    <string name="settings_format_24h">Format 24h (sinon 12h)</string>
+    <string name="settings_format_business_section">Logique métier (périodes)</string>
+    <string name="settings_format_relative_section">Labels relatifs (périodes)</string>
+
+    <string name="settings_ai_limits">Limites IA</string>
+    <string name="settings_ai_limits_description">Configurer les limites des boucles autonomes de l\'IA</string>
+    <string name="app_config_ai_limits_chat">Appels IA d\'affilée, chat</string>
+    <string name="app_config_ai_limits_automation">Appels IA par automation</string>
+    <string name="settings_ai_limits_chat_help">Compté depuis ton dernier message : au-delà, l\'IA s\'arrête et te rend la main.</string>
+    <string name="settings_ai_limits_automation_help">Compté sur toute la session, puisque personne n\'intervient : au-delà, l\'automation se termine.</string>
+    <string name="app_config_ai_data_chat">Taille des données avant confirmation, chat (caractères)</string>
+    <string name="app_config_ai_data_automation">Taille des données admise, automation (caractères)</string>
+    <string name="settings_ai_data_chat_help">Au-delà, les données demandées, par tes pointeurs ou par l\'IA, attendent que tu les envoies ou les refuses.</string>
+    <string name="settings_ai_data_automation_help">Au-delà, les données ne partent pas : l\'IA est invitée à resserrer sa demande. Visible dans l\'historique d\'exécution.</string>
+    <string name="app_config_ai_always_send">Taille des outils toujours envoyés avant confirmation (caractères)</string>
+    <string name="settings_ai_always_send_help">Les outils marqués « toujours envoyer » partent avec chaque message à l\'IA. Au-delà de cette taille à eux tous, un chat te demande une fois par session s\'il faut les envoyer ; une automation, ou une IA extérieure à l\'app, n\'en reçoit que la liste et peut les lire au besoin.</string>
+
+    <string name="settings_validation">Validation IA</string>
+    <string name="settings_validation_description">Configurer quand l\'IA doit demander validation</string>
+    <string name="app_config_validate_app_config_changes">Modifications des réglages de l\'app</string>
+    <string name="app_config_validate_zone_config_changes">Modifications des zones</string>
+    <string name="app_config_validate_variable_changes">Modifications des variables</string>
+    <string name="app_config_validate_tool_config_changes">Modifications des réglages des outils</string>
+    <string name="app_config_validate_tool_data_changes">Modifications des données des outils</string>
+
+    <string name="settings_ui">Interface utilisateur</string>
+    <string name="settings_ui_description">Configurer l\'apparence et le comportement de l\'interface</string>
+    <string name="settings_ui_theme">Thème</string>
+    <string name="settings_ui_theme_help">La façon dont l\'app est dessinée : ses formes, ses lettres, ses icônes.</string>
+    <string name="settings_ui_hue_shift">Teinte</string>
+    <string name="settings_ui_hue_shift_help">Fait tourner les couleurs du thème sur le cercle des couleurs, degré par degré : 0 montre les siennes. Les couleurs des états et des tags ne changent pas.</string>
+    <string name="settings_ui_mode">Mode</string>
+    <string name="settings_ui_mode_help">Clair, sombre, ou comme le téléphone, en le suivant quand il change.</string>
+    <string name="settings_ui_mode_light">Clair</string>
+    <string name="settings_ui_mode_dark">Sombre</string>
+    <string name="settings_ui_mode_system">Comme le téléphone</string>
+    <string name="settings_ui_size_step">Taille de l\'interface</string>
+    <string name="settings_ui_size_step_help">Agrandit l\'interface par crans entiers, dans les thèmes dessinés au pixel, pour que leurs pixels restent nets : ils ignorent la taille de texte d\'Android. Les autres thèmes gardent leur taille.</string>
+    <string name="settings_ui_sounds">Sons de l\'interface</string>
+    <string name="settings_ui_sounds_help">Les sons que le thème joue quand vous touchez l\'écran. Le thème par défaut n\'en a pas.</string>
+
+    <string name="settings_data">Gestion des données</string>
+    <string name="settings_data_description">Configurer la sauvegarde, l\'export et l\'import des données</string>
+
+    <!-- SETTINGS - Stub placeholders -->
+
+    <!-- BACKUP SYSTEM - Backup and restore operations -->
+    <string name="settings_backup">Sauvegarde &amp; Réinitialisation</string>
+    <string name="backup_export">Exporter toutes les données</string>
+    <string name="backup_import">Importer un fichier de sauvegarde</string>
+    <string name="backup_reset">Réinitialiser toutes les données</string>
+    <string name="backup_export_success">Export réussi</string>
+    <string name="backup_export_success_missing_images">Sauvegarde faite ; %1$d images avaient perdu leur fichier et le restent dedans</string>
+    <string name="backup_import_confirm">Toutes les données actuelles seront écrasées. Continuer ?</string>
+    <string name="backup_reset_confirm">Toutes les données seront définitivement supprimées. Continuer ?</string>
+    <string name="backup_import_success">Import réussi, redémarrage...</string>
+    <string name="backup_reset_success">Réinitialisation réussie, redémarrage...</string>
+    <string name="backup_version_too_recent">Ce fichier provient d\'une version plus récente de l\'application</string>
+    <string name="backup_invalid_file">Fichier de sauvegarde invalide</string>
+    <string name="backup_import_image_missing">La sauvegarde nomme l\'image %1$s (session %2$s) sans en contenir le fichier, qui ne manquait pas à l\'export : la sauvegarde est abîmée, rien n\'a été importé.</string>
+    <string name="backup_export_failed">Échec de l\'export</string>
+    <string name="backup_import_failed">Échec de l\'import</string>
+    <string name="backup_reset_failed">Échec de la réinitialisation</string>
+
+    <!-- AI PROVIDERS - Provider management -->
+    <string name="message_no_providers">Aucun fournisseur IA disponible</string>
+    <string name="provider_status_configured">Configuré</string>
+    <string name="provider_status_not_configured">Non configuré</string>
+    <string name="provider_status_active">Actif</string>
+    <string name="provider_status_inactive">Inactif</string>
+
+    <!-- AI PROVIDERS - Claude specific -->
+    <string name="ai_provider_claude_api_key">Clé API Claude</string>
+    <string name="ai_provider_model">Modèle</string>
+    <string name="ai_provider_claude_max_tokens">Limite de tokens</string>
+    <string name="ai_provider_claude_help">Obtenez votre clé API sur console.anthropic.com</string>
+    <string name="ai_provider_claude_schema_api_key">Clé API d\'authentification Anthropic</string>
+    <string name="ai_provider_claude_schema_model">Modèle Claude à utiliser</string>
+    <string name="ai_provider_claude_schema_max_tokens">Limite maximale de tokens pour les réponses</string>
+    <string name="ai_provider_fetch_models">Charger les modèles disponibles</string>
+    <string name="ai_provider_fetching_models">Récupération des modèles...</string>
+    <string name="ai_provider_no_models">Aucun modèle disponible</string>
+    <string name="ai_provider_fetch_error">Erreur: %1$s</string>
+    <string name="ai_provider_effort">Effort de raisonnement</string>
+    <string name="ai_provider_schema_effort">Effort de raisonnement demandé au modèle, parmi ses niveaux</string>
+    <string name="ai_provider_effort_default">Défaut du modèle</string>
+    <string name="ai_provider_thinking_off">Sans réflexion</string>
+    <string name="ai_provider_schema_thinking_off">Coupe la réflexion du modèle, là où elle peut l\'être</string>
+    <string name="ai_provider_reads_images">Lit les images</string>
+    <string name="ai_provider_schema_reads_images">Si le modèle lit les images, comme l\'a dit la liste des modèles du fournisseur à l\'enregistrement de la config ; posé par l\'app, jamais à la main.</string>
+    <string name="ai_provider_reads_images_yes">oui</string>
+    <string name="ai_provider_reads_images_no">non</string>
+    <string name="ai_provider_reads_images_unknown">inconnu : les images sont refusées</string>
+    <string name="ai_provider_no_reasoning">Aucun réglage de réflexion connu pour ce modèle</string>
+    <string name="ai_provider_error_thinking_off">%1$s ne peut pas couper sa réflexion</string>
+    <string name="ai_provider_error_effort_with_thinking_off">Sans réflexion, un effort de raisonnement doit être choisi</string>
+    <string name="ai_provider_error_effort_not_allowed">Sans réflexion, ce modèle n\'accepte que ces efforts : %1$s</string>
+    <string name="ai_provider_error_effort_unknown">%1$s n\'a pas de niveau d\'effort %2$s</string>
+    <string name="ai_provider_error_effort_required">Choisissez un effort de raisonnement : le défaut de ce modèle n\'est pas connu</string>
+
+    <!-- AI PROVIDERS - DeepSeek specific (shares the Claude screen, only vendor texts differ) -->
+    <string name="ai_provider_deepseek_api_key">Clé API DeepSeek</string>
+    <string name="ai_provider_deepseek_help">Obtenez votre clé API sur platform.deepseek.com</string>
+    <string name="ai_provider_deepseek_schema_api_key">Clé API d\'authentification DeepSeek</string>
+    <string name="ai_provider_deepseek_schema_model">Modèle DeepSeek à utiliser</string>
+
+    <!-- AI PROVIDERS - OpenAI specific -->
+    <string name="ai_provider_openai_api_key">Clé API OpenAI</string>
+    <string name="ai_provider_openai_model">Modèle</string>
+    <string name="ai_provider_openai_temperature">Température</string>
+    <string name="ai_provider_openai_max_output_tokens">Limite de tokens de sortie</string>
+    <string name="ai_provider_openai_help">Obtenez votre clé API sur platform.openai.com</string>
+    <string name="ai_provider_openai_schema_api_key">Clé API d\'authentification OpenAI</string>
+    <string name="ai_provider_openai_schema_model">Modèle OpenAI à utiliser</string>
+    <string name="ai_provider_openai_schema_temperature">Température d\'échantillonnage (0.0 à 2.0)</string>
+    <string name="ai_provider_openai_schema_max_output_tokens">Limite maximale de tokens pour les réponses</string>
+    <string name="ai_provider_fill_in_first">Renseignez d\'abord : %1$s</string>
+    <string name="ai_provider_compatible_base_url">Adresse du serveur</string>
+    <string name="ai_provider_compatible_schema_base_url">Adresse de base de l\'API compatible OpenAI du serveur, en https seulement (ex. https://openrouter.ai/api/v1)</string>
+    <string name="ai_provider_compatible_api_key">Clé API (si le serveur en demande une)</string>
+    <string name="ai_provider_compatible_schema_api_key">Clé envoyée au serveur comme jeton ; aucune pour un serveur qui n\'en demande pas</string>
+    <string name="ai_provider_compatible_model">Modèle</string>
+    <string name="ai_provider_compatible_schema_model">Modèle à utiliser, parmi ceux que liste le serveur</string>
+    <string name="ai_provider_compatible_output_forcing">Forçage de la sortie</string>
+    <string name="ai_provider_compatible_schema_output_forcing">Jusqu\'où le serveur tient la réponse à une forme : rien, un JSON valide quelconque, ou le schéma exact de la réponse</string>
+    <string name="ai_provider_compatible_output_forcing_none">Aucun</string>
+    <string name="ai_provider_compatible_output_forcing_json">JSON valide</string>
+    <string name="ai_provider_compatible_output_forcing_schema">Schéma exact</string>
+    <string name="ai_provider_compatible_help">Tout serveur qui parle l\'API Chat Completions d\'OpenAI : Ollama, llama.cpp, vLLM, LM Studio, OpenRouter. L\'adresse s\'arrête avant /chat/completions, le plus souvent sur /v1 (Ollama : https://&lt;hôte&gt;/v1). En https seulement : le http enverrait vos données en clair. Un serveur à la maison obtient un certificat par tailscale serve ou un proxy inverse comme Caddy.</string>
+    <string name="ai_provider_compatible_output_forcing_help">Forçage de la sortie : le serveur tient le modèle à un JSON valide, ou au schéma exact de la réponse. Les petits modèles en ont le plus besoin ; un serveur qui n\'accepte pas le niveau choisi répond par une erreur.</string>
+    <string name="ai_provider_compatible_https_required">L\'adresse du serveur doit commencer par https:// : le http enverrait vos données en clair</string>
+
+    <!-- AI ERRORS - Provider related (additional) -->
+    <string name="ai_error_no_provider_configured">Aucun fournisseur IA configuré. Veuillez configurer un fournisseur dans les paramètres.</string>
+    <string name="ai_error_provider_not_found">Fournisseur introuvable: %1$s</string>
+    <string name="ai_error_provider_not_configured">Provider %1$s non configuré</string>
+    <string name="ai_error_cannot_delete_active_provider">Impossible de supprimer le provider actif</string>
+    <string name="ai_error_schema_not_found">Schéma de validation introuvable</string>
+    <string name="ai_error_invalid_json">JSON invalide: %1$s</string>
+    <string name="ai_error_list_sessions">Échec de la récupération des sessions: %1$s</string>
+    <string name="ai_error_update_session">Échec de la mise à jour de session: %1$s</string>
+    <string name="ai_error_delete_session">Échec de la suppression de session: %1$s</string>
+    <string name="ai_error_param_message_id_required">Paramètre obligatoire: messageId</string>
+    <string name="ai_error_message_not_found">Message introuvable: %1$s</string>
+    <string name="ai_error_get_message">Échec de la récupération du message: %1$s</string>
+    <string name="ai_error_list_messages">Échec de la récupération des messages: %1$s</string>
+    <string name="ai_error_update_message">Échec de la mise à jour du message: %1$s</string>
+    <string name="ai_error_delete_message">Échec de la suppression du message: %1$s</string>
+
+    <!-- Session control -->
+    <string name="ai_network_unavailable">Pas de connexion réseau</string>
+    <string name="ai_session_queued">Session en attente (position %1$d)</string>
+    <string name="ai_session_queued_priority">Session en attente prioritaire</string>
+    <string name="ai_automation_running">Automation en cours, veuillez patienter</string>
+
+    <!-- Floating Chat - States -->
+    <string name="ai_chat_no_active_session">Aucune session active</string>
+    <string name="ai_chat_start_button">Démarrer un chat</string>
+    <string name="ai_chat_queued_message">Session chat en attente, l\'automation va bientôt se terminer...</string>
+    <string name="ai_chat_after_button">Chat après</string>
+    <string name="ai_chat_interrupt_and_chat_button">Interrompre et chatter</string>
+    <string name="ai_chat_creating_session">Création de la session...</string>
+
+    <!-- Chat options dialog (during automation) -->
+    <string name="ai_chat_options_dialog_title">Que souhaitez-vous faire ?</string>
+    <string name="ai_chat_options_dialog_description">L\'automation est toujours en cours. Choisissez votre action :</string>
+    <string name="ai_chat_option_interrupt_title">Interrompre et discuter</string>
+    <string name="ai_chat_option_interrupt_description">Pause l\'automation et commence un chat immédiat</string>
+    <string name="ai_chat_option_after_title">Discuter après</string>
+    <string name="ai_chat_option_after_description">L\'automation continue, chat accessible après</string>
+
+    <!-- Automation Queue Status -->
+    <string name="ai_automation_queued_badge">En attente dans la file (position %1$d)</string>
+    <string name="ai_automation_cancel_execution">Annuler l\'exécution</string>
+
+    <!-- Round control -->
+    <string name="action_interrupt_round">Interrompre</string>
+
+    <!-- AI LIMITS - Autonomous rounds limit messages -->
+    <string name="ai_limit_format_errors_reached">Limite d'erreurs de format atteinte</string>
+    <string name="ai_limit_data_queries_reached">Limite d'itérations de requêtes de données atteinte</string>
+    <string name="ai_limit_action_retries_reached">Limite de tentatives d'actions atteinte</string>
+    <string name="ai_limit_total_roundtrips_reached">Limite totale de rounds autonomes atteinte</string>
+
+    <!-- AI AUTOMATION - Messages for autonomous executions -->
+    <string name="ai_automation_continue_reminder">Continue jusqu'à ce que la tâche demandée soit complétée. Lorsque tu as terminé, utilise le flag \"completed\": true dans ta réponse.</string>
+
+    <!-- AI SCHEMAS - Schemas metadata and field descriptions -->
+    <!-- ai_message_response schema -->
+    <string name="ai_schema_message_response_name">Réponse IA structurée</string>
+    <string name="ai_schema_message_response_desc">Schéma de validation pour les réponses structurées de l\'IA</string>
+    <string name="ai_schema_field_pretext_desc">Explication de ce que tu vas faire ou de ta réponse (toujours requis)</string>
+    <string name="ai_schema_field_validation_request_desc">Demande de validation optionnelle (Boolean, uniquement avec action_commands)</string>
+    <string name="ai_schema_field_data_commands_desc">Commandes de requête de données (mutuellement exclusif avec action_commands et communication_module)</string>
+    <string name="ai_schema_field_action_commands_desc">Commandes d\'actions à exécuter (mutuellement exclusif avec data_commands et communication_module)</string>
+    <string name="ai_schema_field_posttext_desc">Texte à afficher après l\'exécution réussie des actions (uniquement avec action_commands)</string>
+    <string name="ai_schema_field_keep_control_desc">Garde la main après succès des actions pour enchaîner d\'autres actions. Dans ce cas, tu verras quand même le retour des commandes du message actuel (succès, échecs, id des objets créés, etc.) Utile pour séquences multi-étapes avec feedback système intermédiaire.</string>
+    <string name="ai_schema_field_communication_module_desc">Une question à l\'utilisateur sous forme de liste de champs, de schéma communication_module (exclusif de data_commands et action_commands)</string>
+
+    <!-- communication_module schemas -->
+
+    <!-- CUSTOM FIELDS SCHEMAS - Field type definitions -->
+    <string name="field_type_text_display_name">Texte</string>
+    <string name="field_type_text_description">Champ texte avec longueur configurable</string>
+    <string name="field_type_text_length_description">Longueur maximale du texte</string>
+
+    <!-- Text length options -->
+    <string name="text_length_short_display_name">Très court</string>
+    <string name="text_length_medium_display_name">Court</string>
+    <string name="text_length_long_display_name">Long</string>
+    <string name="text_length_unlimited_display_name">Illimité</string>
+
+    <string name="field_type_numeric_display_name">Numérique</string>
+    <string name="field_type_numeric_description">Valeur numérique avec unité et contraintes optionnelles</string>
+    <string name="field_type_scale_display_name">Échelle</string>
+    <string name="field_scale_value">%1$s (%2$s à %3$s)</string>
+    <string name="field_scale_value_with_labels">%1$s (%2$s à %3$s - \"%4$s\" à \"%5$s\")</string>
+    <string name="field_type_scale_description">Échelle graduée entre deux valeurs avec labels</string>
+    <string name="field_type_choice_display_name">Choix</string>
+    <string name="field_type_choice_description">Choix unique ou multiple parmi des options prédéfinies</string>
+    <string name="field_type_choice_multiple_description">La valeur est une liste d\'options, sans ordre</string>
+    <string name="field_type_choice_ordered_description">La valeur est la liste des options dans l\'ordre choisi, un classement. Exclut multiple et open.</string>
+    <string name="field_type_choice_open_description">Une valeur hors des options y est ajoutée par l\'écriture qui l\'apporte ; fermé, elle est refusée. Des tags sont un choix multiple ouvert.</string>
+    <string name="field_type_boolean_display_name">Booléen</string>
+    <string name="field_type_boolean_description">Valeur vrai/faux (oui/non)</string>
+    <string name="field_type_range_display_name">Intervalle</string>
+    <string name="field_type_range_description">Intervalle entre deux valeurs numériques</string>
+    <string name="field_type_date_display_name">Date</string>
+    <string name="field_type_date_description">Date (jour/mois/année)</string>
+    <string name="field_type_time_display_name">Heure</string>
+    <string name="field_type_time_description">Heure (heure:minute)</string>
+    <string name="field_type_datetime_display_name">Date et heure</string>
+    <string name="field_type_datetime_description">Date et heure combinées</string>
+    <string name="field_type_duration_display_name">Durée</string>
+    <string name="field_type_duration_description">Une durée, saisie et affichée dans les unités choisies</string>
+    <string name="field_type_duration_precision_description">Plus petite unité saisie et affichée. La valeur est toujours stockée en millisecondes.</string>
+    <string name="field_type_duration_form_description">COMPOSED écrit plusieurs unités (1 h 25 min), SINGLE écrit la précision seule (85 min)</string>
+    <string name="field_type_reference_display_name">Référence</string>
+    <string name="field_type_reference_description">Un lien vers une autre chose de l\'app (une entrée, un outil, une zone), affiché sous son nom actuel</string>
+    <string name="field_type_reference_kinds_description">Ce qu\'une valeur peut désigner : APP, ZONE, TOOL_INSTANCE, ENTRY, VARIABLE, une ou plusieurs</string>
+    <string name="field_type_reference_tool_instances_description">Avec ENTRY, seulement les entrées de ces outils ; n\'importe quelle entrée si la liste est vide</string>
+    <string name="field_config_reference_target">Ce qu\'elle désigne</string>
+    <string name="field_config_reference_kinds">Sortes de choses</string>
+    <string name="field_config_reference_tool_instances">Seulement les entrées de ces outils</string>
+    <string name="reference_kind_app">L\'app</string>
+    <string name="reference_kind_zone">Zone</string>
+    <string name="reference_kind_tool_instance">Outil</string>
+    <string name="reference_kind_entry">Entrée</string>
+    <string name="reference_kind_variable">Variable</string>
+    <string name="field_reading_reference">Désigne : %1$s, écrit {"kind", "id"}.</string>
+    <string name="field_reading_reference_tools">Seulement les entrées des outils %1$s.</string>
+    <string name="field_validation_reference_kinds">Une référence dit ce qu\'elle peut désigner : au moins une sorte parmi APP, ZONE, TOOL_INSTANCE, ENTRY, VARIABLE.</string>
+    <string name="field_validation_reference_tool_instances">Les outils auxquels une référence se limite ne valent que pour des entrées : ajoutez ENTRY à ce qu\'elle peut désigner.</string>
+    <string name="field_value_reference_invalid">Pas une référence : %1$s. Attendu {"kind": "ENTRY", "id": "..."}, sans id pour l\'app.</string>
+    <string name="field_value_reference_kind">Désigne un %1$s, que ce champ n\'accepte pas (il accepte %2$s).</string>
+    <string name="field_value_reference_not_found">Rien de la sorte %1$s n\'a l\'id %2$s.</string>
+    <string name="field_value_reference_wrong_tool">L\'entrée %2$s appartient à un outil que ce champ n\'accepte pas.</string>
+    <string name="field_reference_unreadable">Illisible</string>
+    <string name="field_reference_pick">Choisir</string>
+    <string name="field_reference_search">Rechercher</string>
+    <string name="filter_value_reference">une référence {"kind", "id"}</string>
+    <string name="service_error_references_missing">Donnez les références à nommer dans "references" : une liste de {"kind", "id"}.</string>
+    <string name="action_verbalize_references_names">Lecture des noms des choses liées</string>
+    <string name="action_verbalize_references_choices">Liste de ce qu\'un lien peut désigner</string>
+    <string name="file_error_not_text">%1$s n\'est pas un fichier texte : seul du texte se joint (CSV, texte brut, Markdown, JSON).</string>
+    <string name="image_error_not_read">Cette image n\'a pas pu être lue : %1$s</string>
+    <string name="ai_image_error_model_does_not_read">Ce modèle ne lit pas les images : retirez-les du message, ou choisissez un modèle qui les lit.</string>
+    <string name="ai_image_error_model_unknown">Rien ne dit si ce modèle lit les images, elles ne partent donc pas : rouvrez la config du fournisseur et enregistrez-la, ou choisissez un autre modèle.</string>
+    <string name="ai_image_error_too_many">Cette conversation compte %1$d images ; une requête en porte %2$d au plus.</string>
+    <string name="ai_image_error_missing">Le fichier d\'une image de cette conversation est introuvable : elle ne peut pas partir.</string>
+    <string name="file_error_not_found">Aucun fichier joint n\'a l\'id %1$s.</string>
+    <string name="file_error_range">Lignes à lire : start_line à partir de 1 et lines à partir de 1 (reçu %1$d et %2$d).</string>
+    <string name="file_dialog_title">Joindre un fichier</string>
+    <string name="file_include_whole">Inclure en entier dans le contexte</string>
+    <string name="file_preview_label">Début du fichier</string>
+    <string name="file_line_count">%1$d lignes</string>
+    <string name="file_summary_whole">Fichier : %1$s (%2$d lignes), en entier</string>
+    <string name="file_summary_preview">Fichier : %1$s (%2$d lignes), aperçu seulement</string>
+    <string name="file_error_encoding">%1$s n\'est pas un texte lisible (UTF-8 attendu).</string>
+    <string name="action_attach">Joindre un fichier</string>
+    <string name="action_photo">Photo</string>
+    <string name="action_gallery">Galerie</string>
+    <string name="action_arrange">Disposer</string>
+    <string name="grid_leave_title">Quitter la zone ?</string>
+    <string name="grid_leave_message">Le déplacement en cours sera annulé.</string>
+    <string name="action_repeat">Encore</string>
+    <string name="size_bytes">%1$d o</string>
+    <string name="size_kilobytes">%1$.1f Ko</string>
+    <string name="size_megabytes">%1$.1f Mo</string>
+    <string name="action_verbalize_files_attach">Ajout d\'un fichier joint</string>
+    <string name="action_verbalize_files_read">Lecture d\'un fichier joint</string>
+    <string name="action_verbalize_files_delete">Retrait d\'un fichier joint</string>
+    <string name="action_verbalize_files_attach_image">Ajout d\'une image</string>
+    <string name="action_verbalize_files_delete_image">Retrait d\'une image jointe</string>
+    <string name="service_error_reading_param">Une lecture demande "%1$s".</string>
+    <string name="service_error_reading_source">Une lecture lit les entrées d\'une instance d\'outil, pas d\'un %1$s.</string>
+    <string name="service_error_reading_source_unread">L\'outil lu n\'a pas pu être lu ; rien ne dit qu\'il a été supprimé.</string>
+    <string name="service_error_reading_reduction">Réduction inconnue : %1$s. Acceptées : %2$s.</string>
+    <string name="service_error_reading_reduction_type">%1$s ne réduit pas un champ de type %2$s. Il accepte : %3$s.</string>
+    <string name="reading_failure_no_entry">%1$s : aucune entrée dans la période</string>
+    <string name="reading_failure_missing_value">%1$d entrée(s) sans réponse à %2$s</string>
+    <string name="reading_failure_source_not_found">l\'outil lu n\'existe plus</string>
+    <string name="action_verbalize_readings_read">Lecture d\'une valeur dans des entrées</string>
+    <string name="variable_error_param">Une variable demande "%1$s".</string>
+    <string name="variable_error_not_found">Aucune variable n\'a l\'id %1$s.</string>
+    <string name="variable_error_name">« %1$s » ne peut pas être un nom dans une formule : une lettre ou _, puis lettres, chiffres ou _.</string>
+    <string name="variable_error_name_taken">Une variable s\'appelle déjà %1$s : les noms sont uniques dans l\'app.</string>
+    <string name="variable_error_term_name">Le terme %1$s porte le nom d\'une variable : nommez-le autrement, ou écrivez la variable dans la formule.</string>
+    <string name="variable_error_formula">La formule ne se lit pas au caractère %1$d : %2$s %3$s</string>
+    <string name="variable_error_formula_missing">Une variable formule demande sa "formula".</string>
+    <string name="variable_error_unknown_names">Inconnu dans la formule : %1$s. Connus : %2$s.</string>
+    <string name="variable_error_loop">Une variable se lirait elle-même : %1$s.</string>
+    <string name="variable_error_term">Le terme %1$s ne peut pas être lu.</string>
+    <string name="variable_error_constant_value">Une constante demande une "value" numérique.</string>
+    <string name="variable_error_constant_not_number">La constante %1$s n\'est pas un nombre (%2$s) : une formule calcule sur des nombres.</string>
+    <string name="variable_error_field">La variable %1$s demande son "field" : son type (NUMERIC, SCALE, DURATION) et ses réglages.</string>
+    <string name="variable_error_kind">Sorte de variable inconnue : %1$s. Acceptées : CONSTANT, FORMULA.</string>
+    <string name="variable_error_type">Une variable n\'est pas de type %1$s. Acceptés : %2$s.</string>
+    <string name="formula_problem_empty">elle est vide</string>
+    <string name="formula_problem_unexpected">inattendu</string>
+    <string name="formula_problem_missing_closing">une parenthèse n\'est pas fermée</string>
+    <string name="formula_problem_missing_operand">une valeur manque</string>
+    <string name="formula_problem_unknown_function">fonction inconnue</string>
+    <string name="formula_problem_bad_number">nombre illisible</string>
+    <string name="formula_function_hours">heures</string>
+    <string name="formula_function_minutes">minutes</string>
+    <string name="formula_function_seconds">secondes</string>
+    <string name="variable_cause_no_entry">aucune entrée dans la période</string>
+    <string name="variable_cause_missing_value">%2$d entrée(s) sans %1$s</string>
+    <string name="variable_cause_source_not_found">l\'outil lu n\'existe plus</string>
+    <string name="variable_cause_division_by_zero">division par zéro</string>
+    <string name="variable_cause_variable_deleted">variable supprimée</string>
+    <string name="variable_cause_reference_broken">%2$d entrée(s) dont %1$s ne mène nulle part</string>
+    <string name="variable_cause_loop">se lit elle-même</string>
+    <string name="variable_cause_unknown_name">nom inconnu</string>
+    <string name="variable_cause_unreadable">illisible</string>
+    <string name="variable_cause_not_a_number">pas un nombre</string>
+    <string name="action_verbalize_variables_create">Création de la variable %1$s</string>
+    <string name="action_verbalize_variables_update">Modification de la variable %1$s</string>
+    <string name="action_verbalize_variables_delete">Suppression de la variable %1$s</string>
+    <string name="action_verbalize_variables_evaluate">Lecture de la variable %1$s</string>
+    <string name="action_verbalize_variables_read">Lecture des variables</string>
+    <string name="import_error_file">Le fichier ne se lit pas : %1$s</string>
+    <string name="import_file_empty">le fichier est vide</string>
+    <string name="import_file_quote_open">un guillemet n\'est pas refermé</string>
+    <string name="import_error_declaration">La déclaration de l\'import est incomplète : %1$s</string>
+    <string name="selection_problem_filters">Filtres et champs restreignent les entrées d\'une instance d\'outil, pas d\'un %1$s.</string>
+    <string name="selection_problem_period">Une période restreint les entrées d\'une instance d\'outil ou d\'une zone, pas d\'un %1$s.</string>
+    <string name="selection_problem_variable">Une variable n\'a pas d\'entrées à sélectionner : elle se lit, comme terme ou par READING.</string>
+    <string name="import_missing_column">colonne « %1$s » : non déclarée</string>
+    <string name="import_missing_in_file">colonne « %1$s » : absente du fichier</string>
+    <string name="import_missing_key">colonne « %1$s » : cet outil ne retrouve pas ses entrées par leur nom</string>
+    <string name="import_missing_field">colonne « %1$s » : champ « %2$s » inconnu ; connus : %3$s</string>
+    <string name="import_missing_writing">colonne « %1$s » : une écriture de %2$s, parmi %3$s</string>
+    <string name="import_missing_new_field">colonne « %1$s » : la définition du nouveau champ</string>
+    <string name="import_missing_one_key">une seule colonne clé au plus</string>
+    <string name="import_missing_name_key">aucune colonne ne donne le nom, obligatoire dans cet outil : déclarer comme clé la colonne qui le porte</string>
+    <string name="import_missing_name_field">aucune colonne ne donne le nom, obligatoire dans cet outil : déclarer comme champ name la colonne qui le porte</string>
+    <string name="batch_refused_all">Les %1$s entrées refusées : %2$s</string>
+    <string name="batch_refusal_reason">%1$s (%2$s, entrées %3$s)</string>
+    <string name="batch_refusal_more"> ; et %1$s autres raisons</string>
+    <string name="import_error_duplicate_keys">Ces noms figurent deux fois dans le fichier, où les noms sont uniques : %1$s</string>
+    <string name="import_refused_cell">« %1$s » ne se lit pas en %2$s</string>
+    <string name="action_verbalize_imports_detect">Lecture d\'un fichier à importer</string>
+    <string name="action_verbalize_imports_apply">Import d\'un fichier</string>
+    <string name="action_verbalize_imports_apply_file">Import de « %1$s » (%2$d lignes) dans %3$s</string>
+    <string name="import_action">Importer un fichier</string>
+    <string name="import_title">Import</string>
+    <string name="import_lines">%1$d ligne(s) dans le fichier</string>
+    <string name="import_target">Va dans</string>
+    <string name="import_target_key">Le nom (retrouve la fiche)</string>
+    <string name="import_target_field">Un champ existant</string>
+    <string name="import_target_new">Un nouveau champ</string>
+    <string name="import_target_ignore">Ignorée</string>
+    <string name="import_field">Champ</string>
+    <string name="import_type">Type</string>
+    <string name="import_writing">Écrit en</string>
+    <string name="import_unreadable">ne se lit pas</string>
+    <string name="import_ambiguous">Plusieurs écritures lisent cette colonne différemment : choisissez-en une.</string>
+    <string name="import_unreadable_lines">Ces lignes seraient refusées : %1$s</string>
+    <string name="import_report">%1$s créée(s), %2$s mise(s) à jour, %3$s refusée(s)</string>
+    <string name="import_report_line">Ligne %1$s : %2$s</string>
+    <string name="import_writing_text">Texte</string>
+    <string name="import_writing_decimal_point">Décimale point (1.5)</string>
+    <string name="import_writing_decimal_comma">Décimale virgule (1,5)</string>
+    <string name="import_writing_scale_point">Décimale point (6.5)</string>
+    <string name="import_writing_scale_comma">Décimale virgule (6,5)</string>
+    <string name="import_writing_yes_no">oui / non</string>
+    <string name="import_writing_true_false">vrai / faux</string>
+    <string name="import_writing_one_zero">1 / 0</string>
+    <string name="import_writing_x_empty">x / vide</string>
+    <string name="import_writing_day_month_year">jour/mois/année</string>
+    <string name="import_writing_month_day_year">mois/jour/année</string>
+    <string name="import_writing_iso_date">2026-09-28</string>
+    <string name="import_writing_iso_datetime">2026-09-28T08:30</string>
+    <string name="import_writing_day_month_year_time">jour/mois/année h:min</string>
+    <string name="import_writing_month_day_year_time">mois/jour/année h:min</string>
+    <string name="import_writing_hours_minutes">h:min</string>
+    <string name="import_writing_duration_h_min">h:min</string>
+    <string name="import_writing_duration_min_s">min:s</string>
+    <string name="import_writing_duration_h_min_s">h:min:s</string>
+    <string name="import_writing_duration_compact">1h25</string>
+    <string name="import_writing_duration_minutes">85 min</string>
+    <string name="import_writing_duration_iso">PT1H25M</string>
+    <string name="import_writing_one_option">Une option</string>
+    <string name="import_writing_options_semicolon">Options séparées par ;</string>
+    <string name="import_writing_options_comma">Options séparées par ,</string>
+    <string name="variable_display_name">Variable</string>
+    <string name="variable_new">Nouvelle variable</string>
+    <string name="variable_no_value">pas de valeur — %1$s</string>
+    <string name="variable_value_now">Maintenant : %1$s</string>
+    <string name="variable_value">Valeur</string>
+    <string name="variable_kind">Sorte</string>
+    <string name="variable_kind_formula">Formule</string>
+    <string name="variable_kind_constant">Constante</string>
+    <string name="variable_formula">Formule</string>
+    <string name="variable_unknown_names">Inconnu : %1$s. Ajoutez un terme, ou nommez une variable existante.</string>
+    <string name="variable_terms">Termes</string>
+    <string name="variable_add_term">Ajouter un terme</string>
+    <string name="variable_term_name">Nom</string>
+    <string name="variable_term_kind">Sorte de terme</string>
+    <string name="variable_term_reading">Lecture d\'entrées</string>
+    <string name="variable_term_constant">Nombre</string>
+    <string name="variable_term_variable">Autre variable</string>
+    <string name="variable_reading_what">Ce qui est lu</string>
+    <string name="variable_reading_count">Les entrées, comptées</string>
+    <string name="variable_reading_per_entry">Une formule dans chaque entrée</string>
+    <string name="variable_reading_reduction">Réduction</string>
+    <string name="variable_type">Type de la valeur</string>
+    <string name="variable_type_deduced">Déduit de la formule</string>
+    <string name="variable_delete_confirm">Supprimer la variable %1$s ? Une formule qui la nomme ne se calculera plus.</string>
+    <string name="label_value">%1$s : %2$s</string>
+    <string name="reduction_last">Dernière</string>
+    <string name="reduction_sum">Somme</string>
+    <string name="reduction_average">Moyenne</string>
+    <string name="reduction_min">Minimum</string>
+    <string name="reduction_max">Maximum</string>
+    <string name="reduction_count">Compte</string>
+    <string name="reduction_earliest">La plus tôt</string>
+    <string name="reduction_latest">La plus tard</string>
+    <string name="duration_amount">%1$s%2$s</string>
+    <string name="duration_unit_day">j</string>
+    <string name="duration_unit_hour">h</string>
+    <string name="duration_unit_minute">m</string>
+    <string name="duration_unit_second">s</string>
+    <string name="duration_unit_millisecond">ms</string>
+    <string name="duration_unit_day_display_name">Jour</string>
+    <string name="duration_unit_hour_display_name">Heure</string>
+    <string name="duration_unit_minute_display_name">Minute</string>
+    <string name="duration_unit_second_display_name">Seconde</string>
+    <string name="duration_unit_millisecond_display_name">Milliseconde</string>
+    <string name="duration_form_composed_display_name">Plusieurs unités (1 h 25 min)</string>
+    <string name="duration_form_single_display_name">Une seule unité (85 min)</string>
+
+    <!-- CUSTOM FIELDS - Schema descriptions (used by AI) -->
+    <string name="field_type_schema_name_description">Identifiant technique du champ, clé sous laquelle les valeurs sont stockées. Attribué par l\'app à la création, à partir de l\'intitulé, et immuable ensuite. À omettre pour un nouveau champ ; à reprendre tel quel pour désigner un champ existant. Le renommer détruirait les valeurs déjà enregistrées, c\'est l\'intitulé qui se modifie librement.</string>
+    <string name="field_type_schema_display_name_description">Nom affiché à l\'utilisateur pour ce champ personnalisé</string>
+    <string name="field_type_schema_type_description">Type de champ personnalisé. Doit correspondre à l\'un des types disponibles (voir liste des field types supportés).</string>
+    <string name="field_type_schema_always_visible_description">Si true, ce champ est toujours affiché dans l\'interface (même s\'il est vide). Si false, il n\'est affiché que lorsqu\'il contient une valeur.</string>
+    <string name="field_default_value">Valeur par défaut</string>
+    <string name="field_type_schema_default_value_description">Une valeur de ce champ proposée pour une nouvelle entrée : le formulaire la préremplit et une saisie rapide l\'applique. L\'app ne l\'écrit jamais d\'elle-même ; absente, une nouvelle entrée part sans réponse.</string>
+
+    <!-- CUSTOM FIELDS - Default labels for field types -->
+    <string name="label_scale_bad">Mauvais</string>
+    <string name="label_scale_excellent">Excellent</string>
+    <string name="label_scale_min">Minimum</string>
+    <string name="label_scale_max">Maximum</string>
+
+    <!-- CUSTOM FIELDS - Validation error messages -->
+    <string name="field_validation_name_empty">Le nom technique du champ ne peut pas être vide</string>
+    <string name="field_validation_name_format">Le nom technique doit être en format snake_case (lettres minuscules, chiffres, underscores)</string>
+    <string name="field_validation_name_duplicate">Un champ avec le nom technique %1$s existe déjà</string>
+    <string name="field_validation_display_name_empty">Le nom d\'affichage ne peut pas être vide</string>
+    <string name="field_validation_default_value">La valeur par défaut de « %1$s » n\'est pas une valeur du champ : %2$s</string>
+    <string name="field_validation_config_not_null">Le type %1$s ne nécessite pas de configuration</string>
+    <string name="field_validation_text_length_invalid">La longueur de texte \'%1$s\' est invalide. Valeurs possibles : SHORT, MEDIUM, LONG, UNLIMITED</string>
+    <string name="field_validation_numeric_min_max">La valeur minimale doit être inférieure ou égale à la valeur maximale</string>
+    <string name="field_validation_numeric_decimals">Le nombre de décimales est obligatoire : 0 pour un nombre entier, ou plus</string>
+    <string name="field_validation_numeric_step">L\'incrément doit être supérieur à 0</string>
+    <string name="field_validation_scale_min_max_required">Le type SCALE nécessite les valeurs min et max</string>
+    <string name="field_validation_scale_min_max_order">La valeur minimale doit être strictement inférieure à la valeur maximale</string>
+    <string name="field_validation_scale_step">L\'incrément doit être supérieur à 0</string>
+    <string name="field_validation_scale_bounds_off_step">Le minimum et le maximum doivent être des multiples de l\'incrément (1 s\'il n\'est pas précisé)</string>
+    <string name="field_validation_choice_options_required">Le type CHOICE nécessite une liste d\'options</string>
+    <string name="field_validation_choice_options_min">Le type CHOICE nécessite au moins 2 options</string>
+    <string name="field_validation_choice_options_duplicate">Les options ne peuvent pas contenir de doublons</string>
+    <string name="field_validation_choice_flag_type">Le réglage %1$s doit être un booléen</string>
+    <string name="field_validation_choice_ordered_exclusive">Un classement ne peut être ni multiple ni ouvert</string>
+    <string name="field_validation_choice_color_unknown">Couleur inconnue : %1$s</string>
+    <string name="field_validation_choice_default_type_single">La valeur par défaut doit être une chaîne de caractères pour un choix unique</string>
+    <string name="field_validation_choice_default_type_multiple">La valeur par défaut doit être un tableau pour un choix multiple</string>
+    <string name="field_validation_boolean_label_empty">Les labels vrai/faux ne peuvent pas être vides</string>
+    <string name="field_validation_range_min_max">La valeur minimale doit être inférieure ou égale à la valeur maximale</string>
+    <string name="field_validation_range_decimals">Le nombre de décimales est obligatoire : 0 pour des nombres entiers, ou plus</string>
+    <string name="field_validation_range_default_incomplete">La valeur par défaut doit contenir start et end</string>
+    <string name="field_validation_range_default_order">Dans la valeur par défaut, start doit être inférieur ou égal à end</string>
+    <string name="field_validation_date_default_format">La valeur par défaut doit être au format ISO 8601 (YYYY-MM-DD)</string>
+    <string name="field_validation_date_default_range">La valeur par défaut doit être comprise entre min et max</string>
+    <string name="field_validation_time_format">Le format doit être 24h ou 12h</string>
+    <string name="field_validation_time_default_format">La valeur par défaut doit être au format HH:MM</string>
+    <string name="field_validation_datetime_default_format">La valeur par défaut doit être au format ISO 8601 (YYYY-MM-DDTHH:MM:SS)</string>
+    <string name="field_validation_datetime_default_range">La valeur par défaut doit être comprise entre min et max</string>
+    <string name="field_validation_datetime_format">Le format d\'heure doit être 24h ou 12h</string>
+    <string name="field_validation_duration_precision">Précision de durée inconnue : %1$s</string>
+    <string name="field_validation_duration_form">Forme de durée inconnue : %1$s</string>
+    <string name="field_value_range_start_end">La valeur start doit être inférieure ou égale à end</string>
+
+    <!-- CUSTOM FIELDS - Migration -->
+    <string name="migration_confirm_title">Confirmation des changements</string>
+    <string name="migration_confirm_counts">Cette modification retire %1$d valeur(s) des entrées enregistrées, et supprime %2$d entrée(s) restée(s) sans valeur obligatoire. C\'est irréversible.</string>
+    <string name="migration_fill_title">Valeurs à donner</string>
+    <string name="migration_fill_message">%1$d entrée(s) n\'ont pas de valeur pour %2$s, que cette modification rend obligatoire. Donne la valeur qu\'elles prennent, ou annule.</string>
+    <string name="tools_config_error_not_found">Outil introuvable</string>
+    <string name="service_error_migration_unconfirmed">Cette modification retire %1$d valeur(s) des entrées de cet outil et supprime %2$d entrée(s) restée(s) sans valeur obligatoire. Renvoie-la avec "confirm_migration": true pour l\'appliquer.</string>
+    <string name="service_error_migration_missing_values">Des entrées n\'ont pas de valeur pour un champ que cette modification rend obligatoire : %1$s. Donne la valeur qu\'elles prennent dans "fill_values": {"data": {"champ": valeur}}.</string>
+    <string name="service_error_migration_fill_unknown">"fill_values" nomme %1$s, qui n\'est pas un champ obligatoire de "data" dans cette config</string>
+
+    <!-- CUSTOM FIELDS - Labels for form field names -->
+    <string name="label_display_name">Nom affiché</string>
+    <string name="label_type">Type</string>
+    <string name="label_always_visible">Toujours visible</string>
+    <string name="label_default_value">Valeur par défaut</string>
+    <string name="label_config">Configuration</string>
+
+    <!-- AUTOMATIONS - General -->
+    <string name="automation_display_name">Automatisation</string>
+    <string name="automation_message_placeholder">Message de démarrage de l\'automatisation...</string>
+    <string name="automation_seed_message_label">Message actuel</string>
+    <string name="automation_enrichments_label">Enrichissements</string>
+    <string name="automation_no_message">Aucun message configuré</string>
+    <string name="automation_none_configured">Aucune automation configurée</string>
+    <string name="automation_triggers_none">Aucun déclencheur</string>
+    <string name="automation_triggers_count">%1$d déclencheur(s)</string>
+    <string name="automation_triggers_config_title">Configuration déclencheurs</string>
+    <string name="automation_triggers_coming_soon">Les déclencheurs seront disponibles prochainement</string>
+
+    <!-- AUTOMATIONS - Actions -->
+    <string name="automation_execute_now">Déclencher maintenant</string>
+    <string name="automation_execution_triggered">Exécution déclenchée</string>
+    <string name="automation_saved_success">Automatisation sauvegardée</string>
+    <string name="automation_save_failed">Échec de la sauvegarde</string>
+
+    <!-- AUTOMATIONS - Status -->
+    <string name="automation_status_running">En cours</string>
+    <string name="automation_status_manual">Manuel</string>
+    <string name="automation_status_triggered">Selon déclencheurs</string>
+    <string name="automation_next_execution">Prochain : %1$s</string>
+    <string name="ai_status_completed">Terminé</string>
+
+    <!-- AUTOMATIONS - Execution card labels -->
+    <string name="automation_scheduled_label">Prévue</string>
+    <string name="automation_manual_execution">Exécution manuelle</string>
+    <string name="automation_started_label">Lancée</string>
+    <string name="automation_duration_label">Durée</string>
+    <string name="automation_roundtrips_label">%1$d roundtrips</string>
+    <string name="automation_tokens_label">tokens</string>
+    <string name="automation_next_execution_title">Prochaine exécution</string>
+    <string name="automation_no_executions">Aucune exécution trouvée</string>
+    <string name="automation_execution_detail_title">Détail de l\'exécution</string>
+
+    <!-- AUTOMATIONS - Schedule patterns (short labels for buttons) -->
+    <string name="schedule_summary_daily">Quotidien %1$s</string>
+    <string name="schedule_summary_weekly">%1$s %2$s</string>
+    <string name="schedule_summary_monthly">Le %1$d de %2$s %3$s</string>
+    <string name="schedule_summary_weekly_custom">%1$d moments/semaine</string>
+    <string name="schedule_summary_yearly">%1$d dates/an</string>
+    <string name="schedule_summary_specific">%1$d dates spécifiques</string>
+    <string name="schedule_summary_none">Aucune récurrence</string>
+    <string name="action_configure_schedule">Configurer la récurrence</string>
+    <string name="schedule_unreadable">Récurrence enregistrée illisible (%1$s). Refais-la : sinon l\'enregistrement sera refusé, et elle restera telle quelle.</string>
+
+    <!-- AUTOMATIONS - Errors -->
+    <string name="error_automation_not_found">Automatisation introuvable</string>
+    <string name="error_automation_load_failed">Échec du chargement de l\'automatisation</string>
+    <string name="error_param_automation_id_required">ID automatisation requis</string>
+    <string name="error_automation_update_failed">Échec de la mise à jour de l\'automatisation</string>
+    <string name="error_automation_delete_failed">Échec de la suppression de l\'automatisation</string>
+    <string name="automation_updated_success">Automatisation mise à jour</string>
+    <string name="automation_deleted_success">Automatisation supprimée</string>
+    <string name="automation_delete_confirm_title">Supprimer l\'automatisation ?</string>
+    <string name="automation_delete_confirm_message">Cette action est irréversible. L\'automatisation et sa session SEED seront définitivement supprimées.</string>
+    <string name="error_param_seed_session_required">ID session SEED requis</string>
+    <string name="error_param_zone_id_required">ID zone requis</string>
+    <string name="error_param_icon_required">Icône requise</string>
+    <string name="error_param_provider_id_required">ID fournisseur IA requis</string>
+    <string name="service_error_automation">Erreur AutomationService: %1$s</string>
+
+    <!-- SCHEDULE CONFIG - Main labels -->
+    <string name="schedule_config_title">Configuration horaire</string>
+    <string name="schedule_pattern_label">Type de récurrence</string>
+    <string name="schedule_preview_label">Aperçu</string>
+
+    <!-- SCHEDULE CONFIG - Pattern names -->
+    <string name="schedule_pattern_None">Aucune programmation</string>
+    <string name="schedule_pattern_DailyMultiple">Quotidien (horaires multiples)</string>
+    <string name="schedule_pattern_WeeklySimple">Hebdomadaire (jours + horaire)</string>
+    <string name="schedule_pattern_MonthlyRecurrent">Mensuel (mois + jour)</string>
+    <string name="schedule_pattern_WeeklyCustom">Hebdomadaire (moments personnalisés)</string>
+    <string name="schedule_pattern_YearlyRecurrent">Annuel (dates récurrentes)</string>
+    <string name="schedule_pattern_SpecificDates">Dates spécifiques</string>
+    <string name="schedule_no_schedule_message">Cette automation ne sera exécutée que manuellement.</string>
+
+    <!-- SCHEDULE CONFIG - Field labels -->
+    <string name="schedule_time_label">Heure %1$d</string>
+    <string name="schedule_time_label_single">Heure</string>
+    <string name="schedule_daily_times_label">Horaires quotidiens</string>
+    <string name="schedule_weekly_days_label">Jours de la semaine</string>
+    <string name="schedule_monthly_config_label">Configuration mensuelle</string>
+    <string name="schedule_day_of_month_label">Jour du mois (1-31)</string>
+    <string name="schedule_weekly_custom_label">Moments hebdomadaires</string>
+    <string name="schedule_day_label">Jour</string>
+    <string name="schedule_yearly_recurrent_label">Dates annuelles</string>
+    <string name="schedule_month_label">Mois</string>
+    <string name="schedule_specific_dates_label">Dates spécifiques</string>
+    <string name="schedule_date_label">Date %1$d</string>
+
+    <!-- SCHEDULE CONFIG - Preview formats -->
+    <string name="schedule_preview_daily">Quotidien : %1$s</string>
+    <string name="schedule_preview_weekly_simple">%1$s à %2$s</string>
+    <string name="schedule_preview_monthly">Le %1$d de %2$s à %3$s</string>
+    <string name="schedule_preview_weekly_custom">%1$s</string>
+    <string name="schedule_preview_yearly">%1$s chaque année</string>
+    <string name="schedule_preview_specific">%1$d dates programmées</string>
+    <string name="schedule_preview_unknown">Configuration inconnue</string>
+
+    <!-- SCHEDULE CONFIG - Schema validation strings -->
+    <string name="schedule_config_display_name">Configuration horaire</string>
+    <string name="schedule_config_description">Configuration de planning avec 6 types de récurrence disponibles</string>
+    <string name="schedule_time_format">Format HH:mm (heure 24h)</string>
+    <string name="schedule_pattern">Type de récurrence du planning</string>
+    <string name="schedule_timezone">Fuseau horaire du planning</string>
+    <string name="schedule_day_of_month">Jour du mois (1-31) pour récurrence mensuelle</string>
+    <string name="schedule_day_of_week">Jour de la semaine (1=Lundi, 7=Dimanche)</string>
+    <string name="schedule_month">Mois (1-12)</string>
+    <string name="schedule_day">Jour du mois (1-31)</string>
+    <string name="schedule_daily_times">Liste des horaires quotidiens</string>
+    <string name="schedule_days_of_week">Liste des jours de la semaine</string>
+    <string name="schedule_months">Liste des mois</string>
+    <string name="schedule_weekly_moments">Moments hebdomadaires personnalisés</string>
+    <string name="schedule_yearly_dates">Dates annuelles récurrentes</string>
+    <string name="schedule_timestamps">Liste de timestamps spécifiques</string>
+
+    <!-- Days of week (full names - already exist as month_ but adding explicit day_of_week_) -->
+    <string name="day_of_week_1">Lundi</string>
+    <string name="day_of_week_2">Mardi</string>
+    <string name="day_of_week_3">Mercredi</string>
+    <string name="day_of_week_4">Jeudi</string>
+    <string name="day_of_week_5">Vendredi</string>
+    <string name="day_of_week_6">Samedi</string>
+    <string name="day_of_week_7">Dimanche</string>
+
+    <!-- Days of week (short names for compact display) -->
+    <string name="day_of_week_short_1">Lun</string>
+    <string name="day_of_week_short_2">Mar</string>
+    <string name="day_of_week_short_3">Mer</string>
+    <string name="day_of_week_short_4">Jeu</string>
+    <string name="day_of_week_short_5">Ven</string>
+    <string name="day_of_week_short_6">Sam</string>
+    <string name="day_of_week_short_7">Dim</string>
+
+    <!-- Months (full names already exist as month_january etc, adding ordinal numbers) -->
+    <string name="month_1">Janvier</string>
+    <string name="month_2">Février</string>
+    <string name="month_3">Mars</string>
+    <string name="month_4">Avril</string>
+    <string name="month_5">Mai</string>
+    <string name="month_6">Juin</string>
+    <string name="month_7">Juillet</string>
+    <string name="month_8">Août</string>
+    <string name="month_9">Septembre</string>
+    <string name="month_10">Octobre</string>
+    <string name="month_11">Novembre</string>
+    <string name="month_12">Décembre</string>
+
+    <!-- Months (short names for compact display) -->
+    <string name="month_short_1">Jan</string>
+    <string name="month_short_2">Fév</string>
+    <string name="month_short_3">Mar</string>
+    <string name="month_short_4">Avr</string>
+    <string name="month_short_5">Mai</string>
+    <string name="month_short_6">Juin</string>
+    <string name="month_short_7">Juil</string>
+    <string name="month_short_8">Aoû</string>
+    <string name="month_short_9">Sep</string>
+    <string name="month_short_10">Oct</string>
+    <string name="month_short_11">Nov</string>
+    <string name="month_short_12">Déc</string>
+
+    <!-- AI Guidance Messages (for PREPARING_CONTINUATION phase) -->
+    <string name="ai_automation_no_commands_guidance">Tu es en mode automation, tes réponses doivent contenir des requêtes de données ou des actions. Si tu as terminé, utilise le flag \'completed\'.</string>
+    <string name="ai_completion_confirmation_required">Le flag \'completed\' signifie que TOUTE la demande initiale est terminée, pas juste une étape. Si c\'était bien ton intention, renvoie un message avec \'completed: true\'. Sinon, continue ton travail.</string>
+
+    <!-- Provider Configuration -->
+    <string name="error_provider_not_configured">Provider non configuré: %1$s</string>
+    <string name="error_unknown_provider">Provider inconnu: %1$s</string>
+    <string name="error_schema_not_found">Schéma de validation introuvable</string>
+    <string name="error_invalid_json">JSON invalide: %1$s</string>
+
+    <!-- Notification Channels -->
+    <string name="notification_channel_high_name">Priorité haute</string>
+    <string name="notification_channel_high_description">Notifications urgentes avec popup (messages importants, alertes)</string>
+    <string name="notification_channel_default_name">Priorité normale</string>
+    <string name="notification_channel_default_description">Notifications standards avec son et badge</string>
+    <string name="notification_channel_low_name">Priorité basse</string>
+    <string name="notification_channel_low_description">Notifications silencieuses (pas de son ni vibration)</string>
+
+    <!-- Notification Errors -->
+    <string name="notification_error_missing_title">Titre de notification manquant</string>
+    <string name="notification_error_missing_priority">Priorité de notification manquante</string>
+    <string name="notification_error_send_failed">Échec de l\'envoi de la notification</string>
+    <string name="notification_error_unknown_icon">Icône de notification inconnue : %1$s</string>
+
+    <!-- Logs Screen -->
+    <string name="settings_logs">Logs d'erreurs</string>
+    <string name="settings_bug_report">Signaler un bug</string>
+    <string name="bug_report_purpose">Un rapport sur ce qui n\'a pas marché, relu avant de partir, envoyé par l\'app de votre choix</string>
+    <string name="bug_report_description">Ce qui s\'est passé (facultatif)</string>
+    <string name="bug_report_cleaning">Ci-dessous, exactement ce qui sera envoyé. Les identifiants et les textes cités sont remplacés ; le reste peut encore nommer quelque chose de vous : relisez avant d\'envoyer.</string>
+    <string name="bug_report_send">Envoyer le rapport</string>
+    <string name="bug_report_subject">Rapport de bug Treelune %1$s</string>
+    <string name="crash_notice_title">L\'app s\'est arrêtée</string>
+    <string name="crash_notice_text">L\'app s\'est arrêtée le %1$s. Un rapport peut être envoyé, relu avant de partir.</string>
+    <string name="crash_notice_report">Voir le rapport</string>
+    <string name="crash_notice_continue">Continuer</string>
+    <string name="logs_count">logs</string>
+    <string name="logs_filter_time">De</string>
+    <string name="logs_filter_level">Niveau minimum</string>
+    <string name="logs_filter_tag">Tag (vide = tous)</string>
+    <string name="logs_level_at_least">Au moins</string>
+    <string name="logs_no_logs">Aucun log trouvé</string>
+    <string name="time_minute">minute</string>
+    <string name="time_minutes">minutes</string>
+    <string name="time_hour">heure</string>
+    <string name="time_day">jour</string>
+    <string name="time_always">Toujours</string>
+    <string name="settings_logs_description">Consulter les logs d'erreurs pour debug</string>
+
+    <!-- AI Data Headers (CommandExecutor prompt formatting) -->
+    <string name="ai_data_header_tool">Outil \'%1$s\'</string>
+    <string name="ai_data_result_count">Nombre de résultats : %1$d enregistrements</string>
+    <string name="ai_data_filters">Filtres : %1$s</string>
+    <string name="ai_data_filters_none">Filtres : aucun, tout l\'historique</string>
+    <string name="ai_data_limit">Limite : %1$d</string>
+    <string name="ai_data_status_filter">Filtre statut : %1$s</string>
+    <string name="ai_data_template_filter">Filtre template : %1$s</string>
+    <string name="ai_data_fields">Champs inclus : %1$s</string>
+    <string name="ai_data_fields_all">tous</string>
+    <string name="ai_data_no_results_warning">Aucune entrée ne répond à ces critères.</string>
+    <string name="ai_data_user_summary">« %1$s » : %2$d entrée(s) lue(s)</string>
+
+    <!-- AI Enrichment - POINTER inline summaries -->
+    <string name="ai_enrichment_pointer_zone">Zone</string>
+    <string name="ai_enrichment_pointer_tool">Outil</string>
+    <string name="ai_enrichment_pointer_entry">Entrée</string>
+    <string name="ai_enrichment_pointer_context_config">configuration</string>
+    <string name="ai_enrichment_pointer_context_data">données</string>
+    <string name="ai_enrichment_pointer_period_range">entre %1$s et %2$s</string>
+    <string name="period_bound_start">le début de « %1$s »</string>
+    <string name="period_bound_end">la fin de « %1$s »</string>
+    <string name="filter_date_from">depuis %1$s</string>
+    <string name="filter_date_before">avant %1$s</string>
+    <string name="filter_date_after">après %1$s</string>
+    <string name="filter_date_until">jusqu\'à %1$s</string>
+    <string name="period_days">jours</string>
+    <string name="period_weeks">semaines</string>
+    <string name="period_months">mois</string>
+    <string name="period_years">ans</string>
+
+    <!-- Groups System -->
+    <string name="label_group">Groupe</string>
+    <string name="label_zone_group">Groupe de zones</string>
+    <string name="label_tool_group">Groupe d\'outils</string>
+    <string name="label_tool_groups">Groupes d\'outils</string>
+    <string name="label_zone_groups">Groupes de zones</string>
+    <string name="label_main_screen_config">Configuration de l\'écran principal</string>
+    <string name="message_zone_groups_description">Organisez vos zones en groupes pour faciliter la navigation dans l\'écran principal</string>
+    <string name="label_ungrouped">Hors groupe</string>
+    <string name="label_zones">Zones</string>
+    <string name="label_tools_and_automations">Outils et automations</string>
+    <string name="dialog_edit_group">Modifier le groupe</string>
+    <string name="dialog_create_group">Créer un groupe</string>
+    <string name="message_no_zone_groups">Aucun groupe de zones défini</string>
+    <string name="message_no_zones_in_group">Aucune zone dans ce groupe</string>
+    <string name="message_no_ungrouped_zones">Aucune zone hors groupe</string>
+    <string name="dialog_add_tool_or_automation_title">Que voulez-vous ajouter ?</string>
+    <string name="action_add_tool">Créer un outil</string>
+    <string name="action_add_automation">Créer une automation</string>
+
+    <!-- Groups - Schemas descriptions -->
+    <string name="tools_base_schema_config_group">Groupe d\'organisation de l\'outil</string>
+    <string name="zone_schema_tool_groups">Liste des groupes d\'outils disponibles dans cette zone</string>
+    <string name="zone_schema_display_mode">Comment la zone s\'affiche sur l\'accueil : ICON (son icône), MINIMAL (icône et nom), LINE (sa description à côté), CONDENSED (sa description dessous) ; il donne les cases que la zone occupe</string>
+    <string name="zone_schema_icon_color">Couleur de l\'icône de la zone, parmi RED, ORANGE, YELLOW, GREEN, TEAL, BLUE, PURPLE, PINK ; null ou absente pour une icône neutre. Les outils de la zone ne la prennent pas</string>
+    <string name="zone_schema_group">Groupe d\'organisation de la zone</string>
+
+    <!-- Groups - Service errors -->
+
+    <!-- History -->
+    <string name="history_title">Historique des discussions</string>
+    <string name="history_search_placeholder">Rechercher...</string>
+    <string name="history_empty">Aucune discussion</string>
+    <string name="history_rename_title">Renommer la discussion</string>
+    <string name="history_rename_label">Nouveau nom</string>
+    <string name="history_delete_confirm">Cette action est irréversible. Supprimer la discussion \'%1$s\' ?</string>
+    <string name="history_session_messages">%1$d messages</string>
+    <string name="settings_history">Historique des discussions</string>
+
+    <!-- Icon picker: Lucide's categories -->
+    <string name="icon_category_accessibility">Accessibilité</string>
+    <string name="icon_category_account">Comptes et accès</string>
+    <string name="icon_category_animals">Animaux</string>
+    <string name="icon_category_arrows">Flèches</string>
+    <string name="icon_category_buildings">Bâtiments</string>
+    <string name="icon_category_charts">Graphiques</string>
+    <string name="icon_category_communication">Communication</string>
+    <string name="icon_category_connectivity">Connectivité</string>
+    <string name="icon_category_cursors">Curseurs</string>
+    <string name="icon_category_design">Design</string>
+    <string name="icon_category_development">Code et développement</string>
+    <string name="icon_category_devices">Appareils</string>
+    <string name="icon_category_emoji">Émojis</string>
+    <string name="icon_category_files">Fichiers</string>
+    <string name="icon_category_finance">Finance</string>
+    <string name="icon_category_food_beverage">Nourriture et boissons</string>
+    <string name="icon_category_gaming">Jeux</string>
+    <string name="icon_category_home">Maison</string>
+    <string name="icon_category_layout">Mise en page</string>
+    <string name="icon_category_mail">Courrier</string>
+    <string name="icon_category_math">Mathématiques</string>
+    <string name="icon_category_medical">Santé</string>
+    <string name="icon_category_multimedia">Multimédia</string>
+    <string name="icon_category_nature">Nature</string>
+    <string name="icon_category_navigation">Navigation et lieux</string>
+    <string name="icon_category_notifications">Notifications</string>
+    <string name="icon_category_people">Personnes</string>
+    <string name="icon_category_photography">Photographie</string>
+    <string name="icon_category_science">Sciences</string>
+    <string name="icon_category_seasons">Saisons</string>
+    <string name="icon_category_security">Sécurité</string>
+    <string name="icon_category_shapes">Formes</string>
+    <string name="icon_category_shopping">Achats</string>
+    <string name="icon_category_social">Social</string>
+    <string name="icon_category_sports">Sports</string>
+    <string name="icon_category_sustainability">Écologie</string>
+    <string name="icon_category_text">Mise en forme du texte</string>
+    <string name="icon_category_time">Temps et calendrier</string>
+    <string name="icon_category_tools">Outils</string>
+    <string name="icon_category_transportation">Transports</string>
+    <string name="icon_category_travel">Voyage</string>
+    <string name="icon_category_weather">Météo</string>
+
+    <!-- Icons: the ICONS command and icon names at write time -->
+    <string name="service_error_icons_param_not_list">\'%1$s\' est une liste de chaînes</string>
+    <string name="service_error_icons_unknown_category">Catégorie d\'icônes inconnue : \'%1$s\'. ICONS sans paramètre liste les catégories</string>
+    <string name="service_error_icon_unknown">Icône inconnue : \'%1$s\'. La commande ICONS cherche les icônes par mot et par catégorie</string>
+    <string name="service_error_icon_color_unknown">Couleur d\'icône inconnue : \'%1$s\'. Une parmi %2$s, ou null pour aucune</string>
+    <string name="action_verbalize_icons_overview">Vue d\'ensemble des icônes</string>
+    <string name="action_verbalize_icons_search">Recherche d\'icônes</string>
+
+    <!-- Clés que le code demandait et que personne n'avait écrites -->
+    <string name="ai_provider_error">Erreur du fournisseur IA</string>
+    <string name="ai_provider_openai_temperature_help">Entre 0 et 2 : plus bas, des réponses plus stables ; plus haut, plus variées</string>
+    <string name="label_ai_provider">Fournisseur IA</string>
+    <string name="label_yes">Oui</string>
+    <string name="label_with_default">%1$s (par défaut : %2$s)</string>
+    <string name="setting_field_of_tool_first">choisissez d\'abord l\'outil</string>
+    <string name="label_on">On</string>
+    <string name="label_off">Off</string>
+    <string name="label_no">Non</string>
+    <string name="label_start">Début</string>
+    <string name="label_end">Fin</string>
+    <string name="message_error_simple">Une erreur est survenue</string>
+    <string name="error_missing_tooltype">Le paramètre tooltype est manquant</string>
+    <string name="error_missing_config">Le paramètre config est manquant</string>
+    <string name="error_validation_maxlength">%1$s caractères au maximum</string>
+    <string name="error_validation_required">Champ obligatoire</string>
+    <string name="error_param_name_required">Le nom est obligatoire</string>
+    <string name="error_load_failed">Échec du chargement</string>
+    <string name="error_load_data_failed">Impossible de charger les données</string>
+    <string name="error_update_failed">Échec de la mise à jour</string>
+    <string name="error_rename_failed">Échec du renommage</string>
+    <string name="error_delete_failed">Échec de la suppression</string>
+    <string name="error_operation_failed">L\'opération a échoué</string>
+    <string name="error_operation_cancelled">Opération annulée</string>
+    <string name="error_resume_session">Impossible de reprendre la conversation</string>
+    <string name="error_unknown">Erreur inconnue</string>
+    <string name="service_error_invalid_timestamp_format">Horodatage illisible : %1$s</string>
+    <string name="service_error_duration_running">La durée %1$s est déjà en cours</string>
+    <string name="service_error_duration_not_running">La durée %1$s n\'est pas en cours</string>
+    <string name="service_error_duration_unknown">Aucun champ de durée %3$s dans %2$s de l\'entrée %1$s</string>
+    <string name="service_error_operation_failed">Échec de l\'opération</string>
+    <string name="service_error_tool_keeps_no_entries">Un outil %1$s ne garde pas d\'entrées à lui : il montre celles d\'autres outils.</string>
+    <string name="verbalize_unknown_operation">Opération inconnue : %1$s</string>
+    <string name="tools_config_error_zone_update">Impossible de déplacer l\'outil dans cette zone</string>
+    <!-- Demo -->
+    <string name="demo_remove_now">Supprimer la démo</string>
+    <string name="demo_remove_confirm">Supprimer les zones de démo et tout ce qu\'elles contiennent, ce que vous y avez ajouté compris ? Le réglage ci-dessus reste tel quel : activé, la prochaine mise à jour réinstalle la démo.</string>
+    <string name="demo_removed">Démo supprimée</string>
+    <string name="demo_phase_zones">Zones</string>
+    <string name="demo_phase_tools">Outils : %1$s / %2$s</string>
+    <string name="demo_phase_entries">Entrées : %1$s / %2$s</string>
+    <string name="demo_phase_goals">Objectifs</string>
+    <string name="demo_phase_automations">Automations</string>
+    <string name="demo_error_refused">La démo n\'a pas pu être construite : %1$s</string>
+    <string name="service_error_id_not_given">Un identifiant est attribué par l\'app, il ne peut pas être donné : %1$s</string>
+    <string name="copy_name">%1$s (copie)</string>
+    <string name="service_error_group_unknown">Le groupe \'%1$s\' n\'existe pas. Groupes : %2$s</string>
+    <string name="service_error_group_in_use">Le groupe \'%1$s\' ne peut pas être supprimé, il est encore utilisé par : %2$s</string>
+    <string name="service_error_group_renames">Un renommage va d\'un groupe de l\'ancienne liste à un groupe de la nouvelle</string>
+    <string name="demo_texts_file">texts-fr.json</string>
+    <string name="demo_error_unreadable">La démo n\'a pas pu être lue : %1$s</string>
+    <string name="demo_installed">Démo installée</string>
+    <string name="demo_reinstall_now">Réinstaller maintenant</string>
+    <string name="action_verbalize_demo_install">Installation de la démo</string>
+    <string name="action_verbalize_demo_remove">Suppression de la démo</string>
+    <string name="action_verbalize_backup_export">Export des données</string>
+    <string name="action_verbalize_backup_import">Restauration d\'une sauvegarde</string>
+    <string name="action_verbalize_backup_reset">Réinitialisation des données</string>
+    <string name="long_operation_busy">%1$s en cours : réessayer une fois fini.</string>
+    <string name="long_operation_done">%1$s : terminé</string>
+    <string name="long_operation_failed">%1$s : échec. %2$s</string>
+    <string name="import_progress">Lignes : %1$s / %2$s</string>
+    <string name="settings_demo">Démo</string>
+    <string name="settings_demo_description">Un groupe de zones de démonstration, réinstallé à chaque mise à jour</string>
+    <string name="settings_demo_install_on_update">Installer la démo à chaque mise à jour</string>
+    <string name="settings_demo_install_on_update_help">Activé, la démo est réinstallée à chaque mise à jour ; désactivé, elle est laissée telle quelle. Ce que vous ajoutez à la démo disparaît à chaque réinstallation.</string>
+
+    <!-- External access (MCP): the authorization page a client opens -->
+    <string name="mcp_authorize_title">Accès à Treelune</string>
+    <string name="mcp_authorize_instruction">%1$s demande à lire et écrire dans votre app Treelune. Pour l\'autoriser, tapez ce code sur votre téléphone :</string>
+    <string name="mcp_authorize_waiting">En attente du code sur le téléphone…</string>
+    <string name="mcp_authorize_approved">Accès autorisé. Retour en cours…</string>
+    <string name="mcp_authorize_refused">Accès refusé.</string>
+    <string name="mcp_authorize_expired">La demande a expiré : recommencez depuis le client.</string>
+    <string name="mcp_authorize_busy">Une autre demande attend déjà sur le téléphone. Réessayez dans quelques minutes.</string>
+    <string name="mcp_authorize_invalid">Cette demande ne peut pas être acceptée : %1$s</string>
+
+    <!-- External access (MCP): settings, the access, the phone's approval -->
+    <string name="settings_external_access">Accès externe</string>
+    <string name="settings_external_access_description">Laisser une IA extérieure lire et écrire dans l\'app, par un relais</string>
+    <string name="settings_external_access_relay_url">Adresse du relais</string>
+    <string name="settings_external_access_relay_url_help">L\'adresse publique du relais, https://… L\'adresse à donner à l\'IA extérieure est celle-ci suivie de /mcp.</string>
+    <string name="settings_external_access_relay_secret">Secret du relais</string>
+    <string name="settings_external_access_relay_secret_help">Le secret écrit dans la configuration du relais, par lequel il reconnaît l\'app.</string>
+    <string name="external_access_open">Ouvrir l\'accès</string>
+    <string name="external_access_close">Fermer l\'accès</string>
+    <string name="external_access_state_closed">Fermé : aucune IA extérieure ne peut joindre l\'app.</string>
+    <string name="external_access_state_open">Ouvert. Se ferme seul après 30 minutes sans appel.</string>
+    <string name="external_access_state_open_last">Ouvert, dernier appel %1$s. Se ferme seul après 30 minutes sans appel.</string>
+    <string name="external_access_state_failed">Fermé après un échec : %1$s</string>
+    <string name="external_access_no_relay">Donnez d\'abord l\'adresse du relais (https) et son secret.</string>
+    <string name="external_access_relay_refused">le relais ne reconnaît pas l\'app : vérifiez son adresse et son secret.</string>
+    <string name="external_access_mcp_address">Adresse à donner à l\'IA extérieure : %1$s</string>
+    <string name="external_access_clients">Clients autorisés</string>
+    <string name="external_access_clients_none">Aucun pour l\'instant.</string>
+    <string name="external_access_client_line">%1$s, autorisé %2$s, dernier usage %3$s</string>
+    <string name="external_access_client_never">jamais</string>
+    <string name="external_access_revoke">Révoquer</string>
+    <string name="external_access_revoke_confirm">Révoquer %1$s ? Il faudra l\'autoriser à nouveau, avec un nouveau code.</string>
+    <string name="external_access_notification_title">Accès externe ouvert</string>
+    <string name="external_access_notification_text">Une IA extérieure peut lire et écrire dans l\'app.</string>
+    <string name="external_access_notification_last">Dernier appel %1$s</string>
+    <string name="external_access_channel">Accès externe</string>
+    <string name="external_access_tile">Accès externe</string>
+    <string name="external_access_request_title">Demande d\'accès</string>
+    <string name="external_access_request_text">%1$s demande l\'accès. Tapez le code que sa page affiche.</string>
+    <string name="external_access_request_declared">Déclaré par le client : son nom, %1$s ; la réponse part vers %2$s. Rien ne prouve ni l\'un ni l\'autre.</string>
+    <string name="external_access_request_not_me">Si vous n\'avez pas lancé cette demande, refusez-la.</string>
+    <string name="external_access_request_code">Code affiché sur la page</string>
+    <string name="external_access_request_allow">Autoriser</string>
+    <string name="external_access_request_refuse">Refuser</string>
+    <string name="external_access_request_wrong">Code faux : encore %1$d essais.</string>
+    <string name="external_access_request_allowed">Accès autorisé.</string>
+    <string name="external_access_request_ended">La demande est terminée.</string>
+</resources>

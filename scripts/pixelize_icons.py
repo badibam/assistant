@@ -33,7 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LUCIDE = ROOT / "third_party" / "lucide" / "icons"
-THEME = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "themes" / "retro"
+THEME = ROOT / "app" / "src" / "main" / "java" / "app" / "treelune" / "themes" / "retro"
 OUT = THEME / "icons"
 RETOUCHES = THEME / "icon-retouches.txt"
 SOURCES = ROOT / "app" / "src" / "main" / "java"

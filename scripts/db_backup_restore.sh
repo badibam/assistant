@@ -4,8 +4,8 @@
 # DB BACKUP/RESTORE for migration testing
 # ======================================
 
-PACKAGE_NAME="com.assistant.debug"
-DB_NAME="assistant_database"
+PACKAGE_NAME="app.treelune.debug"
+DB_NAME="treelune_database"
 BACKUP_DIR="./db_backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
@@ -46,14 +46,14 @@ backup_db() {
     adb exec-out run-as $PACKAGE_NAME cat databases/tracking_database-wal > "$tracking_wal" 2>/dev/null
     adb exec-out run-as $PACKAGE_NAME cat databases/tracking_database-shm > "$tracking_shm" 2>/dev/null
 
-    # assistant_database and its WAL files
-    local assistant_path="$BACKUP_DIR/assistant_database_$backup_name"
-    local assistant_wal="$BACKUP_DIR/assistant_database-wal_$backup_name"
-    local assistant_shm="$BACKUP_DIR/assistant_database-shm_$backup_name"
+    # treelune_database and its WAL files
+    local treelune_path="$BACKUP_DIR/treelune_database_$backup_name"
+    local treelune_wal="$BACKUP_DIR/treelune_database-wal_$backup_name"
+    local treelune_shm="$BACKUP_DIR/treelune_database-shm_$backup_name"
 
-    adb exec-out run-as $PACKAGE_NAME cat databases/assistant_database > "$assistant_path"
-    adb exec-out run-as $PACKAGE_NAME cat databases/assistant_database-wal > "$assistant_wal" 2>/dev/null
-    adb exec-out run-as $PACKAGE_NAME cat databases/assistant_database-shm > "$assistant_shm" 2>/dev/null
+    adb exec-out run-as $PACKAGE_NAME cat databases/treelune_database > "$treelune_path"
+    adb exec-out run-as $PACKAGE_NAME cat databases/treelune_database-wal > "$treelune_wal" 2>/dev/null
+    adb exec-out run-as $PACKAGE_NAME cat databases/treelune_database-shm > "$treelune_shm" 2>/dev/null
 
     # Report what was written
     echo -e "${GREEN}Databases and WAL files saved:${NC}"
@@ -61,9 +61,9 @@ backup_db() {
     if [ -f "$tracking_wal" ] && [ -s "$tracking_wal" ]; then
         echo "Tracking WAL: $(ls -lh "$tracking_wal" | awk '{print $5}') <- REAL TRACKING DATA"
     fi
-    echo "Assistant DB: $(ls -lh "$assistant_path" | awk '{print $5}')"
-    if [ -f "$assistant_wal" ] && [ -s "$assistant_wal" ]; then
-        echo "Assistant WAL: $(ls -lh "$assistant_wal" | awk '{print $5}') <- REAL ASSISTANT DATA"
+    echo "Treelune DB: $(ls -lh "$treelune_path" | awk '{print $5}')"
+    if [ -f "$treelune_wal" ] && [ -s "$treelune_wal" ]; then
+        echo "Treelune WAL: $(ls -lh "$treelune_wal" | awk '{print $5}') <- REAL TREELUNE DATA"
     fi
     return 0
 }
@@ -119,59 +119,59 @@ restore_db() {
             adb shell rm /sdcard/tmp_shm
         fi
 
-        # The assistant_database of the same timestamp too (zones, tool_instances, and the rest)
-        local assistant_file="$BACKUP_DIR/assistant_database_$timestamp"
-        if [ -f "$assistant_file" ]; then
-            echo -e "${BLUE}Restoring assistant_database (zones, tool_instances)...${NC}"
-            adb push "$assistant_file" /sdcard/tmp_assistant
-            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant > databases/assistant_database"
-            adb shell rm /sdcard/tmp_assistant
+        # The treelune_database of the same timestamp too (zones, tool_instances, and the rest)
+        local treelune_file="$BACKUP_DIR/treelune_database_$timestamp"
+        if [ -f "$treelune_file" ]; then
+            echo -e "${BLUE}Restoring treelune_database (zones, tool_instances)...${NC}"
+            adb push "$treelune_file" /sdcard/tmp_treelune
+            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_treelune > databases/treelune_database"
+            adb shell rm /sdcard/tmp_treelune
 
-            # The assistant WAL files, when they are there
-            local assistant_wal_file="$BACKUP_DIR/assistant_database-wal_$timestamp"
-            local assistant_shm_file="$BACKUP_DIR/assistant_database-shm_$timestamp"
+            # The treelune WAL files, when they are there
+            local treelune_wal_file="$BACKUP_DIR/treelune_database-wal_$timestamp"
+            local treelune_shm_file="$BACKUP_DIR/treelune_database-shm_$timestamp"
 
-            if [ -f "$assistant_wal_file" ] && [ -s "$assistant_wal_file" ]; then
-                echo -e "${BLUE}Restoring the assistant WAL file...${NC}"
-                adb push "$assistant_wal_file" /sdcard/tmp_assistant_wal
-                adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant_wal > databases/assistant_database-wal"
-                adb shell rm /sdcard/tmp_assistant_wal
+            if [ -f "$treelune_wal_file" ] && [ -s "$treelune_wal_file" ]; then
+                echo -e "${BLUE}Restoring the treelune WAL file...${NC}"
+                adb push "$treelune_wal_file" /sdcard/tmp_treelune_wal
+                adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_treelune_wal > databases/treelune_database-wal"
+                adb shell rm /sdcard/tmp_treelune_wal
             fi
 
-            if [ -f "$assistant_shm_file" ] && [ -s "$assistant_shm_file" ]; then
-                echo -e "${BLUE}Restoring the assistant SHM file...${NC}"
-                adb push "$assistant_shm_file" /sdcard/tmp_assistant_shm
-                adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant_shm > databases/assistant_database-shm"
-                adb shell rm /sdcard/tmp_assistant_shm
+            if [ -f "$treelune_shm_file" ] && [ -s "$treelune_shm_file" ]; then
+                echo -e "${BLUE}Restoring the treelune SHM file...${NC}"
+                adb push "$treelune_shm_file" /sdcard/tmp_treelune_shm
+                adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_treelune_shm > databases/treelune_database-shm"
+                adb shell rm /sdcard/tmp_treelune_shm
             fi
         else
-            echo -e "${RED}assistant_database_$timestamp not found - the metadata is missing${NC}"
+            echo -e "${RED}treelune_database_$timestamp not found - the metadata is missing${NC}"
         fi
 
-    elif [[ "$backup_base" =~ assistant_database_(.+)$ ]]; then
+    elif [[ "$backup_base" =~ treelune_database_(.+)$ ]]; then
         timestamp="${BASH_REMATCH[1]}"
-        echo -e "${BLUE}Restoring assistant_database (timestamp: $timestamp)${NC}"
+        echo -e "${BLUE}Restoring treelune_database (timestamp: $timestamp)${NC}"
 
         adb push "$backup_file" /sdcard/tmp_db
-        adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_db > databases/assistant_database"
+        adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_db > databases/treelune_database"
         adb shell rm /sdcard/tmp_db
 
-        # The assistant WAL files of the same timestamp
-        local assistant_wal_file="$BACKUP_DIR/assistant_database-wal_$timestamp"
-        local assistant_shm_file="$BACKUP_DIR/assistant_database-shm_$timestamp"
+        # The treelune WAL files of the same timestamp
+        local treelune_wal_file="$BACKUP_DIR/treelune_database-wal_$timestamp"
+        local treelune_shm_file="$BACKUP_DIR/treelune_database-shm_$timestamp"
 
-        if [ -f "$assistant_wal_file" ] && [ -s "$assistant_wal_file" ]; then
-            echo -e "${BLUE}Restoring the assistant WAL file...${NC}"
-            adb push "$assistant_wal_file" /sdcard/tmp_assistant_wal
-            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant_wal > databases/assistant_database-wal"
-            adb shell rm /sdcard/tmp_assistant_wal
+        if [ -f "$treelune_wal_file" ] && [ -s "$treelune_wal_file" ]; then
+            echo -e "${BLUE}Restoring the treelune WAL file...${NC}"
+            adb push "$treelune_wal_file" /sdcard/tmp_treelune_wal
+            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_treelune_wal > databases/treelune_database-wal"
+            adb shell rm /sdcard/tmp_treelune_wal
         fi
 
-        if [ -f "$assistant_shm_file" ] && [ -s "$assistant_shm_file" ]; then
-            echo -e "${BLUE}Restoring the assistant SHM file...${NC}"
-            adb push "$assistant_shm_file" /sdcard/tmp_assistant_shm
-            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant_shm > databases/assistant_database-shm"
-            adb shell rm /sdcard/tmp_assistant_shm
+        if [ -f "$treelune_shm_file" ] && [ -s "$treelune_shm_file" ]; then
+            echo -e "${BLUE}Restoring the treelune SHM file...${NC}"
+            adb push "$treelune_shm_file" /sdcard/tmp_treelune_shm
+            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_treelune_shm > databases/treelune_database-shm"
+            adb shell rm /sdcard/tmp_treelune_shm
         fi
 
         # The tracking_database and its WAL of the same timestamp (the real data)
@@ -255,7 +255,7 @@ test_migration() {
         case $action in
             r|R)
                 echo -e "${BLUE}Restoring the pre-test backup...${NC}"
-                restore_db "$BACKUP_DIR/assistant_database_pre_migration_test"
+                restore_db "$BACKUP_DIR/treelune_database_pre_migration_test"
                 ;;
             c|C)
                 echo -e "${GREEN}Migration confirmed${NC}"

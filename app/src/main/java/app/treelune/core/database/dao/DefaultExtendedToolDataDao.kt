@@ -1,0 +1,56 @@
+package app.treelune.core.database.dao
+
+import app.treelune.core.database.entities.ToolDataEntity
+
+/**
+ * Default implementation of ExtendedToolDataDao
+ * Provides common methods + convenience methods for all tooltypes
+ */
+class DefaultExtendedToolDataDao(
+    private val baseDao: BaseToolDataDao,
+    private val tooltype: String
+) : ExtendedToolDataDao {
+    
+    // === Delegation to BaseToolDataDao ===
+    
+    override suspend fun insert(entity: ToolDataEntity) = baseDao.insert(entity)
+    
+    override suspend fun update(entity: ToolDataEntity) = baseDao.update(entity)
+    
+    override suspend fun getByToolInstance(toolInstanceId: String): List<ToolDataEntity> = 
+        baseDao.getByToolInstance(toolInstanceId)
+    
+    override suspend fun getById(id: String): ToolDataEntity? = 
+        baseDao.getById(id)
+    
+    override suspend fun deleteById(id: String) = 
+        baseDao.deleteById(id)
+    
+    override suspend fun deleteByToolInstance(toolInstanceId: String) = 
+        baseDao.deleteByToolInstance(toolInstanceId)
+    
+    override suspend fun countByToolInstance(toolInstanceId: String): Int = 
+        baseDao.countByToolInstance(toolInstanceId)
+    
+    override suspend fun getRecent(toolInstanceId: String, limit: Int): List<ToolDataEntity> = 
+        baseDao.getRecent(toolInstanceId, limit)
+    
+    override suspend fun getByTooltype(tooltype: String): List<ToolDataEntity> =
+        baseDao.getByTooltype(tooltype)
+    
+    // === Generic convenience methods ===
+    
+    override suspend fun getLatest(toolInstanceId: String): ToolDataEntity? {
+        return getByToolInstance(toolInstanceId).firstOrNull()
+    }
+    
+    override suspend fun getByDateRange(toolInstanceId: String, startTime: Long, endTime: Long): List<ToolDataEntity> {
+        return getByToolInstance(toolInstanceId).filter { 
+            it.timestamp?.let { ts -> ts in startTime..endTime } ?: false 
+        }
+    }
+    
+    override suspend fun getByItemName(toolInstanceId: String, itemName: String): List<ToolDataEntity> {
+        return getByToolInstance(toolInstanceId).filter { it.name == itemName }
+    }
+}

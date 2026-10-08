@@ -1,6 +1,6 @@
-# --------- #
-# Assistant #
-# --------- #
+# -------- #
+# Treelune #
+# -------- #
 
 - **Améliorer la vie dans toutes ses dimensions**
 - **Collaboration IA-humain symétrique**
@@ -47,8 +47,8 @@ L'assistant s'affine au fil du temps grâce aux données accumulées et aux inte
 ## Installation
 
 ```bash
-git clone [repository]
-cd assistant
+git clone git@github.com:badibam/treelune.git
+cd treelune
 ./gradlew assembleDebug
 ```
 

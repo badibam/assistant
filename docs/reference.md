@@ -1,4 +1,4 @@
-# Référence — Assistant
+# Référence — Treelune
 
 Point d'entrée de la documentation. Ce fichier dit ce qu'est le projet, les règles qu'on y tient, et quel doc ouvrir pour quoi. Les docs listés plus bas ne se chargent pas d'office : on les ouvre au besoin.
 

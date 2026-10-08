@@ -1,0 +1,42 @@
+package app.treelune.tools.chart.ui
+
+import android.content.Context
+import app.treelune.core.selection.TimeResolver
+import app.treelune.core.strings.Strings
+import app.treelune.core.utils.LogManager
+import app.treelune.tools.chart.ChartSources
+import app.treelune.tools.chart.ChartSpec
+import app.treelune.tools.chart.ChartTable
+import org.json.JSONObject
+
+/** What a chart gives once read: the chart, its tables, its period at the moment read; or why it cannot be drawn. */
+sealed interface ChartReading {
+    data class Drawn(val spec: ChartSpec, val tables: List<ChartTable>, val period: Pair<Long?, Long?>, val now: Long) : ChartReading {
+        /** Whether nothing falls in the period. */
+        val empty: Boolean get() = tables.all { it.rows.isEmpty() }
+    }
+    data class Problem(val message: String) : ChartReading
+
+    companion object {
+        /**
+         * The chart [config] describes, read now: what its screen and its tile draw alike. Read
+         * away from the screen's thread, which its tables would hold up to seconds.
+         */
+        suspend fun of(config: JSONObject, context: Context): ChartReading = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val s = Strings.`for`(tool = "chart", context = context)
+            val now = System.currentTimeMillis()
+            try {
+                val spec = ChartSpec.of(config, { s.shared(it) }, { s.tool(it) })
+                val tables = ChartSources(context).tables(spec, now)
+                // How long a chart takes to read, beside the time its layout takes (ChartView)
+                LogManager.ui("Chart read in ${System.currentTimeMillis() - now} ms, ${tables.sumOf { it.rows.size }} rows", "INFO")
+                Drawn(spec, tables, spec.period.instants(TimeResolver.at(now)), now)
+            } catch (e: IllegalArgumentException) {
+                Problem(e.message ?: "")
+            } catch (e: IllegalStateException) {
+                LogManager.ui("Chart not read: ${e.message}", "WARN")
+                Problem(e.message ?: "")
+            }
+        }
+    }
+}

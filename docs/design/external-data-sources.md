@@ -69,7 +69,7 @@ Avantages :
         "url": "https://webservice.meteofrance.com/forecast/daily?lat={{latitude}}&lon={{longitude}}&token={{api_key}}",
         "headers": {
           "Accept": "application/json",
-          "User-Agent": "Assistant-App/1.0"
+          "User-Agent": "Treelune/1.0"
         }
       },
       "parameters": {

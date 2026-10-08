@@ -43,11 +43,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LUCIDE = ROOT / "third_party" / "lucide"
-THEMES = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "themes"
+THEMES = ROOT / "app" / "src" / "main" / "java" / "app" / "treelune" / "themes"
 DRAWABLES = ROOT / "app" / "src" / "main" / "res" / "drawable"
 ASSETS = ROOT / "app" / "src" / "main" / "assets" / "icons"
 INDEX = ASSETS / "index.json"
-SHARED_STRINGS = ROOT / "app" / "src" / "main" / "java" / "com" / "assistant" / "core" / "strings" / "sources" / "shared.xml"
+SHARED_STRINGS = ROOT / "app" / "src" / "main" / "java" / "app" / "treelune" / "core" / "strings" / "sources" / "shared.xml"
 
 SVG_NS = "{http://www.w3.org/2000/svg}"
 

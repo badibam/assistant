@@ -1,0 +1,82 @@
+package app.treelune.core.ai.validation
+
+import android.content.Context
+import app.treelune.core.ai.data.DataCommand
+import app.treelune.core.ai.data.ExecutableCommand
+import app.treelune.core.ai.processing.AICommandProcessor
+import app.treelune.core.ai.processing.CommandTransformer
+import app.treelune.core.coordinator.ServiceRegistry
+import app.treelune.core.services.ExecutableService
+import org.json.JSONObject
+import app.treelune.core.utils.LogManager
+
+/**
+ * Helper for verbalizing actions via services
+ * Used by ValidationResolver to generate human-readable action descriptions
+ *
+ * Architecture:
+ * - Takes DataCommand (AI command format)
+ * - Transforms to ExecutableCommand via AICommandProcessor (for actions) or CommandTransformer (for queries)
+ * - Retrieves service via ServiceRegistry
+ * - Calls service.verbalize() to generate description
+ *
+ * Usage: ValidationResolver uses this to verbalize all actions before displaying to user
+ */
+object ActionVerbalizerHelper {
+
+    // Action command types that AICommandProcessor handles
+    private val ACTION_TYPES = app.treelune.core.ai.data.AICommands.actions.map { it.type }.toSet()
+
+    /**
+     * Verbalizes a single action command
+     *
+     * @param action The DataCommand to verbalize
+     * @param context Android context for string resources
+     * @return Human-readable description in substantive form (e.g., "Création de la zone \"Santé\"")
+     */
+    suspend fun verbalizeAction(
+        action: DataCommand,
+        context: Context
+    ): String {
+        return try {
+            // Transform DataCommand to ExecutableCommand
+            // Use AICommandProcessor for actions, CommandTransformer for queries
+            val executableCommand: ExecutableCommand? = if (action.type in ACTION_TYPES) {
+                val processor = AICommandProcessor(context)
+                processor.transformActionForVerbalization(action)
+            } else {
+                // Verbalization is shown to the user as they read it, so periods resolve now
+                val result = CommandTransformer.transformToExecutable(listOf(action), context, System.currentTimeMillis())
+                result.executableCommands.firstOrNull()
+            }
+
+            if (executableCommand == null) {
+                return "Action: ${action.type}"
+            }
+
+            // Get service for this resource using ServiceRegistry instance
+            val serviceRegistry = app.treelune.core.coordinator.ServiceRegistry(context)
+            val service = serviceRegistry.getService(executableCommand.resource)
+
+            // If service implements ExecutableService, call verbalize()
+            if (service is ExecutableService) {
+                service.verbalize(
+                    executableCommand.operation,
+                    JSONObject(executableCommand.params),
+                    context
+                )
+            } else {
+                // Fallback if service doesn't implement ExecutableService
+                "Action: ${action.type}"
+            }
+        } catch (e: Exception) {
+            // Fallback on error (log and return generic description)
+            LogManager.aiService(
+                "Failed to verbalize action ${action.type}: ${e.message}",
+                "ERROR",
+                e
+            )
+            "Action: ${action.type}"
+        }
+    }
+}

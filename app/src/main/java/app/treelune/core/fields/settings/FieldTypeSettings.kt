@@ -1,0 +1,216 @@
+package app.treelune.core.fields.settings
+
+import app.treelune.core.fields.ChoiceSettings
+import app.treelune.core.fields.DurationForm
+import app.treelune.core.fields.DurationUnit
+import app.treelune.core.fields.FieldDefinition
+import app.treelune.core.fields.FieldType
+import app.treelune.core.fields.ReferenceTarget
+import app.treelune.core.fields.TextLength
+import app.treelune.core.selection.ReferenceKind
+import app.treelune.core.themes.TagColor
+
+/**
+ * The settings of a field, declared with the fields themselves: what a field definition holds
+ * (an element of a config's extra_fields), and what each field type's "config" holds.
+ *
+ * The schema of a field definition, its checking and what the AI reads of it are generated from
+ * here (SettingsSchemaGenerator); no field type's settings are written by hand anywhere else.
+ */
+object FieldTypeSettings {
+
+    /** The decimals a numeric setting takes: a bound or a step of a field. */
+    private const val SETTING_DECIMALS = 2
+
+    /**
+     * A field definition: its common settings, then a variant on its type bringing that type's
+     * "config".
+     *
+     * [types] narrows the variant to some types, for the schema of a definition of one type.
+     * [labels] is how long the texts shown for the field may be (its name, an option's label, a
+     * bound's): short under a tool's column, longer for a question the AI asks.
+     */
+    fun definitionNodes(text: (String) -> String, types: List<FieldType> = FieldType.entries, labels: TextLength = TextLength.SHORT): List<SettingNode> = listOf(
+        // Made by the app from the label when the field is created, then sent back unchanged to
+        // name the field: its format is checked by the service (FieldConfigValidator)
+        field("name", "label_name", FieldType.TEXT, text, description = "field_type_schema_name_description",
+            config = mapOf("length" to TextLength.SHORT.name)).copy(systemWritten = true),
+        field("display_name", "custom_fields_display_name", FieldType.TEXT, text, required = true,
+            description = "field_type_schema_display_name_description", config = mapOf("length" to labels.name)),
+        field("description", "custom_fields_description", FieldType.TEXT, text, config = mapOf("length" to TextLength.MEDIUM.name)),
+        field("always_visible", "custom_fields_always_visible", FieldType.BOOLEAN, text, default = false,
+            description = "field_type_schema_always_visible_description"),
+        SettingNode.Variant(
+            selector = field("type", "custom_fields_type", FieldType.CHOICE, text, required = true,
+                description = "field_type_schema_type_description",
+                config = choice(types.map { it.name }, types.associate { it.name to text("field_type_${it.name.lowercase()}_display_name") })),
+            cases = types.associate { type -> type.name to caseNodes(type, text, labels) }
+        )
+    )
+
+    /**
+     * What a field of [type] adds to its definition: its settings, if the type has any. A number
+     * or a range the user adds measures in one unit, set with the field.
+     */
+    private fun caseNodes(type: FieldType, text: (String) -> String, labels: TextLength): List<SettingNode> {
+        val config = configGroup(type, text, labels)
+        // A fixed day or instant is hardly a suggestion for every new entry: dates have none, nor
+        // a reference, one thing for all the entries to come
+        val default = if (type == FieldType.DATE || type == FieldType.DATETIME || type == FieldType.REFERENCE) null
+            else field("default_value", "field_default_value", type, text, description = "field_type_schema_default_value_description")
+                .copy(valueOfDefined = true)
+        return listOfNotNull(config, default)
+    }
+
+    /**
+     * A value declared apart from a tool's fields, `{"type", "config"}`: its type among [types],
+     * and that type's settings. A goal's entered criterion is one.
+     */
+    fun valueNodes(text: (String) -> String, types: List<FieldType>): List<SettingNode> = listOf(
+        SettingNode.Variant(
+            selector = field("type", "custom_fields_type", FieldType.CHOICE, text, required = true,
+                config = choice(types.map { it.name }, types.associate { it.name to text("field_type_${it.name.lowercase()}_display_name") })),
+            cases = types.associate { type -> type.name to listOfNotNull(configGroup(type, text)) }
+        )
+    )
+
+    /** The "config" of a value of [type], its unit first for a number or a range; null when the type has no settings. */
+    private fun configGroup(type: FieldType, text: (String) -> String, labels: TextLength = TextLength.SHORT): SettingNode.Group? {
+        val settings = listOfNotNull(if (type == FieldType.NUMERIC || type == FieldType.RANGE) unit(text) else null) +
+            configNodes(type, text, labels)
+        // A number or a range needs its decimals, a scale its bounds and a choice its options:
+        // their config is required
+        return if (settings.isEmpty()) null else SettingNode.Group("config", text("field_config_section_title"), settings,
+            required = type in setOf(FieldType.NUMERIC, FieldType.RANGE, FieldType.SCALE, FieldType.CHOICE, FieldType.REFERENCE))
+    }
+
+    /**
+     * The settings of a value of [type]: how it is made (a number's decimals, a scale's bounds, a
+     * choice's options...). What it measures is not among them: see [unit].
+     */
+    fun configNodes(type: FieldType, text: (String) -> String): List<SettingNode> = configNodes(type, text, TextLength.SHORT)
+
+    /** [configNodes] whose shown texts (an option's label, a bound's) may be [labels] long. */
+    private fun configNodes(type: FieldType, text: (String) -> String, labels: TextLength): List<SettingNode> = when (type) {
+        FieldType.TEXT -> listOf(
+            field("length", "field_config_text_length", FieldType.CHOICE, text, default = TextLength.UNLIMITED.name,
+                description = "field_type_text_length_description",
+                config = choice(TextLength.entries.map { it.name },
+                    TextLength.entries.associate { it.name to text("text_length_${it.name.lowercase()}_display_name") }))
+        )
+        FieldType.NUMERIC -> listOf(
+            number("min", "field_config_min", text), number("max", "field_config_max", text),
+            wholeNumber("decimals", "field_config_decimals", text, default = 0, required = true),
+            number("step", "field_config_step", text)
+        )
+        FieldType.SCALE -> listOf(
+            number("min", "field_config_min", text, required = true), number("max", "field_config_max", text, required = true),
+            label("min_label", "field_config_min_label", text, labels), label("max_label", "field_config_max_label", text, labels),
+            number("step", "field_config_step", text, default = 1)
+        )
+        FieldType.CHOICE -> listOf(
+            SettingNode.ListOf(
+                name = "options",
+                label = text("field_config_options"),
+                item = SettingNode.Item.Of(listOf(
+                    field("value", "field_config_option_value", FieldType.TEXT, text, required = true,
+                        config = mapOf("length" to TextLength.SHORT.name)),
+                    label("label", "field_config_option_label", text, labels),
+                    // Each color is its own swatch, wherever the value shows
+                    field("color", "field_config_option_color", FieldType.CHOICE, text,
+                        config = choice(TagColor.entries.map { it.name },
+                            labels = TagColor.entries.associate { it.name to text("tag_color_${it.name.lowercase()}") },
+                            colors = TagColor.entries.associateBy { it.name }))
+                )),
+                required = true,
+                minItems = 2,
+                distinct = true,
+                summary = listOf("value", "label", "color")
+            ),
+            flag("multiple", "field_config_multiple", "field_type_choice_multiple_description", text),
+            flag("ordered", "field_config_ordered", "field_type_choice_ordered_description", text),
+            flag("open", "field_config_open", "field_type_choice_open_description", text)
+        )
+        FieldType.BOOLEAN -> listOf(
+            label("true_label", "field_config_true_label", text, labels), label("false_label", "field_config_false_label", text, labels)
+        )
+        FieldType.RANGE -> listOf(
+            number("min", "field_config_min", text), number("max", "field_config_max", text),
+            wholeNumber("decimals", "field_config_decimals", text, default = 0, required = true)
+        )
+        FieldType.DATE -> emptyList()
+        FieldType.TIME -> listOf(clockFormat("format", text))
+        FieldType.DATETIME -> listOf(clockFormat("time_format", text))
+        FieldType.DURATION -> listOf(
+            field("precision", "field_config_duration_precision", FieldType.CHOICE, text,
+                default = DurationUnit.DEFAULT_PRECISION.name, description = "field_type_duration_precision_description",
+                config = choice(DurationUnit.entries.map { it.name }, DurationUnit.entries.associate { it.name to text("duration_unit_${it.name.lowercase()}_display_name") })),
+            field("form", "field_config_duration_form", FieldType.CHOICE, text,
+                default = DurationForm.DEFAULT.name, description = "field_type_duration_form_description",
+                config = choice(DurationForm.entries.map { it.name }, DurationForm.entries.associate { it.name to text("duration_form_${it.name.lowercase()}_display_name") }))
+        )
+        FieldType.REFERENCE -> listOf(
+            SettingNode.Group(ReferenceTarget.TARGET, text("field_config_reference_target"), listOf(
+                field(ReferenceTarget.KINDS, "field_config_reference_kinds", FieldType.CHOICE, text, required = true,
+                    description = "field_type_reference_kinds_description",
+                    config = choice(ReferenceKind.entries.map { it.name },
+                        ReferenceKind.entries.associate { it.name to text("reference_kind_${it.name.lowercase()}") }) + ("multiple" to true)),
+                // The tools whose entries it takes, each a reference to a tool instance
+                SettingNode.ListOf(
+                    name = ReferenceTarget.TOOL_INSTANCES,
+                    label = text("field_config_reference_tool_instances"),
+                    item = SettingNode.Item.Value(FieldDefinition(
+                        name = "tool_instance", displayName = text("reference_kind_tool_instance"),
+                        description = text("field_type_reference_tool_instances_description"),
+                        type = FieldType.REFERENCE, alwaysVisible = false,
+                        config = mapOf(ReferenceTarget.TARGET to mapOf(ReferenceTarget.KINDS to listOf(ReferenceKind.TOOL_INSTANCE.name)))
+                    )),
+                    distinct = true
+                )
+            ), required = true)
+        )
+    }
+
+    private fun field(
+        name: String,
+        labelKey: String,
+        type: FieldType,
+        text: (String) -> String,
+        required: Boolean = false,
+        default: Any? = null,
+        description: String? = null,
+        config: Map<String, Any>? = null
+    ) = SettingNode.Field(
+        FieldDefinition(name = name, displayName = text(labelKey), description = description?.let(text),
+            type = type, alwaysVisible = false, config = config),
+        required = required,
+        default = default
+    )
+
+    private fun choice(values: List<String>, labels: Map<String, String> = emptyMap(), colors: Map<String, TagColor> = emptyMap()): Map<String, Any> =
+        mapOf("options" to ChoiceSettings.storedOptions(values, labels, colors))
+
+    /** A setting that is a number, a bound or a step, with the decimals a setting may need. */
+    private fun number(name: String, labelKey: String, text: (String) -> String, required: Boolean = false, default: Any? = null) =
+        field(name, labelKey, FieldType.NUMERIC, text, required = required, default = default, config = mapOf("decimals" to SETTING_DECIMALS))
+
+    private fun wholeNumber(name: String, labelKey: String, text: (String) -> String, default: Int, required: Boolean = false) =
+        field(name, labelKey, FieldType.NUMERIC, text, required = required, default = default, config = mapOf("min" to 0, "decimals" to 0))
+
+    private fun label(name: String, labelKey: String, text: (String) -> String, length: TextLength = TextLength.SHORT) =
+        field(name, labelKey, FieldType.TEXT, text, config = mapOf("length" to length.name))
+
+    /**
+     * The one unit a number or a range is in, set once for all its values ("km"), stored as "unit"
+     * beside the value's settings. Whoever declares such a value adds it when its values share
+     * a unit; a value whose unit changes from one entry to the next records it with the entry.
+     */
+    fun unit(text: (String) -> String) = label("unit", "field_config_unit", text)
+
+    private fun flag(name: String, labelKey: String, descriptionKey: String, text: (String) -> String) =
+        field(name, labelKey, FieldType.BOOLEAN, text, default = false, description = descriptionKey)
+
+    private fun clockFormat(name: String, text: (String) -> String) =
+        field(name, "field_config_time_format", FieldType.CHOICE, text, default = "24h",
+            config = choice(listOf("24h", "12h")))
+}

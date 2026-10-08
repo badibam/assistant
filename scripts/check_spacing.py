@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "app" / "src" / "main" / "java"
-THEMES = SOURCES / "com" / "assistant" / "themes"
+THEMES = SOURCES / "app" / "treelune" / "themes"
 
 DP = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\.dp\b")
 # Calls whose whole argument list is space.

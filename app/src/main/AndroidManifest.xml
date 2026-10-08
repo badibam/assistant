@@ -14,7 +14,7 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
-        android:name=".AssistantApplication"
+        android:name=".TreeluneApplication"
         android:allowBackup="true"
         tools:ignore="HardcodedDebugMode"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -23,14 +23,14 @@
         android:label="@string/shared_app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AssistantPersonnel"
+        android:theme="@style/Theme.Treelune"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="portrait"
             android:label="@string/shared_app_name"
-            android:theme="@style/Theme.AssistantPersonnel">
+            android:theme="@style/Theme.Treelune">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

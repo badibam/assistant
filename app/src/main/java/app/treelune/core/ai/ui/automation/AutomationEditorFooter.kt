@@ -1,0 +1,153 @@
+package app.treelune.core.ai.ui.automation
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import app.treelune.core.ai.data.Automation
+import app.treelune.core.ai.data.MessageSegment
+import app.treelune.core.ai.data.SessionType
+import app.treelune.core.ai.ui.components.RichComposer
+import app.treelune.core.fields.settings.scheduleSummary
+import app.treelune.core.strings.Strings
+import app.treelune.core.ui.*
+import app.treelune.core.utils.ScheduleConfig
+
+/**
+ * Footer component for SEED automation editor
+ *
+ * Architecture:
+ * - RichComposer (without send button) for message composition + enrichments
+ * - Configuration buttons for schedule and triggers
+ * - FormActions (Save/Cancel/Test) for global save
+ *
+ * Usage:
+ * - In AIScreen SeedMode for editing automation template message
+ * - Supports enrichments (periods are stored as relative for AUTOMATION)
+ */
+@Composable
+fun AutomationEditorFooter(
+    automation: Automation?,  // null if creating new automation
+    segments: List<MessageSegment>,
+    onSegmentsChange: (List<MessageSegment>) -> Unit,
+    scheduleConfig: ScheduleConfig?,
+    onConfigureSchedule: () -> Unit,
+    catchUp: org.json.JSONObject,
+    onCatchUpChange: (org.json.JSONObject) -> Unit,
+    triggersCount: Int,
+    onConfigureTriggers: () -> Unit,
+    onRefresh: () -> Unit,  // Refresh message from composer (update DB + reload preview)
+    onSave: () -> Unit,  // Save automation (calls onRefresh first, then saves automation config)
+    onCancel: () -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(UI.Space.L)
+    ) {
+        // Message composer with enrichments
+        // sessionType = SEED because this is a SEED session template
+        // But periods will be stored as relative (handled by RichComposer internally)
+        UI.RichComposer(
+            segments = segments,
+            onSegmentsChange = onSegmentsChange,
+            onSend = { /* Not used - showSendButton = false */ },
+            placeholder = s.shared("automation_message_placeholder"),
+            showEnrichmentButtons = true,
+            showSendButton = false,  // Hide send button - save is in FormActions
+            sessionType = SessionType.SEED  // SEED session for template
+        )
+
+        // Configuration buttons row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
+        ) {
+            // Schedule configuration button
+            Box(modifier = Modifier.weight(1f)) {
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    onClick = onConfigureSchedule
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
+                    ) {
+                        UI.Icon(iconName = "clock", size = 20.dp)
+                        UI.Text(
+                            text = scheduleConfig?.let { scheduleSummary(it, s) } ?: s.shared("schedule_summary_none"),
+                            type = TextType.BODY
+                        )
+                    }
+                }
+            }
+
+            // Triggers configuration button
+            Box(modifier = Modifier.weight(1f)) {
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    onClick = onConfigureTriggers
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
+                    ) {
+                        UI.Icon(iconName = "zap", size = 20.dp)
+                        UI.Text(
+                            text = if (triggersCount > 0) {
+                                s.shared("automation_triggers_count").format(triggersCount)
+                            } else {
+                                s.shared("automation_triggers_none")
+                            },
+                            type = TextType.BODY
+                        )
+                    }
+                }
+            }
+        }
+
+        // Catch-up settings, only meaningful once there is a schedule to miss: the form of their
+        // declaration, a limit chosen explicitly and a delay when limited
+        if (scheduleConfig != null) {
+            UI.Card(type = CardType.DEFAULT) {
+                Column(modifier = Modifier.padding(UI.Space.L), verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
+                    UI.Text(s.shared("automation_catch_up_title"), TextType.SUBTITLE)
+                    app.treelune.core.fields.settings.SettingsForm(
+                        remember { app.treelune.core.ai.data.AutomationSettings.catchUpNodes(context) },
+                        catchUp, onCatchUpChange, context
+                    )
+                }
+            }
+        }
+
+        // Form actions
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.S)
+        ) {
+            // Refresh button - Update message from composer to DB
+            UI.ActionButton(
+                action = ButtonAction.REFRESH,
+                display = ButtonDisplay.LABEL,
+                onClick = onRefresh
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Cancel button
+            UI.ActionButton(
+                action = ButtonAction.CANCEL,
+                display = ButtonDisplay.LABEL,
+                onClick = onCancel
+            )
+
+            // Save button - Refresh + save automation config
+            UI.ActionButton(
+                action = ButtonAction.SAVE,
+                display = ButtonDisplay.LABEL,
+                onClick = onSave
+            )
+        }
+    }
+}

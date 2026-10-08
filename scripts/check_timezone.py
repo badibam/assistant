@@ -27,8 +27,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "app" / "src" / "main" / "java"
 
 ALLOWED = {
-    "com/assistant/core/config/AppConfigStructures.kt",
-    "com/assistant/core/ui/screens/settings/FormatSettingsScreen.kt",
+    "app/treelune/core/config/AppConfigStructures.kt",
+    "app/treelune/core/ui/screens/settings/FormatSettingsScreen.kt",
 }
 
 # Each takes the device's timezone without saying so.

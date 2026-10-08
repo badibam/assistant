@@ -1,0 +1,149 @@
+package app.treelune.core.fields.migration
+
+import app.treelune.core.fields.FieldDefinition
+import app.treelune.core.fields.FieldType
+
+/**
+ * Represents a detected change in custom fields configuration.
+ *
+ * When a tool instance's custom_fields configuration is modified, the system compares
+ * the old and new configurations to detect structural changes that may impact existing data.
+ *
+ * Each change type has an associated MigrationStrategy that determines how to handle
+ * existing data entries (none, strip field, error, etc.).
+ *
+ * Architecture:
+ * - Changes detected by FieldConfigComparator.compare()
+ * - Strategies determined by MigrationPolicy.getStrategies()
+ * - Migration executed by FieldDataMigrator (Phase 2.3)
+ */
+sealed class FieldChange {
+    /**
+     * A new field was added to the configuration.
+     * Strategy: NONE (no data migration needed)
+     *
+     * @param field The newly added field definition
+     */
+    data class Added(val field: FieldDefinition) : FieldChange()
+
+    /**
+     * An existing field was removed from the configuration.
+     * Strategy: STRIP_FIELD (remove field from all existing entries)
+     *
+     * @param name The name of the removed field
+     */
+    data class Removed(val name: String) : FieldChange()
+
+    /**
+     * A field's type was changed.
+     * Strategy: ERROR (type changes not allowed - would corrupt existing values)
+     *
+     * @param name The field name
+     * @param oldType The original field type
+     * @param newType The new field type
+     */
+    data class TypeChanged(
+        val name: String,
+        val oldType: FieldType,
+        val newType: FieldType
+    ) : FieldChange()
+
+    /**
+     * Options were removed from a CHOICE field.
+     * Strategy: STRIP_FIELD_IF_VALUE (remove field from entries using removed options)
+     *
+     * This affects entries where:
+     * - Single choice: custom_fields[name] == removedOption
+     * - Multiple choice: custom_fields[name] contains removedOption
+     *
+     * @param name The field name
+     * @param removedOptions List of options that were removed from the field's config
+     */
+    data class ChoiceOptionsRemoved(
+        val name: String,
+        val removedOptions: List<String>
+    ) : FieldChange()
+
+    /**
+     * A SCALE field's range was changed (min or max modified).
+     * Strategy: STRIP_FIELD (remove field from all entries - values may be out of new range)
+     *
+     * Changing the scale range means existing values might be outside the new valid range.
+     * Since we can't reliably determine which values are still valid, we remove the field
+     * from all entries.
+     *
+     * @param name The field name
+     * @param oldMin Previous minimum value
+     * @param oldMax Previous maximum value
+     * @param newMin New minimum value
+     * @param newMax New maximum value
+     */
+    data class ScaleRangeChanged(
+        val name: String,
+        val oldMin: Number,
+        val oldMax: Number,
+        val newMin: Number,
+        val newMax: Number
+    ) : FieldChange()
+
+    /**
+     * A CHOICE field changed shape: between one option, several, and a ranking.
+     * Strategy: STRIP_FIELD (remove field from all entries - the stored values no longer say
+     * what the field now asks)
+     *
+     * One option is a String, several or a ranking a List<String>; and a set of options read as
+     * a ranking would claim an order nobody chose.
+     *
+     * @param name The field name
+     * @param oldShape Previous shape
+     * @param newShape New shape
+     */
+    data class ChoiceShapeChanged(
+        val name: String,
+        val oldShape: app.treelune.core.fields.ChoiceShape,
+        val newShape: app.treelune.core.fields.ChoiceShape
+    ) : FieldChange()
+
+    /**
+     * Only cosmetic properties changed (display_name, description, placeholder, always_visible).
+     * Strategy: NONE (no data migration needed)
+     *
+     * These changes don't affect data structure or validation, only how the field
+     * is displayed in the UI. No migration required.
+     *
+     * @param name The field name
+     */
+    data class CosmeticChange(val name: String) : FieldChange()
+
+    /**
+     * What a REFERENCE field accepts changed: its kinds, or the tool instances whose entries it
+     * takes. Strategy: STRIP_FIELD_IF_VALUE (only the values that no longer fit lose the field:
+     * a kind no longer taken, an entry of a tool no longer taken)
+     *
+     * @param name The field name
+     * @param newConfig The config the stored values are measured against
+     */
+    data class ReferenceTargetNarrowed(
+        val name: String,
+        val newConfig: Map<String, Any>?
+    ) : FieldChange()
+
+    /**
+     * A config key that restricts which values are allowed changed, without changing what a
+     * stored value means: a numeric bound, the number of decimals, a text length.
+     * Strategy: STRIP_FIELD_IF_VALUE (only the entries that no longer fit lose the field)
+     *
+     * Which keys these are is declared by the field type, so a type added later says what its
+     * config does rather than needing a change of its own here. Widening a bound produces this
+     * change too and then takes nothing, since every value still fits.
+     *
+     * @param name The field name
+     * @param fieldType The type, which is what knows whether a value still fits
+     * @param newConfig The config to measure the stored values against
+     */
+    data class ConfigRestricted(
+        val name: String,
+        val fieldType: app.treelune.core.fields.FieldType,
+        val newConfig: Map<String, Any>?
+    ) : FieldChange()
+}
