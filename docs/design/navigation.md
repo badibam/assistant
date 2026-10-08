@@ -12,6 +12,13 @@ Une seule liste d'écrans, l'accueil en bas, l'écran visible en haut (Accueil �
 - Reste hors de la pile une **fenêtre** de passage : confirmation, saisie d'une entrée, sélecteur de date, image agrandie. Elle appartient à l'écran qui l'ouvre et joue déjà son son à son apparition (`UI.Dialog`, `ConfirmDialog`, `FullScreenDialog`). Une étape de tutoriel n'en a pas besoin : elle attend l'opération, sa cible reste l'écran.
 - Le fil d'Ariane est la pile : il montre par où l'on est passé, et le retour en retire le dernier lieu.
 
+## Le fil d'Ariane
+
+- Une petite ligne au-dessus du titre : les lieux d'avant (« … › Course › Sorties »), le titre restant le lieu actuel. Absente sur l'accueil.
+- Une seule ligne, coupée par la gauche ; le titre aussi coupé à une ligne : l'entête garde une hauteur fixe, et ses boutons leur place.
+- Chaque nom se touche et ramène à ce lieu, en retirant tout ce qui est au-dessus.
+- Dessinée par le thème, comme le reste de l'entête (`ThemeContract`).
+
 ## La conversation
 
 - Un lieu posé par-dessus celui d'où on l'ouvre : « Accueil › Course › Sorties › Conversation », et la fermer ramène à Sorties. Seule elle flotte ainsi ; tout autre lieu remplace le précédent.
@@ -38,7 +45,6 @@ Les sons d'aller et retour se jouent dans la pile, plus dans les gestes. Aujourd
 
 ## Ce qui reste ouvert
 
-- La forme du fil d'Ariane et sa place.
 - Ce que l'ouverture depuis l'extérieur accepte (quels écrans, quels paramètres), et qui peut la demander.
 - La survie de la pile à la mort du processus (les interrupteurs sont aujourd'hui `rememberSaveable`).
 - L'ordre de la migration, écran par écran, et sa recette sur le téléphone.
