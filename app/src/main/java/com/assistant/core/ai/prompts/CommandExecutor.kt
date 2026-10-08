@@ -1021,6 +1021,10 @@ class CommandExecutor(private val context: Context) {
     /**
      * The entries schemas of the tools among [toolInstanceIds] whose key ("entries:<id>") is not
      * in [knownSchemas], fetched: the schemas a command on those tools waits on.
+     *
+     * @throws UnreadableSchema when one of them cannot be read: the commands waiting on it go no
+     *   further, and the reason reaches the model (a parse error for writes, which it answers
+     *   by correcting them; a system error for queries)
      */
     private suspend fun missingEntrySchemas(
         toolInstanceIds: Collection<String>,
@@ -1029,33 +1033,31 @@ class CommandExecutor(private val context: Context) {
         val missingSchemas = mutableListOf<MissingSchemaInfo>()
 
         for (toolInstanceId in toolInstanceIds.distinct()) {
-            try {
-                // The entries schema of this tool, its user's fields included
-                val deduplicationKey = "entries:$toolInstanceId"
-                val isAvailable = deduplicationKey in knownSchemas
-                LogManager.aiPrompt("Schema availability for $deduplicationKey: $isAvailable", "DEBUG")
+            // The entries schema of this tool, its user's fields included
+            val deduplicationKey = "entries:$toolInstanceId"
+            val isAvailable = deduplicationKey in knownSchemas
+            LogManager.aiPrompt("Schema availability for $deduplicationKey: $isAvailable", "DEBUG")
+            if (isAvailable) continue
 
-                if (!isAvailable) {
-                    val schemaResult = coordinator.processUserAction("schemas.get", mapOf("tool_instance_id" to toolInstanceId))
-                    val schemaId = schemaResult.data?.get("schema_id") as? String ?: deduplicationKey
-                    val schemaContent = (schemaResult.data?.get("content") as? String)?.takeIf { it.isNotEmpty() }
-                    missingSchemas.add(MissingSchemaInfo(
-                        schemaId = schemaId,
-                        toolInstanceId = toolInstanceId,
-                        // A schema that cannot be read is said so to the model, rather than left out
-                        schemaContent = schemaContent
-                            ?: "{\"error\": \"Failed to fetch schema: ${schemaResult.error ?: "no content"}\"}",
-                        tooltype = schemaResult.data?.get("tooltype") as? String
-                    ))
-                }
-            } catch (e: Exception) {
-                LogManager.aiPrompt("Error checking schema for tool instance $toolInstanceId: ${e.message}", "ERROR", e)
-                // Continue checking other instances even if one fails
+            val schemaResult = coordinator.processUserAction("schemas.get", mapOf("tool_instance_id" to toolInstanceId))
+            val schemaContent = (schemaResult.data?.get("content") as? String)?.takeIf { it.isNotEmpty() }
+            if (!schemaResult.isSuccess || schemaContent == null) {
+                throw UnreadableSchema(toolInstanceId, schemaResult.error ?: "no content")
             }
+            missingSchemas.add(MissingSchemaInfo(
+                schemaId = schemaResult.data?.get("schema_id") as? String ?: deduplicationKey,
+                toolInstanceId = toolInstanceId,
+                schemaContent = schemaContent,
+                tooltype = schemaResult.data?.get("tooltype") as? String
+            ))
         }
 
         return missingSchemas
     }
+
+    /** The entries schema of the tool [toolInstanceId] could not be read, for [reason]. */
+    class UnreadableSchema(toolInstanceId: String, reason: String) :
+        IllegalStateException("Cannot read the entries schema of tool $toolInstanceId: $reason")
 
     /**
      * Load historical schema deduplication keys from previous messages in the session
