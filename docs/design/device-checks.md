@@ -18,6 +18,12 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 - Après le passage à Compose 1.12 (BOM 2026.09.00) : parcourir l'accueil, une zone, un outil de chaque type, sa config, Réglages, le chat, dans les deux thèmes ; les fenêtres de dialogue, les listes qui défilent, le glisser-déposer et le clavier se comportent comme avant.
 
+## Validation
+
+- Demander à l'IA de créer une entrée en laissant un champ facultatif vide : l'entrée s'enregistre, sans ce champ. Lui faire appeler une opération d'outil avec un paramètre facultatif à null (« Noter après coup » une séance, sans durée) : acceptée.
+- Créer une entrée dans une Liste, un Questionnaire (« Remplir maintenant » en passant une question), une fiche de Données structurées, un Journal, chacun avec un champ supplémentaire laissé vide : enregistrée, le champ absent.
+- Enregistrer la config d'un outil, les réglages de l'app, une automation, un fournisseur d'IA, sans rien changer : accepté. Répondre à un module de communication de l'IA en laissant un champ facultatif vide : accepté.
+
 ## Démo
 
 - Deux `./run install` de suite, la démo seule à l'accueil : chaque fois la démo se réinstalle entière, sans toast d'erreur sur les groupes de zones. Réglages : retirer le dernier groupe de zones s'enregistre.

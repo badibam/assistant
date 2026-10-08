@@ -204,7 +204,7 @@ fun ListScreen(
                 size = Size.S,
                 enabled = typed.isNotBlank(),
                 onClick = {
-                    write({ ListItems.add(coordinator, toolInstanceId, typed, typedExtra.filterValues { it != null }, typedDue.takeIf { dueDates }) }) {
+                    write({ ListItems.add(coordinator, toolInstanceId, typed, typedExtra, typedDue.takeIf { dueDates }) }) {
                         typed = ""
                         typedExtra = fields.defaultValues()
                         typedDue = null

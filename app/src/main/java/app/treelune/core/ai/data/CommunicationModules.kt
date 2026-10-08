@@ -136,7 +136,10 @@ object CommunicationModules {
     fun answerSchema(module: CommunicationModule, text: (String) -> String): JSONObject =
         SettingsSchemaGenerator.generate(module.fields, text)
 
-    /** Whether [answer] answers [module]: every field it needs, each value one its field takes. */
+    /**
+     * Whether [answer] answers [module]: every field it needs, each value one its field takes. A
+     * field left unanswered, set to null by the form, is one not given.
+     */
     fun checkAnswer(module: CommunicationModule, answer: JSONObject, context: Context): ValidationResult {
         val s = Strings.`for`(context = context)
         val schema = Schema(
@@ -146,7 +149,7 @@ object CommunicationModules {
             category = SchemaCategory.AI_PROVIDER,
             content = answerSchema(module, s::shared).toString()
         )
-        return SchemaValidator.validate(schema, JsonUtils.toMap(answer), context)
+        return SchemaValidator.validate(schema, JsonUtils.toMap(app.treelune.core.utils.JsonNulls.withoutNullKeys(answer)), context)
     }
 
     /** [answer] in the form the AI reads: its dates and durations in ISO 8601. */

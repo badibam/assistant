@@ -147,8 +147,9 @@ data class AIMessage(
                     json.optBoolean("keep_control", false)
                 } else null
 
-                // Kept as written: CommunicationModules.check says what is wrong with it
-                val communicationModule = json.optJSONObject("communication_module")?.let { CommunicationModule(it) }
+                // Kept as written, but for its keys set to null, which say nothing is given:
+                // CommunicationModules.check says what is wrong with it
+                val communicationModule = json.optJSONObject("communication_module")?.let { CommunicationModule(app.treelune.core.utils.JsonNulls.withoutNullKeys(it)) }
 
                 // Parse completed as boolean (true = work completed)
                 val completed = if (json.has("completed")) {

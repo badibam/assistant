@@ -165,8 +165,9 @@ fun JournalEntryScreen(
             )
 
             // Add custom fields if any (for validation)
+            // A field left empty is null, not given: taken out, as the service does
             if (customFieldsValues.isNotEmpty()) {
-                entryData["extra"] = customFieldsValues
+                entryData["extra"] = app.treelune.core.utils.JsonNulls.withoutNullKeys(customFieldsValues)
             }
 
             LogManager.ui("Journal validation - entryData: $entryData")

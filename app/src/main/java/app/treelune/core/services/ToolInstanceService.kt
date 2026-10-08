@@ -104,7 +104,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         val zoneId = params.optString("zone_id")
         val toolType = params.optString("tooltype")
         // config travels as an object; it becomes a string only on its way into the column.
-        val configJson = (params.optJSONObject("config") ?: JSONObject()).toString()
+        // A config is written whole: a key set to null is a setting not given, taken out
+        val configJson = (params.optJSONObject("config")?.let { app.treelune.core.utils.JsonNulls.withoutNullKeys(it) } ?: JSONObject()).toString()
 
         if (zoneId.isBlank() || toolType.isBlank()) {
             return OperationResult.error(s.shared("service_error_zone_id_tool_type_required"))
@@ -174,7 +175,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("tool_instance_id")
-        var configJson = params.optJSONObject("config")?.toString() ?: ""
+        // Written whole, not merged: a key set to null is a setting not given, taken out
+        var configJson = params.optJSONObject("config")?.let { app.treelune.core.utils.JsonNulls.withoutNullKeys(it) }?.toString() ?: ""
         val newZoneId = params.optString("zone_id").takeIf { it.isNotBlank() }
 
         if (toolInstanceId.isBlank()) {

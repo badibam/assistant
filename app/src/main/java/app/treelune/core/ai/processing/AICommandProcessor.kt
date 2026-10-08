@@ -447,6 +447,7 @@ class AICommandProcessor(private val context: Context) {
         @Suppress("UNCHECKED_CAST")
         val params = (ModelValues.fromModel(command.params["params"] ?: emptyMap<String, Any?>(), JSONObject(schema.content), zone)
             as? Map<String, Any?>)
+            ?.let { app.treelune.core.utils.JsonNulls.withoutNullKeys(it) } // a parameter set to null is not given
             ?: throw IllegalArgumentException(s.shared("ai_error_tool_operation_params_not_object"))
         val check = SchemaValidator.validate(schema, params, context)
         if (!check.isValid) throw IllegalArgumentException(check.errorMessage)

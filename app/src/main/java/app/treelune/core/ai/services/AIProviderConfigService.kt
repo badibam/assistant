@@ -106,7 +106,8 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
     ): OperationResult {
         val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
-        val configJson = params.optJSONObject("config")?.toString()
+        // Written whole: a key set to null is a setting not given, taken out
+        val configJson = params.optJSONObject("config")?.let { app.treelune.core.utils.JsonNulls.withoutNullKeys(it) }?.toString()
             ?: return OperationResult.error(s.shared("ai_error_param_config_required"))
 
         LogManager.aiService("Setting config for provider: $providerId")

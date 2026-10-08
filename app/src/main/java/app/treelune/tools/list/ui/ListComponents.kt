@@ -93,7 +93,7 @@ internal fun ListItemDialog(
  * A new item: its name, required, its due date in a list that has them, and the list's own
  * fields at their default values. What is typed survives a rotation.
  *
- * @param onAdd The name, the values of the list's fields, emptied ones absent, and the due date, null for none
+ * @param onAdd The name, the values of the list's fields, emptied ones null (not given, which the service takes out), and the due date, null for none
  */
 @Composable
 internal fun ListAddDialog(
@@ -111,7 +111,7 @@ internal fun ListAddDialog(
 
     UI.Dialog(
         type = DialogType.CONFIRM,
-        onConfirm = { onAdd(name, extra.filterValues { it != null }, dueAt) },
+        onConfirm = { onAdd(name, extra, dueAt) },
         onCancel = onCancel,
         confirmEnabled = name.isNotBlank()
     ) {

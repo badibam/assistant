@@ -62,7 +62,9 @@ object SchemaValidator {
         // Only a refusal is logged: every write is validated, and a trace per validation (the
         // schema and the data written out) made an import of 64 000 lines run out of memory
         return try {
-            val cleanData = filterEmptyValues(convertJsonObjectsToMaps(data))
+            // Checked as handed: a writer whose null means "not given" takes it out first
+            // (JsonNulls), so what is checked is what is stored
+            val cleanData = convertJsonObjectsToMaps(data)
 
             // For partial validation, modify schema to make 'required' fields optional
             // This allows updates to only specify the fields they want to change
@@ -103,53 +105,6 @@ object SchemaValidator {
         }
     }
     
-    
-    /**
-     * Filters out empty values from data before validation
-     * Recursively handles nested structures to prevent type mismatch errors
-     *
-     * IMPORTANT: This filters out null values (removes them from the Map)
-     * This is appropriate for CREATE operations where null = "don't specify this field"
-     * For UPDATE operations with partial validation, nulls are already handled differently
-     */
-    internal fun filterEmptyValues(data: Map<String, Any?>): Map<String, Any> {
-        return data.mapNotNull { (key, value) ->
-            val filteredValue = filterEmptyValue(value)
-            if (filteredValue != null) {
-                key to filteredValue
-            } else {
-                null
-            }
-        }.toMap()
-    }
-    
-    /**
-     * Filters a single value recursively
-     *
-     * CRITICAL: Empty strings are NOT filtered (they are valid values to intentionally clear a field)
-     * Only null values are filtered for partial updates
-     * A list is checked as sent: what is validated here is a copy, the data stored is the one sent,
-     * so a null left out of a list would be stored unchecked; an empty list is a value (a home
-     * screen without zone groups). The objects inside it are filtered as any object
-     */
-    private fun filterEmptyValue(value: Any?): Any? {
-        return when (value) {
-            null -> null
-            // DO NOT filter empty strings - they represent intentional clearing of a field
-            // This is different from null/absent field (partial update = keep existing value)
-            is String -> value
-            is Map<*, *> -> {
-                @Suppress("UNCHECKED_CAST")
-                val originalMap = value as Map<String, Any?>
-                val filteredMap = filterEmptyValues(originalMap)
-                // Keep the map even if empty - it may be required by schema
-                // The schema validation will catch if it shouldn't be empty
-                filteredMap
-            }
-            is List<*> -> value.map { if (it is Map<*, *>) filterEmptyValue(it) else it }
-            else -> value
-        }
-    }
     
     /**
      * Converts Android JSONObjects to Maps for Jackson compatibility

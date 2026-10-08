@@ -104,8 +104,10 @@ class AppConfigService(private val context: Context) : ExecutableService {
      *
      * @return The error to hand back, or null once stored
      */
-    suspend fun setSettings(category: String, settings: JSONObject, renames: Map<String, String> = emptyMap()): String? {
+    suspend fun setSettings(category: String, sent: JSONObject, renames: Map<String, String> = emptyMap()): String? {
         if (category !in AppSettings.CATEGORIES) return s.shared("service_error_unknown_category").format(category)
+        // Written whole: a key set to null is a setting not given, taken out
+        val settings = app.treelune.core.utils.JsonNulls.withoutNullKeys(sent)
         val validation = SchemaValidator.validate(AppSettings.schema(category, context), JsonUtils.toMap(settings), context)
         if (!validation.isValid) return validation.errorMessage ?: s.shared("message_validation_error_simple")
 

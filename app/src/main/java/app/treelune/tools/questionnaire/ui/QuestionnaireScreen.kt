@@ -144,7 +144,7 @@ fun QuestionnaireScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onCo
                     "tool_instance_id" to toolInstanceId,
                     "timestamp" to now,
                     "data" to emptyMap<String, Any>(),
-                    "extra" to answers.filterValues { it != null },
+                    "extra" to answers,
                     "state" to mapOf(QuestionnaireToolType.STATUS to QuestionnaireToolType.Status.FILLED, QuestionnaireToolType.FILLED_AT to now)
                 ))
             }) { passing = null }

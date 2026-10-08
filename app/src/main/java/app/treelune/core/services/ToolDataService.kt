@@ -27,6 +27,7 @@ import app.treelune.core.fields.NumericPrecision
 import app.treelune.core.fields.FieldDefinition
 import app.treelune.core.validation.SchemaValidator
 import app.treelune.core.validation.SystemManagedFields
+import app.treelune.core.utils.JsonNulls
 import app.treelune.core.validation.Schema
 import app.treelune.core.database.entities.ToolInstance
 import app.treelune.core.tools.BaseSchemas
@@ -111,12 +112,13 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Payloads arrive in milliseconds from every caller, so they are stored as they come.
         // Fields the schema marks system-managed are the app's to produce: kept from the app
         // itself, dropped from a screen or the AI.
-        val sent = params.optJSONObject("data") ?: JSONObject()
+        // A key set to null is a field not given: taken out, so what is checked is what is stored
+        val sent = params.optJSONObject("data")?.let { JsonNulls.withoutNullKeys(it) } ?: JSONObject()
         val dataJson = (if (app.treelune.core.coordinator.calledByTheApp()) sent else SystemManagedFields.dropFromData(sent, target.schema.content)).toString()
-        val extraJson = params.optJSONObject("extra")?.takeIf { it.length() > 0 }?.toString()
+        val extraJson = params.optJSONObject("extra")?.let { JsonNulls.withoutNullKeys(it) }?.takeIf { it.length() > 0 }?.toString()
         // State is written by the app and the entry's actions (a note's position, a message's
         // status), never entered in a form
-        val stateJson = params.optJSONObject("state")?.takeIf { it.length() > 0 }?.toString()
+        val stateJson = params.optJSONObject("state")?.let { JsonNulls.withoutNullKeys(it) }?.takeIf { it.length() > 0 }?.toString()
 
         // Milliseconds are the contract. An absent timestamp means now, which is a default
         // written into the contract; any number is taken as milliseconds, Int and Double

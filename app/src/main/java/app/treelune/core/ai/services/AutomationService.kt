@@ -250,7 +250,10 @@ class AutomationService(private val context: Context) : ExecutableService {
      * declaration, and against the rule it cannot say: the catch-up settings come with a schedule
      * and only with it.
      */
-    private fun withSettings(entity: AutomationEntity, settings: JSONObject): Result<AutomationEntity> {
+    private fun withSettings(entity: AutomationEntity, sent: JSONObject): Result<AutomationEntity> {
+        // A key set to null inside a setting (a schedule's) is not given: taken out, as the merge
+        // above takes out a setting set to null
+        val settings = app.treelune.core.utils.JsonNulls.withoutNullKeys(sent)
         val checked = app.treelune.core.validation.SchemaValidator.validate(
             AutomationSettings.schema(context), app.treelune.core.utils.JsonUtils.toMap(settings), context)
         if (!checked.isValid) return Result.failure(IllegalArgumentException(checked.errorMessage))
