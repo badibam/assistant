@@ -726,31 +726,19 @@ object RetroTheme : ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
-        iconColor: app.treelune.core.themes.TagColor?,
-        leftButton: ButtonAction?,
-        rightButton: ButtonAction?,
-        onLeftClick: (() -> Unit)?,
-        onRightClick: (() -> Unit)?
+        iconColor: app.treelune.core.themes.TagColor?
     ) {
         val grid = retroGrid()
-        // Across the width, its buttons on the screen's margins
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.width(grid.cells(grid.touch)), contentAlignment = Alignment.CenterStart) {
-                leftButton?.let { app.treelune.core.ui.UI.ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onLeftClick ?: {}) }
+        // Across the width
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            // The page's icon and title a size up, as a heading is (HEADING)
+            val up = retroGridUp()
+            Row(horizontalArrangement = Arrangement.spacedBy(grid.cells(1)), verticalAlignment = Alignment.CenterVertically) {
+                icon?.let { NamedIcon(it, null, up, iconColor?.takeIf { color -> color != TagColor.GREY }?.let { color -> retroColors.icon(color, retroSurface).srgb }) }
+                // One line: the header keeps its height
+                Line(title, up.text, LocalRetroInk.current ?: retroSurface.strong.srgb, align = TextAlign.Center, maxLines = 1)
             }
-            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                // The page's icon and title a size up, as a heading is (HEADING)
-                val up = retroGridUp()
-                Row(horizontalArrangement = Arrangement.spacedBy(grid.cells(1)), verticalAlignment = Alignment.CenterVertically) {
-                    icon?.let { NamedIcon(it, null, up, iconColor?.takeIf { color -> color != TagColor.GREY }?.let { color -> retroColors.icon(color, retroSurface).srgb }) }
-                    // One line: the header keeps its height, its buttons their place
-                    Line(title, up.text, LocalRetroInk.current ?: retroSurface.strong.srgb, align = TextAlign.Center, maxLines = 1)
-                }
-                subtitle?.let { Text(it, TextType.CAPTION, false, TextAlign.Center) }
-            }
-            Box(modifier = Modifier.width(grid.cells(grid.touch)), contentAlignment = Alignment.CenterEnd) {
-                rightButton?.let { app.treelune.core.ui.UI.ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onRightClick ?: {}) }
-            }
+            subtitle?.let { Text(it, TextType.CAPTION, false, TextAlign.Center) }
         }
     }
 

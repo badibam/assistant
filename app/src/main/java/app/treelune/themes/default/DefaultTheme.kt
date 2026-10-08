@@ -1557,75 +1557,36 @@ object DefaultTheme : ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
-        iconColor: app.treelune.core.themes.TagColor?,
-        leftButton: ButtonAction?,
-        rightButton: ButtonAction?,
-        onLeftClick: (() -> Unit)?,
-        onRightClick: (() -> Unit)?
+        iconColor: app.treelune.core.themes.TagColor?
     ) {
-        Row(
+        // The title centered across the width
+        Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Fixed left area (48.dp)
-            Box(
-                modifier = Modifier.width(48.dp),
-                contentAlignment = Alignment.CenterStart
+            // Line 1: Icon + Title
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                leftButton?.let { action ->
-                    app.treelune.core.ui.UI.ActionButton(
-                        action = action,
-                        display = ButtonDisplay.ICON,
-                        size = Size.M,
-                        onClick = onLeftClick ?: { }
-                    )
+                // A zone's or a tool's icon, on its badge like on its tile
+                icon?.let { iconName ->
+                    val context = LocalContext.current
+                    app.treelune.core.icons.Icons.drawable(context, iconName)?.let { iconResource ->
+                        ItemIcon(iconResource, 24.dp, iconColor)
+                    }
                 }
+                // One line: the header keeps its height
+                Text(title, TextType.TITLE, false, TextAlign.Center, maxLines = 1)
             }
-            
-            // Central zone (centered title, flexible)
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Line 1: Icon + Title
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+
+            // Line 2: Subtitle (forced centered)
+            subtitle?.let {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // A zone's or a tool's icon, on its badge like on its tile
-                    icon?.let { iconName ->
-                        val context = LocalContext.current
-                        app.treelune.core.icons.Icons.drawable(context, iconName)?.let { iconResource ->
-                            ItemIcon(iconResource, 24.dp, iconColor)
-                        }
-                    }
-                    // One line: the header keeps its height, its buttons their place
-                    Text(title, TextType.TITLE, false, TextAlign.Center, maxLines = 1)
-                }
-                
-                // Line 2: Subtitle (forced centered)
-                subtitle?.let { 
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(it, TextType.CAPTION, false, TextAlign.Center)
-                    }
-                }
-            }
-            
-            // Fixed right area (48.dp)
-            Box(
-                modifier = Modifier.width(48.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                rightButton?.let { action ->
-                    app.treelune.core.ui.UI.ActionButton(
-                        action = action,
-                        display = ButtonDisplay.ICON,
-                        size = Size.M,
-                        onClick = onRightClick ?: { }
-                    )
+                    Text(it, TextType.CAPTION, false, TextAlign.Center)
                 }
             }
         }

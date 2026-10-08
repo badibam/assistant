@@ -184,6 +184,8 @@ fun CloseEditOnLeave(editor: GridEditor) {
 fun GridEditBar(editor: GridEditor) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+    // Its arrows at the bottom of the screen, where the chat's button would float
+    app.treelune.core.ui.HideChatButton()
     UI.Card(type = CardType.DEFAULT) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(UI.Space.S),

@@ -88,7 +88,7 @@ fun TrackingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()).chatButtonSpace()
             .padding(vertical = UI.Space.L),
         verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {

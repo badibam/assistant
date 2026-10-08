@@ -34,7 +34,8 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Navigation
 
 - Accueil › une zone › un outil › sa config (appui long), puis retour par la flèche, par la touche Retour et par un nom du fil d'Ariane : on revient chaque fois au bon écran, un seul son par geste (entrer, revenir), dans les trois thèmes.
-- Le fil d'Ariane au-dessus du titre, sur une ligne, sa fin visible quand il est long, le bouton de conversation à droite ; un titre long coupé à une ligne, les boutons de l'entête toujours à la même hauteur.
+- La barre au-dessus du titre : retour (ou réglages puis livre sur l'accueil) à gauche, le fil d'Ariane sur une ligne, sa fin visible quand il est long, l'engrenage à droite ; le titre sur toute la largeur, coupé à une ligne, dans les trois thèmes.
+- Le bouton de conversation flottant sur l'accueil, une zone, un outil de chaque type, le Guide, une automation : le bas de chaque écran défile jusqu'au-dessus du bouton, rien de caché dessous ; absent des configs et des Réglages ; caché pendant le déplacement d'une tuile et pendant une Séance qui tourne.
 - La conversation ouverte depuis un outil (bouton du fil), puis fermée : retour à l'outil, la zone toujours ouverte dessous. Un raccourci « demander à l'IA » depuis un écran : la conversation s'ouvre par-dessus, la zone reste ouverte.
 - Une notification d'un outil, app fermée : l'outil s'ouvre, le fil montre Accueil › sa zone, et Retour remonte à la zone puis à l'accueil.
 - Une zone supprimée depuis sa config : retour à l'accueil, sans écran vide ; un outil supprimé depuis sa config : retour à sa zone.

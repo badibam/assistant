@@ -10,6 +10,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.text.style.TextAlign
@@ -135,6 +136,14 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                     CompositionLocalProvider(LocalBreadcrumb provides breadcrumb) {
                         PlaceScreen(base, zones, demoInstalled)
                     }
+                }
+            }
+            // The chat's button, floating over the places one reads, measured for the room they leave it
+            if (base.chatButton && Navigator.top != Place.Chat && !ChatButton.hidden) {
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                Box(modifier = Modifier.align(Alignment.BottomEnd).padding(UI.Space.L)
+                    .onSizeChanged { ChatButton.height = with(density) { it.height.toDp() } }) {
+                    UI.FloatingButton(action = ButtonAction.AI_CHAT, onClick = { Navigator.push(Place.Chat) })
                 }
             }
         }
@@ -397,16 +406,10 @@ private fun HomeScreen(zones: ZonesState) {
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .chatButtonSpace()
                 .padding(vertical = UI.Space.L),
             verticalArrangement = Arrangement.spacedBy(UI.Space.L)
         ) {
-            // The Guide's book, at the top of the home screen, marked while a tutorial waits
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = UI.Space.L), horizontalArrangement = Arrangement.End) {
-                Box {
-                    UI.ActionButton(action = ButtonAction.GUIDE, display = ButtonDisplay.ICON, size = Size.S) { Navigator.push(Place.Guide) }
-                    if (app.treelune.core.guide.Guide.pending) Box(modifier = Modifier.align(Alignment.TopEnd)) { UI.WaitingMark() }
-                }
-            }
             UI.PageHeader(
                 title = s.shared("app_name"),
                 subtitle = null,
@@ -414,7 +417,14 @@ private fun HomeScreen(zones: ZonesState) {
                 leftButton = ButtonAction.SETTINGS,
                 rightButton = ButtonAction.CONFIGURE,
                 onLeftClick = { Navigator.push(Place.Settings) },
-                onRightClick = { Navigator.push(Place.HomeConfig) }
+                onRightClick = { Navigator.push(Place.HomeConfig) },
+                // The Guide's book after the settings, marked while a tutorial waits
+                afterLeft = {
+                    Box {
+                        UI.ActionButton(action = ButtonAction.GUIDE, display = ButtonDisplay.ICON) { Navigator.push(Place.Guide) }
+                        if (app.treelune.core.guide.Guide.pending) Box(modifier = Modifier.align(Alignment.TopEnd)) { UI.WaitingMark() }
+                    }
+                }
             )
 
             if (!zones.loaded) {
@@ -457,14 +467,6 @@ private fun HomeScreen(zones: ZonesState) {
         if (gridEditor.selectedId != null) app.treelune.core.ui.components.GridEditBar(gridEditor)
       }
 
-      // The chat's button, floating: the home screen has no breadcrumb to carry it. Away while a zone moves
-      if (gridEditor.selectedId == null) Box(
-          modifier = Modifier
-              .align(Alignment.BottomEnd)
-              .padding(UI.Space.L)
-      ) {
-          UI.FloatingButton(action = ButtonAction.AI_CHAT, onClick = { Navigator.push(Place.Chat) })
-      }
     }
 
     errorMessage?.let { message ->

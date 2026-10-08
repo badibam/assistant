@@ -684,7 +684,9 @@ object UI {
         leftButton: ButtonAction? = null,
         rightButton: ButtonAction? = null,
         onLeftClick: (() -> Unit)? = null,
-        onRightClick: (() -> Unit)? = null
+        onRightClick: (() -> Unit)? = null,
+        /** More buttons after the left one: the Guide's book on the home screen. */
+        afterLeft: (@Composable () -> Unit)? = null
     ) {
         // The phone's back key does what the header's back button does. Only the screen on
         // display is composed, so its header is the one that answers. The sound of going back
@@ -692,9 +694,22 @@ object UI {
         if (leftButton == ButtonAction.BACK && onLeftClick != null) {
             BackHandler(onBack = onLeftClick)
         }
-        // The places before this one, over the title, in a place of the stack
-        app.treelune.core.navigation.LocalBreadcrumb.current?.let { app.treelune.core.navigation.BreadcrumbLine(it) }
-        CurrentTheme.current.PageHeader(title, subtitle, icon, iconColor, leftButton, rightButton, onLeftClick, onRightClick)
+        // One bar over the title: the left button and those after it, the places before this one
+        // in a place of the stack, the right button at the end. The title takes the whole width.
+        val breadcrumb = app.treelune.core.navigation.LocalBreadcrumb.current
+        if (leftButton != null || rightButton != null || afterLeft != null || breadcrumb != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.XS),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                leftButton?.let { ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onLeftClick ?: {}) }
+                afterLeft?.invoke()
+                Box(modifier = Modifier.weight(1f)) { breadcrumb?.let { app.treelune.core.navigation.BreadcrumbLine(it) } }
+                rightButton?.let { ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onRightClick ?: {}) }
+            }
+        }
+        CurrentTheme.current.PageHeader(title, subtitle, icon, iconColor)
     }
     
     /** The header of a tool's tile: its icon with its marks, and its name. */

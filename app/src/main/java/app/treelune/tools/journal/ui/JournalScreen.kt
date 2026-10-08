@@ -213,7 +213,7 @@ fun JournalScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()).chatButtonSpace()
                 .padding(vertical = UI.Space.L)
         ) {
             if (isLoading) {

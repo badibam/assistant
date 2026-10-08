@@ -710,44 +710,32 @@ object CosyTheme : ThemeContract {
         }
     }
 
-    /** The page's title in a pill of the main colour on its shadow, its round buttons on each side. */
+    /** The page's title in a pill of the main colour on its shadow, across the width. */
     @Composable
     override fun PageHeader(
         title: String,
         subtitle: String?,
         icon: String?,
-        iconColor: TagColor?,
-        leftButton: ButtonAction?,
-        rightButton: ButtonAction?,
-        onLeftClick: (() -> Unit)?,
-        onRightClick: (() -> Unit)?
+        iconColor: TagColor?
     ) {
         val size = cosySize()
         val c = cosyColors
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.width(size.touch), contentAlignment = Alignment.CenterStart) {
-                leftButton?.let { app.treelune.core.ui.UI.ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onLeftClick ?: {}) }
-            }
-            Column(modifier = Modifier.weight(1f).padding(horizontal = size.dp(8f)), horizontalAlignment = Alignment.CenterHorizontally) {
-                Raised(shape = CircleShape, fill = c.accent.srgb, shadow = c.accentShadow.srgb, depth = size.buttonDepth, padding = size.dp(2f)) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = size.dp(20f)),
-                        horizontalArrangement = Arrangement.spacedBy(size.dp(8f)),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // A coloured icon in its round, as on its tile; a neutral one in the pill's ink
-                        icon?.let { name ->
-                            if (iconColor == null) NamedIcon(name, null, size.icon, c.onAccent.srgb)
-                            else app.treelune.core.ui.UI.ItemIcon(name, iconColor, size.dp(18f))
-                        }
-                        Line(title, size.subtitle.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold), c.onAccent.srgb, align = TextAlign.Center, maxLines = 1)
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = size.dp(8f)), horizontalAlignment = Alignment.CenterHorizontally) {
+            Raised(shape = CircleShape, fill = c.accent.srgb, shadow = c.accentShadow.srgb, depth = size.buttonDepth, padding = size.dp(2f)) {
+                Row(
+                    modifier = Modifier.padding(horizontal = size.dp(20f)),
+                    horizontalArrangement = Arrangement.spacedBy(size.dp(8f)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // A coloured icon in its round, as on its tile; a neutral one in the pill's ink
+                    icon?.let { name ->
+                        if (iconColor == null) NamedIcon(name, null, size.icon, c.onAccent.srgb)
+                        else app.treelune.core.ui.UI.ItemIcon(name, iconColor, size.dp(18f))
                     }
+                    Line(title, size.subtitle.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold), c.onAccent.srgb, align = TextAlign.Center, maxLines = 1)
                 }
-                subtitle?.let { Box(modifier = Modifier.padding(top = size.dp(4f))) { Text(it, TextType.CAPTION, false, TextAlign.Center) } }
             }
-            Box(modifier = Modifier.width(size.touch), contentAlignment = Alignment.CenterEnd) {
-                rightButton?.let { app.treelune.core.ui.UI.ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onRightClick ?: {}) }
-            }
+            subtitle?.let { Box(modifier = Modifier.padding(top = size.dp(4f))) { Text(it, TextType.CAPTION, false, TextAlign.Center) } }
         }
     }
 

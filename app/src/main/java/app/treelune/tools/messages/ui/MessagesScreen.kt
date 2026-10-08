@@ -248,7 +248,7 @@ private fun ReceivedTab(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()).chatButtonSpace()
             .padding(UI.Space.L),
         verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
@@ -399,7 +399,7 @@ private fun UpcomingTab(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()).chatButtonSpace()
             .padding(UI.Space.L),
         verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {

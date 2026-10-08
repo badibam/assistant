@@ -232,6 +232,7 @@ fun ZoneScreen(zone: Zone) {
             .weight(1f)
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
+            .chatButtonSpace()
             .padding(vertical = UI.Space.L),
         verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {

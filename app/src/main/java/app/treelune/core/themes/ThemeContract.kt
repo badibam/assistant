@@ -358,17 +358,17 @@ interface ThemeContract {
         content: @Composable () -> Unit
     )
     
+    /**
+     * A page's title, its icon and its subtitle, across the whole width: the page's buttons are in
+     * the bar over it, with the breadcrumb (UI.PageHeader).
+     */
     @Composable
     fun PageHeader(
         title: String,
         subtitle: String?,
         icon: String?,
         /** The icon's colour, for a zone's or a tool's page; null for a neutral icon. */
-        iconColor: TagColor?,
-        leftButton: ButtonAction?,
-        rightButton: ButtonAction?,
-        onLeftClick: (() -> Unit)?,
-        onRightClick: (() -> Unit)?
+        iconColor: TagColor?
     )
     
     // =====================================

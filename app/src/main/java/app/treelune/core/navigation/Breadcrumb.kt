@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,9 +13,6 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.treelune.core.ui.ButtonAction
-import app.treelune.core.ui.ButtonDisplay
-import app.treelune.core.ui.Size
 import app.treelune.core.ui.TextType
 import app.treelune.core.ui.UI
 
@@ -27,10 +23,10 @@ import app.treelune.core.ui.UI
 val LocalBreadcrumb = compositionLocalOf<PlaceStack.Breadcrumb?> { null }
 
 /**
- * One line over a page's title: the places before it, each touched to go back to it, and the
- * chat's button at the end, so that the chat opens from every place. The line never wraps: too
- * long, it shows its end, the last steps, and scrolls to its beginning. A place stacked without
- * its parent right under it carries the parent's name: « Sorties (Course) ».
+ * The places before this one, in the bar over a page's title (UI.PageHeader), each touched to go
+ * back to it. The line never wraps: too long, it shows its end, the last steps, and scrolls to its
+ * beginning. A place stacked without its parent right under it carries the parent's name:
+ * « Runs (Running) ».
  */
 @Composable
 fun BreadcrumbLine(breadcrumb: PlaceStack.Breadcrumb) {
@@ -38,26 +34,16 @@ fun BreadcrumbLine(breadcrumb: PlaceStack.Breadcrumb) {
     // The end shown: the places just before this one
     LaunchedEffect(breadcrumb) { scroll.scrollTo(scroll.maxValue) }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = UI.Space.L),
+        modifier = Modifier.fillMaxWidth().horizontalScroll(scroll),
+        horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.weight(1f).horizontalScroll(scroll),
-            horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            breadcrumb.crumbs.forEach { crumb ->
-                Box(modifier = Modifier.clickable { Navigator.popTo(crumb.index) }) {
-                    UI.Text(crumb.name.orEmpty() + (crumb.parent?.let { " ($it)" } ?: ""), TextType.CAPTION, maxLines = 1)
-                }
-                UI.Icon("chevron-right", size = 16.dp)
+        breadcrumb.crumbs.forEach { crumb ->
+            Box(modifier = Modifier.clickable { Navigator.popTo(crumb.index) }) {
+                UI.Text(crumb.name.orEmpty() + (crumb.parent?.let { " ($it)" } ?: ""), TextType.CAPTION, maxLines = 1)
             }
-            breadcrumb.parent?.let { UI.Text("($it)", TextType.CAPTION, maxLines = 1) }
+            UI.Icon("chevron-right", size = 16.dp)
         }
-        if (Navigator.top != Place.Chat) {
-            UI.ActionButton(action = ButtonAction.AI_CHAT, display = ButtonDisplay.ICON, size = Size.S) {
-                Navigator.push(Place.Chat)
-            }
-        }
+        breadcrumb.parent?.let { UI.Text("($it)", TextType.CAPTION, maxLines = 1) }
     }
 }

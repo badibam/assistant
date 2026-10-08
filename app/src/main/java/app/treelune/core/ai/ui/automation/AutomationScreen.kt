@@ -263,6 +263,7 @@ fun AutomationScreen(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
+            .chatButtonSpace()
             .padding(vertical = UI.Space.L),
         verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {

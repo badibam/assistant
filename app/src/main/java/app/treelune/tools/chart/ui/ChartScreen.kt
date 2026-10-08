@@ -1,5 +1,6 @@
 package app.treelune.tools.chart.ui
 
+import app.treelune.core.ui.chatButtonSpace
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -66,7 +67,7 @@ fun ChartScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigureC
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(UI.Space.L).verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().padding(UI.Space.L).verticalScroll(rememberScrollState()).chatButtonSpace(),
         verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         val loaded = config

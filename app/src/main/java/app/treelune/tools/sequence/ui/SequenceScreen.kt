@@ -1,5 +1,6 @@
 package app.treelune.tools.sequence.ui
 
+import app.treelune.core.ui.chatButtonSpace
 import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
@@ -175,7 +176,7 @@ fun SequenceScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigu
     val running = loaded.firstOrNull { it.run != null }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(UI.Space.L),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).chatButtonSpace().padding(UI.Space.L),
         verticalArrangement = Arrangement.spacedBy(UI.Space.L)
     ) {
         UI.PageHeader(
@@ -205,6 +206,8 @@ fun SequenceScreen(toolInstanceId: String, onNavigateBack: () -> Unit, onConfigu
 @Composable
 private fun Running(id: String, run: SequenceRun, s: StringsContext, gesture: (String) -> Unit) {
     val view = LocalView.current
+    // Its controls are what the screen is for while it runs: the chat's button stays away
+    app.treelune.core.ui.HideChatButton()
     DisposableEffect(id) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }

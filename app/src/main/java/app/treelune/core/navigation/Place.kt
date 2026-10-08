@@ -33,6 +33,12 @@ sealed class Place {
     /** Laid over the place under it instead of replacing it: the chat alone. */
     open val overlay: Boolean = false
 
+    /**
+     * Whether the chat's button floats over the place: a place one reads (home, zone, tool, the
+     * Guide, an automation), not a form, whose fixed buttons are at the bottom.
+     */
+    open val chatButton: Boolean = false
+
     val address: String
         get() = (listOf(kind) + parameters.map { it.orEmpty() }).joinToString("/") { URLEncoder.encode(it, "UTF-8") }
 
@@ -40,6 +46,7 @@ sealed class Place {
 
     object Home : Place() {
         override val kind = "home"
+        override val chatButton = true
         override fun parent(): Place? = null
     }
 
@@ -70,6 +77,7 @@ sealed class Place {
 
     data class Zone(val id: String) : Place() {
         override val kind = "zone"
+        override val chatButton = true
         override val parameters get() = listOf(id)
         override val zoneId get() = id
         override fun parent() = Home
@@ -84,6 +92,7 @@ sealed class Place {
 
     data class Tool(val id: String, override val zoneId: String) : Place() {
         override val kind = "tool"
+        override val chatButton = true
         override val parameters get() = listOf(id, zoneId)
         override fun parent() = Zone(zoneId)
     }
@@ -105,6 +114,7 @@ sealed class Place {
     /** An automation and the history of its executions. */
     data class Automation(val id: String, override val zoneId: String) : Place() {
         override val kind = "automation"
+        override val chatButton = true
         override val parameters get() = listOf(id, zoneId)
         override fun parent() = Zone(zoneId)
     }
@@ -112,6 +122,7 @@ sealed class Place {
     /** One execution of an automation, by its session. */
     data class Execution(val sessionId: String, val automationId: String, override val zoneId: String) : Place() {
         override val kind = "execution"
+        override val chatButton = true
         override val parameters get() = listOf(sessionId, automationId, zoneId)
         override fun parent() = Automation(automationId, zoneId)
     }
@@ -126,12 +137,14 @@ sealed class Place {
     /** The Guide's page: its journey, then its reference. */
     object Guide : Place() {
         override val kind = "guide"
+        override val chatButton = true
         override fun parent() = Home
     }
 
     /** A chapter of the Guide, read in full. */
     data class Chapter(val id: String) : Place() {
         override val kind = "chapter"
+        override val chatButton = true
         override val parameters get() = listOf(id)
         override fun parent() = Guide
     }

@@ -14,7 +14,7 @@ Une seule liste d'écrans, l'accueil en bas, l'écran visible en haut (Accueil �
 
 ## Le fil d'Ariane
 
-- Une petite ligne au-dessus du titre : les lieux d'avant (« … › Course › Sorties »), le titre restant le lieu actuel. Absente sur l'accueil.
+- Une barre au-dessus du titre : à gauche le bouton de retour (sur l'accueil, les réglages puis le livre du Guide), puis les lieux d'avant (« … › Course › Sorties »), l'engrenage au bout à droite ; le titre, le lieu actuel, prend toute la largeur dessous.
 - Une seule ligne, coupée par la gauche ; le titre aussi coupé à une ligne : l'entête garde une hauteur fixe, et ses boutons leur place.
 - Chaque nom se touche et ramène à ce lieu, en retirant tout ce qui est au-dessus.
 - Un lieu empilé sans son parent juste en dessous porte le nom du parent après le sien : « … › Conversation › Sorties (Course) ».
@@ -30,7 +30,7 @@ Une seule liste d'écrans, l'accueil en bas, l'écran visible en haut (Accueil �
 ## La conversation
 
 - Un lieu posé par-dessus celui d'où on l'ouvre : « Accueil › Course › Sorties › Conversation », et la fermer ramène à Sorties. Seule elle flotte ainsi ; tout autre lieu remplace le précédent.
-- Son bouton est sur tous les écrans, plus seulement l'accueil.
+- Son bouton flotte en bas à droite des lieux qu'on consulte (accueil, zone, outil, Guide, automation), pas des formulaires ; chacun lui laisse la place au bout de ce qui défile.
 - Une conversation demandée depuis un écran (`ChatRequests`) ne ferme plus la zone ouverte (`selectedZoneId = null` dans `MainScreen`) : elle s'empile au-dessus.
 - Elle reste unique et commune à l'app, et montre toujours une automation en cours.
 
