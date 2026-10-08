@@ -9,7 +9,7 @@
 ## 1. Améliorer la vie dans toutes ses dimensions
 
 ### Outils variés pour enregistrer, structurer et présenter toutes sortes de données
-L'assistant propose divers outils (Suivi, Objectif, Graphique, Journal, Liste, Note, Message, Alerte, ...) pour capturer et organiser n'importe quelle information personnelle. Chaque outil transforme les données brutes en insights exploitables.
+Treelune propose divers outils (Suivi, Objectif, Graphique, Journal, Liste, Note, Message, Alerte, ...) pour capturer et organiser n'importe quelle information personnelle. Chaque outil transforme les données brutes en insights exploitables.
 
 ### Les outils se combinent et s'enrichissent mutuellement
 Les outils créent des chaînes de valeur automatiques : un Suivi alimentaire nourrit des variables nutritionnelles (kcal, protéines du jour), qu'un Objectif compare à sa cible, qu'un Graphique dessine et qui déclenchent - par exemple - des Alertes personnalisées. L'IA orchestre ces connexions pour transformer les habitudes en système d'amélioration continue.
@@ -30,7 +30,7 @@ L'utilisateur dispose de raccourcis conversationnels qui intègrent automatiquem
 L'utilisateur nomme et organise librement ses zones thématiques (Santé, Productivité, etc.) et y intègre et configure les outils de son choix selon ses besoins spécifiques.
 
 ### Évolution avec l'usage
-L'assistant s'affine au fil du temps grâce aux données accumulées et aux interactions avec l'IA. Les outils deviennent plus pertinents et les données générées plus précises.
+Treelune s'affine au fil du temps grâce aux données accumulées et aux interactions avec l'IA. Les outils deviennent plus pertinents et les données générées plus précises.
 
 
 # ------------------ #
