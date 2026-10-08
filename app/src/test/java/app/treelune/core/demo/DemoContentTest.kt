@@ -102,7 +102,7 @@ class DemoContentTest {
     @Test
     fun `the demo shows every tool type, tracking type and tile mode, every field type among the user's fields, a tool in a group and one outside`() {
         val content = read()
-        assertEquals(setOf("tracking", "goal", "chart", "journal", "list", "messages", "notes", "questionnaire", "structured"),
+        assertEquals(setOf("tracking", "goal", "chart", "journal", "list", "messages", "notes", "questionnaire", "structured", "sequence"),
             content.tools.map { it.getString("tooltype") }.toSet())
         assertEquals(setOf("numeric", "counter", "scale", "choice", "boolean", "text", "timer", "occurrence"),
             content.tools.filter { it.getString("tooltype") == "tracking" }.map { it.getJSONObject("config").getString("type") }.toSet())

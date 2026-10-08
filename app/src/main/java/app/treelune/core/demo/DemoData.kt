@@ -41,6 +41,7 @@ class DemoData(private val now: Long, private val zone: ZoneId, private val hand
     }
 
     private val random = java.util.Random(SEED)
+    private val sessionRandom = java.util.Random(SEED + 1)
     private val today: LocalDate = ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(now), zone).toLocalDate()
     private val weekStart: LocalDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
@@ -132,6 +133,7 @@ class DemoData(private val now: Long, private val zone: ZoneId, private val hand
         val runs = mutableListOf<JSONObject>()
         val strength = mutableListOf<JSONObject>()
         val stretching = mutableListOf<JSONObject>()
+        val sessions = mutableListOf<JSONObject>()
         var n = 0
         for (date in days) {
             val back = weeksBack(date)
@@ -154,6 +156,7 @@ class DemoData(private val now: Long, private val zone: ZoneId, private val hand
                     runs.add(entry("demo-e-run-${n++}", text("runs_entry_name"), time,
                         json("value" to distance, "unit" to "km"),
                         json("duration" to ((distance * pace) * MINUTE).roundToLong() / MINUTE * MINUTE, "kind" to kind, "feeling" to feeling)))
+                    if (kind == "intervals") sessions.add(intervalSession("demo-e-intervals-${n++}", time, back))
                 }
             }
             // Strength on Wednesdays, and every other Saturday
@@ -167,7 +170,27 @@ class DemoData(private val now: Long, private val zone: ZoneId, private val hand
             if (past(stretchTime) && chance(0.9)) stretching.add(entry("demo-e-stretch-${n++}", text("stretching_entry_name"), stretchTime,
                 json("value" to (if (rush) chance(0.2) else chance(0.8)))))
         }
-        return mapOf("demo-course-runs" to runs, "demo-course-strength" to strength, "demo-course-stretching" to stretching)
+        return mapOf("demo-course-runs" to runs, "demo-course-strength" to strength, "demo-course-stretching" to stretching,
+            "demo-course-intervals" to sessions)
+    }
+
+    /**
+     * The Intervals session of a Thursday, done at [time]: its 17 steps (warm-up, 8 fast, 7
+     * recoveries, cool-down), 38 min 30 of timers and the cool-down's overtime. Two weeks differ:
+     * stopped at the 6th fast one, and a recovery skipped.
+     */
+    private fun intervalSession(id: String, time: Long, back: Int): JSONObject {
+        val steps = 17
+        val stopped = back == 7
+        val skipped = if (back == 4) 1 else 0
+        val notDone = if (stopped) 6 else 0
+        // Drawn apart, so the sessions leave the other tools' numbers as they were
+        fun between(from: Int, to: Int) = from + sessionRandom.nextInt(to - from + 1)
+        val length = if (stopped) between(24, 27) * MINUTE else (38 * MINUTE + 30_000 + between(1, 6) * MINUTE - skipped * 90_000)
+        val paused = if (sessionRandom.nextDouble() < 0.3) between(1, 3) * MINUTE else 0L
+        return entry(id, timestamp = time,
+            data = json("duration" to length, "paused" to paused, "steps_done" to steps - skipped - notDone, "steps_skipped" to skipped, "steps_not_done" to notDone),
+            state = json("status" to if (stopped) "stopped" else "done", "started_at" to time, "ended_at" to time + length + paused))
     }
 
     private fun body(): Map<String, List<JSONObject>> {

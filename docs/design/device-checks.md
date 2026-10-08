@@ -233,6 +233,7 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 - Planifiée chaque jour à une heure passée : au tick, une entrée prévue, une notification qui ouvre l'outil, le point d'attente sur la tuile ; « Commencer » la reprend, « Noter après coup » la complète ; une absence de plusieurs jours, « Tout ignorer ».
 - L'IA note une séance après coup et ignore une séance prévue ; lui demander de commencer une séance : elle ne le peut pas.
 - L'écran de la séance en cours et la tuile, dans les trois thèmes.
+- La démo : Fractionné dans Course, groupe Entraînement, sous Sorties ; son historique, une séance par jeudi de fractionné, dont une « Arrêtée » et une avec une étape sautée ; le jeudi à 18 h 30, une séance prévue ; « Commencer » enchaîne ses 17 étapes, la voix les annonçant.
 
 ## Graphique
 

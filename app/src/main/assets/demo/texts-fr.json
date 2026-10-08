@@ -350,5 +350,16 @@
   "auto_menu_name": "Menu de la semaine",
   "auto_menu_seed": "Propose les repas de la semaine qui vient, adaptés à l'entraînement : plus de féculents la veille de la sortie longue du dimanche, des protéines après le fractionné. Pars des fiches d'Aliments et des Repas des deux dernières semaines. Ajoute à « Courses » ce qui manque pour ces repas, sans doublon d'un article déjà présent et non coché. Termine par le menu en quelques lignes.",
   "auto_morning_name": "Point du matin",
-  "auto_morning_seed": "Fais le point de la journée de travail : les Tâches en retard et celles qui arrivent à échéance aujourd'hui, et les Heures de la semaine par client, le chronomètre en cours compris. Ne modifie rien. Réponds en quelques lignes, puis demande-moi par un module de communication par quoi je commence, en proposant les deux tâches les plus urgentes."
+  "auto_morning_seed": "Fais le point de la journée de travail : les Tâches en retard et celles qui arrivent à échéance aujourd'hui, et les Heures de la semaine par client, le chronomètre en cours compris. Ne modifie rien. Réponds en quelques lignes, puis demande-moi par un module de communication par quoi je commence, en proposant les deux tâches les plus urgentes.",
+  "intervals_name": "Fractionné",
+  "intervals_description": "La séance du jeudi : 8 × 1 min vite, 1 min 30 tranquille entre deux. Le minuteur passe chaque étape, un bip décompte les 3 dernières secondes, la voix annonce la suite. Les chiffres vont dans Sorties.",
+  "intervals_step_warmup": "Échauffement",
+  "intervals_warmup_instruction": "Footing léger, on peut parler",
+  "intervals_block": "Fractions",
+  "intervals_step_run": "Vite",
+  "intervals_run_instruction": "Allure 5 km, régulier jusqu'au bout",
+  "intervals_step_recovery": "Récup",
+  "intervals_recovery_instruction": "Trot lent, souffler",
+  "intervals_step_cooldown": "Retour au calme",
+  "intervals_cooldown_instruction": "Footing lent puis étirements ; « Fait » à la fin"
 }

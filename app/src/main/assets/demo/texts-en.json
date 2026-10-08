@@ -350,5 +350,16 @@
   "auto_menu_name": "Weekly menu",
   "auto_menu_seed": "Suggest the coming week's meals, suited to the training: more starch the day before Sunday's long run, protein after intervals. Start from the Foods cards and the last two weeks of Meals. Add to \"Shopping\" what these meals need, with no duplicate of an item already there and unchecked. End with the menu in a few lines.",
   "auto_morning_name": "Morning check",
-  "auto_morning_seed": "Go over the working day: the late Tasks and those due today, and this week's Hours per client, the running stopwatch included. Change nothing. Answer in a few lines, then ask me with a communication module what I start with, offering the two most urgent tasks."
+  "auto_morning_seed": "Go over the working day: the late Tasks and those due today, and this week's Hours per client, the running stopwatch included. Change nothing. Answer in a few lines, then ask me with a communication module what I start with, offering the two most urgent tasks.",
+  "intervals_name": "Intervals",
+  "intervals_description": "The Thursday session: 8 × 1 min fast, 1 min 30 easy between. The timer passes each step, a beep counts down the last 3 seconds, the voice says what comes. The figures go to Runs.",
+  "intervals_step_warmup": "Warm-up",
+  "intervals_warmup_instruction": "Easy jog, you can talk",
+  "intervals_block": "Intervals",
+  "intervals_step_run": "Fast",
+  "intervals_run_instruction": "5 km pace, steady to the end",
+  "intervals_step_recovery": "Recovery",
+  "intervals_recovery_instruction": "Slow jog, breathe",
+  "intervals_step_cooldown": "Cool-down",
+  "intervals_cooldown_instruction": "Easy jog then stretches; « Done » when finished"
 }

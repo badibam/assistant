@@ -217,6 +217,73 @@
       "grid_y": 2
     },
     {
+      "id": "demo-course-intervals",
+      "zone_id": "demo-course",
+      "tooltype": "sequence",
+      "config": {
+        "name": "@intervals_name",
+        "description": "@intervals_description",
+        "icon_name": "timer",
+        "icon_color": "ORANGE",
+        "display_mode": "LINE",
+        "group": "@course_group_training",
+        "steps": [
+          {
+            "kind": "step",
+            "name": "@intervals_step_warmup",
+            "end": "timed",
+            "duration": 600000,
+            "instruction": "@intervals_warmup_instruction"
+          },
+          {
+            "kind": "block",
+            "name": "@intervals_block",
+            "repeat": 8,
+            "steps": [
+              {
+                "kind": "step",
+                "name": "@intervals_step_run",
+                "end": "timed",
+                "duration": 60000,
+                "instruction": "@intervals_run_instruction"
+              },
+              {
+                "kind": "step",
+                "name": "@intervals_step_recovery",
+                "end": "timed",
+                "duration": 90000,
+                "instruction": "@intervals_recovery_instruction",
+                "skip_last_round": true
+              }
+            ]
+          },
+          {
+            "kind": "step",
+            "name": "@intervals_step_cooldown",
+            "end": "timed_then_manual",
+            "duration": 600000,
+            "instruction": "@intervals_cooldown_instruction"
+          }
+        ],
+        "step_signal": "sound_and_vibration",
+        "countdown": true,
+        "voice": true,
+        "schedule": {
+          "pattern": {
+            "type": "WeeklySimple",
+            "days_of_week": [
+              4
+            ],
+            "time": "18:30"
+          }
+        },
+        "enabled": true,
+        "show_field_labels": true
+      },
+      "grid_x": 0,
+      "grid_y": 3
+    },
+    {
       "id": "demo-course-weight",
       "zone_id": "demo-course",
       "tooltype": "tracking",
