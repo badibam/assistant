@@ -10,6 +10,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- A session running (tools/sequence): its service, the processor kept on with the screen
+         off, the vibration of its signals -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- The scheduler's alarm (SchedulerAlarm), exact and ringing while the phone sleeps, and set
          again when the phone restarts. USE_EXACT_ALARM is granted at install from Android 13 -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
@@ -64,6 +70,15 @@
             </intent-filter>
         </receiver>
         <!-- The external access (docs/design/mcp-server.md): its loop, and its quick settings tile -->
+        <!-- A session running (docs/design/sequence-tool.md): its timers and signals, screen on or off -->
+        <service
+            android:name=".tools.sequence.SequenceRunService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="A guided session the user started: step timers and their sounds while the screen is off" />
+        </service>
         <service
             android:name=".core.mcp.McpAccessService"
             android:exported="false"
