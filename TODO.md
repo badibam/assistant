@@ -26,6 +26,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Les boutons copier / coller sur un texte sélectionné sont ceux d'Android, hors du thème (la barre d'outils du texte, `TextToolbar` en Compose).
 - Voir sur le téléphone ce qui n'y est pas passé le 2026-10-02 : la conversion du réglage d'apparence en v58 (une famille devient une teinte), les titres de section du thème par défaut, la tuile sans icône centrée.
 - Le rapport de bug (`docs/design/bug-report.md`) est codé, rien n'a tourné sur un téléphone : passer ses lignes de `docs/design/device-checks.md` (démarrage, Réglages), puis élaguer la spec.
+- Une vraie validation pour le connecteur MCP, à concevoir : aujourd'hui l'app ne demande rien à un client extérieur — ses écritures passent sans la validation que l'app exige de son IA (`docs/design/mcp-server.md`), ses lectures sans l'accord au-delà du seuil de données, seulement coupées à 15 000 caractères (`AppMcpBackend.call`) ; seules comptent les permissions réglées dans le client, par appel et non par taille. Piste déjà notée : un réglage par outil « écritures externes interdites / permises ».
 
 ## Bugs du téléphone
 
@@ -41,7 +42,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## En attente d'un déclencheur
 
 - Le connecteur claude.ai est resté en 503 `mcp_upstream_auth_unavailable`, l'accès ouvert et l'app répondant, jusqu'à ce qu'on le reconnecte (2026-10-06) ; cause non établie : des renouvellements tombés sur l'accès fermé, ou un jeton de renouvellement remplacé dont la réponse s'est perdue — si ça se reproduit, voir ce que reçoit `/token`.
-- Un client MCP contourne la validation des écritures que l'app exige (`docs/design/mcp-server.md`) : un réglage par outil « écritures externes interdites / permises » — si un outil sensible le demande.
 - Le sens « out » : l'app qui confie une tâche à une IA extérieure (Claude Code, par exemple) et en reprend le résultat (« commandes différées », `NOTES.md`) — une fois le serveur MCP en place, par lequel la tâche lira et écrira, et vérifié ce que chaque service permet pour lancer une tâche par une requête.
 - Le graphique Calories de Panorama (74 lignes) se lit en 0,75 s à l'ouverture de l'outil, 0,9 à 1,2 s à celle de la zone (2026-10-01, version debug, une fiche lue une fois par calcul) ; sa mise en page prend 15 à 19 ms. Restent 181 appels aux services : par jour, deux lectures des repas (60) et la lecture de l'outil qui donne leurs champs (`ToolFields.filterable`, `tools.get`) à chacune — si ça gêne encore.
 - L'ouverture d'une zone bloque encore l'écran ~1 s la première fois après le démarrage (version debug, 2026-10-01 : 6 graphiques, 18 tuiles) — à décomposer si ça gêne.
