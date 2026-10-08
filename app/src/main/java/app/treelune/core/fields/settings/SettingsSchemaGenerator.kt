@@ -45,10 +45,24 @@ object SettingsSchemaGenerator {
         variant.cases.forEach { (option, caseNodes) ->
             val selector = variant.selector.copy(required = true)
             val branch = objectOf(others + selector + caseNodes, text)
-            branch.getJSONObject("properties").getJSONObject(selector.definition.name).put("const", option)
+            pin(branch, selector.definition.name, option)
             branches.put(branch)
         }
         return JSONObject().put("type", "object").put("oneOf", branches)
+    }
+
+    /**
+     * The selector [name] held to [option] in [branch]: in its properties, or in each of its own
+     * branches when a variant of the case branched it again (a step's end inside a step).
+     */
+    private fun pin(branch: JSONObject, name: String, option: String) {
+        val properties = branch.optJSONObject("properties")
+        if (properties != null) {
+            properties.getJSONObject(name).put("const", option)
+            return
+        }
+        val nested = branch.getJSONArray("oneOf")
+        for (i in 0 until nested.length()) pin(nested.getJSONObject(i), name, option)
     }
 
     private fun plainObject(nodes: List<SettingNode>, text: (String) -> String): JSONObject {
