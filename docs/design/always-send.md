@@ -6,7 +6,7 @@ Conçu le 2026-10-08. Un outil marqué « toujours envoyer » (`always_send`) a 
 
 - `buildLevel2Commands` demande `tools.list_all` avec `include_config: true`. La config ne sert qu'à trouver les outils marqués : elle ne part pas à l'IA, seules leurs données (`TOOL_DATA`) partent.
 - Une config absente ou illisible arrête la construction du prompt avec une erreur qui nomme l'outil, au lieu de le sauter. L'erreur arrête le tour (`AIEventProcessor.stopRoundOnError`), sans tuer l'app.
-- Chaque outil marqué est lu avec son schéma, dans la même série (`SCHEMA` puis `TOOL_DATA`) : dans une session, une lecture attend le schéma de son outil tant que l'IA ne l'a pas reçu, et le Level 2 sortait vide pour cette raison aussi. Un schéma déjà reçu dans la session ne repart pas.
+- Leurs schémas, dans une session, entrent dans la session comme tout schéma reçu : avant l'appel à l'IA, un message de schéma ordinaire (`CommandExecutor.schemasForAlwaysSent`) apporte ceux qu'elle n'a pas encore, une fois par session. Le Level 2 ne porte que leurs données, et les lectures et écritures de l'IA sur ces outils trouvent leur schéma dans la session, sans aller-retour. Hors session (le connecteur), `app_context` donne le schéma avec les données.
 
 ## Le seuil
 

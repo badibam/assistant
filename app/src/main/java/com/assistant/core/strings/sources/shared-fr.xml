@@ -863,6 +863,7 @@
     <string name="ai_system_actions_partial">%1$d action(s) réussie(s), %2$d échouée(s)</string>
     <string name="ai_schema_required_summary">Les schémas de données suivants sont nécessaires pour formuler correctement la requête TOOL_DATA (%1$d schéma(s)) :\n%2$s\n\nLes schémas sont inclus ci-dessous. Merci de renouveler ta requête en en tenant compte.</string>
     <string name="ai_schema_required_for_writes_summary">Tes écritures n\'ont pas été exécutées : elles touchent des outils dont tu n\'as pas reçu le schéma de données dans cette session (%1$d schéma(s)) :\n%2$s\n\nLes schémas sont inclus ci-dessous. Lis-les, puis renvoie tes écritures.</string>
+    <string name="ai_schema_always_send_summary">Schémas de données des outils que l\'utilisateur envoie toujours, dont les données sont au Level 2 (%1$d schéma(s)) :\n%2$s\n\nLes schémas sont inclus ci-dessous.</string>
     <string name="ai_error_tool_operation_unknown">Le type d\'outil %2$s n\'a pas d\'opération « %1$s ». Ses opérations : %3$s</string>
     <string name="ai_error_tool_operation_none">aucune</string>
     <string name="ai_error_tool_operation_params_not_object">Les params de TOOL_OPERATION doivent être un objet</string>

@@ -1866,19 +1866,36 @@ class AIEventProcessor(
     }
 
     /**
-     * The tools sent always, when above their threshold (docs/design/always-send.md): a CHAT
-     * without a choice yet asks for one before the AI is called, the choice holding for the
-     * session; an AUTOMATION says once in its history that they were not sent, the AI getting
-     * their list (PromptManager.buildLevel2Content).
+     * The tools sent always, before the AI is called (docs/design/always-send.md). Sent, their
+     * schemas the AI lacks are stored in the session once, as any schema received. Above their
+     * threshold, a CHAT without a choice yet asks for one, the choice holding for the session;
+     * an AUTOMATION says once in its history that they were not sent, the AI getting their list
+     * (PromptManager.buildLevel2Content).
      *
      * @return true when the call waits for the user's choice, so the caller must not carry on
      */
     private suspend fun holdForAlwaysSend(state: AIState, sessionId: String): Boolean {
         val threshold = AppConfigManager.getAILimits().alwaysSendMaxChars
-        val alwaysSent = PromptManager.readAlwaysSent(context, sessionId)
+        val alwaysSent = PromptManager.readAlwaysSent(context, withSchemas = false)
         val choice = if (state.sessionType == SessionType.CHAT) PromptManager.alwaysSendChoice(context, sessionId) else null
         val outcome = PromptManager.alwaysSendOutcome(alwaysSent.chars, threshold, state.sessionType, choice)
-        if (outcome == PromptManager.AlwaysSendOutcome.SEND) return false
+        if (outcome == PromptManager.AlwaysSendOutcome.SEND) {
+            commandExecutor.schemasForAlwaysSent(alwaysSent.tools.map { it.id }, sessionId)?.let { systemMessage ->
+                messageRepository.storeMessage(sessionId, SessionMessage(
+                    id = UUID.randomUUID().toString(),
+                    timestamp = System.currentTimeMillis(),
+                    sender = MessageSender.SYSTEM,
+                    richContent = null,
+                    textContent = null,
+                    aiMessage = null,
+                    aiMessageJson = null,
+                    systemMessage = systemMessage,
+                    executionMetadata = null,
+                    excludeFromPrompt = false
+                ))
+            }
+            return false
+        }
 
         val s = com.assistant.core.strings.Strings.`for`(context = context)
         val messages = messageRepository.loadMessages(sessionId)

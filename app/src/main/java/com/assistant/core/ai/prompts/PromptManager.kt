@@ -255,7 +255,7 @@ object PromptManager {
     /** A tool marked always_send, the size of what the AI reads of it. */
     data class AlwaysSentTool(val id: String, val name: String, val chars: Int)
 
-    /** The tools marked always_send and what the AI reads of them: their data, and their schema when the session lacks it. */
+    /** The tools marked always_send and what the AI reads of them: their data, and their schema outside a session. */
     data class AlwaysSent(val tools: List<AlwaysSentTool>, val results: List<PromptCommandResult>) {
         /** The size of it all, as the AI receives it. */
         val chars: Int get() = tools.sumOf { it.chars }
@@ -287,12 +287,13 @@ object PromptManager {
      * The tools marked always_send, read now. The tools' config is asked for only to find the
      * marked ones (tools.list_all leaves it out otherwise): it does not reach the AI.
      *
-     * @param sessionId The session the schemas are counted against, so none is sent twice in
-     *   it; null outside a session (an outside AI's context), where each is sent
+     * @param withSchemas Whether their schemas come with their data: outside a session (an
+     *   outside AI's context), where there is no history to hold them. In a session they are
+     *   stored in it once, as any schema received (AIEventProcessor.holdForAlwaysSend)
      * @throws IllegalStateException when the tools or a tool's config cannot be read: a tool
      *   skipped in silence is how its data went missing for a year
      */
-    suspend fun readAlwaysSent(context: Context, sessionId: String?): AlwaysSent {
+    suspend fun readAlwaysSent(context: Context, withSchemas: Boolean): AlwaysSent {
         val result = Coordinator(context).processUserAction("tools.list_all", mapOf("include_config" to true))
         if (!result.isSuccess) throw IllegalStateException("Cannot list the tools for the ones sent always: ${result.error}")
         val toolInstances = result.data?.get("tool_instances") as? List<*>
@@ -313,9 +314,8 @@ object PromptManager {
             }
             if (!marked) continue
 
-            // Its schema first, in the same batch: a query waits on it otherwise (CommandExecutor)
-            val commands = listOf(
-                DataCommand(id = "always_send_schema_$id", type = "SCHEMA", params = mapOf("tool_instance_id" to id), isRelative = false),
+            val commands = listOfNotNull(
+                if (withSchemas) DataCommand(id = "always_send_schema_$id", type = "SCHEMA", params = mapOf("tool_instance_id" to id), isRelative = false) else null,
                 DataCommand(id = "always_send_data_$id", type = "TOOL_DATA", params = mapOf("id" to id), isRelative = false)
             )
             // They name a tool and carry no period, so the reference never applies
@@ -325,7 +325,8 @@ object PromptManager {
                 messageType = SystemMessageType.DATA_ADDED,
                 origin = com.assistant.core.coordinator.Source.SYSTEM,
                 level = "L2",
-                sessionId = sessionId
+                // No session: its schemas are in it already (holdForAlwaysSend), not counted here
+                sessionId = null
             )
             tools += AlwaysSentTool(id, map["name"] as String, executed.promptResults.sumOf { it.dataTitle.length + it.formattedData.length })
             results += executed.promptResults
@@ -353,12 +354,12 @@ object PromptManager {
      * Above their threshold they go only in a CHAT whose user accepted them; otherwise (refused,
      * an AUTOMATION, an outside AI, or not asked yet) the AI is given their list to read them.
      *
-     * @param sessionId As for [readAlwaysSent]
+     * @param sessionId The session, null outside one (an outside AI's context, given the schemas too)
      * @param sessionType The session's type, null outside a session
      */
     suspend fun buildLevel2Content(context: Context, sessionId: String?, sessionType: SessionType?): String {
         LogManager.aiPrompt("Building Level 2 (USER DATA)", "DEBUG")
-        val alwaysSent = readAlwaysSent(context, sessionId)
+        val alwaysSent = readAlwaysSent(context, withSchemas = sessionId == null)
         val s = Strings.`for`(context = context)
         if (alwaysSent.tools.isEmpty()) return formatLevel("Level 2: User Data", "", emptyList())
 

@@ -975,6 +975,19 @@ class CommandExecutor(private val context: Context) {
     }
 
     /**
+     * The message bringing the entries schemas of the tools sent always [toolInstanceIds] the
+     * model has not received in [sessionId], or null when it holds them all. Stored once in the
+     * session before the call, like any schema received: the Level 2 then carries only their
+     * data, and the model's queries and writes on them find their schema in the session.
+     */
+    suspend fun schemasForAlwaysSent(toolInstanceIds: Collection<String>, sessionId: String): SystemMessage? {
+        val missingSchemas = missingEntrySchemas(toolInstanceIds, loadHistoricalSchemas(sessionId))
+        if (missingSchemas.isEmpty()) return null
+        LogManager.aiPrompt("Tools sent always: ${missingSchemas.size} entries schemas brought into the session", "INFO")
+        return schemaRequiredMessage(missingSchemas, "ai_schema_always_send_summary")
+    }
+
+    /**
      * The SCHEMA_REQUIRED message holding [missingSchemas], its summary worded by [summaryKey].
      * Each schema is recorded as a schemas.get result, so the session counts it as sent.
      */
