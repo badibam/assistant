@@ -75,7 +75,7 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 
 ## Les signaux
 
-- Quatre moments : le début et la fin de séance (un gong doux, le même), le changement d'étape (un gong léger), le décompte (un bip court sur les 3 dernières secondes d'une étape au temps).
+- Quatre moments : le début et la fin de séance (le même son), le changement d'étape, le décompte : un bip à 3, 2 et 1 seconde de la fin d'une étape au temps, puis à zéro le changement d'étape, ou la fin pour la dernière. Une étape plus courte ne bipe que les secondes qu'elle a.
 - Les trois sons sont faits de trois notes d'un même marimba (VSCO 2 CE, CC0) : le décompte un do aigu bref, le changement d'étape un do grave puis le sol, le début et la fin les trois notes en accord. `scripts/make_sequence_sounds.py` les tire de `third_party/vsco2-marimba/` en `res/raw/sequence_*.flac`, crédités dans `tools/sequence/sounds.json`. Leur niveau est à juger sur le téléphone.
 - Le son passe par le canal du média, la musique baissée un instant : le mode silencieux est respecté, la vibration reste.
 
