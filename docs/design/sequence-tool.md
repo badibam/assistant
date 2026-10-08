@@ -76,6 +76,7 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 ## Les signaux
 
 - Quatre moments : le début et la fin de séance (un gong doux, le même), le changement d'étape (un gong léger), le décompte (un bip court sur les 3 dernières secondes d'une étape au temps).
+- Les trois sons sont faits de trois notes d'un même marimba (VSCO 2 CE, CC0) : le décompte un do aigu bref, le changement d'étape un do grave puis le sol, le début et la fin les trois notes en accord. `scripts/make_sequence_sounds.py` les tire de `third_party/vsco2-marimba/` en `res/raw/sequence_*.flac`, crédités dans `tools/sequence/sounds.json`. Leur niveau est à juger sur le téléphone.
 - Le son passe par le canal du média, la musique baissée un instant : le mode silencieux est respecté, la vibration reste.
 
 ## L'écran
@@ -83,10 +84,6 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 - **Sans séance en cours** : « Commencer » (qui dit pour quand une entrée prévue attendait) et « Noter après coup » ; le déroulé en lecture, une ligne par étape, les blocs « × N » en retrait ; l'historique, une ligne par séance (date, état, durée, « 14 / 15 étapes »).
 - **En cours** : l'étape en grand (nom, tour « 2 / 4 », minuteur ou « Fait », consigne), l'étape suivante en petit, la barre des gestes, le déroulé replié.
 - **La tuile** : la dernière séance faite ou la prochaine prévue, le point d'attente ; pendant une séance, l'étape en cours et le temps restant.
-
-## Ce qui reste ouvert
-
-- **Les sons** : trois sons enregistrés à trouver (un gong doux, un gong léger, un bip court), libres — CC0 ou licence acceptée par F-Droid, jamais « NC » —, choisis pour aller ensemble, copiés dans `third_party/sounds/` avec leur licence et leur provenance.
 
 ## Hors de cette spec
 

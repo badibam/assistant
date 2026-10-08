@@ -1,0 +1,23 @@
+{
+  "_about": "The session tool's signals, made by scripts/make_sequence_sounds.py from three marimba notes of VSCO 2 CE copied in third_party/vsco2-marimba/ (docs/design/sequence-tool.md); their source and licence, checked when added.",
+  "sounds": {
+    "res/raw/sequence_countdown.flac": {
+      "title": "VSCO 2 CE · Marimba, C6",
+      "author": "Versilian Studios (Sam Gossner)",
+      "licence": "CC0 1.0",
+      "page": "https://github.com/sgossner/VSCO-2-CE/tree/master/Percussion/Marimba"
+    },
+    "res/raw/sequence_step_change.flac": {
+      "title": "VSCO 2 CE · Marimba, C4, G4",
+      "author": "Versilian Studios (Sam Gossner)",
+      "licence": "CC0 1.0",
+      "page": "https://github.com/sgossner/VSCO-2-CE/tree/master/Percussion/Marimba"
+    },
+    "res/raw/sequence_session_edge.flac": {
+      "title": "VSCO 2 CE · Marimba, C4, G4, C6",
+      "author": "Versilian Studios (Sam Gossner)",
+      "licence": "CC0 1.0",
+      "page": "https://github.com/sgossner/VSCO-2-CE/tree/master/Percussion/Marimba"
+    }
+  }
+}
