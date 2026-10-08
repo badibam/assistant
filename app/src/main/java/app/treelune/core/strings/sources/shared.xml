@@ -1884,4 +1884,17 @@
     <string name="external_access_request_wrong">Wrong code: %1$d attempts left.</string>
     <string name="external_access_request_allowed">Access allowed.</string>
     <string name="external_access_request_ended">The request is over.</string>
+
+    <!-- The places' names, in the breadcrumb (Navigator) -->
+    <string name="nav_home">Home</string>
+    <string name="nav_home_config">Home settings</string>
+    <string name="nav_new_zone">New zone</string>
+    <string name="nav_configuration">Configuration</string>
+    <string name="nav_new_tool">New tool</string>
+    <string name="nav_variable">Variable</string>
+    <string name="nav_new_variable">New variable</string>
+    <string name="nav_automation">Automation</string>
+    <string name="nav_execution">Execution</string>
+    <string name="nav_seed">Starting message</string>
+    <string name="nav_chat">Conversation</string>
 </resources>

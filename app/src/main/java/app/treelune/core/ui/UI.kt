@@ -90,7 +90,7 @@ object UI {
         val sound = rememberUISound()
         RefusedWhenDisabled(enabled) {
             CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, active,
-                { sound(action.signal()); onClick() })
+                { action.signal()?.let(sound); onClick() })
         }
     }
 
@@ -98,7 +98,7 @@ object UI {
     @Composable
     fun FloatingButton(action: ButtonAction, onClick: () -> Unit) {
         val sound = rememberUISound()
-        CurrentTheme.current.FloatingButton(action) { sound(action.signal()); onClick() }
+        CurrentTheme.current.FloatingButton(action) { action.signal()?.let(sound); onClick() }
     }
 
     /**
@@ -655,8 +655,7 @@ object UI {
         fun Header() = TileHeader(zone.icon_name, IconColor.of(zone.icon_color), zone.name, waiting, running, TextType.HEADING)
         @Composable
         fun Description() = zone.description?.let { Text(it, TextType.BODY, maxLines = 2) }
-        val sound = rememberUISound()
-        CurrentTheme.current.ZoneCardContainer(onClick = { sound(UISignal.ENTER); onClick() }, onLongClick = onLongClick) {
+        CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
             when (mode) {
                 DisplayMode.ICON -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     TileIcon(zone.icon_name, IconColor.of(zone.icon_color), waiting, running)
@@ -688,12 +687,13 @@ object UI {
         onRightClick: (() -> Unit)? = null
     ) {
         // The phone's back key does what the header's back button does. Only the screen on
-        // display is composed, so its header is the one that answers, and the key walks back
-        // up the same way the button does -- tool, zone, home.
+        // display is composed, so its header is the one that answers. The sound of going back
+        // is the stack's (Navigator), whatever the gesture.
         if (leftButton == ButtonAction.BACK && onLeftClick != null) {
-            val sound = rememberUISound()
-            BackHandler(onBack = { sound(UISignal.BACK); onLeftClick() })
+            BackHandler(onBack = onLeftClick)
         }
+        // The places before this one, over the title, in a place of the stack
+        app.treelune.core.navigation.LocalBreadcrumb.current?.let { app.treelune.core.navigation.BreadcrumbLine(it) }
         CurrentTheme.current.PageHeader(title, subtitle, icon, iconColor, leftButton, rightButton, onLeftClick, onRightClick)
     }
     
@@ -731,10 +731,9 @@ object UI {
         val running = LocalRunning.current.tool(tool.id)
         val toolType = requireNotNull(ToolTypeManager.getToolType(tool.tooltype)) { "No tool type '${tool.tooltype}' for tool ${tool.id}" }
         val tile = toolType.rememberTile(tool, onOpenEntry)
-        val sound = rememberUISound()
         CurrentTheme.current.ToolCardContainer(
             displayMode = displayMode,
-            onClick = { sound(UISignal.ENTER); onClick() },
+            onClick = onClick,
             onLongClick = onLongClick
         ) {
             // The header and the summary side by side, each on half the width

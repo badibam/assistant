@@ -743,7 +743,8 @@ object RetroTheme : ThemeContract {
                 val up = retroGridUp()
                 Row(horizontalArrangement = Arrangement.spacedBy(grid.cells(1)), verticalAlignment = Alignment.CenterVertically) {
                     icon?.let { NamedIcon(it, null, up, iconColor?.takeIf { color -> color != TagColor.GREY }?.let { color -> retroColors.icon(color, retroSurface).srgb }) }
-                    Line(title, up.text, LocalRetroInk.current ?: retroSurface.strong.srgb, align = TextAlign.Center)
+                    // One line: the header keeps its height, its buttons their place
+                    Line(title, up.text, LocalRetroInk.current ?: retroSurface.strong.srgb, align = TextAlign.Center, maxLines = 1)
                 }
                 subtitle?.let { Text(it, TextType.CAPTION, false, TextAlign.Center) }
             }

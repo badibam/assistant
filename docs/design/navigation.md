@@ -53,5 +53,5 @@ Les sons d'aller et retour se jouent dans la pile, plus dans les gestes. Aujourd
 
 ## Ce qui reste ouvert
 
-- La survie de la pile à la mort du processus (les interrupteurs sont aujourd'hui `rememberSaveable`).
-- L'ordre de la migration, écran par écran, et sa recette sur le téléphone.
+- Des écrans encore ouverts à l'intérieur d'un lieu, hors de la pile : la config d'un fournisseur d'IA (dans Réglages › Fournisseurs), les pages d'un formulaire de config (`SettingsForm`), les écrans internes d'un outil (fiche, historique), l'historique des conversations dans la conversation. À passer en lieux quand un tutoriel, une notification ou un pointeur doit les viser.
+- Revenir à une zone la relit (ses outils, ses variables) : ce que l'écran gardait par `remember` ne survit pas à son passage sous un autre lieu, seul `rememberSaveable` le fait.

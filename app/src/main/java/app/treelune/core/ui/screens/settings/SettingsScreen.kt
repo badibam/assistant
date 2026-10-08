@@ -11,8 +11,6 @@ import app.treelune.core.strings.Strings
 import app.treelune.core.themes.CurrentTheme
 import app.treelune.core.ui.*
 import app.treelune.core.ui.components.GridLayout
-import app.treelune.core.ui.sound.UISignal
-import app.treelune.core.ui.sound.rememberUISound
 
 /**
  * The app's settings: four sections, App, AI, Data and System,
@@ -49,8 +47,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                 edit = null
             ) { i ->
                 val entry = entries[i]
-                val sound = rememberUISound()
-                CurrentTheme.current.ZoneCardContainer(onClick = { sound(UISignal.ENTER); onOpen(entry.id) }, onLongClick = {}) {
+                CurrentTheme.current.ZoneCardContainer(onClick = { onOpen(entry.id) }, onLongClick = {}) {
                     UI.TileHeader(entry.icon, null, s.shared(entry.label), waiting = false, running = false, textType = TextType.HEADING)
                 }
             }

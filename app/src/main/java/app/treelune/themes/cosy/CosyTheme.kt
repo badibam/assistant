@@ -740,7 +740,7 @@ object CosyTheme : ThemeContract {
                             if (iconColor == null) NamedIcon(name, null, size.icon, c.onAccent.srgb)
                             else app.treelune.core.ui.UI.ItemIcon(name, iconColor, size.dp(18f))
                         }
-                        Line(title, size.subtitle.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold), c.onAccent.srgb, align = TextAlign.Center, maxLines = 2)
+                        Line(title, size.subtitle.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold), c.onAccent.srgb, align = TextAlign.Center, maxLines = 1)
                     }
                 }
                 subtitle?.let { Box(modifier = Modifier.padding(top = size.dp(4f))) { Text(it, TextType.CAPTION, false, TextAlign.Center) } }

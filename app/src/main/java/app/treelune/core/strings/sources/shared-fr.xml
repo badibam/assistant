@@ -1884,4 +1884,17 @@
     <string name="external_access_request_wrong">Code faux : encore %1$d essais.</string>
     <string name="external_access_request_allowed">Accès autorisé.</string>
     <string name="external_access_request_ended">La demande est terminée.</string>
+
+    <!-- The places' names, in the breadcrumb (Navigator) -->
+    <string name="nav_home">Accueil</string>
+    <string name="nav_home_config">Réglages de l\'accueil</string>
+    <string name="nav_new_zone">Nouvelle zone</string>
+    <string name="nav_configuration">Configuration</string>
+    <string name="nav_new_tool">Nouvel outil</string>
+    <string name="nav_variable">Variable</string>
+    <string name="nav_new_variable">Nouvelle variable</string>
+    <string name="nav_automation">Automation</string>
+    <string name="nav_execution">Exécution</string>
+    <string name="nav_seed">Message de départ</string>
+    <string name="nav_chat">Conversation</string>
 </resources>

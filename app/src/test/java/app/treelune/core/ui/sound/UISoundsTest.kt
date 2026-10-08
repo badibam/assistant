@@ -43,13 +43,18 @@ class UISoundsTest {
         assertEquals(0, ends)
     }
 
-    /** Each action button sends what its action does: back, close, enter, open, a step, or done. */
+    /**
+     * Each action button sends what its action does: close, open, a step, or done. A button that
+     * moves between places sends nothing: the stack sounds the move, whatever the gesture.
+     */
     @Test
     fun actionButtons_sendWhatTheyDo() {
-        assertEquals(UISignal.BACK, ButtonAction.BACK.signal())
+        assertEquals(null, ButtonAction.BACK.signal())
+        assertEquals(null, ButtonAction.CONFIGURE.signal())
+        assertEquals(null, ButtonAction.VIEW.signal())
+        assertEquals(null, ButtonAction.AI_CHAT.signal())
         assertEquals(UISignal.CLOSE, ButtonAction.CANCEL.signal())
-        assertEquals(UISignal.ENTER, ButtonAction.CONFIGURE.signal())
-        assertEquals(UISignal.OPEN, ButtonAction.AI_CHAT.signal())
+        assertEquals(UISignal.OPEN, ButtonAction.ATTACH.signal())
         assertEquals(UISignal.STEP, ButtonAction.LEFT.signal())
         assertEquals(UISignal.CONFIRM, ButtonAction.SAVE.signal())
         assertEquals(UISignal.CONFIRM, ButtonAction.DELETE.signal())
