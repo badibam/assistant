@@ -1615,6 +1615,16 @@
 
     <!-- Logs Screen -->
     <string name="settings_logs">Error logs</string>
+    <string name="settings_bug_report">Report a bug</string>
+    <string name="bug_report_purpose">A report on what went wrong, read before it goes, sent through the app of your choice</string>
+    <string name="bug_report_description">What happened (optional)</string>
+    <string name="bug_report_cleaning">Below, exactly what will be sent. Identifiers and quoted texts are replaced; the rest may still name something of yours: read it before sending.</string>
+    <string name="bug_report_send">Send the report</string>
+    <string name="bug_report_subject">Assistant bug report %1$s</string>
+    <string name="crash_notice_title">The app stopped</string>
+    <string name="crash_notice_text">The app stopped on %1$s. A report on it can be sent, read before it goes.</string>
+    <string name="crash_notice_report">See the report</string>
+    <string name="crash_notice_continue">Continue</string>
     <string name="logs_count">logs</string>
     <string name="logs_filter_time">From</string>
     <string name="logs_filter_level">Minimum level</string>

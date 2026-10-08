@@ -1615,6 +1615,16 @@
 
     <!-- Logs Screen -->
     <string name="settings_logs">Logs d'erreurs</string>
+    <string name="settings_bug_report">Signaler un bug</string>
+    <string name="bug_report_purpose">Un rapport sur ce qui n\'a pas marché, relu avant de partir, envoyé par l\'app de votre choix</string>
+    <string name="bug_report_description">Ce qui s\'est passé (facultatif)</string>
+    <string name="bug_report_cleaning">Ci-dessous, exactement ce qui sera envoyé. Les identifiants et les textes cités sont remplacés ; le reste peut encore nommer quelque chose de vous : relisez avant d\'envoyer.</string>
+    <string name="bug_report_send">Envoyer le rapport</string>
+    <string name="bug_report_subject">Rapport de bug Assistant %1$s</string>
+    <string name="crash_notice_title">L\'app s\'est arrêtée</string>
+    <string name="crash_notice_text">L\'app s\'est arrêtée le %1$s. Un rapport peut être envoyé, relu avant de partir.</string>
+    <string name="crash_notice_report">Voir le rapport</string>
+    <string name="crash_notice_continue">Continuer</string>
     <string name="logs_count">logs</string>
     <string name="logs_filter_time">De</string>
     <string name="logs_filter_level">Niveau minimum</string>

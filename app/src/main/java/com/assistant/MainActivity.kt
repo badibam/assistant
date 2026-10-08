@@ -70,6 +70,34 @@ class MainActivity : ComponentActivity() {
         // Initialize LogManager first (for DB persistence)
         LogManager.initialize(this)
 
+        // Initialize app config cache: the theme and the timezone, the screen after a crash's too
+        AppConfigManager.initialize(this)
+
+        // The phone's dark theme setting from the first frame on
+        CurrentTheme.systemDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+        // A crash not yet seen comes first, before the AI, the scheduler or any screen is set up:
+        // what crashed may be among them, and the report must be reachable all the same
+        val crash = com.assistant.core.bugreport.CrashFile.unseen(this)
+        if (crash == null) {
+            startApp()
+            return
+        }
+        setContent {
+            MaterialTheme(colorScheme = CurrentTheme.getCurrentColorScheme()) {
+                UI.FullScreen {
+                    com.assistant.core.ui.screens.settings.CrashNoticeScreen(crash.timestamp, onContinue = {
+                        com.assistant.core.bugreport.CrashFile.markSeen(this@MainActivity)
+                        startApp()
+                    })
+                }
+            }
+        }
+    }
+
+    /** The app set up and its screens shown. */
+    private fun startApp() {
         // Purge old logs at startup to prevent DB bloat and CursorWindow overflow
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -88,9 +116,6 @@ class MainActivity : ComponentActivity() {
                 LogManager.aiEnrichment("Startup sweep of the images failed: ${e.message}", "ERROR", e)
             }
         }
-
-        // Initialize app config cache
-        AppConfigManager.initialize(this)
 
         // Initialize notification channels (Android O+)
         NotificationChannels.initialize(this)
@@ -116,10 +141,6 @@ class MainActivity : ComponentActivity() {
         // Schedule WorkManager for app-closed scheduling (15 min interval)
         // Complements CoreScheduler's 1-minute heartbeat for app-open scenarios
         scheduleCoreSchedulerWorker()
-
-        // The phone's dark theme setting from the first frame on
-        CurrentTheme.systemDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-            android.content.res.Configuration.UI_MODE_NIGHT_YES
 
         setContent {
             // The phone's dark theme setting, which the mode "as the phone" follows as it changes

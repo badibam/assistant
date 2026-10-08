@@ -78,6 +78,7 @@ private val SECTIONS = listOf(
     ),
     "settings_section_system" to listOf(
         SettingsEntry("demo", "presentation", "settings_demo"),
-        SettingsEntry("logs", "scroll-text", "settings_logs")
+        SettingsEntry("logs", "scroll-text", "settings_logs"),
+        SettingsEntry("bug_report", "bug", "settings_bug_report")
     )
 )

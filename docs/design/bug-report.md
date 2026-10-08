@@ -11,12 +11,14 @@ Un texte, dans cet ordre :
 3. **Le dernier plantage**, s'il y en a un : sa date, la version de l'app qui tournait, sa pile d'appels nettoyée.
 4. **Le journal** : les lignes WARN et ERROR des 2 dernières heures, 300 au plus, les plus récentes gardées ; pour chacune la date, le niveau, la catégorie (`tag`), le message et la pile d'appels (`throwableMessage`) nettoyés. Jamais VERBOSE, DEBUG ni INFO : ce sont celles qui recopient les résultats des services et les prompts.
 
+Le rapport s'écrit en anglais quelle que soit la langue du téléphone, comme le journal qu'il recopie : il est lu par qui corrige l'app. Il ne dépasse pas 200 000 caractères : un texte partagé par Android au-delà d'environ 1 Mo est refusé, et une messagerie ne fait pas mieux. Les lignes les plus anciennes sortent d'abord, et le rapport dit combien.
+
 ## Le nettoyage
 
 Mécanique, appliqué aux messages et aux piles d'appels (pas au champ libre) :
 
 - **Un identifiant** (UUID) devient `#1`, `#2`… dans l'ordre d'apparition, le même identifiant gardant le même numéro dans tout le rapport : on suit « le même outil » d'une ligne à l'autre sans savoir lequel.
-- **Un texte cité**, entre `'…'` ou `"…"`, devient `«texte»` : le code cite presque toujours ainsi une valeur venue de l'utilisateur (`Field validation failed for '${field.displayName}'`).
+- **Un texte cité**, entre `'…'` ou `"…"`, devient `«text»` : le code cite presque toujours ainsi une valeur venue de l'utilisateur (`Field validation failed for '${field.displayName}'`).
 
 Ce n'est pas une anonymisation garantie, et l'écran ne le prétend pas : il dit « identifiants et textes cités remplacés ; relisez avant d'envoyer ». L'écran mot pour mot est le garde-fou du reste.
 
@@ -49,7 +51,7 @@ Pas de retrait ligne par ligne : on envoie ou non, et on coupe au besoin dans l'
 
 ## Ce que garantissent les tests
 
-- Le nettoyage : un UUID devient `#n`, le même UUID le même `#n` partout ; un texte cité entre `'` ou `"` devient `«texte»` ; le reste est intact.
+- Le nettoyage : un UUID devient `#n`, le même UUID le même `#n` partout ; un texte cité entre `'` ou `"` devient `«text»` ; le reste est intact.
 - Le choix des lignes : ni VERBOSE, ni DEBUG, ni INFO ; rien de plus vieux que 2 heures ; 300 au plus, les plus récentes.
 - Le texte envoyé est celui que l'écran montre (une seule fonction produit les deux).
 

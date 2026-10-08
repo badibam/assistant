@@ -76,6 +76,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
     var showUI by rememberSaveable { mutableStateOf(false) }
     var showData by rememberSaveable { mutableStateOf(false) }
     var showLogs by rememberSaveable { mutableStateOf(false) }
+    var showBugReport by rememberSaveable { mutableStateOf(false) }
     var showAIChat by rememberSaveable { mutableStateOf(false) }
 
     // A chat asked for from any screen, with its content: the zone left for the chat, which lives here
@@ -283,6 +284,11 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
         return // Exit MainScreen composition when showing Logs screen
     }
 
+    if (showBugReport) {
+        com.assistant.core.ui.screens.settings.BugReportScreen(onBack = { showBugReport = false })
+        return
+    }
+
     // The settings, under the screens they open: leaving one comes back to them
     if (showSettings) {
         SettingsScreen(
@@ -298,6 +304,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
                     "ui" -> showUI = true
                     "data" -> showData = true
                     "logs" -> showLogs = true
+                    "bug_report" -> showBugReport = true
                 }
             }
         )
