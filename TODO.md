@@ -25,6 +25,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Thème rétro, Suivi : le texte « il y a… » est coupé alors qu'il y a la place pour deux lignes.
 - Les boutons copier / coller sur un texte sélectionné sont ceux d'Android, hors du thème (la barre d'outils du texte, `TextToolbar` en Compose).
 - Voir sur le téléphone ce qui n'y est pas passé le 2026-10-02 : la conversion du réglage d'apparence en v58 (une famille devient une teinte), les titres de section du thème par défaut, la tuile sans icône centrée.
+- Le rapport de bug (`docs/design/bug-report.md`) est codé, rien n'a tourné sur un téléphone : passer ses lignes de `docs/design/device-checks.md` (démarrage, Réglages), puis élaguer la spec.
 
 ## Bugs du téléphone
 
