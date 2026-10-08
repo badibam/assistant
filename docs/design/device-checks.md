@@ -218,6 +218,22 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 - « Avec l'IA » sur une entrée à remplir : le chat s'ouvre, sa saisie porte le message et les pointeurs vers l'outil et l'entrée ; envoyé, l'IA pose les questions, écrit les réponses et marque l'entrée remplie.
 - Toucher une entrée de l'historique : ses réponses en entier, modifiables.
 
+## Séance
+
+- Créer une Séance : le formulaire du déroulé ajoute une étape, un bloc, un bloc dans un bloc (qui n'offre que des étapes) ; « Au temps » demande un minuteur ; « Sautée au dernier tour » n'apparaît que dans un bloc ; chaque ligne repliée montre son nom. L'IA crée la même config.
+- « Commencer » : « Prépare-toi », 5 s avec un accord au début et 3 bips ; une étape au temps bipe à 3, 2, 1 s et passe d'elle-même sur la quinte (et la vibration) ; la voix, activée, dit l'étape et sa consigne, la musique baissée un instant.
+- Étapes de 30 s au temps, écran éteint, téléphone posé à plat 15 min : chaque bip et chaque changement à l'heure. Noter ce que la séance a pris de batterie.
+- La notification montre l'étape et son temps qui défile ; « Fait » et « Pause » marchent écran verrouillé ; la toucher ouvre l'outil.
+- « Fait » trop tôt puis « Retour » : l'étape reprend avec son temps, celui écoulé depuis compris. « Retour » sur une étape passée d'elle-même : arrêtée à zéro, « Fait » ou « Recommencer l'étape » ; « +15 s » la relance avec 15 s.
+- « Pause » : le temps s'arrête, la notification dit « en pause », aucun bip ; « Reprendre » repart d'où il en était.
+- Téléphone en silencieux ou en vibreur : aucun son ni voix, la vibration reste.
+- Forcer l'arrêt de l'app pendant une séance, rouvrir l'outil : « Cette séance s'est arrêtée avec l'app » ; « Reprendre » relance l'étape, « Arrêter » la clôt.
+- « Commencer » une autre Séance pendant qu'une tourne : refusé, le message nomme l'outil.
+- La dernière étape faite : l'accord de fin, l'entrée « Faite » avec sa durée et « n / n étapes » dans l'historique et la tuile ; « Arrêter » en route : « Arrêtée », les étapes non atteintes comptées.
+- Planifiée chaque jour à une heure passée : au tick, une entrée prévue, une notification qui ouvre l'outil, le point d'attente sur la tuile ; « Commencer » la reprend, « Noter après coup » la complète ; une absence de plusieurs jours, « Tout ignorer ».
+- L'IA note une séance après coup et ignore une séance prévue ; lui demander de commencer une séance : elle ne le peut pas.
+- L'écran de la séance en cours et la tuile, dans les trois thèmes.
+
 ## Graphique
 
 - Créer un Graphique à la main : « Une vue », une couche « Une grille de pas », pas « Jour », période « Il y a 29 jours, début » → « Le moment même » ; une colonne `kcal` lisant une variable ; marque « Barres », x : « Pas », y : `kcal`. Enregistrer : trente barres, les jours sans valeur en trou hachuré ; toucher un trou : sa cause et les entrées à corriger, dont chacune ouvre son outil.

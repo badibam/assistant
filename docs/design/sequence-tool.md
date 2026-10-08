@@ -35,7 +35,7 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
     ]},
     { "kind": "step", "name": "Retour au calme", "end": "timed_then_manual", "duration": 300000 }
   ],
-  "signals": { "step_change": "sound_and_vibration", "countdown": true, "voice": false },
+  "step_signal": "sound_and_vibration", "countdown": true, "voice": false,
   "schedule": null
 }
 ```
@@ -43,19 +43,19 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 - **Une étape** : un nom, une consigne facultative, une façon de finir — `timed` (le minuteur descend, puis on passe d'office), `manual` (un chrono monte, on touche « Fait »), `timed_then_manual` (le minuteur sonne, le chrono continue en dépassement jusqu'à « Fait »).
 - **Un bloc** (`Variant`, `kind`) a un nom et répète ses éléments N fois. Deux niveaux au plus : un bloc contient des étapes ou des blocs, ces derniers des étapes seulement.
 - **`skip_last_round`**, sur une étape d'un bloc : sautée à son dernier tour, le repos qui ne précède plus rien.
-- **Les signaux** valent pour toute la séance : au changement d'étape (son, vibration, les deux, rien), le décompte (oui / non), l'annonce vocale de l'étape qui commence et de sa consigne (oui / non, synthèse vocale d'Android).
+- **Les signaux** (`step_signal`, `countdown`, `voice`) valent pour toute la séance : au changement d'étape (son, vibration, les deux, rien), le décompte (oui / non), l'annonce vocale de l'étape qui commence et de sa consigne (oui / non, synthèse vocale d'Android).
 - **Le planning**, facultatif (`ScheduleSettings`), calqué sur le Questionnaire : à chaque heure, une entrée `planned` et une notification, les heures manquées rattrapées, « Tout ignorer », le point d'attente sur la tuile. Une séance prévue jamais faite reste `planned` : « manquée » se déduit.
 
 ## L'entrée
 
-- `state` : `status` (`planned`, `running`, `done`, `stopped`, `ignored`), `started_at`, `ended_at` ; tant qu'elle court, l'étape en cours, l'heure de son début, et le déroulé déplié recopié de la config au démarrage — une config modifiée pendant la séance ne la change pas. Le déroulé et l'étape en cours s'effacent à la fin.
+- `state` : `status` (`planned`, `running`, `done`, `stopped`, `ignored`), `started_at`, `ended_at` ; tant qu'elle court, `run` (`SequenceRun`) : le déroulé déplié recopié de la config au démarrage — une config modifiée pendant la séance ne la change pas —, les étapes quittées, et les temps lus sur l'horloge de la séance, arrêtée pendant une pause. `run` s'efface à la fin.
 - `data` : `duration`, `paused`, `steps_done`, `steps_skipped`, `steps_not_done` (les étapes qu'une séance arrêtée n'a pas atteintes).
 - Ces champs s'écrivent par les opérations de la séance, jamais par l'écriture générique (`tool_data.create` / `update`), qui les écarte (`systemWritten`, l'état entier l'étant déjà) ; les champs supplémentaires de l'entrée s'écrivent normalement. La Lecture les lit déjà, à leur place fixe.
 
 ## Les opérations
 
-- `start` (crée l'entrée ou reprend une entrée prévue) : écran et notification seulement — Android refuse de démarrer un service au premier plan depuis l'arrière-plan, où tourne l'IA d'une automation.
-- `log_after` : une entrée `done`, datée au choix, toutes ses étapes comptées faites, sa durée facultative. Écran et IA.
+- `start` (reprend la dernière entrée prévue, ou en crée une) : l'écran seulement — Android refuse de démarrer un service au premier plan depuis l'arrière-plan, où tourne l'IA d'une automation. La notification d'une séance prévue ouvre l'outil.
+- `log_after` : une entrée `done`, datée au choix, toutes ses étapes comptées faites, sa durée facultative ; `id` désigne une entrée prévue, complétée plutôt qu'une nouvelle. Écran et IA, comme `ignore` et `ignore_all`.
 - `done`, `skip`, `back`, `restart`, `pause`, `resume`, `extend` (+15 s), `stop` : écran et notification seulement ; elles n'ont de sens que pour qui fait la séance.
 - `back` annule le dernier passage d'étape, comme si le geste n'avait pas eu lieu : l'étape précédente reprend où elle en était, le temps écoulé depuis lui revient, l'étape quittée n'a pas commencé, les compteurs reviennent en arrière. Une étape au temps finie d'elle-même revient arrêtée à zéro, en attente de « Fait » ou de `restart` — sinon elle repasserait aussitôt.
 - `restart` relance l'étape en cours depuis le début.
@@ -71,7 +71,7 @@ Un outil = une séance type ; plusieurs séances (A, B, C d'un programme) sont p
 - **Une seule séance en cours dans toute l'app** : `start` refusé ailleurs, en nommant l'outil.
 - Un décompte de 5 s avant la première étape.
 - L'écran reste allumé tant que la séance en cours est affichée.
-- Une séance laissée en cours (app tuée, rouverte trois jours après) n'est pas close d'office : l'écran propose de la reprendre ou de l'arrêter ; l'intervalle compte comme une pause.
+- Une séance laissée en cours (app tuée, rouverte trois jours après) n'est pas close d'office : l'écran propose de la reprendre ou de l'arrêter (`resume_interrupted`). Reprise, son étape recommence, et le temps depuis sa dernière écriture compte comme une pause.
 
 ## Les signaux
 
