@@ -31,7 +31,9 @@ data class McpTokenEntity(
     @ColumnInfo(name = "client_id") val clientId: String,
     /** TokenKind */
     val kind: String,
-    @ColumnInfo(name = "expires_at") val expiresAt: Long
+    @ColumnInfo(name = "expires_at") val expiresAt: Long,
+    /** StoredToken.replaces */
+    val replaces: String?
 )
 
 @Dao
@@ -60,6 +62,12 @@ interface McpDao {
     @Query("DELETE FROM mcp_tokens WHERE hash = :hash")
     suspend fun deleteToken(hash: String)
 
+    @Query("DELETE FROM mcp_tokens WHERE replaces = :hash")
+    suspend fun deleteReplacing(hash: String)
+
+    @Query("UPDATE mcp_tokens SET replaces = NULL WHERE replaces = :replaced")
+    suspend fun clearReplaces(replaced: String)
+
     @Query("DELETE FROM mcp_tokens WHERE expires_at <= :now")
     suspend fun deleteExpired(now: Long)
 }
@@ -82,11 +90,20 @@ class RoomOAuthStore(private val dao: McpDao) : OAuthStore {
 
     override suspend fun touchClient(id: String, at: Long) = dao.touchClient(id, at)
 
-    override suspend fun addToken(token: StoredToken) = dao.insertToken(McpTokenEntity(token.hash, token.clientId, token.kind.name, token.expiresAt))
+    override suspend fun addToken(token: StoredToken) = dao.insertToken(McpTokenEntity(token.hash, token.clientId, token.kind.name, token.expiresAt, token.replaces))
 
-    override suspend fun token(hash: String): StoredToken? = dao.token(hash)?.let { StoredToken(it.hash, it.clientId, TokenKind.valueOf(it.kind), it.expiresAt) }
+    override suspend fun token(hash: String): StoredToken? = dao.token(hash)?.let { StoredToken(it.hash, it.clientId, TokenKind.valueOf(it.kind), it.expiresAt, it.replaces) }
 
     override suspend fun removeToken(hash: String) = dao.deleteToken(hash)
+
+    override suspend fun removeReplacing(hash: String) = dao.deleteReplacing(hash)
+
+    // Two steps with no transaction: stopped between them, the pair still names a token gone,
+    // and its next use settles again, to the same end
+    override suspend fun settle(replaced: String) {
+        dao.deleteToken(replaced)
+        dao.clearReplaces(replaced)
+    }
 
     override suspend fun removeExpired(now: Long) = dao.deleteExpired(now)
 

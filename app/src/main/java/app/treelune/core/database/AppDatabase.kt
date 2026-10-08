@@ -103,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 65
+        const val VERSION = 66
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1724,6 +1724,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * An MCP token names the refresh token its pair was handed out for, until the pair is used
+         * (StoredToken.replaces): a new column, empty, every token held replacing nothing.
+         */
+        private val MIGRATION_65_66 = object : Migration(65, 66) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE mcp_tokens ADD COLUMN replaces TEXT")
+                LogManager.database("MIGRATION 65->66: mcp_tokens.replaces added", "INFO")
+            }
+        }
+
         /** Every questionnaire entry has its status: one with none is filled (QuestionnaireStateAtV65). */
         private val MIGRATION_64_65 = object : Migration(64, 65) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2471,7 +2482,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_61_62,
                     MIGRATION_62_63,
                     MIGRATION_63_64,
-                    MIGRATION_64_65
+                    MIGRATION_64_65,
+                    MIGRATION_65_66
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

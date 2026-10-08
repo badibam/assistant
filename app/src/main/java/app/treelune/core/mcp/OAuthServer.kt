@@ -20,8 +20,12 @@ data class OAuthClient(
 /** What a token is for: calling the server, or getting a new access token. */
 enum class TokenKind { ACCESS, REFRESH }
 
-/** A token handed out, kept as its hash: the database never holds one that works. */
-data class StoredToken(val hash: String, val clientId: String, val kind: TokenKind, val expiresAt: Long)
+/**
+ * A token handed out, kept as its hash: the database never holds one that works. [replaces] is
+ * the hash of the refresh token its pair was handed out for, until a token of the pair is used:
+ * that refresh token still works meanwhile, in case the answer carrying the pair was lost.
+ */
+data class StoredToken(val hash: String, val clientId: String, val kind: TokenKind, val expiresAt: Long, val replaces: String? = null)
 
 /** Where clients and tokens are kept (a Room table each, in the app). */
 interface OAuthStore {
@@ -34,6 +38,10 @@ interface OAuthStore {
     suspend fun addToken(token: StoredToken)
     suspend fun token(hash: String): StoredToken?
     suspend fun removeToken(hash: String)
+    /** Removes the tokens handed out for the refresh token [hash] and never used. */
+    suspend fun removeReplacing(hash: String)
+    /** The pair handed out for the refresh token [replaced] has been used: [replaced] goes, and the pair replaces nothing any more. */
+    suspend fun settle(replaced: String)
     /** Removes the tokens expired before [now]. */
     suspend fun removeExpired(now: Long)
 }
@@ -224,15 +232,22 @@ class OAuthServer(
         return handOut(client.id)
     }
 
-    /** Exchanges a refresh token for new tokens; the old one no longer works. */
+    /**
+     * Exchanges a refresh token for new tokens. The old one keeps working until a token of the
+     * new pair is used, which shows the answer arrived: an answer lost on its way (the relay given
+     * up, the phone asleep) would otherwise leave the client with a refresh token that no longer
+     * works, and nothing to do but be authorized again. Brought again before, it renews again,
+     * and the pair never used goes.
+     */
     suspend fun refresh(clientId: String?, clientSecret: String?, refreshToken: String?): Tokens {
         val client = authenticate(clientId, clientSecret)
         val stored = refreshToken?.let { store.token(hash(it)) }
         if (stored == null || stored.kind != TokenKind.REFRESH || stored.clientId != client.id || now() >= stored.expiresAt) {
             throw OAuthError("invalid_grant", "Unknown or expired refresh token")
         }
-        store.removeToken(stored.hash)
-        return handOut(client.id)
+        stored.replaces?.let { store.settle(it) }
+        store.removeReplacing(stored.hash)
+        return handOut(client.id, replaces = stored.hash)
     }
 
     /** The client an access token [bearer] was handed to, while it lasts; null otherwise. */
@@ -240,6 +255,7 @@ class OAuthServer(
         val stored = bearer?.let { store.token(hash(it)) } ?: return null
         if (stored.kind != TokenKind.ACCESS || now() >= stored.expiresAt) return null
         val client = store.client(stored.clientId) ?: return null
+        stored.replaces?.let { store.settle(it) }
         store.touchClient(client.id, now())
         return client
     }
@@ -253,12 +269,13 @@ class OAuthServer(
         return client
     }
 
-    private suspend fun handOut(clientId: String): Tokens {
+    /** A new pair of tokens for [clientId], handed out for the refresh token [replaces] if any. */
+    private suspend fun handOut(clientId: String, replaces: String? = null): Tokens {
         store.removeExpired(now())
         val access = token()
         val refresh = token()
-        store.addToken(StoredToken(hash(access), clientId, TokenKind.ACCESS, now() + ACCESS_VALIDITY))
-        store.addToken(StoredToken(hash(refresh), clientId, TokenKind.REFRESH, now() + REFRESH_VALIDITY))
+        store.addToken(StoredToken(hash(access), clientId, TokenKind.ACCESS, now() + ACCESS_VALIDITY, replaces))
+        store.addToken(StoredToken(hash(refresh), clientId, TokenKind.REFRESH, now() + REFRESH_VALIDITY, replaces))
         store.touchClient(clientId, now())
         return Tokens(access, refresh, ACCESS_VALIDITY / 1000)
     }

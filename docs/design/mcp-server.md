@@ -41,7 +41,7 @@ L'app est son propre serveur OAuth (description, enregistrement dynamique du cli
 
 - Trois codes faux annulent la demande ; une demande expire en 5 minutes ; une seule à la fois.
 - Toute adresse de retour en https (ou sur la machine même) est acceptée et montrée : la sécurité tient au code, que seul a celui qui voit la page, et à PKCE, pas au nom ni au domaine.
-- Jeton d'accès d'une heure, renouvelé par le client ; jeton de renouvellement révoqué après 90 jours sans usage. Les clients autorisés se listent et se révoquent dans les réglages.
+- Jeton d'accès d'une heure, renouvelé par le client ; jeton de renouvellement révoqué après 90 jours sans usage, et remplacé à chaque renouvellement — l'ancien restant valable jusqu'au premier usage de la nouvelle paire, pour qu'une réponse perdue en route ne laisse pas le client sans moyen de se renouveler (`StoredToken.replaces`). Chaque demande de jetons va au journal de l'app, accordée ou refusée et pourquoi. Les clients autorisés se listent et se révoquent dans les réglages.
 - Le relais limite le nombre de requêtes.
 
 ## Ce que voit le client

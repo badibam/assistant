@@ -94,7 +94,7 @@ object McpAccess {
         var lastActivity = openedAt
         _state.value = State.Open(openedAt, null)
         val server = McpServer(AppMcpBackend(context), ContextTokens(contextKey(context), System::currentTimeMillis), versionName(context))
-        val http = McpHttp(base, oauth(context), server, s::shared) {
+        val http = McpHttp(base, oauth(context), server, s::shared, log = { LogManager.service("External access: $it", "INFO") }) {
             lastActivity = System.currentTimeMillis()
             _state.value = State.Open(openedAt, lastActivity)
             onActivity(lastActivity)

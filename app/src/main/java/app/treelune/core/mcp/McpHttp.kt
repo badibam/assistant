@@ -72,6 +72,8 @@ class McpHttp(
     private val oauth: OAuthServer,
     private val mcp: McpServer,
     private val text: (String) -> String,
+    /** Where each request for tokens goes, granted or refused and why: never a token */
+    private val log: (String) -> Unit = {},
     private val onCall: () -> Unit = {}
 ) {
     private val resource get() = "$base$MCP_PATH"
@@ -150,11 +152,18 @@ class McpHttp(
         }
         val clientId = basic?.getOrNull(0) ?: form["client_id"]
         val secret = basic?.getOrNull(1) ?: form["client_secret"]
-        val tokens = when (form["grant_type"]) {
-            "authorization_code" -> oauth.exchangeCode(clientId, secret, form["code"], form["redirect_uri"], form["code_verifier"])
-            "refresh_token" -> oauth.refresh(clientId, secret, form["refresh_token"])
-            else -> throw OAuthServer.OAuthError("unsupported_grant_type", "grant_type must be authorization_code or refresh_token")
+        val grant = form["grant_type"]
+        val tokens = try {
+            when (grant) {
+                "authorization_code" -> oauth.exchangeCode(clientId, secret, form["code"], form["redirect_uri"], form["code_verifier"])
+                "refresh_token" -> oauth.refresh(clientId, secret, form["refresh_token"])
+                else -> throw OAuthServer.OAuthError("unsupported_grant_type", "grant_type must be authorization_code or refresh_token")
+            }
+        } catch (e: OAuthServer.OAuthError) {
+            log("token $grant for client $clientId refused: ${e.error}, ${e.description}")
+            throw e
         }
+        log("token $grant for client $clientId granted")
         onCall()
         return HttpResponse.json(200, JSONObject()
             .put("access_token", tokens.access)

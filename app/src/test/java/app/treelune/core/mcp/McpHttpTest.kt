@@ -3,6 +3,7 @@ package app.treelune.core.mcp
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -29,6 +30,11 @@ class McpHttpTest {
         override suspend fun addToken(token: StoredToken) { tokens[token.hash] = token }
         override suspend fun token(hash: String) = tokens[hash]
         override suspend fun removeToken(hash: String) { tokens.remove(hash) }
+        override suspend fun removeReplacing(hash: String) { tokens.values.removeAll { it.replaces == hash } }
+        override suspend fun settle(replaced: String) {
+            tokens.remove(replaced)
+            tokens.replaceAll { _, token -> if (token.replaces == replaced) token.copy(replaces = null) else token }
+        }
         override suspend fun removeExpired(now: Long) { tokens.values.removeAll { it.expiresAt <= now } }
     }
 
@@ -167,14 +173,41 @@ class McpHttpTest {
         assertEquals(400, tokenRequest("grant_type=authorization_code&code=${enc(code)}&redirect_uri=${enc(callback)}&client_id=${enc(clientId)}&code_verifier=${enc(verifier)}").status)
     }
 
+    private fun refresh(clientId: String, refresh: String) =
+        tokenRequest("grant_type=refresh_token&refresh_token=${enc(refresh)}&client_id=${enc(clientId)}")
+
+    private fun call(access: String) = request("POST", "/mcp", headers = mapOf("Authorization" to "Bearer $access"), body = "{}").status
+
     @Test
-    fun aRefreshTokenGivesNewTokensOnce() {
+    fun aRefreshTokenEndsWhenItsNewAccessTokenIsUsed() {
         val (clientId, tokens) = authorized()
-        val refresh = tokens.getString("refresh_token")
-        val renewed = tokenRequest("grant_type=refresh_token&refresh_token=${enc(refresh)}&client_id=${enc(clientId)}")
+        val old = tokens.getString("refresh_token")
+        val renewed = refresh(clientId, old)
         assertEquals(200, renewed.status)
-        assertNotNull(JSONObject(renewed.text).getString("access_token"))
-        assertEquals(400, tokenRequest("grant_type=refresh_token&refresh_token=${enc(refresh)}&client_id=${enc(clientId)}").status)
+        assertNotEquals(401, call(JSONObject(renewed.text).getString("access_token")))
+        assertEquals(400, refresh(clientId, old).status)
+    }
+
+    @Test
+    fun aRefreshTokenEndsWhenItsNewRefreshTokenIsUsed() {
+        val (clientId, tokens) = authorized()
+        val old = tokens.getString("refresh_token")
+        val renewed = JSONObject(refresh(clientId, old).text)
+        assertEquals(200, refresh(clientId, renewed.getString("refresh_token")).status)
+        assertEquals(400, refresh(clientId, old).status)
+    }
+
+    @Test
+    fun aRenewalLostOnItsWayIsAskedAgain() {
+        val (clientId, tokens) = authorized()
+        val old = tokens.getString("refresh_token")
+        val lost = JSONObject(refresh(clientId, old).text)
+        val again = refresh(clientId, old)
+        assertEquals(200, again.status)
+        // The pair never received no longer works; the one handed out again does
+        assertEquals(401, call(lost.getString("access_token")))
+        assertEquals(400, refresh(clientId, lost.getString("refresh_token")).status)
+        assertNotEquals(401, call(JSONObject(again.text).getString("access_token")))
     }
 
     @Test

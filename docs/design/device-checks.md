@@ -101,6 +101,7 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 - Ce que claude.ai fait des outils : les lectures marquées comme telles, l'autorisation outil par outil ; ce qu'il fait d'une session MCP d'une conversation à l'autre (instruit, pas exigé).
 - 30 minutes sans appel : l'accès se ferme seul, la notification part. « Fermer » dans la notification : de même.
 - Révoquer le client : l'appel suivant de claude.ai est refusé, il redemande l'autorisation.
+- Après la migration 66 : le connecteur déjà autorisé continue sans reconnexion. Laisser l'accès ouvert plus d'une heure, téléphone endormi : le connecteur se renouvelle seul ; l'écran des journaux montre « token refresh_token … granted » à chaque renouvellement, et la raison d'un refus.
 
 ## Automations
 
