@@ -12,6 +12,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Un pointeur qui filtrait un instant par « = » (avant la migration 52) est refusé en le disant : rien ne part en silence.
 - Après un plantage (`adb shell am crash app.treelune.debug`, à vérifier qu'il passe par le gestionnaire de l'app ; `bug-report.md`) : au lancement suivant, l'écran « L'app s'est arrêtée » avant tout le reste ; « Voir le rapport » montre la pile d'appels, « Envoyer » ouvre le menu de partage avec le rapport entier ; « Continuer » démarre l'app, et l'écran ne revient pas au lancement d'après.
 - Après la migration 64 : Réglages › IA › Limites montre « Taille des outils toujours envoyés avant confirmation » à 15 000.
+- Treelune (`app.treelune`) s'installe à côté de l'ancienne Assistant : une sauvegarde exportée d'Assistant s'importe dans Treelune, tout en place ; l'accès externe se reconfigure et Claude s'y rebranche. L'icône dans le lanceur, ronde et carrée, et en monochrome avec les icônes à thème d'Android 13 et plus.
 - Fermer l'app de force pendant que l'IA répond dans une discussion, la relancer : « Round IA interrompu » dans la discussion, l'IA au repos, rien ne repart seul.
 
 - Après le passage à Compose 1.12 (BOM 2026.09.00) : parcourir l'accueil, une zone, un outil de chaque type, sa config, Réglages, le chat, dans les deux thèmes ; les fenêtres de dialogue, les listes qui défilent, le glisser-déposer et le clavier se comportent comme avant.
