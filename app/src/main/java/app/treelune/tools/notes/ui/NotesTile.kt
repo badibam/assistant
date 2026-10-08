@@ -38,8 +38,8 @@ private data class TileNote(val id: String, val title: String?, val content: Str
 /**
  * A notes tool's tile. The summary is a button that opens the tool on a new note, and how many
  * notes there are; the body the notes in their manual order, two per row side by side, each a
- * card showing the start of its text on two lines, or its title and a line of its text when the
- * notes take titles, all of them in FULL. Touching a note opens it.
+ * card showing the start of its text, under its title when the notes take titles, on as many
+ * lines as its slot holds; all of them in FULL. Touching a note opens it.
  */
 @Composable
 fun rememberNotesTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolTile {
@@ -100,10 +100,11 @@ fun rememberNotesTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolTile
                         UI.Card(type = CardType.DEFAULT) {
                             Box(modifier = Modifier.fillMaxSize().padding(UI.Space.XS)) {
                                 val text = note.content.ifBlank { s.tool("content_empty") }
+                                // No count of lines: the slot's height bounds the text, its last line cut by an ellipsis
                                 if (note.title != null) Column {
                                     UI.Text(note.title, TextType.LABEL, maxLines = 1)
-                                    UI.Text(text, TextType.CAPTION, maxLines = 1)
-                                } else UI.Text(text, TextType.CAPTION, maxLines = 2)
+                                    UI.Text(text, TextType.CAPTION)
+                                } else UI.Text(text, TextType.CAPTION)
                             }
                         }
                     }
