@@ -36,6 +36,9 @@ object Guide {
     /** A tutorial just finished, whose dialog asks what comes next. */
     var ended by mutableStateOf<GuideChapter?>(null)
 
+    /** A tutorial just begun from its start, whose dialog says what it is and points at the band. */
+    var introducing by mutableStateOf<GuideChapter?>(null)
+
     /** A tutorial asked for while the demo it begins in is not installed: its dialog asks. */
     var demoMissingFor by mutableStateOf<GuideChapter?>(null)
 
@@ -124,6 +127,7 @@ object Guide {
             return
         }
         update { it.with(at).copy(current = chapter.id, bandHidden = false) }
+        if (at.step == 0) introducing = chapter
         checkPlace()
     }
 
@@ -141,6 +145,7 @@ object Guide {
         demoMissingFor = null
         if (after < 0) return finish(chapter)
         update { it.with(ChapterProgress(chapter.id, after, false, p.of(chapter.id)?.kept ?: emptyMap())).copy(current = chapter.id, bandHidden = false) }
+        if (from == 0) introducing = chapter
         checkPlace()
     }
 

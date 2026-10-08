@@ -269,6 +269,28 @@ fun GuideEndDialog(chapter: GuideChapter, demoInstalled: Boolean) {
     )
 }
 
+/**
+ * A tutorial's start: what it is about, and where it goes on — the band at the bottom of the
+ * screen, which says the step to do and unfolds to explain it. Later hides it, saying where it waits.
+ */
+@Composable
+fun GuideStartDialog(chapter: GuideChapter) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    UI.ConfirmDialog(
+        title = chapter.title(context),
+        message = chapter.intro(context) + "\n\n" + s.shared("guide_start_band"),
+        confirmText = s.shared("guide_start_go"),
+        cancelText = s.shared("guide_end_later"),
+        onConfirm = { Guide.introducing = null },
+        onDismiss = {
+            Guide.introducing = null
+            Guide.hide()
+            UI.Toast(context, s.shared("guide_band_hidden"), Duration.LONG)
+        }
+    )
+}
+
 /** A tutorial asked for while the demo it begins in is not installed: reinstall it, or skip those steps. */
 @Composable
 fun GuideDemoMissingDialog(chapter: GuideChapter) {

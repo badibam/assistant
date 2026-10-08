@@ -21,6 +21,8 @@
     <string name="guide_path_from_home">From the home screen: %1$s</string>
     <string name="guide_needs_demo">Uses the demo, which is not installed.</string>
     <string name="guide_reinstall_demo">Reinstall the demo</string>
+    <string name="guide_start_band">Follow the band at the bottom of the screen: it gives the step to do, and unfolds at a touch to explain it.</string>
+    <string name="guide_start_go">Let\'s go</string>
     <string name="guide_band_step">%1$d/%2$d · %3$s</string>
     <string name="guide_band_from_here">From here: %1$s</string>
     <string name="guide_band_here">You are in the right place.</string>

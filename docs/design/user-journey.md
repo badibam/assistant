@@ -44,6 +44,10 @@ Pas de diaporama, rien sur l'IA.
 - Une **étape** : un but, une explication, un écran cible, ce qu'elle attend.
 - Le **chemin** : les gestes qui mènent à l'écran cible, depuis l'écran ouvert (bande) ou depuis l'accueil (Guide).
 
+## Le départ d'un tutoriel
+
+Un tutoriel qui commence à sa première étape (de l'écran d'accueil, d'une fin de tutoriel, d'un chapitre, de « Recommencer ») ouvre un dialogue : son titre, son introduction, et la bande montrée (« elle donne l'étape à faire, et se déplie d'un toucher pour l'expliquer »). « C'est parti » ; « Plus tard » masque le tutoriel et dit où il attend. Une reprise ne l'ouvre pas.
+
 ## La bande
 
 Posée au-dessus de tous les écrans, en bas, à la place que tient `LongOperationBar` pour une opération longue.

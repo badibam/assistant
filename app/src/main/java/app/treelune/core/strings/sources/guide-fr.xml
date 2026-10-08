@@ -21,6 +21,8 @@
     <string name="guide_path_from_home">Depuis l\'accueil : %1$s</string>
     <string name="guide_needs_demo">Utilise la démo, qui n\'est pas installée.</string>
     <string name="guide_reinstall_demo">Réinstaller la démo</string>
+    <string name="guide_start_band">Suivez la bande en bas de l\'écran : elle donne l\'étape à faire, et se déplie d\'un toucher pour l\'expliquer.</string>
+    <string name="guide_start_go">C\'est parti</string>
     <string name="guide_band_step">%1$d/%2$d · %3$s</string>
     <string name="guide_band_from_here">D\'ici : %1$s</string>
     <string name="guide_band_here">Vous êtes au bon endroit.</string>

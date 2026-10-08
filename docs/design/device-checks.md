@@ -23,6 +23,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 ## Guide et premier lancement
 
 - Premier lancement (données de l'app effacées) : la démo s'installe, puis l'écran d'accueil, une fois ; « Commencer : Premiers pas » montre la bande en bas ; « Explorer seul » mène à l'accueil, le livre en haut marqué d'un point.
+- Un tutoriel qui commence (écran d'accueil, « Continuer », un chapitre, « Recommencer ») ouvre son dialogue : son intro et la bande en bas montrée ; « Plus tard » masque le tutoriel et dit où le retrouver. Une reprise ne l'ouvre pas.
 - Premiers pas en entier : chaque étape se coche d'elle-même (zone Course ouverte, sortie ajoutée, graphique ouvert puis Suivant, zone créée, outil ajouté, entrée notée) ; la bande dépliée donne le chemin depuis l'écran ouvert, et « Vous êtes au bon endroit » une fois arrivé.
 - La fin d'un tutoriel du parcours propose le suivant ; « Plus tard » dit où est le Guide. Après Automatiser, « Ouvrir le Guide » ouvre la page à la Référence.
 - Masquer la bande : le livre de l'accueil se marque, le chapitre dit « reprendre », et la reprise revient à la même étape.

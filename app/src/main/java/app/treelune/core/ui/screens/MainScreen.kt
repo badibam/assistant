@@ -142,6 +142,7 @@ fun MainScreen(openToolId: String? = null, onToolOpened: () -> Unit = {}) {
     }
     app.treelune.core.guide.Guide.ended?.let { app.treelune.core.guide.ui.GuideEndDialog(it, demoInstalled) }
     app.treelune.core.guide.Guide.demoMissingFor?.let { app.treelune.core.guide.ui.GuideDemoMissingDialog(it) }
+    app.treelune.core.guide.Guide.introducing?.let { app.treelune.core.guide.ui.GuideStartDialog(it) }
 
     AIFloatingChat(isVisible = Navigator.top == Place.Chat, onDismiss = { Navigator.pop() })
 
