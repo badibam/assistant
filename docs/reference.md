@@ -37,7 +37,7 @@ Application Android native (Kotlin + Jetpack Compose, persistance Room) : un ass
 - `docs/TOOLS.md` — architecture des outils (tooltypes), extension sans toucher au core.
 - `docs/AI.md` — système IA : machine à états, sessions, prompts, automations, providers.
 - `docs/design/` — conception transitoire, écrite pour être implémentée puis élaguée. Le code et les commits deviennent le registre.
-- « Pistes de thème » (https://claude.ai/artifact/XjCGGf19j1ZFGuDmhF2GbZ, artefact privé, lu par l'outil Artifact, `read`) — les registres de thème maquettés sur l'écran d'une zone, celui retenu (le cosy) et ceux écartés : à relire avant de proposer ou concevoir un thème.
+- « Pistes de thème » (https://claude.ai/artifact/XjCGGf19j1ZFGuDmhF2GbZ, artefact privé, lu par l'outil Artifact, `read`) — les registres de thème maquettés sur l'écran d'une zone : Carnet, Monochrome / e-ink, Terminal, Cosy (retenu), Cartes à jouer, Menu de JRPG, Arcade néon, HUD de science-fiction. À relire avant de proposer ou concevoir un thème.
 
 ## Icônes
 
