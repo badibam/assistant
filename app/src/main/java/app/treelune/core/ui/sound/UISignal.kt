@@ -28,12 +28,15 @@ enum class UISignal {
     REFUSE
 }
 
-/** The signal a press on an action button sends: what the action does, not what it looks like. */
-fun ButtonAction.signal(): UISignal = when (this) {
-    ButtonAction.BACK -> UISignal.BACK
+/**
+ * The signal a press on an action button sends: what the action does, not what it looks like.
+ * None for a button that moves between places (back, configure, view, the chat): the stack plays
+ * the sound of coming and going (Navigator), or the chat's window its own.
+ */
+fun ButtonAction.signal(): UISignal? = when (this) {
+    ButtonAction.BACK, ButtonAction.CONFIGURE, ButtonAction.VIEW, ButtonAction.AI_CHAT, ButtonAction.GUIDE -> null
     ButtonAction.CANCEL -> UISignal.CLOSE
-    ButtonAction.CONFIGURE, ButtonAction.VIEW -> UISignal.ENTER
-    ButtonAction.AI_CHAT, ButtonAction.ATTACH, ButtonAction.PHOTO, ButtonAction.GALLERY -> UISignal.OPEN
+    ButtonAction.ATTACH, ButtonAction.PHOTO, ButtonAction.GALLERY -> UISignal.OPEN
     ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.UP, ButtonAction.DOWN -> UISignal.STEP
     else -> UISignal.CONFIRM
 }

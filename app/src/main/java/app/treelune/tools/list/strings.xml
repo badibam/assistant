@@ -5,6 +5,8 @@
     <!-- Metadata -->
     <string name="display_name">List</string>
     <string name="description">What is left to do, checked off as it is done: shopping, tasks, a checklist</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">What is left to do, checked off as it is done, with due dates if you want</string>
 
     <!-- Fields of an item -->
     <string name="field_content">Content</string>

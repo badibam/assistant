@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="name">Retro</string>
+    <!-- What the theme looks like, said to the user: the README -->
+    <string name="tagline">Pixel art: whole pixels, a drawn font, pixel icons, its own sounds</string>
 </resources>

@@ -20,6 +20,27 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 - Après le passage à Compose 1.12 (BOM 2026.09.00) : parcourir l'accueil, une zone, un outil de chaque type, sa config, Réglages, le chat, dans les deux thèmes ; les fenêtres de dialogue, les listes qui défilent, le glisser-déposer et le clavier se comportent comme avant.
 
+## Guide et premier lancement
+
+- Premier lancement (données de l'app effacées) : la démo s'installe, puis l'écran d'accueil, une fois ; « Commencer : Premiers pas » montre la bande en bas ; « Explorer seul » mène à l'accueil, le livre en haut marqué d'un point.
+- Premiers pas en entier : chaque étape se coche d'elle-même (zone Course ouverte, sortie ajoutée, graphique ouvert puis Suivant, zone créée, outil ajouté, entrée notée) ; la bande dépliée donne le chemin depuis l'écran ouvert, et « Vous êtes au bon endroit » une fois arrivé.
+- La fin d'un tutoriel du parcours propose le suivant ; « Plus tard » dit où est le Guide. Après Automatiser, « Ouvrir le Guide » ouvre la page à la Référence.
+- Masquer la bande : le livre de l'accueil se marque, le chapitre dit « reprendre », et la reprise revient à la même étape.
+- Brancher une IA, Construire avec l'IA, Automatiser : les étapes attendues de l'IA ne se cochent que quand c'est elle qui crée ; la bande se voit aussi dans la conversation.
+- Supprimer la démo (Réglages › Démo) : le dialogue nomme Premiers pas ; ensuite, commencer Premiers pas propose de réinstaller la démo ou de sauter ses étapes ; le chapitre dit « Utilise la démo » avec « Réinstaller la démo ».
+- Les trois thèmes : la bande, la page du Guide, un chapitre, l'écran d'accueil.
+
+## Navigation
+
+- Accueil › une zone › un outil › sa config (appui long), puis retour par la flèche, par la touche Retour et par un nom du fil d'Ariane : on revient chaque fois au bon écran, un seul son par geste (entrer, revenir), dans les trois thèmes.
+- Le fil d'Ariane au-dessus du titre, sur une ligne, sa fin visible quand il est long, le bouton de conversation à droite ; un titre long coupé à une ligne, les boutons de l'entête toujours à la même hauteur.
+- La conversation ouverte depuis un outil (bouton du fil), puis fermée : retour à l'outil, la zone toujours ouverte dessous. Un raccourci « demander à l'IA » depuis un écran : la conversation s'ouvre par-dessus, la zone reste ouverte.
+- Une notification d'un outil, app fermée : l'outil s'ouvre, le fil montre Accueil › sa zone, et Retour remonte à la zone puis à l'accueil.
+- Une zone supprimée depuis sa config : retour à l'accueil, sans écran vide ; un outil supprimé depuis sa config : retour à sa zone.
+- Recréer l'écran au fond d'une pile (outil › config) : la même pile revient, le formulaire avec ce qui était saisi.
+- Revenir d'un outil à sa zone : la zone se redessine sans rester sur « Chargement » ; le défilement de la zone est retrouvé.
+- Réglages › une page › retour : retour aux Réglages, puis à l'accueil.
+
 ## Validation
 
 - Passer `docs/design/validation-nulls-ai-check.md` : le message à coller dans une session IA, et ce qui est attendu étape par étape.

@@ -27,6 +27,8 @@ object AppSettingCategories {
     const val UI = "ui"
     /** The MCP server's relay (docs/design/mcp-server.md) */
     const val EXTERNAL_ACCESS = "external_access"
+    /** The Guide's progress: the first-launch screen seen, each chapter's step (docs/design/user-journey.md) */
+    const val GUIDE = "guide"
 
     // Future categories:
     // const val DATA = "data"

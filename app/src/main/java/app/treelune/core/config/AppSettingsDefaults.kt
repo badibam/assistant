@@ -22,7 +22,8 @@ object AppSettingsDefaults {
         AppSettingCategories.MAIN_SCREEN,
         AppSettingCategories.DEMO,
         AppSettingCategories.UI,
-        AppSettingCategories.EXTERNAL_ACCESS
+        AppSettingCategories.EXTERNAL_ACCESS,
+        AppSettingCategories.GUIDE
     )
 
     /** The default settings JSON of [category]; format takes the phone's 24h and date habits */
@@ -40,6 +41,10 @@ object AppSettingsDefaults {
             .put(AppSettings.UI_SIZE_STEP, 0).toString()
         // No relay until the user gives one
         AppSettingCategories.EXTERNAL_ACCESS -> JSONObject().toString()
+        // Nothing seen, nothing started: the first-launch screen comes, then First steps
+        AppSettingCategories.GUIDE -> JSONObject().put(AppSettings.GUIDE_WELCOME_SEEN, false)
+            .put(AppSettings.GUIDE_BAND_HIDDEN, false)
+            .put(AppSettings.GUIDE_CHAPTERS, JSONArray()).toString()
         else -> throw IllegalArgumentException("No defaults for settings category '$category'")
     }
 

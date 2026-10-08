@@ -49,8 +49,15 @@ object AppSettings {
         AppSettingCategories.MAIN_SCREEN,
         AppSettingCategories.DEMO,
         AppSettingCategories.UI,
-        AppSettingCategories.EXTERNAL_ACCESS
+        AppSettingCategories.EXTERNAL_ACCESS,
+        AppSettingCategories.GUIDE
     )
+
+    /** The Guide's progress (GuideProgress): the first-launch screen seen, the band hidden, the tutorial in progress, each chapter's step. */
+    const val GUIDE_WELCOME_SEEN = "welcome_seen"
+    const val GUIDE_BAND_HIDDEN = "band_hidden"
+    const val GUIDE_CURRENT = "current"
+    const val GUIDE_CHAPTERS = "chapters"
 
     /** The relay's public address, under which an outside AI reaches the app (https). */
     const val RELAY_URL = "relay_url"
@@ -134,6 +141,22 @@ object AppSettings {
                 field(RELAY_SECRET, text("settings_external_access_relay_secret"), text("settings_external_access_relay_secret_help"),
                     FieldType.TEXT, config = mapOf("length" to TextLength.MEDIUM.name), secret = true)
             )
+            AppSettingCategories.GUIDE -> listOf(
+                field(GUIDE_WELCOME_SEEN, text("guide_setting_welcome_seen"), null, FieldType.BOOLEAN, required = true),
+                field(GUIDE_BAND_HIDDEN, text("guide_setting_band_hidden"), null, FieldType.BOOLEAN, required = true),
+                // A chapter's id; absent while no tutorial is in progress
+                field(GUIDE_CURRENT, text("guide_setting_current"), null, FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)),
+                SettingNode.ListOf(GUIDE_CHAPTERS, text("guide_setting_chapters"), SettingNode.Item.Of(listOf(
+                    field("id", text("guide_setting_chapter"), null, FieldType.TEXT, required = true, config = mapOf("length" to TextLength.SHORT.name)),
+                    scale("step", text("guide_setting_step"), text("guide_setting_step_help"), 0..99),
+                    field("done", text("guide_setting_done"), null, FieldType.BOOLEAN, required = true),
+                    // What a step kept for the next ones: the zone it created, by its id
+                    SettingNode.ListOf("kept", text("guide_setting_kept"), SettingNode.Item.Of(listOf(
+                        field("name", text("guide_setting_kept_name"), null, FieldType.TEXT, required = true, config = mapOf("length" to TextLength.SHORT.name)),
+                        field("value", text("guide_setting_kept_value"), null, FieldType.TEXT, required = true, config = mapOf("length" to TextLength.SHORT.name))
+                    )), required = true, summary = listOf("name"))
+                )), required = true, summary = listOf("id"))
+            )
             AppSettingCategories.DEMO -> listOf(
                 field(app.treelune.core.demo.DemoStartup.INSTALL_ON_UPDATE, text("settings_demo_install_on_update"),
                     text("settings_demo_install_on_update_help"), FieldType.BOOLEAN, required = true)
@@ -178,6 +201,7 @@ object AppSettings {
             AppSettingCategories.DEMO -> s.shared("settings_demo")
             AppSettingCategories.UI -> s.shared("settings_ui")
             AppSettingCategories.EXTERNAL_ACCESS -> s.shared("settings_external_access")
+            AppSettingCategories.GUIDE -> s.shared("guide_title")
             else -> throw IllegalArgumentException("No declaration for settings category '$category'")
         }
     }
@@ -192,6 +216,7 @@ object AppSettings {
             AppSettingCategories.DEMO -> s.shared("settings_demo_description")
             AppSettingCategories.UI -> s.shared("settings_ui_description")
             AppSettingCategories.EXTERNAL_ACCESS -> s.shared("settings_external_access_description")
+            AppSettingCategories.GUIDE -> s.shared("guide_description")
             else -> null
         }
     }

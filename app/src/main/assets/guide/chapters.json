@@ -1,0 +1,72 @@
+{
+  "_about": "The Guide's chapters (docs/design/user-journey.md), in their order: the journey first, then the reference. Their texts are strings of core/strings/sources/guide.xml, named after the chapter and the step (guide_<id>_title, guide_<id>_intro, guide_<id>_outro, guide_<id>_<n>_goal, guide_<id>_<n>_text). A step goes to a place (go), waits for an operation through the dispatcher (do), or is read (read, then Next, once at its place when it has one). A place's address may name what an earlier step kept: {zone}. A tool type's reference chapter is added after « organize » from the tool's own strings. scripts/check_guide.py reads this file against the code.",
+  "chapters": [
+    {
+      "id": "first_steps",
+      "part": "journey",
+      "icon": "footprints",
+      "minutes": 5,
+      "steps": [
+        {"kind": "go", "target": "zone/demo-course"},
+        {"kind": "do", "target": "tool/demo-course-runs/demo-course",
+          "await": {"operation": "tool_data.create", "origin": "USER", "params": {"tool_instance_id": "demo-course-runs"}}},
+        {"kind": "read", "target": "tool/demo-course-chart-km/demo-course"},
+        {"kind": "do", "target": "home",
+          "await": {"operation": "zones.create", "origin": "USER"}, "keep": {"zone": "zone_id"}},
+        {"kind": "do", "target": "zone/{zone}",
+          "await": {"operation": "tools.create", "origin": "USER", "params": {"zone_id": "{zone}"}}, "keep": {"tool": "tool_instance_id"}},
+        {"kind": "do", "target": "tool/{tool}/{zone}",
+          "await": {"operation": "tool_data.create", "origin": "USER", "params": {"tool_instance_id": "{tool}"}}}
+      ]
+    },
+    {
+      "id": "connect_ai",
+      "part": "journey",
+      "icon": "bot",
+      "minutes": 5,
+      "steps": [
+        {"kind": "go", "target": "settings/ai_providers"},
+        {"kind": "do", "target": "settings/ai_providers",
+          "await": {"operation": "ai_provider_config.set", "origin": "USER"}},
+        {"kind": "read"},
+        {"kind": "read", "target": "chat"}
+      ]
+    },
+    {
+      "id": "build_with_ai",
+      "part": "journey",
+      "icon": "hammer",
+      "minutes": 10,
+      "steps": [
+        {"kind": "read"},
+        {"kind": "do", "target": "chat",
+          "await": {"operation": "tools.create", "origin": "AI"}, "keep": {"zone": "zone_id", "tool": "tool_instance_id"}},
+        {"kind": "go", "target": "tool/{tool}/{zone}"},
+        {"kind": "do", "target": "chat",
+          "await": {"operation": "variables.create", "origin": "AI"}},
+        {"kind": "read", "target": "settings/validation"}
+      ]
+    },
+    {
+      "id": "automate",
+      "part": "journey",
+      "icon": "calendar-clock",
+      "minutes": 10,
+      "steps": [
+        {"kind": "read"},
+        {"kind": "do",
+          "await": {"operation": "automations.create", "origin": "USER"}, "keep": {"automation": "automation_id", "zone": "zone_id"}},
+        {"kind": "do", "target": "zone/{zone}",
+          "await": {"operation": "automations.execute_manual", "origin": "USER", "params": {"automation_id": "{automation}"}}},
+        {"kind": "read", "target": "automation/{automation}/{zone}"}
+      ]
+    },
+    {"id": "organize", "part": "reference", "icon": "layout-grid", "minutes": 3, "steps": []},
+    {"id": "connect", "part": "reference", "icon": "link", "minutes": 5, "steps": []},
+    {"id": "talk_to_ai", "part": "reference", "icon": "message-circle", "minutes": 5, "steps": []},
+    {"id": "appearance", "part": "reference", "icon": "palette", "minutes": 2, "steps": []},
+    {"id": "your_data", "part": "reference", "icon": "database", "minutes": 3, "steps": []},
+    {"id": "external_access", "part": "reference", "icon": "cable", "minutes": 5, "steps": []},
+    {"id": "when_stuck", "part": "reference", "icon": "life-buoy", "minutes": 2, "steps": []}
+  ]
+}

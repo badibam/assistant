@@ -5,6 +5,8 @@
     <!-- Metadata -->
     <string name="display_name">Tracking</string>
     <string name="description">Capture and analysis of quantitative and qualitative data over time</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Numbers, ratings, choices, timers or voice notes, noted as they come: weight, sleep, mood, workouts</string>
 
     <!-- CONFIG - Labels of specific settings -->
     <string name="config_label_tracking_type">Tracking type</string>

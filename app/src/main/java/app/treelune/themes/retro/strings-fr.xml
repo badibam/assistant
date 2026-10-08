@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="name">Rétro</string>
+    <!-- What the theme looks like, said to the user: the README -->
+    <string name="tagline">Du pixel art : des pixels entiers, une police dessinée, des icônes en pixels, ses propres sons</string>
 </resources>

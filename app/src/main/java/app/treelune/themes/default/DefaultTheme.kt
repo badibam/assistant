@@ -1599,7 +1599,8 @@ object DefaultTheme : ThemeContract {
                             ItemIcon(iconResource, 24.dp, iconColor)
                         }
                     }
-                    Text(title, TextType.TITLE, false, TextAlign.Center)
+                    // One line: the header keeps its height, its buttons their place
+                    Text(title, TextType.TITLE, false, TextAlign.Center, maxLines = 1)
                 }
                 
                 // Line 2: Subtitle (forced centered)

@@ -3,6 +3,8 @@
     <!-- Strings of the goal tooltype -->
     <string name="display_name">Objectif</string>
     <string name="description">Un objectif jugé par le compte de ses critères, une tentative par période : lus dans vos entrées ou saisis, validés en réussite ou en échec</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Un objectif jugé chaque jour, semaine ou mois sur les critères que vous fixez, lus dans vos entrées</string>
     <string name="section_definition">Ce qu\'il demande</string>
     <string name="section_time">Quand</string>
     <string name="field_criteria">Critères</string>

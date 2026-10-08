@@ -46,7 +46,7 @@ import androidx.compose.foundation.verticalScroll
 **Exceptions** : Seuls les conteneurs avec LazyColumn/LazyRow (qui ont leur propre scroll natif) sont exemptés.
 
 ### Headers de Page
-UI.PageHeader supporte titre, sous-titre optionnel, icône, boutons gauche/droite avec actions prédéfinies. Un bouton gauche BACK donne aussi son action à la touche Retour du téléphone : un écran sans ce bouton (formulaire sans en-tête) pose son propre `BackHandler` sur son annulation, et l'accueil demande confirmation avant de fermer l'app.
+UI.PageHeader supporte titre (une ligne : l'entête garde sa hauteur), sous-titre optionnel, icône, boutons gauche/droite avec actions prédéfinies, et le fil d'Ariane au-dessus dans un lieu de la pile. Un bouton gauche BACK donne aussi son action à la touche Retour du téléphone ; sans lui, la touche retire le lieu de la pile (`MainScreen`), et un formulaire qui doit d'abord demander pose son propre `BackHandler`. L'accueil demande confirmation avant de fermer l'app.
 
 ## Conventions Générales
 
@@ -253,8 +253,10 @@ Row avec fillMaxWidth, colonnes en Box avec weight pour répartition (ex: 1f pou
 
 ## Navigation et États
 
-### Navigation Conditionnelle
-Pattern if/else avec state boolean pour navigation simple sans NavController.
+### La pile des lieux
+Un écran qu'on peut vouloir atteindre ou retrouver est un **lieu** (`core/navigation/Place.kt`) : l'accueil, une zone, un outil, une config, une page des Réglages, une automation, la conversation… Il a une adresse (`zone/<id>`, `tool/<id>/<zone>`) et connaît son parent. `Navigator` tient la pile, l'accueil en bas : un écran ouvre un lieu par `Navigator.push`, le quitte par `Navigator.pop`, et `MainScreen` dessine celui du haut (la conversation se pose par-dessus celui d'en dessous). Ouvert de l'extérieur (`Navigator.open` : une notification, un outil demandé ailleurs), un lieu reconstruit ses parents si rien n'est ouvert, s'empile seul sinon. La pile se sauve en adresses avec l'état de l'activité ; chaque lieu garde ses `rememberSaveable` tant qu'il y reste. Les fenêtres de passage (confirmation, saisie, sélecteur) ne sont pas des lieux : un `if` sur un état de l'écran qui les ouvre. Les règles de la pile, sans téléphone : `PlaceStackTest`.
+
+L'entête d'un lieu (`UI.PageHeader`) porte au-dessus du titre le fil d'Ariane (`BreadcrumbLine`, lu dans `LocalBreadcrumb`) : les lieux d'avant, chacun touchable, et le bouton de la conversation. Un lieu nomme son entrée du fil (`Navigator.name`). Les sons d'aller et retour sont joués par la pile, jamais par le geste : un bouton qui change de lieu (`BACK`, `CONFIGURE`, `VIEW`, `AI_CHAT`) ne joue rien.
 
 ### Feedback Utilisateur
 UI.Toast avec context, message et Duration (SHORT/LONG) pour messages temporaires.

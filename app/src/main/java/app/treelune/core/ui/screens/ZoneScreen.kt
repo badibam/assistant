@@ -6,6 +6,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import app.treelune.core.navigation.Navigator
+import app.treelune.core.navigation.Place
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,16 +33,8 @@ import kotlinx.coroutines.launch
  * Uses hybrid system: Compose layouts + UI.* visual components
  */
 @Composable
-fun ZoneScreen(
-    zone: Zone,
-    onBack: () -> Unit,
-    opening: Pair<String, String?>? = null,
-    onOpened: () -> Unit = {},
-    onNavigateToSeedEditor: ((seedSessionId: String) -> Unit)? = null,
-    onNavigateToAutomationHistory: ((automationId: String) -> Unit)? = null,
-    onConfigureZone: ((zoneId: String) -> Unit)? = null,
-    onAutomationStartChat: ((seedSessionId: String) -> Unit)? = null
-) {
+fun ZoneScreen(zone: Zone) {
+    val onBack = { Navigator.pop() }
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val coordinator = remember { Coordinator(context) }
@@ -66,21 +60,20 @@ fun ZoneScreen(
     // State for showing/hiding available tools list - persiste orientation changes
     var showAvailableToolsForGroup by rememberSaveable { mutableStateOf<String?>(null) } // null = hidden, "" = ungrouped, "group_name" = specific group
 
-    // State for tool configuration screen - persiste orientation changes
-    var showingConfigFor by rememberSaveable { mutableStateOf<String?>(null) }
-    var editingToolId by rememberSaveable { mutableStateOf<String?>(null) }
-
-    // State for tool usage screen - persiste orientation changes
-    var selectedToolInstanceId by rememberSaveable { mutableStateOf<String?>(null) }
-    // The entry the tool opens on: the oldest waiting one when its tile was touched with one
-    var openEntry by rememberSaveable(stateSaver = app.treelune.core.tools.EntryToOpen.Saver) { mutableStateOf<app.treelune.core.tools.EntryToOpen?>(null) }
     val waiting = app.treelune.core.ui.LocalWaiting.current
-    // A tool asked for from outside (a notification), opened as its tile would be
-    LaunchedEffect(opening) {
-        val (toolId, entryId) = opening ?: return@LaunchedEffect
-        openEntry = entryId?.let { app.treelune.core.tools.EntryToOpen.Existing(it) }
-        selectedToolInstanceId = toolId
-        onOpened()
+    // A tool opened on top of the zone, on the oldest entry that waits when its tile was touched with one
+    val openTool = { toolId: String, entry: app.treelune.core.tools.EntryToOpen? -> Navigator.push(Place.Tool(toolId, zone.id), entry) }
+    val configureTool = { tool: ToolInstance -> Navigator.push(Place.ToolConfig(zone.id, tool.tooltype, tool.id, null)) }
+    // The seed session of an automation, its history, a chat started with its starting message
+    val onNavigateToSeedEditor = { seedSessionId: String -> Navigator.push(Place.Seed(seedSessionId, zone.id)) }
+    val onNavigateToAutomationHistory = { automationId: String -> Navigator.push(Place.Automation(automationId, zone.id)) }
+    val onAutomationStartChat = { seedSessionId: String ->
+        coroutineScope.launch {
+            val seed = app.treelune.core.ai.orchestration.AIOrchestrator.loadSeedMessages(seedSessionId)
+            val prefill = seed.firstOrNull { it.sender == app.treelune.core.ai.data.MessageSender.USER }?.richContent?.segments ?: emptyList()
+            app.treelune.core.ai.orchestration.ChatRequests.open(prefill)
+        }
+        Unit
     }
 
     // State for automation creation dialog - with pre-selected group
@@ -91,9 +84,6 @@ fun ZoneScreen(
     var showDuplicateToolDialog by rememberSaveable { mutableStateOf(false) }
     var showDuplicateAutomationDialog by rememberSaveable { mutableStateOf(false) }
 
-    // Derived states from IDs (recomputed after orientation change)
-    val selectedToolInstance = toolInstances.find { it.id == selectedToolInstanceId }
-    
     // Load tool instances on first composition and when zone changes
     LaunchedEffect(zone.id) {
         coordinator.executeWithLoading(
@@ -123,8 +113,8 @@ fun ZoneScreen(
     LaunchedEffect(zone.id) {
         DataChangeNotifier.changes.collect { event -> if (event is DataChangeEvent.VariablesChanged) variablesVersion++ }
     }
-    // The variable open: its id, "" for a new one, null for none
-    var openVariable by rememberSaveable { mutableStateOf<String?>(null) }
+    // A variable opened on top of the zone: its id, "" for a new one, in the group chosen for it
+    val openVariable = { id: String -> Navigator.push(Place.Variable(zone.id, id.ifEmpty { null }, preSelectedGroup)) }
 
     // Load automations for this zone
     LaunchedEffect(zone.id) {
@@ -201,12 +191,6 @@ fun ZoneScreen(
         }
     }
     
-    val onCancelConfig = {
-        showingConfigFor = null
-        editingToolId = null
-        preSelectedGroup = null
-    }
-    
     // Parse zone tool_groups from config
     val zoneToolGroups = remember(zone.tool_groups) {
         LogManager.ui("Parsing tool_groups for zone ${zone.id}: tool_groups = '${zone.tool_groups}'", "DEBUG")
@@ -234,61 +218,6 @@ fun ZoneScreen(
         onError = { errorMessage = it }
     )
 
-    // Show configuration screen if requested
-    showingConfigFor?.let { toolTypeId ->
-        ToolTypeManager.getToolType(toolTypeId)?.let { toolType ->
-            app.treelune.core.tools.ui.ToolConfigScreen(
-                toolType = toolType,
-                tooltype = toolTypeId,
-                zoneId = zone.id,
-                // The saved id, not the tool resolved from the list: the list reloads after a
-                // rotation, and the config screen, which loads the tool itself, would otherwise
-                // be handed null meanwhile and switch to creation
-                existingToolId = editingToolId,
-                initialGroup = preSelectedGroup,
-                onDone = {
-                    onCancelConfig()
-                    reloadToolInstances()
-                },
-                onCancel = onCancelConfig
-            )
-        }
-        return // Exit ZoneScreen composition when showing config
-    }
-    
-    // Show a variable's screen if one is open
-    openVariable?.let { id ->
-        app.treelune.core.ui.variables.VariableScreen(
-            zoneId = zone.id,
-            variableId = id.ifEmpty { null },
-            group = preSelectedGroup,
-            onDone = {
-                openVariable = null
-                preSelectedGroup = null
-                variablesVersion++
-            }
-        )
-        return
-    }
-
-    // Show tool usage screen if selected
-    selectedToolInstance?.let { toolInstance ->
-        app.treelune.core.ui.components.ShownScreen { ToolTypeManager.getToolType(toolInstance.tooltype)?.getUsageScreen(
-            toolInstanceId = toolInstance.id,
-            configJson = toolInstance.config_json,
-            zoneName = zone.name,
-            onNavigateBack = {
-                selectedToolInstanceId = null
-            },
-            onLongClick = {
-                editingToolId = toolInstance.id
-                showingConfigFor = toolInstance.tooltype
-            },
-            openEntry = openEntry
-        ) }
-        return // Exit ZoneScreen composition when showing usage screen
-    }
-
     app.treelune.core.ui.components.CloseEditOnLeave(gridEditor)
 
     // Leaving the zone, by the header's back button or the phone's back key (the header answers
@@ -315,7 +244,7 @@ fun ZoneScreen(
             leftButton = ButtonAction.BACK,
             rightButton = ButtonAction.CONFIGURE,
             onLeftClick = leave,
-            onRightClick = { onConfigureZone?.invoke(zone.id) }
+            onRightClick = { Navigator.push(Place.ZoneConfig(zone.id)) }
         )
 
         // Display sections by group
@@ -333,10 +262,10 @@ fun ZoneScreen(
                     groupName = groupName,
                     zoneToolGroups = zoneToolGroups,
                     variables = variables.filter { it.group == groupName },
-                    onOpenVariable = { openVariable = it },
+                    onOpenVariable = { preSelectedGroup = null; openVariable(it) },
                     onCreateVariable = {
                         preSelectedGroup = groupName
-                        openVariable = ""
+                        openVariable("")
                         showAvailableToolsForGroup = null
                     },
                     toolInstances = toolInstances,
@@ -344,8 +273,7 @@ fun ZoneScreen(
                     showAvailableToolsForGroup = showAvailableToolsForGroup,
                     onToggleToolsList = { showAvailableToolsForGroup = if (showAvailableToolsForGroup == groupName) null else groupName },
                     onSelectToolType = { toolTypeId ->
-                        showingConfigFor = toolTypeId
-                        preSelectedGroup = groupName
+                        Navigator.push(Place.ToolConfig(zone.id, toolTypeId, null, groupName))
                         showAvailableToolsForGroup = null
                     },
                     onCreateAutomation = {
@@ -363,14 +291,11 @@ fun ZoneScreen(
                         showDuplicateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
-                    onToolClick = { toolId -> openEntry = waiting.oldest[toolId]?.let { app.treelune.core.tools.EntryToOpen.Existing(it) }; selectedToolInstanceId = toolId },
-                    onOpenEntry = { tool, entry -> openEntry = entry; selectedToolInstanceId = tool.id },
+                    onToolClick = { toolId -> openTool(toolId, waiting.oldest[toolId]?.let { app.treelune.core.tools.EntryToOpen.Existing(it) }) },
+                    onOpenEntry = { tool, entry -> openTool(tool.id, entry) },
                     editor = gridEditor,
-                    onToolLongClick = { tool ->
-                        editingToolId = tool.id
-                        showingConfigFor = tool.tooltype
-                    },
-                    onAutomationEdit = { automation -> onNavigateToSeedEditor?.invoke(automation.seedSessionId) },
+                    onToolLongClick = configureTool,
+                    onAutomationEdit = { automation -> onNavigateToSeedEditor(automation.seedSessionId) },
                     onAutomationTest = { automation ->
                         coroutineScope.launch {
                             try {
@@ -388,7 +313,7 @@ fun ZoneScreen(
                             }
                         }
                     },
-                    onAutomationView = { automation -> onNavigateToAutomationHistory?.invoke(automation.id) },
+                    onAutomationView = { automation -> onNavigateToAutomationHistory(automation.id) },
                     onAutomationToggle = { automation, enabled ->
                         coroutineScope.launch {
                             try {
@@ -418,10 +343,10 @@ fun ZoneScreen(
             UngroupedSection(
                     toolInstances = ungroupedTools,
                     variables = variables.filter { it.group == null || it.group !in zoneToolGroups },
-                    onOpenVariable = { openVariable = it },
+                    onOpenVariable = { preSelectedGroup = null; openVariable(it) },
                     onCreateVariable = {
                         preSelectedGroup = null
-                        openVariable = ""
+                        openVariable("")
                         showAvailableToolsForGroup = null
                     },
                     automations = ungroupedAutomations,
@@ -429,8 +354,7 @@ fun ZoneScreen(
                     showAvailableToolsForGroup = showAvailableToolsForGroup,
                     onToggleToolsList = { showAvailableToolsForGroup = if (showAvailableToolsForGroup == "") null else "" },
                     onSelectToolType = { toolTypeId ->
-                        showingConfigFor = toolTypeId
-                        preSelectedGroup = null // No group for ungrouped section
+                        Navigator.push(Place.ToolConfig(zone.id, toolTypeId, null, null))
                         showAvailableToolsForGroup = null
                     },
                     onCreateAutomation = {
@@ -448,14 +372,11 @@ fun ZoneScreen(
                         showDuplicateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
-                    onToolClick = { toolId -> openEntry = waiting.oldest[toolId]?.let { app.treelune.core.tools.EntryToOpen.Existing(it) }; selectedToolInstanceId = toolId },
-                    onOpenEntry = { tool, entry -> openEntry = entry; selectedToolInstanceId = tool.id },
+                    onToolClick = { toolId -> openTool(toolId, waiting.oldest[toolId]?.let { app.treelune.core.tools.EntryToOpen.Existing(it) }) },
+                    onOpenEntry = { tool, entry -> openTool(tool.id, entry) },
                     editor = gridEditor,
-                    onToolLongClick = { tool ->
-                        editingToolId = tool.id
-                        showingConfigFor = tool.tooltype
-                    },
-                    onAutomationEdit = { automation -> onNavigateToSeedEditor?.invoke(automation.seedSessionId) },
+                    onToolLongClick = configureTool,
+                    onAutomationEdit = { automation -> onNavigateToSeedEditor(automation.seedSessionId) },
                     onAutomationTest = { automation ->
                         coroutineScope.launch {
                             try {
@@ -473,7 +394,7 @@ fun ZoneScreen(
                             }
                         }
                     },
-                    onAutomationView = { automation -> onNavigateToAutomationHistory?.invoke(automation.id) },
+                    onAutomationView = { automation -> onNavigateToAutomationHistory(automation.id) },
                     onAutomationToggle = { automation, enabled ->
                         coroutineScope.launch {
                             try {
@@ -540,7 +461,7 @@ fun ZoneScreen(
                     }
                 }
                 // Navigate to SEED editor
-                onNavigateToSeedEditor?.invoke(seedSessionId)
+                onNavigateToSeedEditor(seedSessionId)
             }
         )
     }

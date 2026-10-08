@@ -129,8 +129,16 @@ Leur contenu s'écrit à leur construction.
 
 Dans les réglages de l'app : pour chaque chapitre, l'étape en cours ou « fait » ; la bande masquée ou non. Elle survit aux mises à jour et à la réinstallation de la démo, part avec la sauvegarde, disparaît à la remise à zéro (ce qui relance Premiers pas). « Recommencer » par chapitre, pas de remise à zéro globale.
 
+## Où ça vit
+
+- Les chapitres : `assets/guide/chapters.json`, une étape par objet (sorte, adresse du lieu, opération attendue avec son origine et ses paramètres, ce qu'elle garde). « Hors démo » n'a pas de forme à lui : une étape vise la zone créée à l'étape d'avant (`{zone}`), jamais une zone de la démo. Un chapitre par type d'outil s'ajoute après « Organiser », tiré du nom et de la `tagline` de l'outil.
+- Les textes : `core/strings/sources/guide.xml` et `guide-fr.xml`, nommés d'après le chapitre et l'étape.
+- Le moteur : `core/guide/Guide.kt`, qui écoute les opérations réussies demandées de l'extérieur (`PassedOperations`, émises par le coordinateur) et la pile ; la progression dans la catégorie de réglages `guide`.
+- Le contrôle : `scripts/check_guide.py`, dans `./run test`.
+
 ## Ce qui reste ouvert
 
-- Le contenu des tutoriels 2 à 4 et des chapitres de Référence.
+- Le contenu des chapitres de Référence : des ébauches (titre et une ligne), à écrire ensemble dans une séance dédiée ; un chapitre sans étape s'affiche « À écrire ».
 - Ce qui marque « fait » un chapitre sans étape à faire (ouvert, ou lu jusqu'au bout).
-- Le format de données d'un chapitre et la forme de la condition d'une étape (paramètres attendus, « hors démo », renvoi à une étape précédente).
+- Un message envoyé à l'IA ne passe pas par le dispatcher (`AIOrchestrator.sendMessage` le range lui-même) : l'étape « demandez-lui son avis » de Brancher une IA se lit, au lieu d'attendre l'envoi.
+- Le dialogue « la démo n'est pas installée » : le fermer sans choisir (retour, toucher à côté) saute les étapes de la démo, comme son bouton.

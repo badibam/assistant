@@ -5,6 +5,8 @@
     <!-- Métadonnées -->
     <string name="display_name">Journal</string>
     <string name="description">Entrées de journal horodatées, dans l\'ordre chronologique</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Un carnet daté, écrit ou dicté</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
     <string name="schema_config_display_name">Configuration Journal</string>

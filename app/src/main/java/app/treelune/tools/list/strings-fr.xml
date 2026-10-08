@@ -5,6 +5,8 @@
     <!-- Métadonnées -->
     <string name="display_name">Liste</string>
     <string name="description">Ce qui reste à faire, coché au fur et à mesure : courses, tâches, check-list</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Ce qui reste à faire, coché au fur et à mesure, avec des échéances si vous voulez</string>
 
     <!-- Champs d'un élément -->
     <string name="field_content">Contenu</string>

@@ -5,6 +5,8 @@
     <!-- Metadata -->
     <string name="display_name">Notes</string>
     <string name="description">Quick and simple note taking with flexible organisation</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Notes, each with its title, kept where they belong</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
     <string name="schema_config_display_name">Notes configuration</string>

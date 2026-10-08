@@ -136,7 +136,11 @@ class Coordinator(private val context: Context) {
             // The origin goes with the operation, for its service and every call made from it
             val result = kotlinx.coroutines.withContext(Origin(command.source, command.byTheApp)) { service.execute(operation, params, token) }
             LogManager.coordination("Service result: success=${result.success}, error=${result.error}", "VERBOSE")
-            
+            // Asked from outside and done: said to whoever waits for it (the Guide's steps)
+            if (result.success && !command.byTheApp) {
+                PassedOperations.pass(PassedOperations.Passed(command.action, command.source, command.params, result.data ?: emptyMap()))
+            }
+
             CommandResult(
                 status = when {
                     result.cancelled -> CommandStatus.CANCELLED

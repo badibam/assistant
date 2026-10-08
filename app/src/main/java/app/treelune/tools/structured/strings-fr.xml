@@ -5,6 +5,8 @@
     <!-- Metadata -->
     <string name="display_name">Données structurées</string>
     <string name="description">Des fiches faites de vos champs, chacune retrouvée par son nom : aliments et leurs calories, livres, contacts</string>
+    <!-- What the tool is for, said to the user: the README and the Guide -->
+    <string name="tagline">Des fiches faites de vos champs, retrouvées par leur nom : aliments, livres, plantes</string>
 
     <!-- Setting -->
     <string name="field_table_columns">Colonnes du tableau</string>
