@@ -15,6 +15,25 @@
     "observed": "2026-10-02"
   },
   {
+    "id": "claude-haiku-5-5-thinking-off",
+    "provider": "anthropic",
+    "models": [
+      "claude-haiku-5-5"
+    ],
+    "kind": "thinking_off",
+    "effective": null,
+    "thinking": "disabled",
+    "efforts": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "client": null,
+    "note": "Thinking is on with no thinking field. disabled at xhigh or max returns 400. /v1/models now declares thinking.types.disabled but not the effort limit. With thinking off, the model can skip a tool call it needs when JSON output is also requested.",
+    "source": "https://platform.claude.com/docs/en/build-with-claude/thinking",
+    "observed": "2026-10-08"
+  },
+  {
     "id": "claude-opus-5-thinking-off",
     "provider": "anthropic",
     "models": [
@@ -162,7 +181,7 @@
     "kind": "trap",
     "effective": null,
     "client": null,
-    "note": "The effort applied when none is set is not established: the doc read on 2026-07-24 said max for agent clients such as Claude Code, the doc read on 2026-09-19 says high. Not measured.",
+    "note": "The effort applied when none is set was not established: the doc read on 2026-07-24 said max for agent clients such as Claude Code, the doc read on 2026-09-19 says high. Since the monitor's reading of 2026-10-05, GET /models declares effort.default_level high for both models: read it there. Not measured.",
     "source": "https://api-docs.deepseek.com/guides/thinking_mode",
     "observed": "2026-09-19"
   },
@@ -231,6 +250,37 @@
     "observed": "2026-10-04"
   },
   {
+    "id": "elevenlabs-v1-tts-retired",
+    "provider": "elevenlabs",
+    "models": [
+      "eleven_monolingual_v1",
+      "eleven_multilingual_v1"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-09",
+    "replacement": "eleven_multilingual_v2",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced in the 2026-06-08 changelog. Absent from GET /v1/models; refusal of the old name not measured.",
+    "source": "https://elevenlabs.io/docs/changelog/2026/6/8",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "scribe-v1-retired",
+    "provider": "elevenlabs",
+    "models": [
+      "scribe_v1"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-09",
+    "replacement": "scribe_v2",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced in the 2026-06-08 changelog, which also names scribe_v2_realtime. The models page still lists scribe_v1 among deprecated models, without a date. Speech-to-text: not in GET /v1/models, which lists TTS models only.",
+    "source": "https://elevenlabs.io/docs/changelog/2026/6/8",
+    "observed": "2026-10-08"
+  },
+  {
     "id": "kimi-k3-effort-levels",
     "provider": "kimi",
     "models": [
@@ -262,6 +312,405 @@
     "note": "K3 always thinks; lower reasoning_effort to think less.",
     "source": "https://platform.kimi.ai/docs/guide/kimi-k3-quickstart",
     "observed": "2026-10-02"
+  },
+  {
+    "id": "chatgpt-4o-latest-retired",
+    "provider": "openai",
+    "models": [
+      "chatgpt-4o-latest"
+    ],
+    "kind": "retired",
+    "effective": "2026-02-17",
+    "replacement": "gpt-5.1-chat-latest",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-11-18. The replacement was itself retired on 2026-07-23 (gpt-5-chat-latest-retired).",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "codex-mini-latest-retired",
+    "provider": "openai",
+    "models": [
+      "codex-mini-latest"
+    ],
+    "kind": "retired",
+    "effective": "2026-02-12",
+    "replacement": "gpt-5-codex-mini",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-11-17, with the legacy local shell tool.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "computer-use-preview-retired",
+    "provider": "openai",
+    "models": [
+      "computer-use-preview-2025-03-11",
+      "computer-use-preview"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-23",
+    "replacement": "gpt-5.6-terra",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "dall-e-retired",
+    "provider": "openai",
+    "models": [
+      "dall-e-2",
+      "dall-e-3"
+    ],
+    "kind": "retired",
+    "effective": "2026-05-12",
+    "replacement": "gpt-image-2",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-11-14. The page names gpt-image-2, gpt-image-1 or gpt-image-1-mini; gpt-image-1 is itself retired on 2026-10-23.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-3-5-turbo-2023-snapshots-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-3.5-turbo-0613",
+      "gpt-3.5-turbo-16k-0613",
+      "gpt-3.5-turbo-0301"
+    ],
+    "kind": "retired",
+    "effective": "2024-09-13",
+    "replacement": "gpt-3.5-turbo",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2023-06-13 (0301) and 2023-11-06 (0613, 16k-0613). The replacement is itself retired on 2026-10-23 (gpt-3-5-turbo-retired).",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-3-5-turbo-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-3.5-turbo-0125",
+      "gpt-3.5-turbo",
+      "gpt-3.5-turbo-completions"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-terra",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-3-base-babbage-retired",
+    "provider": "openai",
+    "models": [
+      "ada",
+      "babbage"
+    ],
+    "kind": "retired",
+    "effective": "2024-01-04",
+    "replacement": "babbage-002",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2023-07-06, base models and their fine-tuned versions. The replacement is itself retired on 2026-09-28 (openai-legacy-completions-retired).",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-3-base-davinci-retired",
+    "provider": "openai",
+    "models": [
+      "curie",
+      "davinci"
+    ],
+    "kind": "retired",
+    "effective": "2024-01-04",
+    "replacement": "davinci-002",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2023-07-06, base models and their fine-tuned versions. The replacement is itself retired on 2026-09-28 (openai-legacy-completions-retired).",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4-1-nano-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4.1-nano",
+      "gpt-4.1-nano-2025-04-14"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-luna",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4-32k-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4-32k",
+      "gpt-4-32k-0613",
+      "gpt-4-32k-0314"
+    ],
+    "kind": "retired",
+    "effective": "2025-06-06",
+    "replacement": "gpt-4o",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2024-06-06; only existing users kept access from 2024-06-17.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4-5-preview-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4.5-preview"
+    ],
+    "kind": "retired",
+    "effective": "2025-07-14",
+    "replacement": "gpt-4.1",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-04-14.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4-preview-snapshots-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4-0314",
+      "gpt-4-1106-preview",
+      "gpt-4-0125-preview",
+      "gpt-4-turbo-preview",
+      "gpt-4-turbo-preview-completions"
+    ],
+    "kind": "retired",
+    "effective": "2026-03-26",
+    "replacement": "gpt-5",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-09-26. The page names gpt-5, or gpt-4.1 for latency-sensitive tasks without reasoning. gpt-4-1106-preview is also listed again with a 2026-10-23 shutdown in the 2026-04-22 table; the earlier date is kept.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4-0613",
+      "gpt-4",
+      "gpt-4-0613-completions",
+      "gpt-4-completions"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4-turbo-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4-turbo",
+      "gpt-4-turbo-2024-04-09",
+      "gpt-4-turbo-completions"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4-vision-preview-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4-vision-preview",
+      "gpt-4-1106-vision-preview"
+    ],
+    "kind": "retired",
+    "effective": "2024-12-06",
+    "replacement": "gpt-4o",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2024-06-06; only existing users kept access from 2024-06-17.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4o-2024-05-13-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4o-2024-05-13"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. Only this snapshot is named, not the gpt-4o alias.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4o-audio-preview-2024-10-01-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4o-audio-preview-2024-10-01"
+    ],
+    "kind": "retired",
+    "effective": "2025-10-10",
+    "replacement": "gpt-audio-1.5",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-06-10.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4o-audio-preview-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4o-audio-preview"
+    ],
+    "kind": "retired",
+    "effective": "2026-05-07",
+    "replacement": "gpt-audio-1.5",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-09-15.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4o-mini-audio-preview-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4o-mini-audio-preview"
+    ],
+    "kind": "retired",
+    "effective": "2026-05-07",
+    "replacement": "gpt-audio-mini",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-09-15. The replacement is itself retired on 2027-01-20 (openai-audio-legacy-retired).",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4o-mini-realtime-preview-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4o-mini-realtime-preview"
+    ],
+    "kind": "retired",
+    "effective": "2026-05-07",
+    "replacement": "gpt-realtime-mini",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-09-15. The replacement is itself retired on 2027-01-20 (openai-realtime-mini-legacy-retired).",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4o-mini-transcribe-2025-03-20-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4o-mini-transcribe-2025-03-20"
+    ],
+    "kind": "retired",
+    "effective": "2027-01-20",
+    "replacement": "gpt-4o-mini-transcribe-2025-12-15",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-07-20. The replacement belongs to gpt-4o-mini-transcribe, itself retired on 2027-02-26 (openai-transcription-models-retired).",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4o-realtime-preview-2024-10-01-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4o-realtime-preview-2024-10-01"
+    ],
+    "kind": "retired",
+    "effective": "2025-10-10",
+    "replacement": "gpt-realtime-1.5",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-06-10.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4o-realtime-preview-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4o-realtime-preview",
+      "gpt-4o-realtime-preview-2025-06-03",
+      "gpt-4o-realtime-preview-2024-12-17"
+    ],
+    "kind": "retired",
+    "effective": "2026-05-07",
+    "replacement": "gpt-realtime-1.5",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-09-15.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-4o-search-preview-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-4o-search-preview-2025-03-11",
+      "gpt-4o-mini-search-preview-2025-03-11"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-23",
+    "replacement": "gpt-5.6-terra",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. Still listed by GET /v1/models in the monitor's last reading (gpt-4o-search-preview-2025-03-11, gpt-4o-mini-search-preview-2025-03-11); refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-5-1-codex-mini-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5.1-codex-mini"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-23",
+    "replacement": "gpt-5.6-terra",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. Still listed by GET /v1/models in the monitor's last reading (gpt-5.1-codex-mini); refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
   },
   {
     "id": "gpt-5-1-effort-levels",
@@ -314,6 +763,22 @@
     "note": "Announced 2026-10-01 with six months' notice.",
     "source": "https://developers.openai.com/api/docs/deprecations",
     "observed": "2026-10-04"
+  },
+  {
+    "id": "gpt-5-2-5-3-chat-latest-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5.2-chat-latest",
+      "gpt-5.3-chat-latest"
+    ],
+    "kind": "retired",
+    "effective": "2026-08-10",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-05-08. Still listed by GET /v1/models in the monitor's last reading (gpt-5.2-chat-latest, gpt-5.3-chat-latest); refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
   },
   {
     "id": "gpt-5-2-codex-effort-levels",
@@ -504,6 +969,21 @@
     "note": "Announced 2026-10-01 with six months' notice.",
     "source": "https://developers.openai.com/api/docs/deprecations",
     "observed": "2026-10-04"
+  },
+  {
+    "id": "gpt-5-4-cyber-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5.4-cyber"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-01",
+    "replacement": null,
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-09-11. The page names no replacement model: 'the most capable cyber model available to you'. Absent from GET /v1/models; refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
   },
   {
     "id": "gpt-5-4-effort-levels",
@@ -858,6 +1338,39 @@
     "observed": "2026-10-05"
   },
   {
+    "id": "gpt-5-chat-latest-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5-chat-latest",
+      "gpt-5.1-chat-latest"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. Still listed by GET /v1/models in the monitor's last reading (gpt-5-chat-latest, gpt-5.1-chat-latest); refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-5-codex-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5-codex",
+      "gpt-5.1-codex",
+      "gpt-5.1-codex-max"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. Still listed by GET /v1/models in the monitor's last reading (gpt-5-codex, gpt-5.1-codex, gpt-5.1-codex-max); refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
     "id": "gpt-5-effort-levels",
     "provider": "openai",
     "models": [
@@ -893,6 +1406,36 @@
     "note": "The model page lists its input modalities as text and image. GET /v1/models says nothing about inputs.",
     "source": "https://developers.openai.com/api/docs/models/gpt-5",
     "observed": "2026-10-05"
+  },
+  {
+    "id": "gpt-5-mini-2025-snapshot-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5-mini-2025-08-07"
+    ],
+    "kind": "retired",
+    "effective": "2026-12-11",
+    "replacement": "gpt-5.6-terra",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-06-11. Only the snapshot is named, not the gpt-5-mini alias.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-5-nano-2025-snapshot-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-5-nano-2025-08-07"
+    ],
+    "kind": "retired",
+    "effective": "2026-12-11",
+    "replacement": "gpt-5.6-luna",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-06-11. Only the snapshot is named, not the gpt-5-nano alias.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
   },
   {
     "id": "gpt-5-pro-effort-levels",
@@ -1075,6 +1618,347 @@
     "observed": "2026-10-05"
   },
   {
+    "id": "gpt-audio-mini-2025-10-06-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-audio-mini-2025-10-06"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-23",
+    "replacement": "gpt-audio-1.5",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. Still listed by GET /v1/models in the monitor's last reading (gpt-audio-mini-2025-10-06); refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-image-1-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-image-1"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-image-2.5-sunburst",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. The page names gpt-image-2.5-sunburst or gpt-image-2.5-flare.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "gpt-realtime-mini-2025-10-06-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-realtime-mini-2025-10-06"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-23",
+    "replacement": "gpt-realtime-2.1-mini",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "instructgpt-retired",
+    "provider": "openai",
+    "models": [
+      "text-ada-001",
+      "text-babbage-001",
+      "text-curie-001",
+      "text-davinci-001",
+      "text-davinci-002",
+      "text-davinci-003"
+    ],
+    "kind": "retired",
+    "effective": "2024-01-04",
+    "replacement": "gpt-3.5-turbo-instruct",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2023-07-06. The replacement is itself retired on 2026-09-28 (openai-legacy-completions-retired).",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "o1-mini-retired",
+    "provider": "openai",
+    "models": [
+      "o1-mini"
+    ],
+    "kind": "retired",
+    "effective": "2025-10-27",
+    "replacement": "o4-mini",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-04-28. The replacement is itself retired on 2026-10-23 (o4-mini-retired).",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "o1-preview-retired",
+    "provider": "openai",
+    "models": [
+      "o1-preview"
+    ],
+    "kind": "retired",
+    "effective": "2025-07-28",
+    "replacement": "o3",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-04-28. The o3 alias is not named on the page; its snapshot o3-2025-04-16 is retired on 2026-12-11.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "o1-pro-retired",
+    "provider": "openai",
+    "models": [
+      "o1-pro-2025-03-19",
+      "o1-pro"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. Replacement: gpt-5.6-sol with reasoning.mode: pro.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "o1-retired",
+    "provider": "openai",
+    "models": [
+      "o1-2024-12-17",
+      "o1"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "o3-2025-snapshots-retired",
+    "provider": "openai",
+    "models": [
+      "o3-2025-04-16",
+      "o3-pro-2025-06-10"
+    ],
+    "kind": "retired",
+    "effective": "2026-12-11",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-06-11. For o3-pro-2025-06-10 the replacement is gpt-5.6-sol with reasoning.mode: pro. Only the snapshots are named, not the o3 and o3-pro aliases.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "o3-mini-retired",
+    "provider": "openai",
+    "models": [
+      "o3-mini-2025-01-31",
+      "o3-mini"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "o4-mini-retired",
+    "provider": "openai",
+    "models": [
+      "o4-mini-2025-04-16",
+      "o4-mini",
+      "ft-o4-mini-2025-04-16"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-terra",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. ft-o4-mini-2025-04-16 stands for the fine-tunes of that base.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-audio-legacy-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-audio",
+      "gpt-4o-audio",
+      "gpt-audio-mini",
+      "gpt-4o-mini-audio"
+    ],
+    "kind": "retired",
+    "effective": "2027-01-20",
+    "replacement": "gpt-audio-1.5",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-07-20. The page names model families and snapshots; dated snapshots of these families are not listed one by one.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-codex-models-retired",
+    "provider": "openai",
+    "models": [
+      "code-davinci-002",
+      "code-davinci-001",
+      "code-cushman-002",
+      "code-cushman-001"
+    ],
+    "kind": "retired",
+    "effective": "2023-03-23",
+    "replacement": "gpt-4o",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2023-03-20. code-davinci-002 is listed again with a 2024-01-04 shutdown and gpt-3.5-turbo-instruct as replacement in the 2023-07-06 table; the earlier date is kept.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-deep-research-retired",
+    "provider": "openai",
+    "models": [
+      "o3-deep-research-2025-06-26",
+      "o3-deep-research",
+      "o4-mini-deep-research-2025-06-26",
+      "o4-mini-deep-research"
+    ],
+    "kind": "retired",
+    "effective": "2026-07-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. Still listed by GET /v1/models in the monitor's last reading (o4-mini-deep-research-2025-06-26, o4-mini-deep-research); refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-edit-models-retired",
+    "provider": "openai",
+    "models": [
+      "text-davinci-edit-001",
+      "code-davinci-edit-001"
+    ],
+    "kind": "retired",
+    "effective": "2024-01-04",
+    "replacement": "gpt-4o",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2023-07-06, with the /v1/edits endpoint.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-fine-tunes-gpt-4-1-nano-retired",
+    "provider": "openai",
+    "models": [
+      "ft-gpt-4.1-nano-2025-04-14"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-luna",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. The name stands for the fine-tunes of gpt-4.1-nano-2025-04-14; the page gives the replacement as a base model to fine-tune again.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-fine-tunes-gpt-4-retired",
+    "provider": "openai",
+    "models": [
+      "ft-gpt-4"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-sol",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. The name stands for the fine-tunes of gpt-4; the page gives the replacement as a base model to fine-tune again.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-fine-tunes-terra-retired",
+    "provider": "openai",
+    "models": [
+      "ft-gpt-3.5-turbo",
+      "ft-babbage-002",
+      "ft-davinci-002"
+    ],
+    "kind": "retired",
+    "effective": "2026-10-23",
+    "replacement": "gpt-5.6-terra",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-04-22. The names stand for the fine-tunes of each base model; the page gives the replacement as a base model to fine-tune again.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-first-gen-embeddings-retired",
+    "provider": "openai",
+    "models": [
+      "text-similarity-ada-001",
+      "text-search-ada-doc-001",
+      "text-search-ada-query-001",
+      "code-search-ada-code-001",
+      "code-search-ada-text-001",
+      "text-similarity-babbage-001",
+      "text-search-babbage-doc-001",
+      "text-search-babbage-query-001",
+      "code-search-babbage-code-001",
+      "code-search-babbage-text-001",
+      "text-similarity-curie-001",
+      "text-search-curie-doc-001",
+      "text-search-curie-query-001",
+      "text-similarity-davinci-001",
+      "text-search-davinci-doc-001",
+      "text-search-davinci-query-001"
+    ],
+    "kind": "retired",
+    "effective": "2024-01-04",
+    "replacement": "text-embedding-3-small",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2023-07-06.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-legacy-completions-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-3.5-turbo-instruct",
+      "babbage-002",
+      "davinci-002",
+      "gpt-3.5-turbo-1106"
+    ],
+    "kind": "retired",
+    "effective": "2026-09-28",
+    "replacement": "gpt-5.6-terra",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-09-26. Still listed by GET /v1/models in the monitor's last reading (gpt-3.5-turbo-instruct, babbage-002, davinci-002, gpt-3.5-turbo-1106); refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
     "id": "openai-pdf-input",
     "provider": "openai",
     "models": [
@@ -1120,5 +2004,109 @@
     "note": "PDF files are read by models with vision capabilities: the API sends the model both the extracted text and an image of each page. Chat Completions takes a PDF as a file content part; models without Chat Completions (Pro, Codex) take it through the Responses API as input_file. The model pages do not list PDF among input modalities, and their file_uploads feature is present on some models and absent on others without saying what it means for PDF.",
     "source": "https://developers.openai.com/api/docs/guides/file-inputs",
     "observed": "2026-10-05"
+  },
+  {
+    "id": "openai-realtime-legacy-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-realtime",
+      "gpt-4o-realtime"
+    ],
+    "kind": "retired",
+    "effective": "2027-01-20",
+    "replacement": "gpt-realtime-2.1",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-07-20. The page names model families and snapshots; dated snapshots of these families are not listed one by one.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-realtime-mini-legacy-retired",
+    "provider": "openai",
+    "models": [
+      "gpt-realtime-mini",
+      "gpt-4o-mini-realtime"
+    ],
+    "kind": "retired",
+    "effective": "2027-01-20",
+    "replacement": "gpt-realtime-2.1-mini",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-07-20. The page names model families and snapshots; dated snapshots of these families are not listed one by one.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-transcription-models-retired",
+    "provider": "openai",
+    "models": [
+      "whisper-1",
+      "gpt-4o-transcribe",
+      "gpt-4o-mini-transcribe",
+      "gpt-4o-transcribe-diarize"
+    ],
+    "kind": "retired",
+    "effective": "2027-02-26",
+    "replacement": "gpt-transcribe",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-08-26. The page names gpt-live-transcribe or gpt-transcribe.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "openai-tts-models-retired",
+    "provider": "openai",
+    "models": [
+      "tts-1",
+      "tts-1-hd",
+      "gpt-4o-mini-tts-2025-03-20",
+      "gpt-4o-mini-tts-2025-12-15"
+    ],
+    "kind": "retired",
+    "effective": "2027-01-06",
+    "replacement": "gpt-realtime-2.1-mini",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-10-01. Text-to-speech moves to the Realtime API.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "sora-2-retired",
+    "provider": "openai",
+    "models": [
+      "sora-2",
+      "sora-2-pro",
+      "sora-2-2025-10-06",
+      "sora-2-2025-12-08",
+      "sora-2-pro-2025-10-06"
+    ],
+    "kind": "retired",
+    "effective": "2026-09-24",
+    "replacement": null,
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2026-03-24 with the Videos API itself; no replacement. Still listed by GET /v1/models in the monitor's last reading (sora-2, sora-2-pro); refusal of the old name not measured.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
+  },
+  {
+    "id": "text-moderation-retired",
+    "provider": "openai",
+    "models": [
+      "text-moderation-007",
+      "text-moderation-stable",
+      "text-moderation-latest"
+    ],
+    "kind": "retired",
+    "effective": "2025-10-27",
+    "replacement": "omni-moderation",
+    "old_name_accepted": false,
+    "client": null,
+    "note": "Announced 2025-04-28.",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "observed": "2026-10-08"
   }
 ]
