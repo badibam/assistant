@@ -1,4 +1,4 @@
-# manifest — assistant
+# manifest — treelune
 
 ## dev_base @ b263dd7
 ## universel @ 5f92093
