@@ -117,6 +117,19 @@ class EntryStart(
             if (others.isNotEmpty()) return Decision.OtherFields(others)
             return Decision.Write(start.state(status, now))
         }
+
+        /**
+         * Whether a change sending [sent] as state would move the status of an entry whose state
+         * is [current], in a tool type that declares [start]: a message sent, a questionnaire
+         * filled, an attempt validated. Only what the app writes itself ([byTheApp]: the tool's
+         * operations, its scheduler) does that; the rest of the state (read, archived) stays open
+         * to any change.
+         */
+        fun changesStatus(start: EntryStart?, current: String?, sent: org.json.JSONObject?, byTheApp: Boolean): Boolean {
+            if (start == null || byTheApp || sent == null || !sent.has(STATUS)) return false
+            val now = current?.takeIf { it.isNotBlank() }?.let { org.json.JSONObject(it).optString(STATUS) } ?: ""
+            return sent.isNull(STATUS) || sent.optString(STATUS) != now
+        }
     }
 }
 

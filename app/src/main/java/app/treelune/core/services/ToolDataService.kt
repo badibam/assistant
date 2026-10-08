@@ -364,6 +364,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
             ?.let { (if (byTheApp) it else SystemManagedFields.dropFromData(it, target.schema.content)).toString() }
         val extraJson = params.optJSONObject("extra")
         val stateJson = params.optJSONObject("state")
+        // An entry's status follows its life, which its tool's operations and the app move on
+        if (EntryStart.changesStatus(target.entryFields?.start, existingEntity.state, stateJson, byTheApp)) {
+            return OperationResult.error(s.shared("service_error_status_changed"))
+        }
 
         // Milliseconds are the contract. An absent timestamp leaves the recorded one alone;
         // any number is taken as milliseconds. Anything else is refused.

@@ -88,6 +88,20 @@ class EntryStartTest {
         assertEquals("active", written(EntryStart.decide(goal, state("""{ "status": "active" }"""), byTheApp = true, now))?.getString("status"))
     }
 
+    /** A message marked sent by hand would say something happened that did not. */
+    @Test
+    fun aChangeFromOutside_neverMovesTheStatus_butTheRestOfTheStateStaysOpen() {
+        val pending = """{"status":"pending","triggered_by":"MANUAL"}"""
+
+        assertTrue(EntryStart.changesStatus(MessageToolType.START, pending, state("""{ "status": "sent" }"""), byTheApp = false))
+        assertTrue(EntryStart.changesStatus(MessageToolType.START, pending, JSONObject().put("status", JSONObject.NULL), byTheApp = false))
+        assertFalse(EntryStart.changesStatus(MessageToolType.START, pending, state("""{ "status": "pending" }"""), byTheApp = false))
+        assertFalse(EntryStart.changesStatus(MessageToolType.START, pending, state("""{ "read": true, "archived": true }"""), byTheApp = false))
+        // The tool's own operations and its scheduler move it
+        assertFalse(EntryStart.changesStatus(MessageToolType.START, pending, state("""{ "status": "sent" }"""), byTheApp = true))
+        assertFalse(EntryStart.changesStatus(null, pending, state("""{ "status": "sent" }"""), byTheApp = false))
+    }
+
     /** What the AI reads: the status given at creation, the rest written by the app. */
     @Test
     fun theSchema_letsTheStatusBeGiven_andNothingElseOfTheState() {

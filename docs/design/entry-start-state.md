@@ -38,6 +38,10 @@ Celui qui crée l'entrée dit son statut de départ ; l'outil répond par l'éta
 
 Une entrée créée sans statut, dans un outil qui en a, est refusée ; l'erreur liste les statuts permis.
 
+## Le statut ensuite
+
+Une modification venue d'ailleurs que de l'app ne change pas le statut d'une entrée : un message passé à « envoyé » à la main dirait qu'une chose a eu lieu qui n'a pas eu lieu. Le statut avance par les opérations de l'outil et par l'app ; le reste de l'état (lu, archivé) reste modifiable par tous.
+
 ## Ce que voit l'IA
 
 - Le schéma d'une entrée montre `state.status` comme écrivable à la création, avec ses valeurs permises ; le reste de l'état reste « écrit par l'app ».
@@ -56,11 +60,10 @@ Une entrée créée sans statut, dans un outil qui en a, est refusée ; l'erreur
 - Questionnaire, `filled` : `filled_at` posé ; `to_fill` : la reprise commence à la première question sans réponse.
 - Objectif, Séance : toute création refusée, l'app la leur faisant passer par leur programmateur.
 - Un champ d'état autre que `status` envoyé par l'IA ou un écran : refusé.
+- Une modification de l'IA ou d'un écran qui change le statut : refusée ; qui touche lu ou archivé : acceptée.
 - Un programmateur (`byTheApp`) écrit son état entier sans passer par la réponse.
 
 ## Ce qui reste ouvert
-
-- Une modification écrit encore l'état tel quel, de tout appelant : l'IA pourrait passer un message à « envoyé ». La règle ne couvre que la création.
 
 - La démo écrit des tentatives d'Objectif avec un verdict (`DemoService`) : vérifier qu'elle passe bien comme écrite par l'app.
 - Une tentative passée d'un Objectif, enregistrée à la main ou importée : refusée pour l'instant ; le jour du besoin, la réponse d'Objectif posera un état au lieu de refuser (la période où tombe la date, une tentative déjà là, le verdict, la définition à copier).
