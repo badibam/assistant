@@ -17,7 +17,15 @@ Une seule liste d'écrans, l'accueil en bas, l'écran visible en haut (Accueil �
 - Une petite ligne au-dessus du titre : les lieux d'avant (« … › Course › Sorties »), le titre restant le lieu actuel. Absente sur l'accueil.
 - Une seule ligne, coupée par la gauche ; le titre aussi coupé à une ligne : l'entête garde une hauteur fixe, et ses boutons leur place.
 - Chaque nom se touche et ramène à ce lieu, en retirant tout ce qui est au-dessus.
+- Un lieu empilé sans son parent juste en dessous porte le nom du parent après le sien : « … › Conversation › Sorties (Course) ».
 - Dessinée par le thème, comme le reste de l'entête (`ThemeContract`).
+
+## L'ouverture d'un lieu
+
+- Chaque lieu a une adresse (`zone/<id>`, `tool/<id>`, `settings/ai_providers`…), une seule forme pour les notifications, les pointeurs, le Guide et les tests.
+- Rien d'ouvert (une notification, app fermée) : la pile se reconstruit par les parents, « Accueil › Course › Sorties », et le retour remonte la hiérarchie au lieu de quitter l'app.
+- Quelque chose d'ouvert (un pointeur touché dans la conversation) : la cible s'empile seule au-dessus, et un seul retour ramène à la conversation.
+- Ouvrent une adresse : les notifications, qui remplacent `openToolId` ; l'utilisateur par un pointeur touché. Ni l'IA, qui changerait l'écran pendant qu'on lit sa réponse — elle montre par un pointeur que l'utilisateur touche —, ni un client extérieur par le connecteur.
 
 ## La conversation
 
@@ -45,6 +53,5 @@ Les sons d'aller et retour se jouent dans la pile, plus dans les gestes. Aujourd
 
 ## Ce qui reste ouvert
 
-- Ce que l'ouverture depuis l'extérieur accepte (quels écrans, quels paramètres), et qui peut la demander.
 - La survie de la pile à la mort du processus (les interrupteurs sont aujourd'hui `rememberSaveable`).
 - L'ordre de la migration, écran par écran, et sa recette sur le téléphone.
