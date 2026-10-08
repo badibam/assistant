@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Bring the bugs noted on the phone into TODO.md, then delete them from the phone.
 
-The bugs are the entries of the tool "Assistant" in the zone "Dev" of the release build, where
+The bugs are the entries of the tool "Treelune" in the zone "Dev" of the release build, where
 they are noted. They are read and deleted through the app's MCP server, as Claude reaches it: the
-claude.ai connector "Assistant", whose tools Claude Code names mcp__claude_ai_Assistant__<command>.
+claude.ai connector "Treelune", whose tools Claude Code names mcp__claude_ai_Treelune__<command>.
 The relay hands each request to whichever build polls it, so the external access must be open in
 the release alone (docs/design/mcp-server.md), and the connector authorised once against it.
 
@@ -22,13 +22,13 @@ ROOT = Path(__file__).resolve().parent.parent
 TODO = ROOT / "TODO.md"
 
 ZONE = "Dev"
-TOOL = "Assistant"
+TOOL = "Treelune"
 
 # Where the bugs land, created after "En cours" when it is not there yet.
 SECTION = "## Bugs du téléphone"
 NEXT_SECTION = "## En attente d'un déclencheur"
 
-CONNECTOR = "mcp__claude_ai_Assistant__"
+CONNECTOR = "mcp__claude_ai_Treelune__"
 # ToolSearch: headless, the connectors are still connecting when the model starts, and only
 # ToolSearch waits for them and loads their tools.
 READ_TOOLS = ["ToolSearch"] + [CONNECTOR + name for name in ("app_context", "zones", "tool_instances", "tool_data")]
@@ -67,7 +67,7 @@ DELETE_SCHEMA = {
     "additionalProperties": False,
 }
 
-READ_PROMPT = f"""Use only the tools of the "Assistant" MCP connector; they may still be loading, so load them first with ToolSearch (query "+Assistant"). Call app_context first, as its description asks.
+READ_PROMPT = f"""Use only the tools of the "Treelune" MCP connector; they may still be loading, so load them first with ToolSearch (query "+Treelune"). Call app_context first, as its description asks.
 
 Find the zone named "{ZONE}", and in it the tool named "{TOOL}". Read all of its entries.
 
@@ -80,7 +80,7 @@ Change nothing in the app."""
 
 
 def delete_prompt(tool_instance_id, ids):
-    return f"""Use only the tools of the "Assistant" MCP connector; they may still be loading, so load them first with ToolSearch (query "+Assistant"). Call app_context first, as its description asks.
+    return f"""Use only the tools of the "Treelune" MCP connector; they may still be loading, so load them first with ToolSearch (query "+Treelune"). Call app_context first, as its description asks.
 
 Delete, with delete_data, these entries of the tool {tool_instance_id}, and nothing else:
 {json.dumps(ids)}

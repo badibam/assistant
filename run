@@ -555,7 +555,7 @@ def task_bench(*args):
 
 
 def task_bugs():
-    """Bring the bugs noted on the phone (Dev › Assistant) into TODO.md, then delete them there.
+    """Bring the bugs noted on the phone (Dev › Treelune) into TODO.md, then delete them there.
 
     Through the claude.ai connector to the app's MCP server: the phone's external access must be open.
     """
@@ -640,7 +640,7 @@ LABELS = {
     "provider-facts": "provider-facts    check the app against the providers' facts (run by release)",
     "db": "db         back up or restore the device database",
     "bench": "bench      free models played on the app's scenarios, on the emulator",
-    "bugs": "bugs       the bugs noted on the phone (Dev › Assistant) into TODO.md, then deleted there",
+    "bugs": "bugs       the bugs noted on the phone (Dev › Treelune) into TODO.md, then deleted there",
     "themes": "themes     the themes' benches: their colours, the retro palettes set and saved",
     "clean": "clean      drop build outputs",
 }
