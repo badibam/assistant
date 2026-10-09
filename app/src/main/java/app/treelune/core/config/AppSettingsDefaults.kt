@@ -40,8 +40,10 @@ object AppSettingsDefaults {
             .put(AppSettings.UI_HUE_SHIFT, 0)
             .put(AppSettings.UI_SIZE_STEP, 0)
             .put(AppSettings.UI_ONE_COLUMN, false).toString()
-        // Through the app's own Tailscale node, which needs no server; no relay until the user gives one
-        AppSettingCategories.EXTERNAL_ACCESS -> JSONObject().put(AppSettings.ACCESS_MODE, AppSettings.ACCESS_MODE_TAILSCALE).toString()
+        // Through the app's own Tailscale node, which needs no server, where its library exists (arm64);
+        // the relay elsewhere. No relay until the user gives one
+        AppSettingCategories.EXTERNAL_ACCESS -> JSONObject().put(AppSettings.ACCESS_MODE,
+            if (app.treelune.core.mcp.FunnelNative.available) AppSettings.ACCESS_MODE_TAILSCALE else AppSettings.ACCESS_MODE_RELAY).toString()
         // Nothing seen, nothing started: the first-launch screen comes, then First steps
         AppSettingCategories.GUIDE -> JSONObject().put(AppSettings.GUIDE_WELCOME_SEEN, false)
             .put(AppSettings.GUIDE_BAND_HIDDEN, false)

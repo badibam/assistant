@@ -147,11 +147,14 @@ object AppSettings {
                     listOf(ACCESS_MODE_TAILSCALE, ACCESS_MODE_RELAY),
                     labels = mapOf(ACCESS_MODE_TAILSCALE to text("settings_external_access_mode_tailscale"),
                         ACCESS_MODE_RELAY to text("settings_external_access_mode_relay")), required = true),
-                field(RELAY_URL, text("settings_external_access_relay_url"), text("settings_external_access_relay_url_help"),
-                    FieldType.TEXT, config = mapOf("length" to TextLength.MEDIUM.name), address = true),
-                // MEDIUM: the relay's secret runs past SHORT's 60 characters, 64 in hexadecimal
-                field(RELAY_SECRET, text("settings_external_access_relay_secret"), text("settings_external_access_relay_secret_help"),
-                    FieldType.TEXT, config = mapOf("length" to TextLength.MEDIUM.name), secret = true)
+                // The relay's own page: used in the relay mode only
+                SettingNode.Section(text("settings_external_access_relay_section"), listOf(
+                    field(RELAY_URL, text("settings_external_access_relay_url"), text("settings_external_access_relay_url_help"),
+                        FieldType.TEXT, config = mapOf("length" to TextLength.MEDIUM.name), address = true),
+                    // MEDIUM: the relay's secret runs past SHORT's 60 characters, 64 in hexadecimal
+                    field(RELAY_SECRET, text("settings_external_access_relay_secret"), text("settings_external_access_relay_secret_help"),
+                        FieldType.TEXT, config = mapOf("length" to TextLength.MEDIUM.name), secret = true)
+                ))
             )
             AppSettingCategories.GUIDE -> listOf(
                 field(GUIDE_WELCOME_SEEN, text("guide_setting_welcome_seen"), null, FieldType.BOOLEAN, required = true),

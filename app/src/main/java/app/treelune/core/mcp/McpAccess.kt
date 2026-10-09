@@ -25,16 +25,20 @@ import java.security.SecureRandom
 /**
  * The external access, for the whole app (docs/design/mcp-server.md, « L'accès ouvert »): opened
  * by hand, it runs the relay's loop in a foreground service (McpAccessService) until half an hour
- * passes without a call, the person closes it, or the relay refuses the app. It holds the OAuth
- * server, whose request waiting for its code the screens show (McpApprovalDialog).
+ * passes without a call, the person closes it, or the relay refuses the app. The requests come
+ * through the app's own Tailscale node or through a relay, as the access mode says
+ * (docs/design/funnel-access.md). It holds the OAuth server, whose request waiting for its code
+ * the screens show (McpApprovalDialog).
  */
 object McpAccess {
 
     /** Where the access stands. */
     sealed interface State {
         data object Closed : State
-        /** Open since [openedAt]; [lastCallAt] the last call that did something */
-        data class Open(val openedAt: Long, val lastCallAt: Long?) : State
+        /** The Tailscale node waits on [step] before its address exists */
+        data class Preparing(val step: TailscaleNode.Step) : State
+        /** Open at [address] (https://…, no trailing slash) since [openedAt]; [lastCallAt] the last call that did something */
+        data class Open(val address: String, val openedAt: Long, val lastCallAt: Long?) : State
         /** Closed by a failure, said in [message] */
         data class Failed(val message: String) : State
     }
@@ -57,6 +61,14 @@ object McpAccess {
         ).also { oauthServer = it }
     }
 
+    /** The access mode as set (AppSettings.ACCESS_MODE): Tailscale or relay. */
+    suspend fun mode(context: Context): String {
+        val result = Coordinator(context).processUserAction("app_config.get", mapOf("category" to AppSettingCategories.EXTERNAL_ACCESS))
+        val settings = result.data?.get("settings") as? Map<*, *>
+        return settings?.get(AppSettings.ACCESS_MODE) as? String
+            ?: throw IllegalStateException("External access settings without an access mode")
+    }
+
     /** The relay's address and secret as set, or null while either is missing or the address is not https. */
     suspend fun relay(context: Context): Pair<String, String>? {
         val result = Coordinator(context).processUserAction("app_config.get", mapOf("category" to AppSettingCategories.EXTERNAL_ACCESS))
@@ -71,7 +83,7 @@ object McpAccess {
 
     /** Opens the access: the service starts, and runs the loop. */
     fun open(context: Context) {
-        if (_state.value is State.Open) return
+        if (_state.value is State.Open || _state.value is State.Preparing) return
         ContextCompat.startForegroundService(context, Intent(context, McpAccessService::class.java))
     }
 
@@ -86,22 +98,54 @@ object McpAccess {
      */
     internal suspend fun run(context: Context, onActivity: (Long) -> Unit) {
         val s = Strings.`for`(context = context)
-        val (base, secret) = relay(context) ?: run {
-            _state.value = State.Failed(s.shared("external_access_no_relay"))
-            return
+        val tailscale = mode(context) == AppSettings.ACCESS_MODE_TAILSCALE
+        try {
+            val (base, transport) = if (tailscale) {
+                // A setting from another phone, on one without the library: said, never swapped for the relay
+                if (!FunnelNative.available) {
+                    _state.value = State.Failed(s.shared("external_access_tailscale_unavailable"))
+                    return
+                }
+                val address = try {
+                    TailscaleNode.open(context, RelayLoop.IDLE_LIMIT, System::currentTimeMillis) { _state.value = State.Preparing(it) }
+                } catch (e: TailscaleNode.Failed) {
+                    LogManager.service("External access: the Tailscale node failed: ${e.message}", "WARN", e)
+                    _state.value = State.Failed(e.message ?: "")
+                    return
+                } ?: run {
+                    // Half an hour waiting on a step: closed as an idle access is
+                    _state.value = State.Closed
+                    return
+                }
+                address to FunnelTransport()
+            } else {
+                val (base, secret) = relay(context) ?: run {
+                    _state.value = State.Failed(s.shared("external_access_no_relay"))
+                    return
+                }
+                base to OkHttpRelayTransport(base, secret)
+            }
+            serve(context, s, base, transport, onActivity)
+        } finally {
+            if (tailscale && FunnelNative.available) TailscaleNode.close(context)
+            if (_state.value is State.Open || _state.value is State.Preparing) _state.value = State.Closed
         }
+    }
+
+    /** The access open at [base]: MCP and OAuth served through [transport] until the loop ends. */
+    private suspend fun serve(context: Context, s: app.treelune.core.strings.StringsContext, base: String, transport: RelayTransport, onActivity: (Long) -> Unit) {
         val openedAt = System.currentTimeMillis()
         var lastActivity = openedAt
-        _state.value = State.Open(openedAt, null)
+        _state.value = State.Open(base, openedAt, null)
         val server = McpServer(AppMcpBackend(context), ContextTokens(contextKey(context), System::currentTimeMillis), versionName(context))
         val http = McpHttp(base, oauth(context), server, s::shared, log = { LogManager.service("External access: $it", "INFO") }) {
             lastActivity = System.currentTimeMillis()
-            _state.value = State.Open(openedAt, lastActivity)
+            _state.value = State.Open(base, openedAt, lastActivity)
             onActivity(lastActivity)
         }
         try {
             RelayLoop(
-                transport = OkHttpRelayTransport(base, secret),
+                transport = transport,
                 handle = http::handle,
                 now = System::currentTimeMillis,
                 lastActivity = { lastActivity },
