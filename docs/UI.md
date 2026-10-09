@@ -46,7 +46,7 @@ import androidx.compose.foundation.verticalScroll
 **Exceptions** : Seuls les conteneurs avec LazyColumn/LazyRow (qui ont leur propre scroll natif) sont exemptés.
 
 ### Headers de Page
-UI.PageHeader supporte titre (une ligne : l'entête garde sa hauteur), sous-titre optionnel, icône, et, dans une barre au-dessus, boutons gauche/droite avec actions prédéfinies et le fil d'Ariane dans un lieu de la pile. Un bouton gauche BACK donne aussi son action à la touche Retour du téléphone ; sans lui, la touche retire le lieu de la pile (`MainScreen`), et un formulaire qui doit d'abord demander pose son propre `BackHandler`. L'accueil demande confirmation avant de fermer l'app.
+UI.PageHeader supporte titre (une ligne : l'entête garde sa hauteur), sous-titre optionnel, icône ou marque de l'app (`appMark`, l'accueil seul : l'icône du lanceur dessinée par le thème, `LauncherMark` ou ses pixels), et, dans une barre au-dessus, boutons gauche/droite avec actions prédéfinies et le fil d'Ariane dans un lieu de la pile. Un bouton gauche BACK donne aussi son action à la touche Retour du téléphone ; sans lui, la touche retire le lieu de la pile (`MainScreen`), et un formulaire qui doit d'abord demander pose son propre `BackHandler`. L'accueil demande confirmation avant de fermer l'app.
 
 ## Conventions Générales
 
@@ -176,6 +176,8 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 **UI.StatusIndicator** - Une pastille d'état : l'écran nomme l'état (`StatusColor` : succès, avertissement, erreur, info, discret), le thème en donne la couleur (`UI.statusColor` pour la teinte d'une icône).
 
 **UI.SliderField** - Échelle ; sans réponse, pas de poignée et « — ».
+
+**HueSlider** (du thème) - Le curseur du décalage de teinte : sa piste est la couleur que chaque décalage donne au thème, bordée, le pouce posé dessus ; un toucher ou un glissé passe par `horizontalPick` et `RangePick`.
 
 **UI.Divider** - Un trait horizontal qui sépare deux parties d'un écran ou d'une carte, dessiné par le thème.
 

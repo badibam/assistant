@@ -73,6 +73,7 @@ Une brique ne connaît pas l'écran qui l'utilise ; il lui donne ce dont elle a 
 | Champ RÉFÉRENCE d'une entrée | Chose | fait |
 | Champ DATE ou DATETIME d'une entrée | Instant, sans référence | fait |
 | Pointeur d'un message à l'IA | Chose (zone, outil) + Période + Filtres + champs + joindre ou mentionner | fait, sa sélection assemblée à la main |
+| Masque d'accès d'une automation ou d'un client du connecteur | une liste de Choses (zone, outil), chacune avec un niveau (`AccessMask`, `{"target", "level"}`) | fait, choisie par le sélecteur du champ RÉFÉRENCE |
 | Terme d'une variable | Terme, la période de sa Lecture relative à l'instant lu | fait, avec ses propres sélecteurs |
 | Critère lu d'Objectif | Condition jugée une fois, « Par rapport à : la fin de la tentative (maintenant tant qu'elle court) » ; une Lecture sans période lit celle de la tentative, une période choisie la remplace | fait |
 | Critère saisi d'Objectif | Condition posée à la tentative : le champ saisi d'un côté | fait |

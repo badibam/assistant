@@ -20,8 +20,16 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 - Après le passage à Compose 1.12 (BOM 2026.09.00) : parcourir l'accueil, une zone, un outil de chaque type, sa config, Réglages, le chat, dans les deux thèmes ; les fenêtres de dialogue, les listes qui défilent, le glisser-déposer et le clavier se comportent comme avant.
 
+- Après les migrations 69 à 71 : Réglages › Validation n'a plus qu'« Protéger l'accueil », allumé si la config de l'app ou des zones était validée ; une zone dont un outil validait sa config est protégée ; « Gestion » et « Validation config par IA » ont quitté la config des outils ; une session qui validait a ses trois cases cochées ; les automations et les clients du connecteur ont un accès vide.
+
 ## Validation
 
+- Protéger une zone, puis demander à l'IA d'y créer un outil : la demande d'accord dit « La zone « … » est protégée ». Protéger les données d'un outil : une entrée écrite par l'IA attend de même. Lui demander de retirer une protection : refusé.
+- Dans une conversation, cocher « Les données des outils » : toute écriture d'entrée attend l'accord, puis plus rien une fois décochée.
+- Demander à l'IA de créer un groupe sur l'accueil, d'y ranger une zone, puis de le renommer (`UPDATE_APP_CONFIG`) : la zone suit le nouveau nom ; avec « Protéger l'accueil », l'accord est demandé.
+- Une automation dont l'accès donne un outil en Lecture, à qui l'on demande d'y écrire : le refus se lit dans son historique d'exécution ; en Utilisation, l'écriture passe. Ajouter, changer, retirer une ligne de la carte d'accès, enregistrer, rouvrir : tout est gardé.
+- Depuis Claude par le connecteur, écrire dans un outil protégé : la notification « … demande votre accord » arrive, Accepter laisse l'écriture se faire, Refuser ou 90 s sans réponse la laissent de côté et Claude le dit. Pendant l'attente, un autre appel de Claude passe-t-il ?
+- Donner à un client du connecteur un accès limité (bouton « Accès » de sa ligne) : une lecture hors de la liste est refusée, et `app_context` dit son accès.
 - Passer `docs/design/validation-nulls-ai-check.md` : le message à coller dans une session IA, et ce qui est attendu étape par étape.
 - Demander à l'IA de créer une entrée en laissant un champ facultatif vide : l'entrée s'enregistre, sans ce champ. Lui faire appeler une opération d'outil avec un paramètre facultatif à null (`complete` une séance du Fractionné, sans durée) : acceptée.
 - Créer une entrée dans une Liste, un Questionnaire (« Remplir maintenant » en passant une question), une fiche de Données structurées, un Journal, chacun avec un champ supplémentaire laissé vide : enregistrée, le champ absent.
@@ -163,6 +171,10 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 
 ## Réglages et affichage
 
+- Mode une colonne et mode normal, dans les trois thèmes : toutes les icônes de tuile ont la même taille ; en une colonne, le corps d'une tuile (Liste, Suivi, Notes) pose ses éléments les uns sous les autres.
+- La marque de l'app à gauche du titre de l'accueil : en carré arrondi (défaut), en rond (cosy), en pixels (rétro).
+- Réglages › Interface : la teinte se règle sur la bande de couleurs en glissant, l'app suivant le doigt ; changer le thème ferme d'abord le menu sans planter.
+- Le Guide : Découverte (Premiers pas, Brancher une IA avec ses étapes 4 et 5, Construire avec l'IA, Automatiser), puis Prise en main, Configurer un outil en tête ; pas d'Approfondissement ; le pointeur se reconnaît à sa cible.
 - Écran Réglages (bouton de gauche de l'accueil, icône curseurs), dans les deux thèmes : quatre sections App, IA, Données, Système ; chaque tuile ouvre son écran, sa description sous le titre, et le retour ramène aux Réglages, puis à l'accueil.
 - Outils toujours envoyés (`always-send.md`) : marquer un outil notes « toujours envoyer », ouvrir une discussion : l'IA cite ses notes sans les lire ; `app_context` du connecteur les montre. Abaisser le seuil sous leur taille : au message suivant, la carte « Outils toujours envoyés », sa phrase sur la session ; « Refuser », puis un autre message : pas de nouvelle carte, l'IA sait qu'ils ne sont pas envoyés et peut les lire ; une nouvelle discussion redemande ; « Envoyer » : ils partent jusqu'à la fin de la session.
 - Réglages › Système › Signaler un bug, sans plantage enregistré : le champ « Ce qui s'est passé », dont le texte apparaît aussitôt en tête du rapport ; le rapport sans section plantage, ses identifiants en `#1`, ses textes cités en `«text»` ; « Envoyer » vers une messagerie, le texte arrivé entier.

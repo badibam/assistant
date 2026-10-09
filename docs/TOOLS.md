@@ -241,10 +241,8 @@ Service execute() valide automatiquement via ToolType puis retourne OperationRes
 ### Réglages communs (`ToolConfigSettings`)
 - **name** : Nom de l'instance
 - **description** : Description
-- **management** : Mode de gestion (AI/USER/HYBRID)
 - **display_mode** : Mode d'affichage (ICON/MINIMAL/LINE/etc.)
-- **validateConfig** : Boolean - Requiert validation utilisateur avant modification configuration (default: false)
-- **validateData** : Boolean - Requiert validation utilisateur avant modification données (default: false)
+- **validate_data** : « Protéger les données de cet outil », l'IA de la conversation et du connecteur demande avant d'écrire ses entrées (défaut : non) ; sa config est gardée par la protection de sa zone (`docs/design/validation.md`), et seule une personne change l'une ou l'autre (`Protections`)
 
 ### Champ always_send (Level 2 AI)
 ```kotlin
