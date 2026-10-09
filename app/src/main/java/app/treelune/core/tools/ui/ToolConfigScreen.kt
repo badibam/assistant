@@ -170,7 +170,8 @@ fun ToolConfigScreen(
         )
 
         // Values given for a former version of the change answer nothing about this one
-        SettingsForm(nodes, config, { config = it; fill = JSONObject() }, context, editors, rows = toolType.getRowFields(), scroll = scroll) {
+        val pages = app.treelune.core.fields.settings.rememberSettingsPages()
+        SettingsForm(nodes, config, { config = it; fill = JSONObject() }, context, editors, rows = toolType.getRowFields(), scroll = scroll, pages = pages) {
             // The zone is the tool's place, not a setting of its config: offered once the tool
             // exists, on the root page alone
             if (isEditing) {
@@ -189,7 +190,8 @@ fun ToolConfigScreen(
             }
         }
 
-        UI.ToolConfigActions(
+        // The actions on the root page alone: under it, the back arrow goes up (SettingsPages)
+        if (pages.atRoot) UI.ToolConfigActions(
             isEditing = isEditing,
             onSave = { save(confirmed = false) },
             onCancel = { leave() },

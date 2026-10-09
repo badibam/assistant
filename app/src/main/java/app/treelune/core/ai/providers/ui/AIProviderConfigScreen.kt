@@ -191,6 +191,8 @@ fun AIProviderConfigScreen(
             subtitle = s.shared("settings_ai_providers_config")
         )
 
+        // The page of the form open, which the actions show under alone
+        val pages = app.treelune.core.fields.settings.rememberSettingsPages()
         UI.Card(type = CardType.DEFAULT, size = Size.M) {
             Column(modifier = Modifier.fillMaxWidth().padding(UI.Space.L), verticalArrangement = Arrangement.spacedBy(UI.Space.L)) {
                 // A new key or address lists other models: the ones listed before no longer hold
@@ -204,12 +206,13 @@ fun AIProviderConfigScreen(
                         withListedImageInput(next, models)
                     }
                     settings = next
-                }, context, editors)
+                }, context, editors, pages = pages)
                 UI.Text(provider.getConfigHelp(context), TextType.CAPTION)
             }
         }
 
-        UI.FormActions {
+        // The actions on the root page alone: under it, the back arrow goes up (SettingsPages)
+        if (pages.atRoot) UI.FormActions {
             UI.ActionButton(action = ButtonAction.SAVE, onClick = { onSave(settings) })
             UI.ActionButton(action = ButtonAction.CANCEL, onClick = onCancel)
             if (onReset != null) {

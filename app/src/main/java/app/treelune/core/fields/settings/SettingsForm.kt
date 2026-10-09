@@ -90,7 +90,7 @@ private fun rowFields(): Map<String, app.treelune.core.fields.FieldDefinition>? 
  * One step from a page of the form to a page it opens: a group by its name, or an element of a
  * list by the list's name and its position.
  */
-private sealed class Step {
+internal sealed class Step {
     data class Group(val name: String) : Step()
     data class Element(val list: String, val index: Int) : Step()
 
@@ -119,6 +119,27 @@ private val TrailSaver: androidx.compose.runtime.saveable.Saver<List<Step>, Stri
         }
     }
 )
+
+/**
+ * Which page of a SettingsForm is open, held by the form's owner: its actions (save, create,
+ * cancel, delete) show on the root page alone. Under it, the page's back arrow or the phone's goes
+ * up, the draft kept — never a save made from a page that does not show the whole config.
+ */
+class SettingsPages internal constructor(private val state: androidx.compose.runtime.MutableState<List<Step>>) {
+    internal var trail: List<Step>
+        get() = state.value
+        set(value) { state.value = value }
+
+    /** Whether the root page is the one open. */
+    val atRoot: Boolean get() = state.value.isEmpty()
+}
+
+/** The open page of a form, kept across a recreation of the screen. */
+@Composable
+fun rememberSettingsPages(): SettingsPages {
+    val state = rememberSaveable(stateSaver = TrailSaver) { mutableStateOf(emptyList<Step>()) }
+    return remember(state) { SettingsPages(state) }
+}
 
 /** The page being drawn, [trail] from the root, and how a line on it opens the page under it. */
 private class Pages(val trail: List<Step>, private val go: (List<Step>) -> Unit) {
@@ -223,6 +244,8 @@ private fun replaced(container: Any, keys: List<Any>, value: Any): Any {
  *   given where [config] is the whole config, never inside it
  * @param scroll The scrolling of the screen around the form, brought back to its top when
  *   another page opens
+ * @param pages The page open, which an owner with actions of its own holds to show them on the
+ *   root page alone (SettingsPages)
  * @param root What its owner shows with the settings of the root page and no other, above them:
  *   what is not a setting of [config] (a tool's zone)
  */
@@ -236,14 +259,15 @@ fun SettingsForm(
     rows: RowFields? = null,
     scroll: androidx.compose.foundation.ScrollState? = null,
     origins: ListOrigins? = null,
+    pages: SettingsPages = rememberSettingsPages(),
     root: (@Composable () -> Unit)? = null
 ) {
-    var trail by rememberSaveable(stateSaver = TrailSaver) { mutableStateOf(emptyList<Step>()) }
-    val pages = pagesOf(nodes, config, trail)
+    var trail by pages::trail
+    val reached = pagesOf(nodes, config, trail)
     // A page that no longer exists (its element removed by the AI, its variant switched) gives
     // way to the deepest one still there
-    if (pages.size < trail.size) androidx.compose.runtime.SideEffect { trail = trail.take(pages.size) }
-    val shown = trail.take(pages.size)
+    if (reached.size < trail.size) androidx.compose.runtime.SideEffect { trail = trail.take(reached.size) }
+    val shown = trail.take(reached.size)
     androidx.activity.compose.BackHandler(enabled = shown.isNotEmpty()) { trail = shown.dropLast(1) }
 
     // A page opened, or left for another, shows from the top of the screen; not when it opens
@@ -254,7 +278,7 @@ fun SettingsForm(
     }
 
     val keys = shown.flatMap { it.keys }
-    val page = pages.lastOrNull()
+    val page = reached.lastOrNull()
     androidx.compose.runtime.CompositionLocalProvider(
         LocalPages provides Pages(shown) { trail = it },
         LocalPlace provides rows?.let { Place(config, keys, it) },
@@ -265,7 +289,7 @@ fun SettingsForm(
                 root?.invoke()
                 NodesForm(nodes, nodes, config, onChange, context, editors)
             } else {
-                PageHeader(pages.map { it.label }, context) { depth -> trail = shown.take(depth) }
+                PageHeader(reached.map { it.label }, context) { depth -> trail = shown.take(depth) }
                 // Owners attach editors at the top level only
                 NodesForm(page.nodes, page.nodes, page.config, { changed -> onChange(replaced(config, keys, changed) as JSONObject) }, context, emptyMap())
             }

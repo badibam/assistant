@@ -20,7 +20,7 @@ Conçu le 2026-10-01. Aujourd'hui, `SettingsForm` dessine l'arbre des réglages 
 ## Le brouillon et l'enregistrement
 
 - **Un seul brouillon pour toute la config** : une page modifie le brouillon ; remonter garde ce qui a changé.
-- **« Enregistrer » au bas de chaque page**, qui enregistre toute la config.
+- **Les boutons du bas (Enregistrer, Créer, Annuler, Supprimer) sur la page racine seule** (`SettingsPages.atRoot`) : une sous-page n'a que la flèche de retour, qui remonte en gardant le brouillon. Enregistrer depuis une sous-page faisait refuser un réglage d'une autre page, qu'on n'avait pas sous les yeux.
 - **Quitter la racine avec des changements non enregistrés demande confirmation.**
 
 ## Les problèmes enfouis

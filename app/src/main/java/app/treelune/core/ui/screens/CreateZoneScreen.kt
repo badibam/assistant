@@ -44,6 +44,8 @@ fun CreateZoneScreen(
     val s = remember { Strings.`for`(context = context) }
     val coroutineScope = rememberCoroutineScope()
     val coordinator = remember { Coordinator(context) }
+    // The page of the form open, which the actions show under alone
+    val pages = app.treelune.core.fields.settings.rememberSettingsPages()
     val nodes = remember { ZoneSettings.nodes(context) }
     val isEditing = existingZone != null
 
@@ -135,9 +137,10 @@ fun CreateZoneScreen(
 
         Spacer(modifier = Modifier.height(UI.Space.S))
 
-        SettingsForm(nodes, settings, { settings = it }, context, editors, origins = origins)
+        SettingsForm(nodes, settings, { settings = it }, context, editors, origins = origins, pages = pages)
 
-        UI.FormActions {
+        // The actions on the root page alone: under it, the back arrow goes up (SettingsPages)
+        if (pages.atRoot) UI.FormActions {
             UI.ActionButton(
                 action = if (isEditing) ButtonAction.SAVE else ButtonAction.CREATE,
                 onClick = { save() }
