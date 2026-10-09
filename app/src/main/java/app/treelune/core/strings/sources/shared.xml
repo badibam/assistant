@@ -1899,13 +1899,14 @@
     <string name="external_access_preparing">Starting Tailscale…</string>
     <string name="external_access_needs_login">The app is not yet connected to a Tailscale account. Connecting creates the account if you have none.</string>
     <string name="external_access_login">Connect the app to Tailscale</string>
-    <string name="external_access_https_missing">Your Tailscale account must issue HTTPS certificates: in its console, DNS page, turn on HTTPS Certificates, then come back.</string>
+    <string name="external_access_funnel_off">Funnel is off in your Tailscale account. Turn it on in one click on Tailscale\'s page: the access opens by itself once it is on.</string>
+    <string name="external_access_enable_funnel">Turn on Funnel</string>
+    <string name="external_access_https_missing">Your Tailscale account must issue HTTPS certificates: in its console, DNS page, turn on HTTPS Certificates. The access opens by itself once they are on.</string>
     <string name="external_access_open_dns">Open the DNS page</string>
-    <string name="external_access_funnel_missing">Your Tailscale account must allow Funnel: in its console, access policy in JSON, add this block at the top level, save, then come back.</string>
+    <string name="external_access_funnel_missing">Your Tailscale account must allow Funnel: in its console, access policy in JSON, add this block at the top level and save. The access opens by itself once it is saved.</string>
     <string name="external_access_copy_policy">Copy the block</string>
     <string name="external_access_policy_copied">Block copied</string>
     <string name="external_access_open_policy">Open the access policy</string>
-    <string name="external_access_retry">Try again</string>
     <string name="external_access_publishing">The address is being published by Tailscale, a few minutes the first time. Add it in the client only once it is ready: tried too early, the client may not find it for five more minutes.</string>
     <string name="external_access_published">Address ready: add it in the client.</string>
     <string name="external_access_first_call">The first call waits for the certificate, about forty seconds.</string>

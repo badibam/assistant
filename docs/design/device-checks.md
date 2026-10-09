@@ -113,14 +113,14 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 
 ## Accès externe par Tailscale (`docs/design/funnel-access.md`)
 
-- Après la migration 68 : avec un relais réglé, Réglages › Accès externe montre « Relais » choisi, et l'accès s'ouvre comme avant ; une installation neuve montre « Tailscale ».
-- Mode Tailscale, compte neuf : « Ouvrir l'accès » montre « Démarrage de Tailscale… » puis « Connecter l'app à Tailscale » ; la page s'ouvre dans le navigateur, l'inscription faite, l'écran passe seul à l'étape suivante ou à l'adresse.
-- HTTPS désactivé dans la console : l'écran le dit, « Ouvrir la page DNS » y mène ; activé, « Réessayer » passe à la suite. Droit `funnel` absent : le bloc s'affiche, « Copier le bloc » le copie, « Ouvrir la politique d'accès » ouvre l'éditeur JSON ; ajouté, « Réessayer » mène à l'adresse `https://treelune.<tailnet>.ts.net/mcp`.
-- Ouvert la première fois : la phrase sur le certificat s'affiche ; le premier appel de claude.ai attend une quarantaine de secondes, puis le connecteur s'ajoute avec cette adresse et le code à 4 chiffres, comme avec le relais.
+Vu le 2026-10-09 : l'inscription par la page de connexion, « Activer Funnel » sur un compte où HTTPS et le droit `funnel` étaient retirés, l'accès ouvert seul ensuite, la publication de l'adresse attendue à l'écran, claude.ai branché sur l'adresse. Reste :
+
+- Après la migration 68 : avec un relais réglé, Réglages › Accès externe montre « Relais » choisi, sa section affichée, et l'accès s'ouvre comme avant.
+- Un membre d'un compte qui ne peut pas activer Funnel : les étapes à la main s'affichent (HTTPS et la page DNS, le bloc à copier et l'éditeur de la politique d'accès), et l'accès s'ouvre seul une fois le compte réglé par son administrateur.
 - Fermer, rouvrir : l'adresse revient en quelques secondes, sans connexion ni attente de certificat. 30 minutes sans appel : fermé seul, l'adresse ne répond plus. La tuile ferme l'accès aussi pendant une étape d'attente.
 - Passer du Wi-Fi à la 4G, accès ouvert : un appel passe encore dans la minute.
 - « Déconnecter de Tailscale », accès fermé : confirmé, l'appareil `treelune` disparaît de la console ; l'ouverture suivante redemande la connexion.
-- Le journal de l'app montre les messages « External access: » du nœud (URL de connexion, Funnel ouvert), et `files/tailscale/tailscale.log` le journal technique, sans dépasser deux fichiers d'1 Mo.
+- Le journal de l'app montre les messages « External access: » du nœud (URL de connexion, Funnel ouvert, adresse publiée), et `files/tailscale/tailscale.log` le journal technique, sans dépasser deux fichiers d'1 Mo.
 
 ## Automations
 
