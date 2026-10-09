@@ -14,7 +14,8 @@ Conçu le 2026-10-09, après le prototype (`docs/design/funnel-poc.md` : mesures
 - L'écran Accès externe commence par le choix du mode, puis montre la partie du mode : pour Tailscale l'état du nœud, l'adresse, « Déconnecter de Tailscale » ; pour le relais ses deux champs. Ouvrir, fermer, les clients autorisés et leur révocation ne changent pas — l'OAuth est servi par l'app, un client autorisé le reste d'un mode à l'autre.
 - Un client déjà branché garde l'adresse avec laquelle il a été ajouté : changer de mode demande de l'ajouter à nouveau dans le client, avec la nouvelle adresse (à vérifier sur claude.ai : sans doute une nouvelle autorisation).
 - La bibliothèque n'existe que pour arm64 : ailleurs, une nouvelle installation part sur le relais. Le choix du mode reste affiché partout — caché, un réglage à `TAILSCALE` venu d'une sauvegarde d'un autre téléphone ne pourrait plus changer ; sans bibliothèque, l'ouverture en Tailscale échoue en disant de choisir le relais, jamais de bascule seule.
-- L'adresse et le secret du relais vivent dans leur propre section du formulaire, « Relais » : le formulaire des réglages ne masque pas un champ selon un autre.
+- L'adresse et le secret du relais sont un cas du mode (`SettingNode.Variant`) : affichés en mode Relais seulement, effacés en passant à Tailscale — un secret qui ne sert plus ne reste pas caché dans les réglages et les sauvegardes ; revenir au relais demande de les ressaisir.
+- Tant que Tailscale n'a pas publié l'adresse dans le DNS public, l'écran le dit, et dit d'attendre avant de l'ajouter au client : un « ce nom n'existe pas » est gardé 5 minutes par les serveurs DNS qui l'ont reçu (TTL négatif de `ts.net`). Le nœud demande aux serveurs de `ts.net` eux-mêmes, toutes les 10 s, jamais à un serveur partagé. Mesuré : de 12 s à plus de 11 min après l'ouverture du Funnel.
 
 ## La mise en route, réactive
 
