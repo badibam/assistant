@@ -36,6 +36,19 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## Bugs du téléphone
 
 - Connecteur Claude : accès distant via Tailscale Funnel embarqué But : HTTPS chiffré jusqu'au téléphone, sans passer par mon serveur, pour publier sur F-Droid et simplifier la config. Principe : l'app embarque tsnet (Go, BSD) et devient un nœud Tailscale. ListenFunnel fournit une URL publique stable (xxx.ts.net) ; le TLS est terminé sur le téléphone avec son propre certificat. Tailscale ne voit que les métadonnées. Plan Personal gratuit. UI : écran Connecteur Claude avec deux modes. - Automatique : bouton « Activer l'accès distant », étapes cochées (compte Tailscale, certificat, autorisation Funnel, URL à coller dans Claude), puis URL avec Copier/Partager. - Mon adresse : le champ HTTPS actuel + bouton Tester. Porte de sortie si Funnel change. Commun : OAuth embarqué, validation par notification, liste des accès autorisés avec révocation. À vérifier (prototype) : tsnet sur Android via gomobile (API 31+ ?), service de premier plan, désactiver les logs de diagnostic Tailscale, Funnel en bêta et limité en débit. F-Droid : pas de FCM ; anti-feature NonFreeNet probable (Tailscale, Claude). — IA — Amélioration
+- Utiliser secret android pour clés, comme le fait saylune
+- Alléger les écrans de config en repliant xertains paramètres
+- Gérer la question de la validation notamment dans la config d'outil, mais aussi à tous les crans
+- Guide : un tuto sur la config commune des outils
+- Guide : il faut un niveau suivant : sections = découverte, prise en main, approfondissement (titres à améliorer si tu vois mieux)
+- Guide : demander direct un pointeur avec dates n'est pas approprié. Le 1er devrait être une simple mention (préciser ce qu'il fait faire/inutile de faire). Et mentionner usage + poussé des pointeurs (en re'voyant vers autre tuto pour aller +loin)
+- En mode 1 colonne, les icone des outils et zones en icone ou minimal s'affichent +petites que les aitres modes. En fqit en mode 2 colonnes, il y a aussi des diffs de taille d'icône ce n'est pas souhaitable.
+- En mode 1 colonne : les lignes en + de titre et entete devraient aussi passer sur 1 colonne
+- Licone de l'app devrait être visible à coté du titre de l'app
+- Le réglage de teinte ne devrait pas attendre relacher, et il devrait y avoir une frise de couleurs plutôt que viser au pif. Composant de frise : dessiné par le thème.
+- Il faut modifier 2 fois le reglage de mode de theme pour que ça soit pris en compte. Ce n'était pas le cas avant les changements récents. ça porte sur d'aitres endroits aussi.j'ai vérifié : un redémarrage après 1 changement (non visible) applique bien les paramètres. C'est donc un truc de mise à jour des params.
+- Dans guide : creation d'outil meme simple peut etre intimidant. Ondiquer les champs à remplir pour le type rpoposé : pour liste, unoquepent nom et description optionnelles, icone, et valider direct en bas.
+- Params de ecran d'accueil groupes de zones etc : pas accessibles à l'ia ?
 
 ## En attente d'un déclencheur
 
