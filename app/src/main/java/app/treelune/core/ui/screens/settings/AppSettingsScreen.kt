@@ -80,15 +80,19 @@ fun AppSettingsScreen(
     if (category == AppSettingCategories.UI && load == LoadState.LOADED) {
         val focus = androidx.compose.ui.platform.LocalFocusManager.current
         LaunchedEffect(settings) {
-            // Once the menu the choice was made in has closed, in the theme that drew it: Material's
-            // menu fades out over a few frames, and taken off the screen by the new theme while it
-            // fades, it crashes (its window gone, its position still updated)
-            kotlinx.coroutines.delay(MENU_CLOSED_MS)
-            // Nothing focused when the screens move to another theme's frame (MainActivity): a
+            val chosen = Appearance.from(settings) ?: return@LaunchedEffect
+            // Another theme moves the screens to its frame (MainActivity). First the menu the
+            // choice was made in closes, in the theme that drew it: Material's menu fades out over
+            // a few frames, and taken off the screen by the new theme while it fades, it crashes
+            // (its window gone, its position still updated). Then nothing is left focused: a
             // focus carried along points at a field the move left behind, and the next field
-            // touched crashes
-            focus.clearFocus(force = true)
-            Appearance.from(settings)?.let { CurrentTheme.apply(it) }
+            // touched crashes. The same theme moves nothing, and shows a slider's value as the
+            // finger moves, where a wait started again at each move would wait for it to stop.
+            if (chosen.theme != CurrentTheme.themeId) {
+                kotlinx.coroutines.delay(MENU_CLOSED_MS)
+                focus.clearFocus(force = true)
+            }
+            CurrentTheme.apply(chosen)
         }
         DisposableEffect(Unit) {
             onDispose { if (!saved) Appearance.from(stored)?.let { CurrentTheme.apply(it) } }
