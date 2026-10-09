@@ -89,6 +89,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog as WindowDialog
 import app.treelune.R
+import app.treelune.core.ui.horizontalPick
 import app.treelune.core.ai.data.MessageSender
 import app.treelune.core.icons.IconSource
 import app.treelune.core.icons.Icons
@@ -1029,17 +1030,35 @@ object CosyTheme : ThemeContract {
      * well alone and "—".
      */
     @Composable
-    override fun HueStrip(shifts: IntRange) {
+    override fun HueSlider(value: Int, shifts: IntRange, onValueChange: (Int) -> Unit) {
         val size = cosySize()
+        val c = cosyColors
         val mode = CurrentTheme.paletteMode
-        // The accent at a stop every HUE_STRIP_STEP degrees, blended between them, as tall as the track
+        // The accent at a stop every HUE_STRIP_STEP degrees, blended between them
         val colors = remember(mode, shifts) {
             (shifts step HUE_STRIP_STEP).map { CosyPalettes.colors(mode, it).accent.srgb } + CosyPalettes.colors(mode, shifts.last).accent.srgb
         }
-        Box(
-            modifier = Modifier.fillMaxWidth().height(size.dp(14f)).clip(CircleShape)
-                .background(androidx.compose.ui.graphics.Brush.horizontalGradient(colors))
-        )
+        val knob = size.dp(26f)
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().heightIn(min = size.touch)
+                .horizontalPick { onValueChange(app.treelune.core.ui.RangePick.valueAt(it, shifts)) },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            // The track, ringed in the dim ink: its colours may be the ground's
+            Box(
+                modifier = Modifier.fillMaxWidth().height(size.dp(18f)).clip(CircleShape)
+                    .background(androidx.compose.ui.graphics.Brush.horizontalGradient(colors))
+                    .border(size.dp(2f), c.dim.srgb, CircleShape)
+            )
+            // The knob of the other sliders, standing on the track
+            Box(
+                modifier = Modifier
+                    .offset(x = (maxWidth - knob) * app.treelune.core.ui.RangePick.fractionOf(value, shifts))
+                    .size(knob)
+                    .background(c.tile.srgb, CircleShape)
+                    .border(size.dp(4f), c.accentShadow.srgb, CircleShape)
+            )
+        }
     }
 
     /** Degrees between two colours the hue strip computes. */

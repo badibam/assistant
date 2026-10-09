@@ -499,12 +499,13 @@ interface ThemeContract {
     )
 
     /**
-     * Under the hue shift's slider (Appearance.hueShift), the colour each of [shifts] gives the
-     * theme in the mode shown, across the slider's width: a shift lies under the stop that
-     * chooses it, so that one sees where to go instead of trying.
+     * The hue shift's slider (Appearance.hueShift): its track is the colour each of [shifts]
+     * gives the theme in the mode shown, framed so that it stands out from the ground, and its
+     * thumb stands on it at [value], so that one sees where to go instead of trying. A touch or
+     * a drag along it hands back the shift under the finger (horizontalPick, RangePick).
      */
     @Composable
-    fun HueStrip(shifts: IntRange)
+    fun HueSlider(value: Int, shifts: IntRange, onValueChange: (Int) -> Unit)
 
     // =====================================
     // PALETTE SYSTEM

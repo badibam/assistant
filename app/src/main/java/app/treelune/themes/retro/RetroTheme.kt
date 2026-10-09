@@ -126,6 +126,10 @@ import java.time.format.TextStyle as DateTextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.math.roundToInt
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
+import app.treelune.core.ui.horizontalPick
 
 /**
  * The retro theme (docs/design/retro-theme.md): the console, softened. Pixel art on an integer
@@ -976,20 +980,39 @@ object RetroTheme : ThemeContract {
      * the finger; no answer yet shows the track alone and "—".
      */
     @Composable
-    override fun HueStrip(shifts: IntRange) {
+    override fun HueSlider(value: Int, shifts: IntRange, onValueChange: (Int) -> Unit) {
         val grid = retroGrid()
+        val s = retroSurface
         val mode = CurrentTheme.paletteMode
-        // A block per cell, as the slider's gauge: each the frames' ground at the shift under its middle
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val cells = (constraints.maxWidth / grid.cellPx).coerceAtLeast(1)
+            // A block per cell inside a frame of one pixel, each the frames' ground at the shift
+            // under its middle
+            val cells = ((constraints.maxWidth - grid.px(2)) / grid.cellPx).coerceAtLeast(1)
             val colors = remember(mode, shifts, cells) {
                 List(cells) { i ->
                     val shift = shifts.first + ((i + 0.5f) / cells * (shifts.last - shifts.first)).roundToInt()
                     RetroPalettes.colors(mode, shift).panel.ground.srgb
                 }
             }
-            Row {
-                colors.forEach { Box(modifier = Modifier.size(grid.cells(1)).background(it)) }
+            val chosen = (app.treelune.core.ui.RangePick.fractionOf(value, shifts) * cells).toInt().coerceAtMost(cells - 1)
+            // The thumb's frame overhangs the track by two pixels: the track stands two pixels down
+            Box(modifier = Modifier.horizontalPick { onValueChange(app.treelune.core.ui.RangePick.valueAt(it, shifts)) }) {
+                Row(
+                    modifier = Modifier
+                        .offset { IntOffset(0, grid.px(2)) }
+                        .border(grid.dp(1), s.ink.srgb)
+                        .padding(grid.dp(1))
+                ) {
+                    colors.forEach { Box(modifier = Modifier.size(grid.cells(1)).background(it)) }
+                }
+                // The thumb: two pixels of ink round the chosen block, past the track's frame
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(grid.px(RetroGrid.CELL * chosen - 1), 0) }
+                        .size(width = grid.dp(RetroGrid.CELL + 4), height = grid.dp(RetroGrid.CELL + 6))
+                        .padding(vertical = grid.dp(1))
+                        .border(grid.dp(2), s.ink.srgb)
+                )
             }
         }
     }

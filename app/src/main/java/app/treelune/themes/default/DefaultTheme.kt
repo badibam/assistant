@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import app.treelune.core.ui.horizontalPick
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -1376,16 +1377,34 @@ object DefaultTheme : ThemeContract {
      * minimum when it ends.
      */
     @Composable
-    override fun HueStrip(shifts: IntRange) {
+    override fun HueSlider(value: Int, shifts: IntRange, onValueChange: (Int) -> Unit) {
         val mode = CurrentTheme.paletteMode
+        val scheme = CurrentTheme.getCurrentColorScheme()
         // The scheme's primary at a stop every HUE_STRIP_STEP degrees, blended between them
         val colors = remember(mode, shifts) {
             (shifts step HUE_STRIP_STEP).map { getColorScheme(mode, it).primary } + getColorScheme(mode, shifts.last).primary
         }
-        Box(
-            modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(50))
-                .background(androidx.compose.ui.graphics.Brush.horizontalGradient(colors))
-        )
+        val thumb = 10.dp
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().height(36.dp)
+                .horizontalPick { onValueChange(app.treelune.core.ui.RangePick.valueAt(it, shifts)) },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            // The track, outlined: its colours may be the ground's
+            Box(
+                modifier = Modifier.fillMaxWidth().height(24.dp).clip(RoundedCornerShape(50))
+                    .background(androidx.compose.ui.graphics.Brush.horizontalGradient(colors))
+                    .border(1.dp, scheme.outline, RoundedCornerShape(50))
+            )
+            // The thumb across the track, in the ground's colour with the ink round it
+            Box(
+                modifier = Modifier
+                    .offset(x = (maxWidth - thumb) * app.treelune.core.ui.RangePick.fractionOf(value, shifts))
+                    .size(width = thumb, height = 36.dp)
+                    .background(scheme.surface, RoundedCornerShape(50))
+                    .border(2.dp, scheme.onSurface, RoundedCornerShape(50))
+            )
+        }
     }
 
     /** Degrees between two colours the hue strip computes. */

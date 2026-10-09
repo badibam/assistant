@@ -101,12 +101,12 @@ fun AppSettingsScreen(
 
     // The names the home screen's groups came with: a group renamed here is renamed in its zones
     val origins = remember(category) { app.treelune.core.fields.settings.ListOrigins() }
-    // The hue shift's slider over the colours its stops give (HueStrip)
+    // The hue shift on a slider of the colours it gives (HueSlider)
     val editors = remember(category) {
         if (category != AppSettingCategories.UI) emptyMap()
         else nodes.filterIsInstance<app.treelune.core.fields.settings.SettingNode.Field>()
             .filter { it.definition.name == AppSettings.UI_HUE_SHIFT }
-            .associate { it.definition.name to HueShiftEditor(it, context) }
+            .associate { it.definition.name to HueShiftEditor(it) }
     }
 
     fun save() {
@@ -160,16 +160,16 @@ fun AppSettingsScreen(
     }
 }
 
-/** The hue shift's input as the form draws it, the theme's strip of the colours each stop gives under it. */
+/** The hue shift chosen on the theme's slider of the colours each shift gives (HueSlider). */
 private class HueShiftEditor(
-    private val node: app.treelune.core.fields.settings.SettingNode.Field,
-    private val context: android.content.Context
+    private val node: app.treelune.core.fields.settings.SettingNode.Field
 ) : app.treelune.core.fields.settings.SettingEditor {
     @Composable
     override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
         Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
-            app.treelune.core.fields.FieldInput(node.definition, value ?: node.default, onChange, context, required = node.required)
-            CurrentTheme.current.HueStrip(AppSettings.HUE_SHIFT_RANGE)
+            UI.FieldLabel(node.definition.displayName, node.required)
+            val shift = ((value ?: node.default) as? Number)?.toInt() ?: AppSettings.HUE_SHIFT_RANGE.first
+            CurrentTheme.current.HueSlider(shift, AppSettings.HUE_SHIFT_RANGE) { onChange(it) }
         }
     }
 }
