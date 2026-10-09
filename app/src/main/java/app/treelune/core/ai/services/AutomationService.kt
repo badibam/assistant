@@ -136,7 +136,11 @@ class AutomationService(private val context: Context) : ExecutableService {
             createdAt = now,
             updatedAt = now,
             lastExecutionId = null,
-            executionHistoryJson = json.encodeToString(emptyList<String>())
+            executionHistoryJson = json.encodeToString(emptyList<String>()),
+            accessJson = when (val access = accessGiven(params, "[]")) {
+                is Given.Refused -> return OperationResult.error(access.message)
+                is Given.Kept -> access.json
+            }
         ), settingsGiven(params, null)).getOrElse { return OperationResult.error(it.message ?: s.shared("message_validation_error_simple")) }
         groupRefusal(entity.group, zoneId)?.let { return OperationResult.error(it) }
 
@@ -181,9 +185,15 @@ class AutomationService(private val context: Context) : ExecutableService {
         val emptiedGroup = entity.group?.takeIf { newZoneId != null && newZoneId != entity.zoneId && !params.has("group") }
         if (emptiedGroup != null) settings.remove("group")
 
+        val accessJson = when (val access = accessGiven(params, entity.accessJson)) {
+            is Given.Refused -> return OperationResult.error(access.message)
+            is Given.Kept -> access.json
+        }
+
         val updatedEntity = withSettings(entity.copy(
             zoneId = newZoneId ?: entity.zoneId,
             triggerIdsJson = triggerIdsJson,
+            accessJson = accessJson,
             updatedAt = System.currentTimeMillis()
         ), settings).getOrElse { return OperationResult.error(it.message ?: s.shared("message_validation_error_simple")) }
         groupRefusal(updatedEntity.group, updatedEntity.zoneId)?.let { return OperationResult.error(it) }
@@ -204,6 +214,31 @@ class AutomationService(private val context: Context) : ExecutableService {
             "zone_id" to updatedEntity.zoneId,
             "updated" to true
         ) + (emptiedGroup?.let { mapOf("group_emptied" to it) } ?: emptyMap()))
+    }
+
+    /** An automation's access as given: kept in its stored form, or refused with the reason. */
+    private sealed class Given {
+        data class Kept(val json: String) : Given()
+        data class Refused(val message: String) : Given()
+    }
+
+    /**
+     * The access [params] give (`access`, a list of `{"target": {"kind", "id"}, "level"}`,
+     * AccessMask), [stored] when they give none. It is a person's to change (Protections): what
+     * the AI may reach is not the AI's to widen.
+     */
+    private suspend fun accessGiven(params: JSONObject, stored: String): Given {
+        if (!params.has("access")) return Given.Kept(stored)
+        val given = params.optJSONArray("access") ?: return Given.Refused(s.shared("automation_access_unreadable").format(params.opt("access")))
+        val mask = try {
+            app.treelune.core.access.AccessMask.fromJson(given.toString())
+        } catch (e: Exception) {
+            return Given.Refused(s.shared("automation_access_unreadable").format(e.message ?: ""))
+        }
+        val json = mask.toJson().toString()
+        app.treelune.core.coordinator.Protections.refusal(s.shared("automation_access_title"), false, json != app.treelune.core.access.AccessMask.fromJson(stored).toJson().toString(), s)
+            ?.let { return Given.Refused(it) }
+        return Given.Kept(json)
     }
 
     /**
@@ -572,7 +607,8 @@ class AutomationService(private val context: Context) : ExecutableService {
         "created_at" to entity.createdAt,
         "updated_at" to entity.updatedAt,
         "last_execution_id" to entity.lastExecutionId,
-        "execution_history" to json.decodeFromString<List<String>>(entity.executionHistoryJson)
+        "execution_history" to json.decodeFromString<List<String>>(entity.executionHistoryJson),
+        "access" to app.treelune.core.utils.JsonUtils.toList(entity.accessJson)
     ) + app.treelune.core.utils.JsonUtils.toMap(settingsOf(entity))
 
     /**

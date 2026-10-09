@@ -603,6 +603,18 @@ Changes the settings of a category open to you, written **whole**: read them fir
 - `category` (string, **required**): `main_screen`
 - `settings` (object, **required**): the whole category; for `main_screen`, `{"zone_groups": [...]}`, the list that replaces the old one, in its order. A group still held by a zone cannot be removed
 - `renames` (object, optional): the groups renamed in `zone_groups`, `{"zone_groups": {"former name": "new name"}}`: the zones holding a former name take the new one]]></string>
+    <!-- An automation's access (AccessMask), in Level 2 when it is set -->
+    <string name="ai_prompt_access_intro"><![CDATA[## Your access
+
+The user set what this automation reaches. Anything not listed is refused, creating a zone and the home screen's settings included. `read`: the zone or the tool, its entries, a zone's variables. `use`: and written, a tool's entries, a zone's tools and variables created, changed, deleted. `full`: and its own settings. A zone at `use` or `full` gives its tools `full`, a zone at `read` gives them `read`.]]></string>
+    <string name="ai_prompt_access_zone">- zone %1$s (`%2$s`): `%3$s`</string>
+    <string name="ai_prompt_access_tool">- tool %1$s (`%2$s`): `%3$s`</string>
+    <string name="ai_prompt_access_level_read">read</string>
+    <string name="ai_prompt_access_level_use">use</string>
+    <string name="ai_prompt_access_level_full">full</string>
+    <string name="ai_prompt_access_nothing"><![CDATA[## Your access
+
+This automation cannot be read: nothing is reachable, every command is refused. Say so and stop.]]></string>
 
 
     <!-- C.3 Response format [DEGREE 2] -->

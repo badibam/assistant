@@ -1363,13 +1363,13 @@ class AIEventProcessor(
 
             // Execute via CommandExecutor with sessionId for schema deduplication
             val executor = commandExecutor
-            val result = executor.executeCommands(
+            val result = withinAccess(state) { executor.executeCommands(
                 commands = transformationResult.executableCommands,
                 messageType = SystemMessageType.DATA_ADDED,
                 origin = app.treelune.core.coordinator.Source.AI,
                 level = "ai_data",
                 sessionId = sessionId  // Enable schema deduplication
-            )
+            ) }
 
             // Store SystemMessage with formattedData
             // For DATA_ADDED: rebuild formattedData from promptResults
@@ -1491,13 +1491,13 @@ class AIEventProcessor(
 
                     // Execute via CommandExecutor with sessionId (for consistency, though actions typically don't need deduplication)
                     val executor = commandExecutor
-                    val result = executor.executeCommands(
+                    val result = withinAccess(state) { executor.executeCommands(
                         commands = transformationResult.executableCommands,
                         messageType = SystemMessageType.ACTIONS_EXECUTED,
                         origin = app.treelune.core.coordinator.Source.AI,
                         level = "ai_actions",
                         sessionId = sessionId
-                    )
+                    ) }
 
                     // Check if all succeeded
                     val allSuccess = result.systemMessage.commandResults.all {
@@ -1762,6 +1762,26 @@ class AIEventProcessor(
         ))
         emit(AIEvent.SchemaRequired)
         return true
+    }
+
+    /**
+     * [block] under the access mask of the automation whose AI the session runs (AccessScope:
+     * the coordinator refuses what goes beyond it), as it is; a chat's AI is held to none. An
+     * automation that cannot be read reaches nothing: its commands are refused, saying so.
+     */
+    private suspend fun <T> withinAccess(state: AIState, block: suspend () -> T): T {
+        if (state.sessionType != SessionType.AUTOMATION) return block()
+        val automation = state.automationId?.let { app.treelune.core.database.AppDatabase.getDatabase(context).aiDao().getAutomationById(it) }
+        val mask = automation?.let {
+            try {
+                app.treelune.core.access.AccessMask.fromJson(it.accessJson)
+            } catch (e: Exception) {
+                LogManager.aiSession("Access of automation ${it.id} unreadable: ${e.message}", "ERROR", e)
+                null
+            }
+        } ?: app.treelune.core.access.AccessMask.NOTHING
+        val holder = automation?.name ?: app.treelune.core.strings.Strings.`for`(context = context).shared("automation_unknown")
+        return kotlinx.coroutines.withContext(app.treelune.core.access.AccessScope(mask, holder)) { block() }
     }
 
     /**

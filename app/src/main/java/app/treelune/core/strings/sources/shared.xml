@@ -1774,6 +1774,17 @@
     <string name="service_error_icons_param_not_list">\'%1$s\' is a list of strings</string>
     <string name="service_error_icons_unknown_category">Unknown icon category: \'%1$s\'. ICONS without parameters lists the categories</string>
     <string name="service_error_icon_unknown">Unknown icon: \'%1$s\'. The ICONS command searches the icons by word and category</string>
+    <string name="automation_unknown">An automation that no longer exists</string>
+    <string name="automation_access_title">Access of this automation</string>
+    <string name="automation_access_unreadable">The access does not read: %1$s</string>
+    <string name="access_level_read">read</string>
+    <string name="access_level_use">use</string>
+    <string name="access_level_full">full</string>
+    <string name="access_refused">%1$s has no « %3$s » access to %2$s</string>
+    <string name="access_refused_unknown">%1$s has no access to %2$s</string>
+    <string name="access_target_app">the home screen and the creation of zones</string>
+    <string name="access_target_zone">the zone « %1$s »</string>
+    <string name="access_target_tool">the tool « %1$s »</string>
     <string name="service_error_protection_user_only">« %1$s » can only be changed in the app, by the user</string>
     <string name="service_error_icon_color_unknown">Unknown icon colour: \'%1$s\'. One of %2$s, or null for none</string>
     <string name="action_verbalize_icons_overview">Overview of the icons</string>

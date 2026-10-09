@@ -62,8 +62,10 @@ object PromptManager {
             )
         )
 
-        // 3. Build Level 2 (USER DATA - always_send tools)
-        val level2Content = buildLevel2Content(context, sessionId, sessionType)
+        // 3. Build Level 2 (USER DATA - always_send tools), with what an automation's AI may
+        //    reach, so that it does not try what would be refused
+        val access = if (sessionType == SessionType.AUTOMATION) automationAccessText(context, sessionData["automation_id"] as? String) else null
+        val level2Content = buildLevel2Content(context, sessionId, sessionType) + (access?.let { "\n\n$it" } ?: "")
 
         // 4. Build/Load Level 3 (APP_STATE snapshot)
         val level3Content = if (existingSnapshot != null) {
@@ -371,6 +373,33 @@ object PromptManager {
             return formatLevel("Level 2: User Data", s.shared("ai_prompt_level2_not_sent").format(alwaysSent.listed()), emptyList())
         }
         return formatLevel("Level 2: User Data", s.shared("ai_prompt_level2_intro"), alwaysSent.results)
+    }
+
+    /**
+     * What the AI of automation [automationId] may reach (AccessMask), each zone and tool by its
+     * name, id and level; null when it reaches everything. An automation that cannot be read
+     * reaches nothing, and is said so.
+     */
+    private suspend fun automationAccessText(context: Context, automationId: String?): String? {
+        val s = Strings.`for`(context = context)
+        val database = app.treelune.core.database.AppDatabase.getDatabase(context)
+        val automation = automationId?.let { database.aiDao().getAutomationById(it) } ?: return s.shared("ai_prompt_access_nothing")
+        val mask = try {
+            app.treelune.core.access.AccessMask.fromJson(automation.accessJson)
+        } catch (e: Exception) {
+            return s.shared("ai_prompt_access_nothing")
+        }
+        if (mask.open) return null
+        val lines = mask.grants.map { grant ->
+            val id = grant.target.id!!
+            val level = s.shared("ai_prompt_access_level_${grant.level.key}")
+            if (grant.target.kind == app.treelune.core.selection.ReferenceKind.ZONE)
+                s.shared("ai_prompt_access_zone").format(database.zoneDao().getZoneById(id)?.name ?: id, id, level)
+            else
+                s.shared("ai_prompt_access_tool").format(
+                    database.toolInstanceDao().getToolInstanceById(id)?.let { org.json.JSONObject(it.config_json).optString("name") } ?: id, id, level)
+        }
+        return s.shared("ai_prompt_access_intro") + "\n" + lines.joinToString("\n")
     }
 
     /** Level 3 as it stands now: the zones and the tools, for an outside AI's context. */

@@ -301,6 +301,7 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("updated_at", automation.updatedAt)
                                 put("last_execution_id", automation.lastExecutionId)
                                 put("execution_history_json", automation.executionHistoryJson)
+                                put("access_json", automation.accessJson)
                                 if (automation.group != null) {
                                     put("group", automation.group)
                                 }
@@ -761,7 +762,9 @@ class BackupService(private val context: Context) : ExecutableService {
                         updatedAt = System.currentTimeMillis(), // Always now on import - prevents executing missed periods
                         lastExecutionId = item.optString("last_execution_id", null),
                         executionHistoryJson = item.optString("execution_history_json", "[]"),
-                        group = item.optString("group", null)
+                        group = item.optString("group", null),
+                        // Absent from a backup made before version 70: an automation reaching everything
+                        accessJson = item.optString("access_json", "[]")
                     )
                 )
             }

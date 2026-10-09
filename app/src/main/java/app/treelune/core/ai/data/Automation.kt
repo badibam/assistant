@@ -36,7 +36,9 @@ data class Automation(
     val createdAt: Long,
     val updatedAt: Long,                    // Last modification timestamp (used to skip missed executions after disable)
     val lastExecutionId: String?,           // ID of most recent execution session
-    val executionHistory: List<String>      // IDs of execution sessions (newest first)
+    val executionHistory: List<String>,     // IDs of execution sessions (newest first)
+    /** What its AI may reach (docs/design/validation.md): empty, everything */
+    val access: app.treelune.core.access.AccessMask = app.treelune.core.access.AccessMask()
 ) {
     companion object {
         /**
@@ -67,7 +69,8 @@ data class Automation(
                 createdAt = (map["created_at"] as Number).toLong(),
                 updatedAt = (map["updated_at"] as Number).toLong(),
                 lastExecutionId = map["last_execution_id"] as String?,
-                executionHistory = (map["execution_history"] as List<*>).map { it as String }
+                executionHistory = (map["execution_history"] as List<*>).map { it as String },
+                access = app.treelune.core.access.AccessMask.fromJson(org.json.JSONArray(map["access"] as List<*>).toString())
             )
         }
     }

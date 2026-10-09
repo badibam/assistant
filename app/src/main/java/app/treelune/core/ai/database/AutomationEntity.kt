@@ -40,5 +40,8 @@ data class AutomationEntity(
      * Links to zone's tool_groups array
      * null = ungrouped automation
      */
-    val group: String? = null
+    val group: String? = null,
+
+    /** What its AI may reach, AccessMask's stored form; an empty list reaches everything */
+    @ColumnInfo(name = "access_json") val accessJson: String = "[]"
 )

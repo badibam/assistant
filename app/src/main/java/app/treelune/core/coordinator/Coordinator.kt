@@ -83,11 +83,15 @@ class Coordinator(private val context: Context) {
             try {
                 val (resource, operation) = command.parseAction()
                 val service = serviceRegistry.getService(resource)
+                val refused = if (service == null) null else accessRefusal(command, resource, operation)
                 if (service == null) {
                     CommandResult(
                         status = CommandStatus.ERROR,
                         error = "Service not found for resource: $resource"
                     )
+                } else if (refused != null) {
+                    LogManager.coordination("Refused beyond the access mask: ${command.action}: $refused", "INFO")
+                    CommandResult(status = CommandStatus.ERROR, error = refused)
                 } else if (operation in service.longOperations) {
                     // A long operation takes the app's one place for it, or is refused while another runs
                     val params = app.treelune.core.utils.JsonUtils.toJSONObject(command.params)
@@ -112,6 +116,19 @@ class Coordinator(private val context: Context) {
                 error = "Command execution failed: ${e.message}"
             )
         }
+    }
+
+    /**
+     * Why [command] goes beyond the access mask of the operation running (AccessScope: an
+     * automation's AI), null when it does not or when there is none. What the app itself calls
+     * from inside an operation is not held: the operation it serves was.
+     */
+    private suspend fun accessRefusal(command: DispatchCommand, resource: String, operation: String): String? {
+        if (command.byTheApp) return null
+        val scope = kotlin.coroutines.coroutineContext[app.treelune.core.access.AccessScope] ?: return null
+        val lookups = app.treelune.core.access.DatabaseAccessLookups(context)
+        val reaches = app.treelune.core.access.AccessRules.reach(resource, operation, command.params, lookups::isToolType)
+        return app.treelune.core.access.AccessRules.refusal(scope.mask, scope.holder, reaches, lookups, Strings.`for`(context = context)::shared)
     }
 
     /**

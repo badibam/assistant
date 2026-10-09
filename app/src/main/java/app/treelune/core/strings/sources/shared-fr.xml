@@ -1774,6 +1774,17 @@
     <string name="service_error_icons_param_not_list">\'%1$s\' est une liste de chaînes</string>
     <string name="service_error_icons_unknown_category">Catégorie d\'icônes inconnue : \'%1$s\'. ICONS sans paramètre liste les catégories</string>
     <string name="service_error_icon_unknown">Icône inconnue : \'%1$s\'. La commande ICONS cherche les icônes par mot et par catégorie</string>
+    <string name="automation_unknown">Une automation qui n\'existe plus</string>
+    <string name="automation_access_title">Accès de cette automation</string>
+    <string name="automation_access_unreadable">L\'accès ne se lit pas : %1$s</string>
+    <string name="access_level_read">lecture</string>
+    <string name="access_level_use">utilisation</string>
+    <string name="access_level_full">complète</string>
+    <string name="access_refused">%1$s n\'a pas l\'accès « %3$s » à %2$s</string>
+    <string name="access_refused_unknown">%1$s n\'a pas accès à %2$s</string>
+    <string name="access_target_app">l\'accueil et la création de zones</string>
+    <string name="access_target_zone">la zone « %1$s »</string>
+    <string name="access_target_tool">l\'outil « %1$s »</string>
     <string name="service_error_protection_user_only">« %1$s » ne se change que dans l\'app, par l\'utilisateur</string>
     <string name="service_error_icon_color_unknown">Couleur d\'icône inconnue : \'%1$s\'. Une parmi %2$s, ou null pour aucune</string>
     <string name="action_verbalize_icons_overview">Vue d\'ensemble des icônes</string>
