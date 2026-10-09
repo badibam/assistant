@@ -20,7 +20,6 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 - Après le passage à Compose 1.12 (BOM 2026.09.00) : parcourir l'accueil, une zone, un outil de chaque type, sa config, Réglages, le chat, dans les deux thèmes ; les fenêtres de dialogue, les listes qui défilent, le glisser-déposer et le clavier se comportent comme avant.
 
-- Après les migrations 69 à 71 : Réglages › Validation n'a plus qu'« Protéger l'accueil », allumé si la config de l'app ou des zones était validée ; une zone dont un outil validait sa config est protégée ; « Gestion » et « Validation config par IA » ont quitté la config des outils ; une session qui validait a ses trois cases cochées ; les automations et les clients du connecteur ont un accès vide.
 
 ## Validation
 
@@ -52,7 +51,6 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Zones par l'IA : « Crée une zone Voyages dans le groupe X, affichage minimal, avec les groupes d'outils A et B » — la zone arrive rangée et réglée ; un groupe de l'accueil inventé est refusé avec la liste des groupes, et l'IA se reprend. « Renomme le groupe d'outils A en C » passe par UPDATE_ZONE avec `renames`, et ses outils le suivent.
 - Après le catalogue des commandes (`AICommands`) : « Combien de pesées cette semaine ? » passe par `TOOL_DATA` avec `period`, sans refus ; une commande à un paramètre inventé est refusée en le nommant, et l'IA la corrige au tour suivant ; le L1 (journal `Prompt data built`) garde sa taille d'avant, à quelques tokens près.
 - Réglages d'une session de chat : l'interrupteur de validation, à droite de son libellé, bascule et la validation suit.
-- Le chat ouvert, sans session puis dans une session : il couvre l'écran jusqu'en bas, la barre de navigation masquée comme ailleurs, revenant un instant au glissé du bord ; la touche Retour le ferme ; les bandeaux du haut ont leur couleur d'avant.
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
 - « Importe ce fichier dans une nouvelle table » avec un CSV joint : l'IA crée la table, puis au tour suivant `IMPORT_PLAN` et `IMPORT_DATA` ; la carte de validation nomme le fichier, ses lignes et la table ; la table a ses colonnes et ses lignes.
 - Le message de départ d'une automation ne propose pas le trombone.
@@ -171,10 +169,6 @@ Vu le 2026-10-09 : l'inscription par la page de connexion, « Activer Funnel » 
 
 ## Réglages et affichage
 
-- Mode une colonne et mode normal, dans les trois thèmes : toutes les icônes de tuile ont la même taille ; en une colonne, le corps d'une tuile (Liste, Suivi, Notes) pose ses éléments les uns sous les autres.
-- La marque de l'app à gauche du titre de l'accueil : en carré arrondi (défaut), en rond (cosy), en pixels (rétro).
-- Réglages › Interface : la teinte se règle sur la bande de couleurs en glissant, l'app suivant le doigt ; changer le thème ferme d'abord le menu sans planter.
-- Le Guide : Découverte (Premiers pas, Brancher une IA avec ses étapes 4 et 5, Construire avec l'IA, Automatiser), puis Prise en main, Configurer un outil en tête ; pas d'Approfondissement ; le pointeur se reconnaît à sa cible.
 - Écran Réglages (bouton de gauche de l'accueil, icône curseurs), dans les deux thèmes : quatre sections App, IA, Données, Système ; chaque tuile ouvre son écran, sa description sous le titre, et le retour ramène aux Réglages, puis à l'accueil.
 - Outils toujours envoyés (`always-send.md`) : marquer un outil notes « toujours envoyer », ouvrir une discussion : l'IA cite ses notes sans les lire ; `app_context` du connecteur les montre. Abaisser le seuil sous leur taille : au message suivant, la carte « Outils toujours envoyés », sa phrase sur la session ; « Refuser », puis un autre message : pas de nouvelle carte, l'IA sait qu'ils ne sont pas envoyés et peut les lire ; une nouvelle discussion redemande ; « Envoyer » : ils partent jusqu'à la fin de la session.
 - Réglages › Système › Signaler un bug, sans plantage enregistré : le champ « Ce qui s'est passé », dont le texte apparaît aussitôt en tête du rapport ; le rapport sans section plantage, ses identifiants en `#1`, ses textes cités en `«text»` ; « Envoyer » vers une messagerie, le texte arrivé entier.
