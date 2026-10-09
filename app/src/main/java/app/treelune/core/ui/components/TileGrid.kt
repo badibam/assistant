@@ -19,11 +19,13 @@ import androidx.compose.ui.unit.Dp
  * stacked in a row of cells (2: an item has room for two lines of text; 4: for one; 1: for a
  * tall item). Given [rows], the body shows what they hold and no more, each slot taking its share
  * of the height; null (FULL) shows every item, each slot as tall as in the limited modes: a row of
- * the grid (LocalGridRow) shared by [perRow].
+ * the grid (LocalGridRow) shared by [perRow]. In one column (CurrentTheme.oneColumn) the items
+ * stand one under the other, whatever [columns] asks.
  */
 @Composable
 fun <T> TileGrid(rows: Int?, items: List<T>, columns: Int, perRow: Int = 2, item: @Composable (T) -> Unit) {
-    val slotRows = tileGridSlotRows(rows, items.size, columns, perRow)
+    val laid = if (app.treelune.core.themes.CurrentTheme.oneColumn) 1 else columns
+    val slotRows = tileGridSlotRows(rows, items.size, laid, perRow)
     val slotHeight = if (rows == null) LocalGridRow.current / perRow else Dp.Unspecified
     Column(modifier = if (rows != null) Modifier.fillMaxSize() else Modifier.fillMaxWidth()) {
         for (slotRow in 0 until slotRows) {
@@ -32,9 +34,9 @@ fun <T> TileGrid(rows: Int?, items: List<T>, columns: Int, perRow: Int = 2, item
                 horizontalArrangement = Arrangement.spacedBy(UI.Space.S),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                for (column in 0 until columns) {
+                for (column in 0 until laid) {
                     Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                        items.getOrNull(slotRow * columns + column)?.let { item(it) }
+                        items.getOrNull(slotRow * laid + column)?.let { item(it) }
                     }
                 }
             }
