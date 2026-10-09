@@ -101,6 +101,13 @@ fun AppSettingsScreen(
 
     // The names the home screen's groups came with: a group renamed here is renamed in its zones
     val origins = remember(category) { app.treelune.core.fields.settings.ListOrigins() }
+    // The hue shift's slider over the colours its stops give (HueStrip)
+    val editors = remember(category) {
+        if (category != AppSettingCategories.UI) emptyMap()
+        else nodes.filterIsInstance<app.treelune.core.fields.settings.SettingNode.Field>()
+            .filter { it.definition.name == AppSettings.UI_HUE_SHIFT }
+            .associate { it.definition.name to HueShiftEditor(it, context) }
+    }
 
     fun save() {
         isSaving = true
@@ -140,7 +147,7 @@ fun AppSettingsScreen(
 
         UI.Card(type = CardType.DEFAULT) {
             Column(modifier = Modifier.fillMaxWidth().padding(UI.Space.L)) {
-                SettingsForm(nodes, settings, { settings = it }, context, origins = origins)
+                SettingsForm(nodes, settings, { settings = it }, context, editors, origins = origins)
             }
         }
 
@@ -149,6 +156,20 @@ fun AppSettingsScreen(
         UI.FormActions {
             UI.ActionButton(action = ButtonAction.SAVE, enabled = !isSaving && load == LoadState.LOADED, onClick = { save() })
             UI.ActionButton(action = ButtonAction.CANCEL, onClick = onBack)
+        }
+    }
+}
+
+/** The hue shift's input as the form draws it, the theme's strip of the colours each stop gives under it. */
+private class HueShiftEditor(
+    private val node: app.treelune.core.fields.settings.SettingNode.Field,
+    private val context: android.content.Context
+) : app.treelune.core.fields.settings.SettingEditor {
+    @Composable
+    override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+        Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
+            app.treelune.core.fields.FieldInput(node.definition, value ?: node.default, onChange, context, required = node.required)
+            CurrentTheme.current.HueStrip(AppSettings.HUE_SHIFT_RANGE)
         }
     }
 }

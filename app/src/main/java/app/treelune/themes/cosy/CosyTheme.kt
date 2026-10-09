@@ -1029,6 +1029,23 @@ object CosyTheme : ThemeContract {
      * well alone and "—".
      */
     @Composable
+    override fun HueStrip(shifts: IntRange) {
+        val size = cosySize()
+        val mode = CurrentTheme.paletteMode
+        // The accent at a stop every HUE_STRIP_STEP degrees, blended between them, as tall as the track
+        val colors = remember(mode, shifts) {
+            (shifts step HUE_STRIP_STEP).map { CosyPalettes.colors(mode, it).accent.srgb } + CosyPalettes.colors(mode, shifts.last).accent.srgb
+        }
+        Box(
+            modifier = Modifier.fillMaxWidth().height(size.dp(14f)).clip(CircleShape)
+                .background(androidx.compose.ui.graphics.Brush.horizontalGradient(colors))
+        )
+    }
+
+    /** Degrees between two colours the hue strip computes. */
+    private const val HUE_STRIP_STEP = 10
+
+    @Composable
     override fun SliderField(
         label: String,
         value: Double?,

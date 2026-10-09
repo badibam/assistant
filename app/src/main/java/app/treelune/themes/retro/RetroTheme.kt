@@ -976,6 +976,25 @@ object RetroTheme : ThemeContract {
      * the finger; no answer yet shows the track alone and "—".
      */
     @Composable
+    override fun HueStrip(shifts: IntRange) {
+        val grid = retroGrid()
+        val mode = CurrentTheme.paletteMode
+        // A block per cell, as the slider's gauge: each the frames' ground at the shift under its middle
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val cells = (constraints.maxWidth / grid.cellPx).coerceAtLeast(1)
+            val colors = remember(mode, shifts, cells) {
+                List(cells) { i ->
+                    val shift = shifts.first + ((i + 0.5f) / cells * (shifts.last - shifts.first)).roundToInt()
+                    RetroPalettes.colors(mode, shift).panel.ground.srgb
+                }
+            }
+            Row {
+                colors.forEach { Box(modifier = Modifier.size(grid.cells(1)).background(it)) }
+            }
+        }
+    }
+
+    @Composable
     override fun SliderField(
         label: String,
         value: Double?,

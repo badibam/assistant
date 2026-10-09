@@ -497,7 +497,15 @@ interface ThemeContract {
         maxLabel: String,
         required: Boolean
     )
-    
+
+    /**
+     * Under the hue shift's slider (Appearance.hueShift), the colour each of [shifts] gives the
+     * theme in the mode shown, across the slider's width: a shift lies under the stop that
+     * chooses it, so that one sees where to go instead of trying.
+     */
+    @Composable
+    fun HueStrip(shifts: IntRange)
+
     // =====================================
     // PALETTE SYSTEM
     // =====================================

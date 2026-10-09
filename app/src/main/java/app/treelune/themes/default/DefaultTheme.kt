@@ -32,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -1374,6 +1375,22 @@ object DefaultTheme : ThemeContract {
      * slider rests on its minimum: a touch that changed nothing on an empty slider answers that
      * minimum when it ends.
      */
+    @Composable
+    override fun HueStrip(shifts: IntRange) {
+        val mode = CurrentTheme.paletteMode
+        // The scheme's primary at a stop every HUE_STRIP_STEP degrees, blended between them
+        val colors = remember(mode, shifts) {
+            (shifts step HUE_STRIP_STEP).map { getColorScheme(mode, it).primary } + getColorScheme(mode, shifts.last).primary
+        }
+        Box(
+            modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(50))
+                .background(androidx.compose.ui.graphics.Brush.horizontalGradient(colors))
+        )
+    }
+
+    /** Degrees between two colours the hue strip computes. */
+    private const val HUE_STRIP_STEP = 10
+
     @Composable
     override fun SliderField(
         label: String,
