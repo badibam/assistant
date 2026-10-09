@@ -39,7 +39,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 - Utiliser secret android pour clés, comme le fait saylune
 - Alléger les écrans de config en repliant xertains paramètres
-- Params de ecran d'accueil groupes de zones etc : pas accessibles à l'ia ?
 - Le réglage « Gestion » (`management`, Manuel ou IA) de la config commune des outils n'est lu par aucun code : le retirer, migration des configs et schéma de l'IA compris.
 
 ## En attente d'un déclencheur
