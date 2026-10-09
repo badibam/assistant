@@ -14,4 +14,4 @@ Ce qu'il ne couvre pas : les dix blocs en pseudo-code (`{ name?, timestamp?, dat
 
 ## B.8 Mention rapide
 
-- `validateConfig`/`validateData` par défaut `false` (`ValidationResolver.kt:182`, `:209`) : l'IA modifie sans validation par défaut. Posture probablement délibérée — à re-choisir consciemment un jour, pas à subir comme un défaut hérité.
+- `validateConfig`/`validateData` par défaut `false` (`ValidationResolver.kt:182`, `:209`) : l'IA modifie sans validation par défaut. Re-choisi le 2026-10-09 : désactivé par défaut, on protège ce qui est sensible (`docs/design/validation.md`).
