@@ -980,8 +980,8 @@ class AIEventProcessor(
                     formatErrors.add(s.shared("ai_error_validation_multiple_action_types").format(presentTypes.joinToString(", ")))
                 }
 
-                // Rule 2: validationRequest only with actionCommands
-                if (cleanedAIMessage.validationRequest != null && !hasActionCommands) {
+                // Rule 2: a validation asked only with actionCommands; false asks for nothing, as absent does
+                if (cleanedAIMessage.validationRequest == true && !hasActionCommands) {
                     formatErrors.add(s.shared("ai_error_validation_request_without_actions"))
                 }
 
