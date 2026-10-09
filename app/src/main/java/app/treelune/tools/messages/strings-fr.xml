@@ -69,6 +69,7 @@
     <string name="tab_upcoming">À venir</string>
 
     <!-- FILTERS - Filtres des occurrences reçues -->
+    <string name="tile_unread_one">1 non lu</string>
     <string name="tile_unread">%1$s non lus</string>
     <string name="tile_all_read">Tous lus</string>
     <string name="tile_next">Prochain : %1$s</string>

@@ -73,7 +73,7 @@ fun rememberMessagesTile(tool: ToolInstance, open: (EntryToOpen) -> Unit): ToolT
                 val oldest = loaded.unread.firstOrNull()
                 Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceEvenly) {
                     if (oldest != null) {
-                        UI.Text(s.tool("tile_unread").format(loaded.unread.size.toString()), TextType.BODY, maxLines = 1)
+                        UI.Text(if (loaded.unread.size == 1) s.tool("tile_unread_one") else s.tool("tile_unread").format(loaded.unread.size.toString()), TextType.BODY, maxLines = 1)
                         UI.Text(oldest.displayTitle, TextType.CAPTION, maxLines = 1)
                     } else {
                         UI.Text(s.tool("tile_all_read"), TextType.BODY, maxLines = 1)
