@@ -41,6 +41,8 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Utiliser secret android pour clés, comme le fait saylune
 - Alléger les écrans de config en repliant xertains paramètres
 
+- Le contrôle des README (`scripts/make_readme.py --check`, dans `./run test`) compte les langues par les dossiers `res/values-xx`, que le build génère et que git ignore : sur une copie neuve du dépôt (un worktree), il échoue avant le premier build. Les compter par les sources de textes (`shared-xx.xml`).
+
 ## En attente d'un déclencheur
 
 - Proposer à Tailscale le correctif de `tsnet.ListenFunnel` sous GOOS=android (la route `cert/` de `ipn/localapi`, exclue d'Android : le Funnel s'ouvre mais ne peut servir aucun certificat ; `docs/design/funnel-poc.md`) ; s'il est appliqué, retirer la correction de la copie de Tailscale dans le dépôt — quand cette copie existe.
