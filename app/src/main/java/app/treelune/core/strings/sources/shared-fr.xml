@@ -1777,6 +1777,7 @@
     <string name="automation_unknown">Une automation qui n\'existe plus</string>
     <string name="automation_access_title">Accès de cette automation</string>
     <string name="automation_access_help">Vide : elle peut tout faire. Sinon, elle ne touche qu\'à ce qui est listé.</string>
+    <string name="automation_access_always_sent">Les outils marqués « Toujours envoyer à l\'IA » qui ne sont pas présents dans la liste des autorisations lui parviennent quand même, en lecture.</string>
     <string name="automation_access_add">Ajouter une zone ou un outil</string>
     <string name="automation_access_level">Accès</string>
     <string name="automation_access_level_read">Lecture</string>

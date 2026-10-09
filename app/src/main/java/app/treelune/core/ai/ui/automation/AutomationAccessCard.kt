@@ -55,6 +55,8 @@ fun AutomationAccessCard(access: AccessMask, onChange: (AccessMask) -> Unit) {
         Column(modifier = Modifier.padding(UI.Space.L), verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
             UI.Text(s.shared("automation_access_title"), TextType.SUBTITLE)
             UI.Text(s.shared("automation_access_help"), TextType.CAPTION)
+            // What it reads all the same: the tools sent to every AI, the user's own choice
+            UI.Text(s.shared("automation_access_always_sent"), TextType.CAPTION)
 
             access.grants.forEachIndexed { index, grant ->
                 Row(

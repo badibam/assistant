@@ -399,7 +399,7 @@ object PromptManager {
                 s.shared("ai_prompt_access_tool").format(
                     database.toolInstanceDao().getToolInstanceById(id)?.let { org.json.JSONObject(it.config_json).optString("name") } ?: id, id, level)
         }
-        return s.shared("ai_prompt_access_intro") + "\n" + lines.joinToString("\n")
+        return s.shared("ai_prompt_access_intro") + "\n" + lines.joinToString("\n") + "\n\n" + s.shared("ai_prompt_access_always_sent")
     }
 
     /** Level 3 as it stands now: the zones and the tools, for an outside AI's context. */

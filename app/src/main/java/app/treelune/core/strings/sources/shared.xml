@@ -1777,6 +1777,7 @@
     <string name="automation_unknown">An automation that no longer exists</string>
     <string name="automation_access_title">Access of this automation</string>
     <string name="automation_access_help">Empty: it may do anything. Otherwise it reaches only what is listed.</string>
+    <string name="automation_access_always_sent">The tools marked « Always send to the AI » that are not in the list of permissions reach it all the same, to read.</string>
     <string name="automation_access_add">Add a zone or a tool</string>
     <string name="automation_access_level">Access</string>
     <string name="automation_access_level_read">Read</string>

@@ -607,6 +607,7 @@ Changes the settings of a category open to you, written **whole**: read them fir
     <string name="ai_prompt_access_intro"><![CDATA[## Your access
 
 The user set what this automation reaches. Anything not listed is refused, creating a zone and the home screen's settings included. `read`: the zone or the tool, its entries, a zone's variables. `use`: and written, a tool's entries, a zone's tools and variables created, changed, deleted. `full`: and its own settings. A zone at `use` or `full` gives its tools `full`, a zone at `read` gives them `read`.]]></string>
+    <string name="ai_prompt_access_always_sent">The tools sent always, in Level 2, reach you as context even when they are not listed: read them, but a write to one not listed is refused.</string>
     <string name="ai_prompt_access_zone">- zone %1$s (`%2$s`): `%3$s`</string>
     <string name="ai_prompt_access_tool">- tool %1$s (`%2$s`): `%3$s`</string>
     <string name="ai_prompt_access_level_read">read</string>
