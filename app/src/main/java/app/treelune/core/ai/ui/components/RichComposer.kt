@@ -139,8 +139,12 @@ fun UI.RichComposer(
 
     // Sync from parent only when segments change externally (not from our own updates)
     var lastSyncedSegments by remember { mutableStateOf(segments) }
+    // The blocks as this composition sees them, beside the segments it was given: the effect runs
+    // a frame later, when a next keystroke may already have changed the blocks, and the parent's
+    // echo of the previous one would then pass for a change from outside
+    val blocksWithSegments = blocks
     LaunchedEffect(segments) {
-        if (segments != lastSyncedSegments && ComposerBlocks.toSegments(blocks) != segments) {
+        if (segments != lastSyncedSegments && ComposerBlocks.toSegments(blocksWithSegments) != segments) {
             blocks = ComposerBlocks.fromSegments(segments)
             // Rebuilt blocks have new ids: the active one would name a block that is gone,
             // and the next block would find nowhere to go (the composer emptied after a send)
