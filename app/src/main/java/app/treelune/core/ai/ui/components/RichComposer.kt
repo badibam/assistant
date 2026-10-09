@@ -529,7 +529,7 @@ private fun EnrichmentBlockContent(
  */
 private fun getEnrichmentButtonAction(type: EnrichmentType): ButtonAction {
     return when (type) {
-        EnrichmentType.POINTER -> ButtonAction.SELECT
+        EnrichmentType.POINTER -> ButtonAction.POINTER
         EnrichmentType.FILE -> ButtonAction.ATTACH
     }
 }

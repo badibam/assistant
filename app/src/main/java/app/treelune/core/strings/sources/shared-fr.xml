@@ -1196,6 +1196,7 @@
     <string name="file_summary_preview">Fichier : %1$s (%2$d lignes), aperçu seulement</string>
     <string name="file_error_encoding">%1$s n\'est pas un texte lisible (UTF-8 attendu).</string>
     <string name="action_attach">Joindre un fichier</string>
+    <string name="action_pointer">Désigner une zone ou un outil</string>
     <string name="action_photo">Photo</string>
     <string name="action_gallery">Galerie</string>
     <string name="action_arrange">Disposer</string>
