@@ -78,7 +78,7 @@
     <string name="guide_first_steps_4_goal">Créez votre propre zone, dans « Hors groupe »</string>
     <string name="guide_first_steps_4_text">Sur l\'accueil, descendez jusqu\'à la section « Hors groupe », tout en bas, et touchez son + : donnez à la zone un nom, une icône, une courte description. Pas dans le groupe Démo, qui est à Camille. Vos propres groupes viendront plus tard, par l\'engrenage de l\'accueil.</string>
     <string name="guide_first_steps_5_goal">Ajoutez-y un outil</string>
-    <string name="guide_first_steps_5_text">Dans votre zone, le + d\'une section liste les types d\'outils. N\'importe lequel convient ; la Liste est la plus simple : vos courses, vos choses à faire, chacune un nom que vous cochez.</string>
+    <string name="guide_first_steps_5_text">Dans votre zone, touchez le + d\'une section : il propose les types d\'outils. Choisissez Liste, le plus simple : chaque entrée est un nom, que l\'on coche une fois la chose faite (des courses, des tâches). L\'écran de configuration contient beaucoup de réglages, mais seul le nom est obligatoire. La description et l\'icône sont facultatives, et tout le reste est déjà réglé. Donnez un nom à votre liste, puis validez en bas de l\'écran.</string>
     <string name="guide_first_steps_6_goal">Ajoutez-y une première entrée</string>
     <string name="guide_first_steps_6_text">Ouvrez votre outil et ajoutez une entrée : dans une Liste, tapez un nom et ajoutez-le, puis cochez-le une fois fait. Un appui long sur le titre d\'un outil ouvre sa configuration, pour le changer à tout moment.</string>
     <string name="guide_connect_ai_title">Brancher une IA</string>
@@ -90,8 +90,10 @@
     <string name="guide_connect_ai_2_text">Touchez un fournisseur, collez la clé d\'API créée sur son site, choisissez un modèle, enregistrez. La clé reste sur votre téléphone et ne part que chez ce fournisseur.</string>
     <string name="guide_connect_ai_3_goal">Ce que coûte un échange</string>
     <string name="guide_connect_ai_3_text">Chaque échange avec l\'IA est payé au fournisseur, par votre clé. La conversation montre ce que chacun a coûté. Réglages › Limites IA borne jusqu\'où l\'IA va seule.</string>
-    <string name="guide_connect_ai_4_goal">Demandez-lui son avis sur votre outil</string>
-    <string name="guide_connect_ai_4_text">Ouvrez la conversation (la bulle). Dans votre message, ajoutez un pointeur vers votre outil : il joint ses entrées sur une période. Demandez « que dis-tu de mes entrées ? ». Puis Suivant.</string>
+    <string name="guide_connect_ai_4_goal">Demandez-lui une vue d\'ensemble</string>
+    <string name="guide_connect_ai_4_text">Ouvrez la conversation (la bulle) et demandez à l\'IA ce qu\'elle voit de votre app. Inutile de joindre quoi que ce soit : elle connaît déjà vos zones et vos outils, et va lire elle-même les entrées dont elle a besoin. Puis Suivant.</string>
+    <string name="guide_connect_ai_5_goal">Parlez-lui de votre outil avec un pointeur</string>
+    <string name="guide_connect_ai_5_text">Écrivez votre question, par exemple « Que penses-tu de cette liste ? ». Touchez ensuite la cible sous le message : c\'est le bouton du pointeur. Dans la fenêtre « Sélectionner données », touchez votre zone, puis votre outil dans la liste qui s\'ouvre. Ne cochez ni Config ni Entrées, puis touchez Confirmer : le pointeur s\'ajoute à votre message. Envoyez. L\'IA sait maintenant exactement de quel outil vous parlez. Cocher Config ou Entrées aurait joint ces données au message, sur une période ou avec des filtres ; le chapitre « Parler à l\'IA » explique quand c\'est utile. Puis Suivant.</string>
     <string name="guide_build_with_ai_title">Construire avec l\'IA</string>
     <string name="guide_build_with_ai_intro">Décrivez ce que vous voulez suivre : l\'IA crée les outils et les relie. Vous gardez la main : elle montre ce qu\'elle fait.</string>
     <string name="guide_build_with_ai_outro">L\'IA a construit un outil et une variable avec vous. Ensuite : la faire travailler seule, sur un planning.</string>

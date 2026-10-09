@@ -86,7 +86,7 @@ Une étape s'écrit en données, pas en code. Un contrôle de `./run test` véri
 Découverte : 1 et 2 ; Prise en main : 3 et 4.
 
 1. **Premiers pas**, sans IA.
-2. **Brancher une IA** : choisir un fournisseur, coller sa clé, envoyer un premier message qui pointe vers son outil.
+2. **Brancher une IA** : choisir un fournisseur, coller sa clé, demander une vue d'ensemble sans rien joindre, puis désigner son outil par un pointeur en simple mention, chaque geste nommé (la cible, la zone, l'outil, Confirmer).
 3. **Construire avec l'IA** : lui faire créer un outil, valider ce qu'elle propose, la laisser relier deux outils (une variable, un Objectif).
 4. **Automatiser** : une automation planifiée (« chaque dimanche, le bilan de la semaine »), puis lire son exécution.
 
@@ -98,7 +98,7 @@ Le contenu des tutoriels 2 à 4 s'écrit à leur construction : il nomme des éc
 2. **Faire** : ajoutez une sortie dans *Sorties* (`tool_data.create` sur `demo-course-runs`, d'origine utilisateur).
 3. **Aller, puis lire** : ouvrez *Km par semaine* — votre sortie y est, et l'objectif *Semaine d'entraînement* l'a comptée. Les outils se nourrissent entre eux.
 4. **Faire** : créez votre propre zone, hors démo : l'explication envoie à la section « Hors groupe », tout en bas de l'accueil, et à son +, le groupe Démo étant à Camille.
-5. **Faire** : ajoutez-y un outil ; n'importe quel type, l'explication suggère une Liste, où une entrée n'est qu'un nom à cocher (le Suivi et ses raccourcis sont vus à l'étape 2, dans la démo ; sans raccourci, sa saisie intimide).
+5. **Faire** : ajoutez-y un outil ; l'explication guide vers une Liste, où une entrée n'est qu'un nom à cocher, et dit que seul le nom est à remplir (le Suivi et ses raccourcis sont vus à l'étape 2, dans la démo ; sans raccourci, sa saisie intimide).
 6. **Faire** : ajoutez-y une première entrée, dans l'outil de l'étape 5 : un élément de la Liste.
 
 ## Approfondissement

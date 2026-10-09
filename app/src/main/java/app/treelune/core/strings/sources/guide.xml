@@ -78,7 +78,7 @@
     <string name="guide_first_steps_4_goal">Create your own zone, under « Ungrouped »</string>
     <string name="guide_first_steps_4_text">On the home screen, scroll down to the « Ungrouped » section, at the very bottom, and touch its +: give the zone a name, an icon, a short description. Not in the Demo group, which is Camille\'s. Groups of your own come later, from the gear of the home screen.</string>
     <string name="guide_first_steps_5_goal">Add a tool to it</string>
-    <string name="guide_first_steps_5_text">In your zone, the + of a section lists the tool types. Any will do; a List is the simplest: your shopping, your things to do, each one a name you check off.</string>
+    <string name="guide_first_steps_5_text">In your zone, tap the + of a section: it offers the tool types. Choose List, the simplest: each entry is a name you tick once the thing is done (shopping, tasks). The configuration screen holds many settings, but only the name is required. The description and the icon are optional, and everything else is already set. Give your list a name, then confirm at the bottom of the screen.</string>
     <string name="guide_first_steps_6_goal">Add a first entry to it</string>
     <string name="guide_first_steps_6_text">Open your tool and add an entry: in a List, type a name and add it, then check it once done. A touch and hold on a tool\'s title opens its configuration, to change it at any time.</string>
     <string name="guide_connect_ai_title">Connect an AI</string>
@@ -90,8 +90,10 @@
     <string name="guide_connect_ai_2_text">Touch a provider, paste the API key you created on its site, choose a model, save. The key stays on your phone and goes only to that provider.</string>
     <string name="guide_connect_ai_3_goal">What an exchange costs</string>
     <string name="guide_connect_ai_3_text">Each exchange with the AI is paid to the provider, by your key. The conversation shows what each one cost. Settings › AI limits caps how far the AI goes alone.</string>
-    <string name="guide_connect_ai_4_goal">Ask it about your tool</string>
-    <string name="guide_connect_ai_4_text">Open the conversation (the speech bubble). In your message, add a pointer to your tool: it attaches its entries over a period. Ask « what do you make of my entries? ». Then Next.</string>
+    <string name="guide_connect_ai_4_goal">Ask it for an overview</string>
+    <string name="guide_connect_ai_4_text">Open the conversation (the speech bubble) and ask the AI what it sees of your app. No need to attach anything: it already knows your zones and tools, and reads the entries it needs on its own. Then Next.</string>
+    <string name="guide_connect_ai_5_goal">Tell it about your tool with a pointer</string>
+    <string name="guide_connect_ai_5_text">Write your question, for example « What do you think of this list? ». Then tap the crosshair under the message: it is the pointer\'s button. In the « Select data » window, tap your zone, then your tool in the list that opens. Tick neither Config nor Entries, then tap Confirm: the pointer joins your message. Send it. The AI now knows exactly which tool you mean. Ticking Config or Entries would have attached that data to the message, over a period or with filters; the « Talk to the AI » chapter explains when that helps. Then Next.</string>
     <string name="guide_build_with_ai_title">Build with the AI</string>
     <string name="guide_build_with_ai_intro">Describe what you want to follow: the AI creates the tools and links them. You stay in charge: it shows what it does.</string>
     <string name="guide_build_with_ai_outro">The AI built a tool and a variable with you. Next: have it work on its own, on a schedule.</string>

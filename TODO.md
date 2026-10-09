@@ -40,8 +40,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Alléger les écrans de config en repliant xertains paramètres
 - Gérer la question de la validation notamment dans la config d'outil, mais aussi à tous les crans
 - Guide : un tuto sur la config commune des outils
-- Guide : demander direct un pointeur avec dates n'est pas approprié. Le 1er devrait être une simple mention (préciser ce qu'il fait faire/inutile de faire). Et mentionner usage + poussé des pointeurs (en re'voyant vers autre tuto pour aller +loin)
-- Dans guide : creation d'outil meme simple peut etre intimidant. Ondiquer les champs à remplir pour le type rpoposé : pour liste, unoquepent nom et description optionnelles, icone, et valider direct en bas.
 - Params de ecran d'accueil groupes de zones etc : pas accessibles à l'ia ?
 
 ## En attente d'un déclencheur
