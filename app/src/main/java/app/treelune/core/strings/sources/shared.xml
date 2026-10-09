@@ -1052,6 +1052,7 @@
     <string name="ai_error_no_provider_configured">No AI provider configured. Please configure a provider in the settings.</string>
     <string name="ai_error_provider_not_found">Provider not found: %1$s</string>
     <string name="ai_error_provider_not_configured">Provider %1$s not configured</string>
+    <string name="ai_error_provider_secret_unreadable">The API key of %1$s does not open on this phone: it was saved on another one (a restored backup). Enter it again in the provider\'s settings.</string>
     <string name="ai_error_cannot_delete_active_provider">The active provider cannot be deleted</string>
     <string name="ai_error_schema_not_found">Validation schema not found</string>
     <string name="ai_error_invalid_json">Invalid JSON: %1$s</string>
@@ -1817,6 +1818,7 @@
     <string name="error_validation_required">Required field</string>
     <string name="error_param_name_required">The name is required</string>
     <string name="error_load_failed">Loading failed</string>
+    <string name="secrets_unreadable">%1$s does not open on this phone: it was saved on another one (a restored backup). Enter it again.</string>
     <string name="error_load_data_failed">Unable to load the data</string>
     <string name="error_update_failed">Update failed</string>
     <string name="error_rename_failed">Renaming failed</string>
@@ -1894,6 +1896,7 @@
     <string name="external_access_state_open_last">Open, last call %1$s. Closes by itself after 30 minutes without a call.</string>
     <string name="external_access_state_failed">Closed after a failure: %1$s</string>
     <string name="external_access_no_relay">Give the relay\'s address (https) and its secret first.</string>
+    <string name="external_access_secret_unreadable">The relay\'s secret does not open on this phone: it was saved on another one (a restored backup). Enter it again.</string>
     <string name="external_access_tailscale_unavailable">Tailscale is not available on this phone\'s processor: choose the relay.</string>
     <string name="settings_external_access_relay_section">Relay</string>
     <string name="external_access_preparing">Starting Tailscale…</string>

@@ -1,5 +1,6 @@
 package app.treelune.core.ai.ui.screens
 
+import app.treelune.core.fields.settings.labelOf
 import app.treelune.core.utils.JsonUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -151,6 +152,11 @@ fun AIProvidersScreen(
                     @Suppress("UNCHECKED_CAST")
                     existingConfig = (result.data?.get("config") as? Map<String, Any?>)
                         ?.let { JsonUtils.toJSONObject(it).toString() } ?: "{}"
+                    // A key sealed on another phone shows empty: said, so it is not taken for one never entered
+                    (result.data?.get(app.treelune.core.secrets.SecretSettings.UNREADABLE) as? List<*>).orEmpty().takeIf { it.isNotEmpty() }?.let { names ->
+                        val nodes = it.getConfigSettings(context)
+                        errorMessage = s.shared("secrets_unreadable").format(names.joinToString(", ") { name -> nodes.labelOf(name.toString()) ?: name.toString() })
+                    }
                 }
                 isLoadingConfig = false
             }

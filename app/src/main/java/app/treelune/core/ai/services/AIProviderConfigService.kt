@@ -4,6 +4,8 @@ import app.treelune.core.utils.JsonUtils
 import android.content.Context
 import app.treelune.core.ai.database.AIProviderConfigEntity
 import app.treelune.core.ai.providers.AIProviderRegistry
+import app.treelune.core.secrets.SecretBox
+import app.treelune.core.secrets.SecretSettings
 import app.treelune.core.coordinator.CancellationToken
 import app.treelune.core.database.AppDatabase
 import app.treelune.core.services.ExecutableService
@@ -85,10 +87,17 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
                 return OperationResult.error(s.shared("ai_error_provider_not_configured").format(providerId))
             }
 
+            // Its secrets opened; one that does not open on this phone is named, for the caller to say so
+            val provider = AIProviderRegistry(context).getProvider(providerId)
+                ?: return OperationResult.error(s.shared("ai_error_unknown_provider").format(providerId))
+            val opened = SecretSettings.open(SecretSettings.names(provider.getConfigSettings(context)),
+                JSONObject(configEntity.configJson), SecretBox.of())
+
             return OperationResult.success(mapOf(
                 "provider_id" to configEntity.providerId,
                 "display_name" to configEntity.displayName,
-                "config" to JsonUtils.toMap(configEntity.configJson),
+                "config" to JsonUtils.toMap(opened.settings),
+                SecretSettings.UNREADABLE to opened.unreadable,
                 "is_configured" to configEntity.isConfigured,
                 "is_active" to configEntity.isActive,
                 "created_at" to configEntity.createdAt,
@@ -146,10 +155,13 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             val existingConfig = database.aiDao().getProviderConfig(providerId)
             val now = System.currentTimeMillis()
 
+            // Its secrets sealed: the database never holds an API key in clear
+            val sealed = SecretSettings.seal(SecretSettings.names(provider.getConfigSettings(context)),
+                JSONObject(configJson), SecretBox.of())
             val configEntity = AIProviderConfigEntity(
                 providerId = providerId,
                 displayName = provider.getDisplayName(),
-                configJson = configJson,
+                configJson = sealed.toString(),
                 isConfigured = true,
                 isActive = existingConfig?.isActive ?: false,
                 createdAt = existingConfig?.createdAt ?: now,

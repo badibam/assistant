@@ -138,6 +138,12 @@ object ProviderVerifier {
                 return VerificationResult(false, s.shared("ai_error_provider_not_found").format(providerIdToVerify))
             }
 
+            // A key sealed on another phone: said before a session starts on it
+            if ((providerResult.data?.get(app.treelune.core.secrets.SecretSettings.UNREADABLE) as? List<*>).orEmpty().isNotEmpty()) {
+                LogManager.aiService("verifyProvider: Provider '$providerIdToVerify' has a secret unreadable on this phone", "ERROR")
+                return VerificationResult(false, s.shared("ai_error_provider_secret_unreadable").format(provider.getDisplayName()))
+            }
+
             LogManager.aiService("verifyProvider: Provider '$providerIdToVerify' verified successfully", "DEBUG")
             return VerificationResult(true)
 

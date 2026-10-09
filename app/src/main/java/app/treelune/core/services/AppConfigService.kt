@@ -21,6 +21,8 @@ import app.treelune.core.utils.LogManager
 import app.treelune.core.utils.DataChangeNotifier
 import app.treelune.core.strings.Strings
 import org.json.JSONObject
+import app.treelune.core.secrets.SecretBox
+import app.treelune.core.secrets.SecretSettings
 import org.json.JSONArray
 
 /**
@@ -132,7 +134,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
                 else app.treelune.core.grid.ZonePositions.regroup(zones, change.beforeRenamed, change.after)
             }
             moved.forEach { database.zoneDao().updatePosition(it.id, it.grid_x, it.grid_y) }
-            settingsDao.updateSettings(category, settings.toString())
+            // Its secrets sealed: the database never holds one in clear
+            val sealed = SecretSettings.seal(SecretSettings.names(AppSettings.nodes(category, context)), settings, SecretBox.of())
+            settingsDao.updateSettings(category, sealed.toString())
             moved
         }
         AppConfigManager.refresh(context)
@@ -167,7 +171,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
                     return OperationResult.error(s.shared("service_error_unknown_category").format(category))
                 }
                 closedRefusal(category)?.let { return OperationResult.error(it) }
-                OperationResult.success(mapOf("settings" to JsonUtils.toMap(readSettings(category))))
+                // Its secrets opened; one that does not open on this phone is named, for the caller to say so
+                val opened = SecretSettings.open(SecretSettings.names(AppSettings.nodes(category, context)), readSettings(category), SecretBox.of())
+                OperationResult.success(mapOf("settings" to JsonUtils.toMap(opened.settings), SecretSettings.UNREADABLE to opened.unreadable))
             }
             "set" -> {
                 val category = params.optString("category")

@@ -988,6 +988,9 @@ class BackupService(private val context: Context) : ExecutableService {
             if (fromVersion < 42 && toVersion >= 42) {
                 FormatNullsAtV42.backup(data)
             }
+            if (fromVersion < 72 && toVersion >= 72) {
+                app.treelune.core.versioning.SecretsAtV72.backup(data, app.treelune.core.secrets.SecretBox.of())
+            }
 
             // Transform automation schedules (fix SchedulePattern types for v10 → v11)
             data.optJSONArray("automations")?.let { array ->

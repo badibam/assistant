@@ -1,5 +1,6 @@
 package app.treelune.core.ui.screens.settings
 
+import app.treelune.core.fields.settings.labelOf
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -72,6 +73,10 @@ fun AppSettingsScreen(
         }
         settings = JsonUtils.toJSONObject(read)
         stored = JsonUtils.toJSONObject(read)
+        // A secret sealed on another phone shows empty: said, so it is not taken for one never entered
+        (result.data?.get(app.treelune.core.secrets.SecretSettings.UNREADABLE) as? List<*>).orEmpty().takeIf { it.isNotEmpty() }?.let { names ->
+            UI.Toast(context, s.shared("secrets_unreadable").format(names.joinToString(", ") { nodes.labelOf(it.toString()) ?: it.toString() }), Duration.LONG)
+        }
         true
     }
 

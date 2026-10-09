@@ -132,6 +132,17 @@ class AIClient(private val context: Context) {
                     )
                 }
 
+                // A key sealed on another phone: said as such, never sent as an empty key
+                if ((configResult.data?.get(app.treelune.core.secrets.SecretSettings.UNREADABLE) as? List<*>).orEmpty().isNotEmpty()) {
+                    LogManager.aiService("Provider secret unreadable on this phone: $effectiveProviderId", "ERROR")
+                    return@withContext AIResponse(
+                        success = false,
+                        content = "",
+                        errorMessage = s.shared("ai_error_provider_secret_unreadable").format(provider.getDisplayName()),
+                        failure = AIFailure.CONFIG
+                    )
+                }
+
                 // A history with images goes whole or not at all: refused, and said, when the
                 // model does not read them, when nothing says it does, when there are too many,
                 // or when an image's file is missing; never sent without them
