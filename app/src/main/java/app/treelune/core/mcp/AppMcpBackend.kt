@@ -43,10 +43,12 @@ class AppMcpBackend(private val context: Context) : McpBackend {
         )
     }
 
-    override suspend fun appContext(): String = listOf(
+    override suspend fun appContext(caller: McpCaller): String = listOfNotNull(
         s.shared("ai_mcp_context_intro"),
         PromptChunks.buildAppNotions(context),
         PromptManager.buildLevel2Content(context, sessionId = null, sessionType = null),
+        // What this client may reach, when its access is set
+        PromptManager.accessText(context, McpClientAccess.read(context, caller.id)),
         PromptManager.buildAppStateContent(context)
     ).joinToString("\n\n")
 
@@ -77,13 +79,17 @@ class AppMcpBackend(private val context: Context) : McpBackend {
         }
         if (transformation.errors.isNotEmpty()) return McpToolResult(transformation.errors.joinToString("\n"), isError = true)
 
-        val executed = CommandExecutor(context).executeCommands(
-            commands = transformation.executableCommands,
-            messageType = if (command.kind == CommandKind.QUERY) SystemMessageType.DATA_ADDED else SystemMessageType.ACTIONS_EXECUTED,
-            origin = Source.EXTERNAL,
-            level = "mcp",
-            sessionId = null
-        )
+        // Under the client's access, which the coordinator holds every command to
+        val access = app.treelune.core.access.AccessScope(McpClientAccess.read(context, caller.id), caller.name)
+        val executed = kotlinx.coroutines.withContext(access) {
+            CommandExecutor(context).executeCommands(
+                commands = transformation.executableCommands,
+                messageType = if (command.kind == CommandKind.QUERY) SystemMessageType.DATA_ADDED else SystemMessageType.ACTIONS_EXECUTED,
+                origin = Source.EXTERNAL,
+                level = "mcp",
+                sessionId = null
+            )
+        }
         // A query's data is in its results, as the built-in AI's session puts it in the message
         val message = executed.systemMessage.let { message ->
             executed.promptResults.toPromptSection().takeIf { it.isNotEmpty() }?.let { message.copy(formattedData = it) } ?: message

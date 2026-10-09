@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.verticalScroll
 import app.treelune.core.database.entities.AppSettingCategories
 import app.treelune.core.mcp.McpAccess
 import app.treelune.core.mcp.McpHttp
@@ -51,6 +52,9 @@ fun ExternalAccessSettingsScreen(onBack: () -> Unit) {
     var clients by remember { mutableStateOf<List<OAuthClient>>(emptyList()) }
     var relay by remember { mutableStateOf<String?>(null) }
     var revoking by remember { mutableStateOf<OAuthClient?>(null) }
+    // The client whose access is being set, and that access as it is being edited
+    var editingAccess by remember { mutableStateOf<OAuthClient?>(null) }
+    var accessDraft by remember { mutableStateOf(app.treelune.core.access.AccessMask()) }
     var mode by remember { mutableStateOf<String?>(null) }
     var loggingOut by remember { mutableStateOf(false) }
 
@@ -75,6 +79,26 @@ fun ExternalAccessSettingsScreen(onBack: () -> Unit) {
             onCancel = { loggingOut = false }
         ) {
             UI.Text(s.shared("external_access_tailscale_logout_confirm"), TextType.BODY)
+        }
+    }
+
+    editingAccess?.let { client ->
+        UI.Dialog(
+            type = DialogType.EDIT,
+            onConfirm = {
+                val chosen = accessDraft
+                editingAccess = null
+                scope.launch { app.treelune.core.mcp.McpClientAccess.write(context, client.id, chosen) }
+            },
+            onCancel = { editingAccess = null }
+        ) {
+            androidx.compose.foundation.layout.Column(modifier = androidx.compose.ui.Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                app.treelune.core.access.ui.AccessCard(
+                    s.shared("external_access_client_access_title").format(client.name),
+                    s.shared("external_access_client_access_help"),
+                    accessDraft, { accessDraft = it }
+                )
+            }
         }
     }
 
@@ -151,6 +175,14 @@ fun ExternalAccessSettingsScreen(onBack: () -> Unit) {
                                 DateUtils.formatDateForDisplay(client.createdAt),
                                 client.lastUsedAt?.let { DateUtils.formatFullDateTime(it) } ?: s.shared("external_access_client_never")
                             ), TextType.BODY)
+                        }
+                        UI.Button(type = ButtonType.DEFAULT, onClick = {
+                            scope.launch {
+                                accessDraft = app.treelune.core.mcp.McpClientAccess.read(context, client.id)
+                                editingAccess = client
+                            }
+                        }) {
+                            UI.Text(s.shared("external_access_client_access"), TextType.LABEL)
                         }
                         UI.Button(type = ButtonType.DANGER, onClick = { revoking = client }) {
                             UI.Text(s.shared("external_access_revoke"), TextType.LABEL)

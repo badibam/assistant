@@ -124,7 +124,11 @@ fun AutomationEditorFooter(
         }
 
         // What its AI may reach, everything while nothing is listed
-        AutomationAccessCard(access, onAccessChange)
+        app.treelune.core.access.ui.AccessCard(
+            remember { app.treelune.core.strings.Strings.`for`(context = context).shared("automation_access_title") },
+            remember { app.treelune.core.strings.Strings.`for`(context = context).shared("automation_access_help") },
+            access, onAccessChange
+        )
 
         // Form actions
         Row(

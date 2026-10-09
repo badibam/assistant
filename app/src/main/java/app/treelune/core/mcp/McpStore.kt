@@ -17,7 +17,9 @@ data class McpClientEntity(
     @ColumnInfo(name = "redirect_uris") val redirectUris: String,
     @ColumnInfo(name = "secret_hash") val secretHash: String?,
     @ColumnInfo(name = "created_at") val createdAt: Long,
-    @ColumnInfo(name = "last_used_at") val lastUsedAt: Long?
+    @ColumnInfo(name = "last_used_at") val lastUsedAt: Long?,
+    /** What it may reach, AccessMask's stored form; an empty list reaches everything */
+    @ColumnInfo(name = "access_json") val accessJson: String = "[]"
 )
 
 /** A token handed to a client, as its hash (StoredToken); gone with its client. */
@@ -53,6 +55,12 @@ interface McpDao {
     @Query("UPDATE mcp_clients SET last_used_at = :at WHERE id = :id")
     suspend fun touchClient(id: String, at: Long)
 
+    @Query("SELECT access_json FROM mcp_clients WHERE id = :id")
+    suspend fun access(id: String): String?
+
+    @Query("UPDATE mcp_clients SET access_json = :access WHERE id = :id")
+    suspend fun setAccess(id: String, access: String)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertToken(token: McpTokenEntity)
 
@@ -73,6 +81,27 @@ interface McpDao {
 }
 
 /** The OAuth server's clients and tokens, in the app's database. */
+/**
+ * What a client of the connector may reach (AccessMask, docs/design/validation.md), set by the
+ * user in the external access screen alone: the server never writes it.
+ */
+object McpClientAccess {
+
+    /** Client [clientId]'s access; one gone or unreadable reaches nothing. */
+    suspend fun read(context: android.content.Context, clientId: String): app.treelune.core.access.AccessMask {
+        val stored = AppDatabase.getDatabase(context).mcpDao().access(clientId) ?: return app.treelune.core.access.AccessMask.NOTHING
+        return try {
+            app.treelune.core.access.AccessMask.fromJson(stored)
+        } catch (e: Exception) {
+            app.treelune.core.utils.LogManager.service("Access of MCP client $clientId unreadable: ${e.message}", "ERROR", e)
+            app.treelune.core.access.AccessMask.NOTHING
+        }
+    }
+
+    suspend fun write(context: android.content.Context, clientId: String, access: app.treelune.core.access.AccessMask) =
+        AppDatabase.getDatabase(context).mcpDao().setAccess(clientId, access.toJson().toString())
+}
+
 class RoomOAuthStore(private val dao: McpDao) : OAuthStore {
 
     constructor(database: AppDatabase) : this(database.mcpDao())

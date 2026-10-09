@@ -1,4 +1,4 @@
-package app.treelune.core.ai.ui.automation
+package app.treelune.core.access.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,27 +36,31 @@ import app.treelune.core.ui.TextType
 import app.treelune.core.ui.UI
 
 /**
- * What an automation's AI may reach (AccessMask, docs/design/validation.md): its zones and tools,
- * each with its level and a way to take it out, and a way to add one, picked as a pointer picks
- * (the Chose brick, a zone or a tool). Added, it is read only: one widens it knowingly.
+ * What an AI acting without the user may reach (AccessMask, docs/design/validation.md): an
+ * automation's, a client's of the connector. Its zones and tools, each with its level and a way
+ * to take it out, and a way to add one, picked as a pointer picks (the Chose brick, a zone or a
+ * tool). Added, it is read only: one widens it knowingly.
+ *
+ * @param title Its title, naming what the access is of
+ * @param help What an empty list means for it
  */
 @Composable
-fun AutomationAccessCard(access: AccessMask, onChange: (AccessMask) -> Unit) {
+fun AccessCard(title: String, help: String, access: AccessMask, onChange: (AccessMask) -> Unit) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     var picking by rememberSaveable { mutableStateOf(false) }
     val levels = remember {
         val values = AccessLevel.entries.map { it.key }
-        FieldDefinition("level", s.shared("automation_access_level"), null, FieldType.CHOICE, false,
-            mapOf("options" to ChoiceSettings.storedOptions(values, values.associateWith { s.shared("automation_access_level_$it") })))
+        FieldDefinition("level", s.shared("access_level"), null, FieldType.CHOICE, false,
+            mapOf("options" to ChoiceSettings.storedOptions(values, values.associateWith { s.shared("access_choice_$it") })))
     }
 
     UI.Card(type = CardType.DEFAULT) {
         Column(modifier = Modifier.padding(UI.Space.L), verticalArrangement = Arrangement.spacedBy(UI.Space.M)) {
-            UI.Text(s.shared("automation_access_title"), TextType.SUBTITLE)
-            UI.Text(s.shared("automation_access_help"), TextType.CAPTION)
+            UI.Text(title, TextType.SUBTITLE)
+            UI.Text(help, TextType.CAPTION)
             // What it reads all the same: the tools sent to every AI, the user's own choice
-            UI.Text(s.shared("automation_access_always_sent"), TextType.CAPTION)
+            UI.Text(s.shared("access_always_sent"), TextType.CAPTION)
 
             access.grants.forEachIndexed { index, grant ->
                 Row(
@@ -81,9 +85,9 @@ fun AutomationAccessCard(access: AccessMask, onChange: (AccessMask) -> Unit) {
             }
 
             UI.Button(type = ButtonType.DEFAULT, onClick = { picking = true }) {
-                UI.Text(s.shared("automation_access_add"), TextType.BODY)
+                UI.Text(s.shared("access_add"), TextType.BODY)
             }
-            UI.Text(s.shared("automation_access_levels"), TextType.CAPTION)
+            UI.Text(s.shared("access_levels"), TextType.CAPTION)
         }
     }
 

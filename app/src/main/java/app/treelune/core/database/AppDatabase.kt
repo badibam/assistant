@@ -103,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 70
+        const val VERSION = 71
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1724,6 +1724,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** A connector client's access mask (docs/design/validation.md): a new column, an empty list, every client reaching everything as before. */
+        private val MIGRATION_70_71 = object : Migration(70, 71) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE mcp_clients ADD COLUMN access_json TEXT NOT NULL DEFAULT '[]'")
+                LogManager.database("MIGRATION 70->71: mcp_clients.access_json added, empty", "INFO")
+            }
+        }
+
         /** An automation's access mask (docs/design/validation.md): a new column, an empty list, every automation reaching everything as before. */
         private val MIGRATION_69_70 = object : Migration(69, 70) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2626,7 +2634,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_66_67,
                     MIGRATION_67_68,
                     MIGRATION_68_69,
-                    MIGRATION_69_70
+                    MIGRATION_69_70,
+                    MIGRATION_70_71
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

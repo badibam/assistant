@@ -23,7 +23,7 @@ class McpServerTest {
             McpTool("tool_data", "Reads entries.", JSONObject("""{"type":"object","properties":{"id":{"type":"string"}},"required":["id"],"additionalProperties":false}"""), readOnly = true),
             McpTool("delete_zone", "Deletes a zone.", JSONObject("""{"type":"object","properties":{"zone_id":{"type":"string"}},"additionalProperties":false}"""), readOnly = false)
         )
-        override suspend fun appContext() = "THE APP"
+        override suspend fun appContext(caller: McpCaller) = "THE APP"
         override suspend fun call(name: String, arguments: JSONObject, caller: McpCaller): McpToolResult {
             calls += name to arguments
             return McpToolResult("done $name", isError = false)

@@ -376,20 +376,30 @@ object PromptManager {
     }
 
     /**
-     * What the AI of automation [automationId] may reach (AccessMask), each zone and tool by its
-     * name, id and level; null when it reaches everything. An automation that cannot be read
-     * reaches nothing, and is said so.
+     * What the AI of automation [automationId] may reach (accessText); null when it reaches
+     * everything. An automation that cannot be read reaches nothing, and is said so.
      */
     private suspend fun automationAccessText(context: Context, automationId: String?): String? {
+        val automation = automationId?.let { app.treelune.core.database.AppDatabase.getDatabase(context).aiDao().getAutomationById(it) }
+        val mask = automation?.let {
+            try {
+                app.treelune.core.access.AccessMask.fromJson(it.accessJson)
+            } catch (e: Exception) {
+                null
+            }
+        } ?: app.treelune.core.access.AccessMask.NOTHING
+        return accessText(context, mask)
+    }
+
+    /**
+     * What an AI acting without the user may reach under [mask] (an automation's, a connector
+     * client's), each zone and tool by its name, id and level; null when it reaches everything.
+     */
+    suspend fun accessText(context: Context, mask: app.treelune.core.access.AccessMask): String? {
         val s = Strings.`for`(context = context)
-        val database = app.treelune.core.database.AppDatabase.getDatabase(context)
-        val automation = automationId?.let { database.aiDao().getAutomationById(it) } ?: return s.shared("ai_prompt_access_nothing")
-        val mask = try {
-            app.treelune.core.access.AccessMask.fromJson(automation.accessJson)
-        } catch (e: Exception) {
-            return s.shared("ai_prompt_access_nothing")
-        }
         if (mask.open) return null
+        if (mask.grants.isEmpty()) return s.shared("ai_prompt_access_nothing")
+        val database = app.treelune.core.database.AppDatabase.getDatabase(context)
         val lines = mask.grants.map { grant ->
             val id = grant.target.id!!
             val level = s.shared("ai_prompt_access_level_${grant.level.key}")

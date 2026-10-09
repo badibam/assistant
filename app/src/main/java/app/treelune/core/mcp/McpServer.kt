@@ -22,7 +22,7 @@ interface McpBackend {
     suspend fun tools(): List<McpTool>
 
     /** What the app is and holds now: its notions, the always-sent data (L2) and its state (L3). */
-    suspend fun appContext(): String
+    suspend fun appContext(caller: McpCaller): String
 
     /** Runs the tool [name] with [arguments] for [caller], the context token already taken out. */
     suspend fun call(name: String, arguments: JSONObject, caller: McpCaller): McpToolResult
@@ -107,7 +107,7 @@ class McpServer(
         val arguments = params.optJSONObject("arguments") ?: JSONObject()
 
         if (name == APP_CONTEXT) {
-            val text = backend.appContext() + "\n\n" + backend.text("ai_mcp_context_token_line").format(tokens.issue())
+            val text = backend.appContext(caller) + "\n\n" + backend.text("ai_mcp_context_token_line").format(tokens.issue())
             return result(id, toolResult(McpToolResult(text, isError = false)))
         }
         if (backend.tools().none { it.name == name }) return error(id, INVALID_PARAMS, "Unknown tool: $name")
