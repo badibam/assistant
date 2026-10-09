@@ -103,6 +103,17 @@ Avec le relais en place (son projet), son adresse et son secret dans Réglages �
 - Révoquer le client : l'appel suivant de claude.ai est refusé, il redemande l'autorisation.
 - Après la migration 66 : le connecteur déjà autorisé continue sans reconnexion. Laisser l'accès ouvert plus d'une heure, téléphone endormi : le connecteur se renouvelle seul ; l'écran des journaux montre « token refresh_token … granted » à chaque renouvellement, et la raison d'un refus.
 
+## Accès externe par Tailscale (`docs/design/funnel-access.md`)
+
+- Après la migration 68 : avec un relais réglé, Réglages › Accès externe montre « Relais » choisi, et l'accès s'ouvre comme avant ; une installation neuve montre « Tailscale ».
+- Mode Tailscale, compte neuf : « Ouvrir l'accès » montre « Démarrage de Tailscale… » puis « Connecter l'app à Tailscale » ; la page s'ouvre dans le navigateur, l'inscription faite, l'écran passe seul à l'étape suivante ou à l'adresse.
+- HTTPS désactivé dans la console : l'écran le dit, « Ouvrir la page DNS » y mène ; activé, « Réessayer » passe à la suite. Droit `funnel` absent : le bloc s'affiche, « Copier le bloc » le copie, « Ouvrir la politique d'accès » ouvre l'éditeur JSON ; ajouté, « Réessayer » mène à l'adresse `https://treelune.<tailnet>.ts.net/mcp`.
+- Ouvert la première fois : la phrase sur le certificat s'affiche ; le premier appel de claude.ai attend une quarantaine de secondes, puis le connecteur s'ajoute avec cette adresse et le code à 4 chiffres, comme avec le relais.
+- Fermer, rouvrir : l'adresse revient en quelques secondes, sans connexion ni attente de certificat. 30 minutes sans appel : fermé seul, l'adresse ne répond plus. La tuile ferme l'accès aussi pendant une étape d'attente.
+- Passer du Wi-Fi à la 4G, accès ouvert : un appel passe encore dans la minute.
+- « Déconnecter de Tailscale », accès fermé : confirmé, l'appareil `treelune` disparaît de la console ; l'ouverture suivante redemande la connexion.
+- Le journal de l'app montre les messages « External access: » du nœud (URL de connexion, Funnel ouvert), et `files/tailscale/tailscale.log` le journal technique, sans dépasser deux fichiers d'1 Mo.
+
 ## Automations
 
 - Rattrapage après la mise à jour : une automation programmée « sans limite » le reste, une fenêtre de 3 heures se relit « jusqu'à un délai » de 3 h. Dans l'éditeur : sans choix, l'enregistrement est refusé ; « jusqu'à un délai » demande la durée ; retirer la planification puis enregistrer retire aussi le rattrapage.
