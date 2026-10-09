@@ -54,12 +54,14 @@ fun GuideScreen() {
     val s = remember { Strings.`for`(context = context) }
     val chapters = remember { GuideChapters.all(context) }
     val scroll = rememberScrollState()
-    var deeperAt by remember { mutableStateOf<Int?>(null) }
-    // Opened at the reference once, after the journey
-    LaunchedEffect(deeperAt) {
-        val at = deeperAt ?: return@LaunchedEffect
-        if (Guide.openAtDeeper) {
-            Guide.openAtDeeper = false
+    // Where the journey ends: the first part read in any order
+    val afterJourney = GuidePart.entries.first { !it.ordered }
+    var afterJourneyAt by remember { mutableStateOf<Int?>(null) }
+    // Opened there once, after the journey
+    LaunchedEffect(afterJourneyAt) {
+        val at = afterJourneyAt ?: return@LaunchedEffect
+        if (Guide.openAfterJourney) {
+            Guide.openAfterJourney = false
             scroll.scrollTo(at)
         }
     }
@@ -69,10 +71,11 @@ fun GuideScreen() {
         verticalArrangement = Arrangement.spacedBy(UI.Space.M)
     ) {
         UI.PageHeader(title = s.shared("guide_title"), subtitle = s.shared("guide_description"), leftButton = ButtonAction.BACK, onLeftClick = { Navigator.pop() })
-        GuidePart.entries.forEach { part ->
+        // A part with no chapter yet is not shown
+        GuidePart.entries.filter { part -> chapters.any { it.part == part } }.forEach { part ->
             val key = part.key
             Column(
-                modifier = Modifier.fillMaxWidth().let { m -> if (part == GuidePart.DEEPER) m.onGloballyPositioned { deeperAt = it.positionInParent().y.toInt() } else m },
+                modifier = Modifier.fillMaxWidth().let { m -> if (part == afterJourney) m.onGloballyPositioned { afterJourneyAt = it.positionInParent().y.toInt() } else m },
                 verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 UI.Card(type = CardType.SECTION_HEADER) {
@@ -260,7 +263,7 @@ fun GuideEndDialog(chapter: GuideChapter, demoInstalled: Boolean) {
             close()
             if (next != null) Guide.begin(next, demoInstalled)
             else {
-                Guide.openAtDeeper = true
+                Guide.openAfterJourney = true
                 if (Navigator.top != Place.Guide) Navigator.push(Place.Guide)
             }
         },

@@ -34,23 +34,8 @@
       ]
     },
     {
-      "id": "configure_tool",
-      "part": "getting_started",
-      "icon": "settings",
-      "minutes": 5,
-      "steps": [
-        {"kind": "read"},
-        {"kind": "do",
-          "await": {"operation": "tools.update", "origin": "USER"},
-          "keep": {"tool": "tool_instance_id"}},
-        {"kind": "do",
-          "await": {"operation": "tool_data.create", "origin": "USER", "params": {"tool_instance_id": "{tool}"}}},
-        {"kind": "read"}
-      ]
-    },
-    {
       "id": "build_with_ai",
-      "part": "getting_started",
+      "part": "discovery",
       "icon": "hammer",
       "minutes": 10,
       "steps": [
@@ -65,7 +50,7 @@
     },
     {
       "id": "automate",
-      "part": "getting_started",
+      "part": "discovery",
       "icon": "calendar-clock",
       "minutes": 10,
       "steps": [
@@ -77,12 +62,27 @@
         {"kind": "read", "target": "automation/{automation}/{zone}"}
       ]
     },
-    {"id": "organize", "part": "deeper", "icon": "layout-grid", "minutes": 3, "steps": []},
-    {"id": "connect", "part": "deeper", "icon": "link", "minutes": 5, "steps": []},
-    {"id": "talk_to_ai", "part": "deeper", "icon": "message-circle", "minutes": 5, "steps": []},
-    {"id": "appearance", "part": "deeper", "icon": "palette", "minutes": 2, "steps": []},
-    {"id": "your_data", "part": "deeper", "icon": "database", "minutes": 3, "steps": []},
-    {"id": "external_access", "part": "deeper", "icon": "cable", "minutes": 5, "steps": []},
-    {"id": "when_stuck", "part": "deeper", "icon": "life-buoy", "minutes": 2, "steps": []}
+    {
+      "id": "configure_tool",
+      "part": "getting_started",
+      "icon": "settings",
+      "minutes": 5,
+      "steps": [
+        {"kind": "read"},
+        {"kind": "do",
+          "await": {"operation": "tools.update", "origin": "USER"},
+          "keep": {"tool": "tool_instance_id"}},
+        {"kind": "do",
+          "await": {"operation": "tool_data.create", "origin": "USER", "params": {"tool_instance_id": "{tool}"}}},
+        {"kind": "read"}
+      ]
+    },
+    {"id": "organize", "part": "getting_started", "icon": "layout-grid", "minutes": 3, "steps": []},
+    {"id": "connect", "part": "getting_started", "icon": "link", "minutes": 5, "steps": []},
+    {"id": "talk_to_ai", "part": "getting_started", "icon": "message-circle", "minutes": 5, "steps": []},
+    {"id": "appearance", "part": "getting_started", "icon": "palette", "minutes": 2, "steps": []},
+    {"id": "your_data", "part": "getting_started", "icon": "database", "minutes": 3, "steps": []},
+    {"id": "external_access", "part": "getting_started", "icon": "cable", "minutes": 5, "steps": []},
+    {"id": "when_stuck", "part": "getting_started", "icon": "life-buoy", "minutes": 2, "steps": []}
   ]
 }

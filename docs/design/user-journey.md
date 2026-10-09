@@ -76,22 +76,19 @@ Une étape s'écrit en données, pas en code. Un contrôle de `./run test` véri
 
 ## Le Guide
 
-- Une page, ouverte par une icône fixe en haut de l'accueil (`book-open`). Elle se lit d'un seul défilement, en trois parties par degré (`GuidePart`) : « Découverte » et « Prise en main », dont les chapitres sont numérotés et forment le parcours, puis « Approfondissement ».
-- Chaque chapitre a la même ligne dans les trois parties : icône, titre, durée, état (« à faire », « 3/6 · reprendre », « fait »). Ouvert, il se lit en entier (toutes ses étapes, chemins depuis l'accueil), avec « Faire en interactif » s'il a des étapes à faire et « Recommencer » s'il est fini.
+- Une page, ouverte par une icône fixe en haut de l'accueil (`book-open`). Elle se lit d'un seul défilement, en trois parties par degré (`GuidePart`) : « Découverte », le tour de ce que fait l'app, dont les chapitres sont numérotés et forment le parcours ; « Prise en main », chaque fonction pour s'en servir vraiment ; « Approfondissement », les subtilités. Une partie sans chapitre ne s'affiche pas : Approfondissement attend ses premiers chapitres.
+- Chaque chapitre a la même ligne dans toutes les parties : icône, titre, durée, état (« à faire », « 3/6 · reprendre », « fait »). Ouvert, il se lit en entier (toutes ses étapes, chemins depuis l'accueil), avec « Faire en interactif » s'il a des étapes à faire et « Recommencer » s'il est fini.
 - Rien n'est verrouillé : tout chapitre s'ouvre à tout moment.
 - Tant qu'un tutoriel du parcours est proposé et pas fait, ou qu'un tutoriel est masqué en cours, l'icône du Guide porte le point de `WaitingMark`.
 
-## Parcours
-
-Découverte : 1 et 2 ; Prise en main : 3 à 5.
+## Parcours (Découverte)
 
 1. **Premiers pas**, sans IA.
 2. **Brancher une IA** : choisir un fournisseur, coller sa clé, demander une vue d'ensemble sans rien joindre, puis désigner son outil par un pointeur en simple mention, chaque geste nommé (la cible, la zone, l'outil, Confirmer).
-3. **Configurer un outil**, sans IA : la configuration ouverte par un appui long, l'icône, sa couleur et le mode d'affichage, un champ supplémentaire rempli dans une entrée, puis ce que la validation et « Toujours envoyer » changent pour l'IA.
-4. **Construire avec l'IA** : lui faire créer un outil, valider ce qu'elle propose, la laisser relier deux outils (une variable, un Objectif).
-5. **Automatiser** : une automation planifiée (« chaque dimanche, le bilan de la semaine »), puis lire son exécution.
+3. **Construire avec l'IA** : lui faire créer un outil, valider ce qu'elle propose, la laisser relier deux outils (une variable, un Objectif).
+4. **Automatiser** : une automation planifiée (« chaque dimanche, le bilan de la semaine »), puis lire son exécution.
 
-Le contenu des tutoriels 2 à 5 s'écrit à leur construction : il nomme des écrans que la pile n'a pas encore.
+Le contenu des tutoriels 2 à 4 s'écrit à leur construction : il nomme des écrans que la pile n'a pas encore.
 
 ### Premiers pas
 
@@ -102,9 +99,11 @@ Le contenu des tutoriels 2 à 5 s'écrit à leur construction : il nomme des éc
 5. **Faire** : ajoutez-y un outil ; l'explication guide vers une Liste, où une entrée n'est qu'un nom à cocher, et dit que seul le nom est à remplir (le Suivi et ses raccourcis sont vus à l'étape 2, dans la démo ; sans raccourci, sa saisie intimide).
 6. **Faire** : ajoutez-y une première entrée, dans l'outil de l'étape 5 : un élément de la Liste.
 
-## Approfondissement
+## Prise en main
 
 Un chapitre par sujet, lu dans l'ordre qu'on veut, tutoriel facultatif :
+
+- **Configurer un outil**, en tête, en tutoriel, sans IA : la configuration ouverte par un appui long, l'icône, sa couleur et le mode d'affichage, un champ supplémentaire rempli dans une entrée, puis ce que la validation et « Toujours envoyer » changent pour l'IA.
 
 - Organiser : groupes de zones sur l'accueil, groupes d'outils dans une zone, disposition des tuiles — le même geste à deux niveaux, dans un seul chapitre.
 - Les outils : un chapitre par type, fourni par le type d'outil dans son dossier (`tools/<type>/`), à côté de ses textes, et découvert comme l'outil l'est ; un nouvel outil arrive avec son chapitre.
@@ -119,8 +118,8 @@ Leur contenu s'écrit à leur construction.
 
 ## L'enchaînement
 
-- Tant que le parcours n'est pas fini, la fin de tout tutoriel (un chapitre d'Approfondissement fait en avance compris) ouvre un dialogue qui propose le tutoriel suivant du parcours : « Continuer : Brancher une IA » / « Plus tard ».
-- Le parcours fini, la fin de chaque tutoriel propose « Ouvrir le Guide », qui ouvre la page au titre Approfondissement, ou « Plus tard ».
+- Tant que le parcours n'est pas fini, la fin de tout tutoriel (un chapitre de Prise en main fait en avance compris) ouvre un dialogue qui propose le tutoriel suivant du parcours : « Continuer : Brancher une IA » / « Plus tard ».
+- Le parcours fini, la fin de chaque tutoriel propose « Ouvrir le Guide », qui ouvre la page au titre Prise en main, ou « Plus tard ».
 - « Plus tard » dit où est la suite : « dans le Guide, le livre en haut de l'accueil ».
 
 ## La démo
@@ -143,7 +142,7 @@ Dans les réglages de l'app : pour chaque chapitre, l'étape en cours ou « fait
 
 ## Ce qui reste ouvert
 
-- Le contenu des chapitres d'Approfondissement : des ébauches (titre et une ligne), à écrire ensemble dans une séance dédiée ; un chapitre sans étape s'affiche « À écrire ».
+- Le contenu des chapitres de Prise en main, et les sujets d'Approfondissement (formules et variables, conditions et filtres, validation et accès de l'IA, champs et leur migration…) : des ébauches (titre et une ligne), à écrire ensemble dans une séance dédiée ; un chapitre sans étape s'affiche « À écrire ».
 - Ce qui marque « fait » un chapitre sans étape à faire (ouvert, ou lu jusqu'au bout).
 - Un message envoyé à l'IA ne passe pas par le dispatcher (`AIOrchestrator.sendMessage` le range lui-même) : l'étape « demandez-lui son avis » de Brancher une IA se lit, au lieu d'attendre l'envoi.
 - Le dialogue « la démo n'est pas installée » : le fermer sans choisir (retour, toucher à côté) saute les étapes de la démo, comme son bouton.

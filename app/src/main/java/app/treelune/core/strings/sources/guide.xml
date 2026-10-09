@@ -4,11 +4,11 @@
     <string name="guide_title">Guide</string>
     <string name="guide_description">Tutorials to do on the app itself, and chapters to read when you need them.</string>
     <string name="guide_part_discovery">Discovery</string>
-    <string name="guide_part_discovery_help">In this order: the demo, your first tool, then an AI to talk to.</string>
+    <string name="guide_part_discovery_help">In this order: the demo, your first tool, an AI to work with, then letting it work on a schedule.</string>
     <string name="guide_part_getting_started">Getting started</string>
-    <string name="guide_part_getting_started_help">In this order: configuring a tool, building with the AI, then letting it work on a schedule.</string>
+    <string name="guide_part_getting_started_help">In the order you like: each feature, to use it for real.</string>
     <string name="guide_part_deeper">Going further</string>
-    <string name="guide_part_deeper_help">In the order you like, when you need it.</string>
+    <string name="guide_part_deeper_help">The subtleties, when you need them.</string>
     <string name="guide_minutes">%1$d min</string>
     <string name="guide_state_todo">To do</string>
     <string name="guide_state_progress">%1$d/%2$d · resume</string>
@@ -58,7 +58,7 @@
     <string name="guide_welcome_where">The Guide is the book at the top of the home screen.</string>
     <string name="guide_end_title">%1$s: done</string>
     <string name="guide_end_continue">Continue: %1$s</string>
-    <string name="guide_end_journey_done">You have got started: going further is yours to do in the order you like.</string>
+    <string name="guide_end_journey_done">The discovery is over: getting started is yours to do in the order you like.</string>
     <string name="guide_end_open">Open the Guide</string>
     <string name="guide_end_later">Later</string>
     <string name="guide_end_where">What comes next waits in the Guide, the book at the top of the home screen.</string>
@@ -83,7 +83,7 @@
     <string name="guide_first_steps_6_text">Open your tool and add an entry: in a List, type a name and add it, then check it once done. A touch and hold on a tool\'s title opens its configuration, to change it at any time.</string>
     <string name="guide_connect_ai_title">Connect an AI</string>
     <string name="guide_connect_ai_intro">The AI has the same moves as you: it reads your tools, fills them in, sets them up. It needs a key from a provider, which you bring.</string>
-    <string name="guide_connect_ai_outro">The AI is connected. Next: fitting a tool to the way you use it.</string>
+    <string name="guide_connect_ai_outro">The AI is connected. Next: have it build with you.</string>
     <string name="guide_connect_ai_1_goal">Open the AI providers</string>
     <string name="guide_connect_ai_1_text">The settings hold the providers: Claude, OpenAI, DeepSeek, or any service that speaks like OpenAI\'s API (Ollama, LM Studio…).</string>
     <string name="guide_connect_ai_2_goal">Set up a provider with your key</string>
@@ -96,7 +96,7 @@
     <string name="guide_connect_ai_5_text">Write your question, for example « What do you think of this list? ». Then tap the crosshair under the message: it is the pointer\'s button. In the « Select data » window, tap your zone, then your tool in the list that opens. Tick neither Config nor Entries, then tap Confirm: the pointer joins your message. Send it. The AI now knows exactly which tool you mean. Ticking Config or Entries would have attached that data to the message, over a period or with filters; the « Talk to the AI » chapter explains when that helps. Then Next.</string>
     <string name="guide_configure_tool_title">Configure a tool</string>
     <string name="guide_configure_tool_intro">Every tool has the same basic configuration: its name, its icon, its shape in the zone, fields of your own. No AI needed.</string>
-    <string name="guide_configure_tool_outro">You can fit a tool to the way you use it. Next: having the AI build tools for you.</string>
+    <string name="guide_configure_tool_outro">You can fit a tool to the way you use it.</string>
     <string name="guide_configure_tool_1_goal">Open a tool\'s configuration</string>
     <string name="guide_configure_tool_1_text">In a zone, press and hold a tool\'s title, for example the list made in First steps. Its configuration opens: first the General settings, the same for every tool, then those of its type. Then Next.</string>
     <string name="guide_configure_tool_2_goal">Change its icon and its shape</string>
@@ -120,7 +120,7 @@
     <string name="guide_build_with_ai_5_text">Settings › AI validation: the AI can be made to show each change and wait for your approval, for the app, a zone, a tool or a conversation. Then Next.</string>
     <string name="guide_automate_title">Automate</string>
     <string name="guide_automate_intro">An automation has the AI work on its own, on a schedule: a weekly summary, a reminder that reads your entries.</string>
-    <string name="guide_automate_outro">Your automation runs on its schedule; its history keeps every run. The Guide\'s « Going further » holds the rest, in the order you like.</string>
+    <string name="guide_automate_outro">Your automation runs on its schedule; its history keeps every run. The Guide\'s « Getting started » holds the rest, in the order you like.</string>
     <string name="guide_automate_1_goal">What an automation is</string>
     <string name="guide_automate_1_text">An automation is a starting message to the AI, with its attachments, sent on a schedule. The AI then acts as in a conversation, alone, within the limits you set.</string>
     <string name="guide_automate_2_goal">Create an automation in a zone</string>
