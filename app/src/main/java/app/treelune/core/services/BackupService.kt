@@ -609,7 +609,7 @@ class BackupService(private val context: Context) : ExecutableService {
                         updated_at = item.getLong("updated_at"),
                         tool_groups = item.optString("tool_groups", null),
                         group = item.optString("group", null),
-                        // Given to a backup made before version 68 by ValidationAtV68
+                        // Given to a backup made before version 69 by ValidationAtV69
                         validate = item.getBoolean("validate")
                     )
                 )
@@ -684,7 +684,7 @@ class BackupService(private val context: Context) : ExecutableService {
                         id = item.getString("id"),
                         name = item.getString("name"),
                         type = SessionType.valueOf(item.getString("type")),
-                        // Given to a backup made before version 68 by ValidationAtV68
+                        // Given to a backup made before version 69 by ValidationAtV69
                         validateApp = item.getBoolean("validate_app"),
                         validateZones = item.getBoolean("validate_zones"),
                         validateData = item.getBoolean("validate_data"),
@@ -959,8 +959,8 @@ class BackupService(private val context: Context) : ExecutableService {
             if (fromVersion < 65 && toVersion >= 65) {
                 app.treelune.core.versioning.QuestionnaireStateAtV65.backup(data)
             }
-            if (fromVersion < 68 && toVersion >= 68) {
-                app.treelune.core.versioning.ValidationAtV68.backup(data)
+            if (fromVersion < 69 && toVersion >= 69) {
+                app.treelune.core.versioning.ValidationAtV69.backup(data)
             }
 
             // Transform app settings

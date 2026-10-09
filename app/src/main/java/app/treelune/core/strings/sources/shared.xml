@@ -1858,7 +1858,11 @@
 
     <!-- External access (MCP): settings, the access, the phone's approval -->
     <string name="settings_external_access">External access</string>
-    <string name="settings_external_access_description">Let an outside AI read and write in the app, through a relay</string>
+    <string name="settings_external_access_description">Let an outside AI read and write in the app, through Tailscale or a relay</string>
+    <string name="settings_external_access_mode">Way in</string>
+    <string name="settings_external_access_mode_help">Tailscale: the app publishes its own address, with a free Tailscale account. Relay: through a relay you host.</string>
+    <string name="settings_external_access_mode_tailscale">Tailscale</string>
+    <string name="settings_external_access_mode_relay">Relay</string>
     <string name="settings_external_access_relay_url">Relay address</string>
     <string name="settings_external_access_relay_url_help">The relay\'s public address, https://… The address to give the outside AI is this one followed by /mcp.</string>
     <string name="settings_external_access_relay_secret">Relay secret</string>
@@ -1870,6 +1874,23 @@
     <string name="external_access_state_open_last">Open, last call %1$s. Closes by itself after 30 minutes without a call.</string>
     <string name="external_access_state_failed">Closed after a failure: %1$s</string>
     <string name="external_access_no_relay">Give the relay\'s address (https) and its secret first.</string>
+    <string name="external_access_tailscale_unavailable">Tailscale is not available on this phone\'s processor: choose the relay.</string>
+    <string name="settings_external_access_relay_section">Relay</string>
+    <string name="external_access_preparing">Starting Tailscale…</string>
+    <string name="external_access_needs_login">The app is not yet connected to a Tailscale account. Connecting creates the account if you have none.</string>
+    <string name="external_access_login">Connect the app to Tailscale</string>
+    <string name="external_access_https_missing">Your Tailscale account must issue HTTPS certificates: in its console, DNS page, turn on HTTPS Certificates, then come back.</string>
+    <string name="external_access_open_dns">Open the DNS page</string>
+    <string name="external_access_funnel_missing">Your Tailscale account must allow Funnel: in its console, access policy in JSON, add this block at the top level, save, then come back.</string>
+    <string name="external_access_copy_policy">Copy the block</string>
+    <string name="external_access_policy_copied">Block copied</string>
+    <string name="external_access_open_policy">Open the access policy</string>
+    <string name="external_access_retry">Try again</string>
+    <string name="external_access_first_call">The first call waits for the certificate, about forty seconds.</string>
+    <string name="external_access_tailscale_logout">Disconnect from Tailscale</string>
+    <string name="external_access_tailscale_logout_confirm">Take the app out of your Tailscale account? Its address will stop working, and the next opening will ask you to connect again.</string>
+    <string name="external_access_tailscale_logout_done">Disconnected from Tailscale</string>
+    <string name="external_access_tailscale_logout_failed">Disconnected here, but Tailscale could not be told (%s): remove the device « treelune » from your console.</string>
     <string name="external_access_relay_refused">the relay does not recognize the app: check its address and its secret.</string>
     <string name="external_access_mcp_address">Address to give the outside AI: %1$s</string>
     <string name="external_access_clients">Authorized clients</string>

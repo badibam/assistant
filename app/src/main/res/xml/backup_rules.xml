@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Android's own backup (Android 11 and below). Out of it: the Tailscale node's identity, which
+     restored on another phone would make two devices of one in the account, and the key that signs
+     the external access's context tokens (docs/design/funnel-access.md). -->
 <full-backup-content>
-    <!-- Exclude specific sensitive data -->
+    <exclude domain="file" path="tailscale/" />
+    <exclude domain="file" path="mcp/" />
 </full-backup-content>

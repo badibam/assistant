@@ -27,13 +27,16 @@ class McpTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        if (McpAccess.state.value is McpAccess.State.Open) McpAccess.close(this) else McpAccess.open(this)
+        if (running(McpAccess.state.value)) McpAccess.close(this) else McpAccess.open(this)
     }
 
     private fun show(state: McpAccess.State) {
         val tile = qsTile ?: return
         tile.label = Strings.`for`(context = this).shared("external_access_tile")
-        tile.state = if (state is McpAccess.State.Open) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        tile.state = if (running(state)) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.updateTile()
     }
+
+    /** Open, or on its way with the Tailscale node waiting on a step: a touch closes it. */
+    private fun running(state: McpAccess.State) = state is McpAccess.State.Open || state is McpAccess.State.Preparing
 }

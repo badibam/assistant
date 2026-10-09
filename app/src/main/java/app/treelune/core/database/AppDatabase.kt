@@ -103,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 68
+        const val VERSION = 69
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1725,24 +1725,24 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
-         * Validation by levels (docs/design/validation.md, ValidationAtV68): the app's settings keep
+         * Validation by levels (docs/design/validation.md, ValidationAtV69): the app's settings keep
          * one switch, a zone gains its own (on when one of its tools had its config validated), a
          * tool loses validate_config and management, a session's switch becomes three boxes. SQLite
          * before 3.35 cannot drop a column: ai_sessions is rebuilt.
          */
-        private val MIGRATION_67_68 = object : Migration(67, 68) {
+        private val MIGRATION_68_69 = object : Migration(68, 69) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 val category = app.treelune.core.database.entities.AppSettingCategories.VALIDATION_CONFIG
                 database.query("SELECT settings FROM app_settings_categories WHERE category = ?", arrayOf<Any?>(category)).use { cursor ->
                     if (!cursor.moveToFirst()) {
-                        LogManager.database("MIGRATION 67->68: no validation settings stored, the defaults are written on first read", "INFO")
+                        LogManager.database("MIGRATION 68->69: no validation settings stored, the defaults are written on first read", "INFO")
                     } else {
                         // Settings that cannot be read stay as they are; reading them then fails with the reason
                         try {
-                            val settings = app.treelune.core.versioning.ValidationAtV68.appSettings(category, org.json.JSONObject(cursor.getString(0)))
+                            val settings = app.treelune.core.versioning.ValidationAtV69.appSettings(category, org.json.JSONObject(cursor.getString(0)))
                             database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), category))
                         } catch (e: Exception) {
-                            LogManager.database("MIGRATION 67->68: validation settings left as they were: ${e.message}", "ERROR", e)
+                            LogManager.database("MIGRATION 68->69: validation settings left as they were: ${e.message}", "ERROR", e)
                         }
                     }
                 }
@@ -1755,12 +1755,12 @@ abstract class AppDatabase : RoomDatabase() {
                         val id = cursor.getString(0)
                         try {
                             val config = org.json.JSONObject(cursor.getString(2))
-                            if (app.treelune.core.versioning.ValidationAtV68.protectsZone(config)) protectedZones.add(cursor.getString(1))
+                            if (app.treelune.core.versioning.ValidationAtV69.protectsZone(config)) protectedZones.add(cursor.getString(1))
                             database.execSQL("UPDATE tool_instances SET config_json = ? WHERE id = ?",
-                                arrayOf<Any?>(app.treelune.core.versioning.ValidationAtV68.toolConfig(config).toString(), id))
+                                arrayOf<Any?>(app.treelune.core.versioning.ValidationAtV69.toolConfig(config).toString(), id))
                             rewritten++
                         } catch (e: Exception) {
-                            LogManager.database("MIGRATION 67->68: config of tool $id left as it was: ${e.message}", "ERROR", e)
+                            LogManager.database("MIGRATION 68->69: config of tool $id left as it was: ${e.message}", "ERROR", e)
                         }
                     }
                 }
@@ -1809,7 +1809,7 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_phase ON ai_sessions(phase)")
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_end_reason ON ai_sessions(end_reason)")
 
-                LogManager.database("MIGRATION 67->68: validation by levels, $rewritten tool config(s) rewritten, ${protectedZones.size} zone(s) protected, session switches split", "INFO")
+                LogManager.database("MIGRATION 68->69: validation by levels, $rewritten tool config(s) rewritten, ${protectedZones.size} zone(s) protected, session switches split", "INFO")
             }
         }
 
@@ -1831,6 +1831,27 @@ abstract class AppDatabase : RoomDatabase() {
                     }
                 }
                 LogManager.database("MIGRATION 66->67: interface settings gain one_column, off", "INFO")
+            }
+        }
+
+        /** The external access settings gain the access mode: see ExternalAccessModeAtV68. */
+        private val MIGRATION_67_68 = object : Migration(67, 68) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val category = app.treelune.core.database.entities.AppSettingCategories.EXTERNAL_ACCESS
+                database.query("SELECT settings FROM app_settings_categories WHERE category = ?", arrayOf<Any?>(category)).use { cursor ->
+                    if (!cursor.moveToFirst()) {
+                        LogManager.database("MIGRATION 67->68: no external access settings stored, the defaults are written on first read", "INFO")
+                        return
+                    }
+                    // Settings that cannot be read stay as they are; reading them then fails with the reason
+                    try {
+                        val settings = app.treelune.core.versioning.ExternalAccessModeAtV68.rewrite(category, org.json.JSONObject(cursor.getString(0)))
+                        database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), category))
+                        LogManager.database("MIGRATION 67->68: external access mode set to ${settings.optString(app.treelune.core.config.AppSettings.ACCESS_MODE)}", "INFO")
+                    } catch (e: Exception) {
+                        LogManager.database("MIGRATION 67->68: external access settings left as they were: ${e.message}", "ERROR", e)
+                    }
+                }
             }
         }
 
@@ -2595,7 +2616,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_64_65,
                     MIGRATION_65_66,
                     MIGRATION_66_67,
-                    MIGRATION_67_68
+                    MIGRATION_67_68,
+                    MIGRATION_68_69
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
