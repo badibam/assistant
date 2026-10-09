@@ -170,7 +170,10 @@ private const val FUNNEL_POLICY = """"nodeAttrs": [
 private const val CONSOLE_DNS = "https://login.tailscale.com/admin/dns"
 private const val CONSOLE_POLICY = "https://login.tailscale.com/admin/acls/file"
 
-/** The step the Tailscale node waits on, with what to do: the console's page to open, then try again. */
+/**
+ * The step the Tailscale node waits on, with what to do: the page to open. The node tries again by
+ * itself every few seconds, and the access opens once the step is done.
+ */
 @Composable
 private fun TailscaleStep(step: TailscaleNode.Step, s: app.treelune.core.strings.StringsContext) {
     val context = LocalContext.current
@@ -182,13 +185,16 @@ private fun TailscaleStep(step: TailscaleNode.Step, s: app.treelune.core.strings
                 UI.Text(s.shared("external_access_login"), TextType.LABEL)
             }
         }
+        is TailscaleNode.Step.FunnelOff -> {
+            UI.Text(s.shared("external_access_funnel_off"), TextType.BODY)
+            UI.Button(type = ButtonType.PRIMARY, onClick = { openLink(context, step.url) }) {
+                UI.Text(s.shared("external_access_enable_funnel"), TextType.LABEL)
+            }
+        }
         TailscaleNode.Step.HttpsMissing -> {
             UI.Text(s.shared("external_access_https_missing"), TextType.BODY)
             UI.Button(type = ButtonType.DEFAULT, onClick = { openLink(context, CONSOLE_DNS) }) {
                 UI.Text(s.shared("external_access_open_dns"), TextType.LABEL)
-            }
-            UI.Button(type = ButtonType.PRIMARY, onClick = { TailscaleNode.retry(context) }) {
-                UI.Text(s.shared("external_access_retry"), TextType.LABEL)
             }
         }
         TailscaleNode.Step.FunnelMissing -> {
@@ -203,9 +209,6 @@ private fun TailscaleStep(step: TailscaleNode.Step, s: app.treelune.core.strings
             }
             UI.Button(type = ButtonType.DEFAULT, onClick = { openLink(context, CONSOLE_POLICY) }) {
                 UI.Text(s.shared("external_access_open_policy"), TextType.LABEL)
-            }
-            UI.Button(type = ButtonType.PRIMARY, onClick = { TailscaleNode.retry(context) }) {
-                UI.Text(s.shared("external_access_retry"), TextType.LABEL)
             }
         }
     }

@@ -1898,13 +1898,14 @@
     <string name="external_access_preparing">Démarrage de Tailscale…</string>
     <string name="external_access_needs_login">L\'app n\'est pas encore connectée à un compte Tailscale. La connexion crée le compte si vous n\'en avez pas.</string>
     <string name="external_access_login">Connecter l\'app à Tailscale</string>
-    <string name="external_access_https_missing">Votre compte Tailscale doit délivrer des certificats HTTPS : dans sa console, page DNS, activez HTTPS Certificates, puis revenez.</string>
+    <string name="external_access_funnel_off">Funnel est désactivé sur votre compte Tailscale. Activez-le en un clic sur la page de Tailscale : l\'accès s\'ouvrira seul une fois Funnel actif.</string>
+    <string name="external_access_enable_funnel">Activer Funnel</string>
+    <string name="external_access_https_missing">Votre compte Tailscale doit délivrer des certificats HTTPS : dans sa console, page DNS, activez HTTPS Certificates. L\'accès s\'ouvrira seul une fois activé.</string>
     <string name="external_access_open_dns">Ouvrir la page DNS</string>
-    <string name="external_access_funnel_missing">Votre compte Tailscale doit permettre Funnel : dans sa console, politique d\'accès en JSON, ajoutez ce bloc au premier niveau, enregistrez, puis revenez.</string>
+    <string name="external_access_funnel_missing">Votre compte Tailscale doit permettre Funnel : dans sa console, politique d\'accès en JSON, ajoutez ce bloc au premier niveau et enregistrez. L\'accès s\'ouvrira seul une fois enregistré.</string>
     <string name="external_access_copy_policy">Copier le bloc</string>
     <string name="external_access_policy_copied">Bloc copié</string>
     <string name="external_access_open_policy">Ouvrir la politique d\'accès</string>
-    <string name="external_access_retry">Réessayer</string>
     <string name="external_access_publishing">L\'adresse est en cours de publication par Tailscale, quelques minutes la première fois. Ne l\'ajoutez dans le client qu\'une fois prête : essayée trop tôt, le client peut ne pas la trouver pendant cinq minutes de plus.</string>
     <string name="external_access_published">Adresse prête : ajoutez-la dans le client.</string>
     <string name="external_access_first_call">Le premier appel attend le certificat, une quarantaine de secondes.</string>

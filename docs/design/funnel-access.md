@@ -19,11 +19,11 @@ Conçu le 2026-10-09, après le prototype (`docs/design/funnel-poc.md` : mesures
 
 ## La mise en route, réactive
 
-Pas de liste d'étapes affichée d'avance : l'écran dit ce que le nœud répond à l'ouverture, une étape manquante à la fois, et « Réessayer » relance après chaque geste dans la console.
+Pas de liste d'étapes affichée d'avance : l'écran dit ce que le nœud répond à l'ouverture, une étape manquante à la fois. Le nœud réessaie seul toutes les 5 s : l'accès s'ouvre dès l'étape faite, sans bouton à toucher.
 
 1. Nœud pas inscrit : « Connecter l'app à Tailscale » ouvre l'URL de connexion (`login.tailscale.com/a/…`) dans le navigateur ; la page de Tailscale y crée aussi le compte.
-2. `ListenFunnel` répond « HTTPS must be enabled » : une phrase, et un bouton vers la page DNS de la console.
-3. Il répond « "funnel" node attribute not set » : une phrase, le bloc `nodeAttrs` avec Copier, et un bouton vers l'éditeur JSON de la politique d'accès (`login.tailscale.com/admin/acls/file`).
+2. Funnel coupé dans le compte (HTTPS ou droit `funnel` absent) : le nœud demande à Tailscale sa page d'activation (`QueryFeature("funnel")`, ce qu'offre leur CLI) ; « Activer Funnel » l'ouvre, un clic y active les deux.
+3. Sans page offerte (un membre qui ne peut pas changer le compte) : les étapes à la main — HTTPS, avec un bouton vers la page DNS de la console ; le droit au Funnel, avec le bloc `nodeAttrs` à copier et un bouton vers l'éditeur JSON de la politique d'accès (`login.tailscale.com/admin/acls/file`).
 4. Prêt : l'adresse `…/mcp`, à copier dans le client.
 
 Le premier appel après l'inscription attend le certificat (environ 40 s) ; l'écran le dit tant qu'aucun appel n'a abouti. Un chapitre du Guide donnera la vue d'ensemble, une fois l'écran stable.

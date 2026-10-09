@@ -25,7 +25,9 @@ object TailscaleNode {
         data object Starting : Step
         /** Not yet in a Tailscale account: [url] is the login page */
         data class NeedsLogin(val url: String) : Step
-        /** The account's HTTPS certificates are off */
+        /** Funnel is off in the account: [url] is Tailscale's page that turns it on, HTTPS included */
+        data class FunnelOff(val url: String) : Step
+        /** The account's HTTPS certificates are off, and Tailscale offers no page: by hand in its console */
         data object HttpsMissing : Step
         /** The account's access policy does not grant Funnel to its members */
         data object FunnelMissing : Step
@@ -60,11 +62,6 @@ object TailscaleNode {
             delay(POLL_MS)
         }
         return null
-    }
-
-    /** After a step done in the console: the node tries its Funnel again. */
-    fun retry(context: Context) {
-        FunnelNative.start(dir(context).absolutePath, HOSTNAME)
     }
 
     /** Stops the node and stops following the network. */
@@ -111,6 +108,7 @@ object TailscaleNode {
         return when (val state = json.getString("state")) {
             "ready" -> NodeState.Ready(json.getString("address"), json.optBoolean("published"))
             "needs_login" -> NodeState.Waiting(Step.NeedsLogin(json.getString("url")))
+            "funnel_off" -> NodeState.Waiting(Step.FunnelOff(json.getString("url")))
             "https_missing" -> NodeState.Waiting(Step.HttpsMissing)
             "funnel_missing" -> NodeState.Waiting(Step.FunnelMissing)
             "starting" -> NodeState.Waiting(Step.Starting)

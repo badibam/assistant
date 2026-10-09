@@ -63,6 +63,7 @@ var (
 	address   string // https://<node>.<tailnet>.ts.net once the Funnel listens
 	published bool   // the address found in the public DNS
 	lastErr   error  // what ListenFunnel answered when it failed
+	enableURL string // Tailscale's page that turns Funnel on for the account, while it is off
 
 	queue   = make(chan *pending, 16)
 	waiting = map[string]*pending{}
@@ -99,9 +100,39 @@ func newServer(dir, hostname string) *tsnet.Server {
 	}
 }
 
+// While Funnel is off in the account, how often the node tries again: the change made in the
+// console reaches it in its next network map, and the access opens by itself.
+const funnelRetry = 5 * time.Second
+
 func listen(s *tsnet.Server) {
-	// Blocks while the node waits for its login, which state() reads meanwhile
-	ln, err := s.ListenFunnel("tcp", ":443", tsnet.FunnelOnly())
+	for {
+		// Blocks while the node waits for its login, which state() reads meanwhile
+		ln, err := s.ListenFunnel("tcp", ":443", tsnet.FunnelOnly())
+		if err != nil && funnelStep(err) != "" {
+			// Funnel off in the account: Tailscale's page to turn it on, asked once, then wait for it
+			mu.Lock()
+			stopped, asked := s != srv, enableURL != ""
+			lastErr = err
+			mu.Unlock()
+			if stopped {
+				return
+			}
+			if !asked {
+				url := funnelEnableURL(s)
+				mu.Lock()
+				enableURL = url
+				mu.Unlock()
+			}
+			time.Sleep(funnelRetry)
+			continue
+		}
+		opened(s, ln, err)
+		return
+	}
+}
+
+// opened records what ListenFunnel finally answered: the address, or the failure.
+func opened(s *tsnet.Server, ln net.Listener, err error) {
 	mu.Lock()
 	defer mu.Unlock()
 	listening = false
@@ -112,8 +143,8 @@ func listen(s *tsnet.Server) {
 		}
 		return
 	}
+	lastErr, enableURL = err, ""
 	if err != nil {
-		lastErr = err
 		return
 	}
 	domains := s.CertDomains()
@@ -132,7 +163,7 @@ func listen(s *tsnet.Server) {
 // "log" carries the messages since the last call, for the app's log.
 func state() string {
 	mu.Lock()
-	s, addr, err, pub := srv, address, lastErr, published
+	s, addr, err, pub, enable := srv, address, lastErr, published, enableURL
 	lines := userLines
 	userLines = nil
 	mu.Unlock()
@@ -144,14 +175,15 @@ func state() string {
 	case addr != "":
 		out["state"], out["address"], out["published"] = "ready", addr, pub
 	case err != nil:
-		msg := err.Error()
-		switch {
-		case strings.Contains(msg, "HTTPS must be enabled"):
-			out["state"] = "https_missing"
-		case strings.Contains(msg, `"funnel" node attribute not set`):
-			out["state"] = "funnel_missing"
+		switch step := funnelStep(err); {
+		case step != "" && enable != "":
+			// One page of Tailscale's turns on HTTPS and the funnel attribute together
+			out["state"], out["url"] = "funnel_off", enable
+		case step != "":
+			// No page offered (a member who may not change the account): the steps by hand
+			out["state"] = step
 		default:
-			out["state"], out["message"] = "failed", msg
+			out["state"], out["message"] = "failed", err.Error()
 		}
 	default:
 		out["state"] = "starting"
@@ -161,6 +193,41 @@ func state() string {
 	}
 	b, _ := json.Marshal(out)
 	return string(b)
+}
+
+// funnelStep names what ListenFunnel lacks in the account, or "" when its failure is another.
+func funnelStep(err error) string {
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "HTTPS must be enabled"):
+		return "https_missing"
+	case strings.Contains(msg, `"funnel" node attribute not set`):
+		return "funnel_missing"
+	}
+	return ""
+}
+
+// funnelEnableURL is the page of Tailscale's console that turns Funnel on for the node's account,
+// as Tailscale's own command line offers it (QueryFeature); "" when Tailscale offers none.
+func funnelEnableURL(s *tsnet.Server) string {
+	lc, err := s.LocalClient()
+	if err != nil {
+		return ""
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	resp, err := lc.QueryFeature(ctx, "funnel")
+	if err != nil {
+		technical.printf("funnel: query feature: %v", err)
+		return ""
+	}
+	if resp.Text != "" {
+		say("Tailscale: %s", strings.TrimSpace(resp.Text))
+	}
+	if resp.Complete {
+		return ""
+	}
+	return resp.URL
 }
 
 // authURL is the login page's address while the node waits for its login, or "".
@@ -182,7 +249,7 @@ func authURL(s *tsnet.Server) string {
 func stop() {
 	mu.Lock()
 	s := srv
-	srv, address, lastErr, listening, published = nil, "", nil, false, false
+	srv, address, lastErr, listening, published, enableURL = nil, "", nil, false, false, ""
 	mu.Unlock()
 	if s != nil {
 		s.Close()
