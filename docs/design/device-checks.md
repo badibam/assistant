@@ -23,7 +23,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Validation
 
-- Protéger une zone, puis demander à l'IA d'y créer un outil : la demande d'accord dit « La zone « … » est protégée ». Protéger les données d'un outil : une entrée écrite par l'IA attend de même. Lui demander de retirer une protection : refusé.
+- Protéger les données d'un outil : une entrée écrite par l'IA attend l'accord, la carte dit « Les données de « … » sont protégées ».
 - Dans une conversation, cocher « Les données des outils » : toute écriture d'entrée attend l'accord, puis plus rien une fois décochée.
 - Demander à l'IA de créer un groupe sur l'accueil, d'y ranger une zone, puis de le renommer (`UPDATE_APP_CONFIG`) : la zone suit le nouveau nom ; avec « Protéger l'accueil », l'accord est demandé.
 - Une automation dont l'accès donne un outil en Lecture, à qui l'on demande d'y écrire : le refus se lit dans son historique d'exécution ; en Utilisation, l'écriture passe. Ajouter, changer, retirer une ligne de la carte d'accès, enregistrer, rouvrir : tout est gardé.
