@@ -145,8 +145,8 @@ data class AIMessage(
 data class SystemMessage(
     val type: SystemMessageType, // DATA_ADDED, ACTIONS_EXECUTED, LIMIT_REACHED, FORMAT_ERROR, NETWORK_ERROR, SESSION_TIMEOUT
     val commandResults: List<CommandResult>,
-    val summary: String,
-    val formattedData: String? // JSON résultats (queries uniquement)
+    val summary: String,        // la phrase que lit l'utilisateur, en langage courant
+    val formattedData: String?  // ce que l'IA lit en plus : les données lues, ou le texte écrit pour elle
 )
 
 enum class SystemMessageType {
@@ -158,11 +158,16 @@ enum class SystemMessageType {
     NETWORK_ERROR, // Erreurs réseau/HTTP → filtré du prompt, visible UI (audit + transparence)
     PROVIDER_ERROR, // Provider non configuré/invalide → filtré du prompt, visible UI (audit + transparence)
     SESSION_TIMEOUT, // Timeout watchdog session → filtré du prompt, visible UI (audit + transparence)
-    TEXT_OUTSIDE_JSON // Texte écrit autour du JSON de la réponse, écarté → cité à l'utilisateur (summary), l'IA n'en reçoit que la mention (formattedData)
+    TEXT_OUTSIDE_JSON, // Texte écrit autour du JSON de la réponse, écarté → cité à l'utilisateur (summary), l'IA n'en reçoit que la mention (formattedData)
+    COMPLETED_CONFIRMATION, // L'IA dit avoir fini → la demande de confirmation qu'elle reçoit (formattedData)
+    AUTOMATION_NO_COMMANDS, // Une automation répond sans commande → le rappel qu'elle reçoit (formattedData)
+    APP_ERROR // Une erreur de l'app arrête le tour → sa cause (formattedData), filtré du prompt
 }
 ```
 
-**formattedData** : Données JSON complètes formatées pour prompt. Concaténation `PromptCommandResult` avec titres. DATA_ADDED uniquement.
+**summary et formattedData** : `summary` est ce que l'utilisateur lit, toujours en langage courant ; l'IA lit `summary`, une ligne par résultat de commande, puis `formattedData` (`toPromptText`). Ce qui n'est écrit que pour l'IA (une consigne, le détail d'une erreur de format, le message brut d'un fournisseur ou d'une exception) va dans `formattedData`, que le chat replie sous « Détails » (`SystemMessage.details`) — sauf pour les types où ce sont des données : DATA_ADDED, ACTIONS_EXECUTED, DATA_AWAITING_CONFIRMATION, SCHEMA_REQUIRED.
+
+**formattedData de DATA_ADDED** : Données JSON complètes formatées pour prompt. Concaténation `PromptCommandResult` avec titres.
 
 ### Commands et PromptData
 ```kotlin
@@ -355,7 +360,7 @@ Détection automatique sessions orphelines par AutomationScheduler :
 
 **Transparence** : Pas de message système, IA ne sait pas qu'elle reprend (continue naturellement).
 
-**Actions coupées par la fermeture de l'app** : une session restaurée en `EXECUTING_ACTIONS` ne rejoue jamais ses actions, qu'une reprise ferait deux fois (une création, un import). Un message, envoyé aussi à l'IA, dit que celles terminées avant ont eu lieu et les autres non ; un CHAT revient à `IDLE` par `INTERRUPTED`, une AUTOMATION se ferme en `INTERRUPTED`, que l'AutomationScheduler ne reprend pas. Un CHAT restauré au milieu d'un tour (`ROUND_PHASES` : appel IA, lectures, relances…) est interrompu (« Round IA interrompu ») et attend l'utilisateur : un tour qui a fait tomber l'app la referait tomber à chaque démarrage (`settleRoundCutByAppClosing`) ; une AUTOMATION reprend.
+**Actions coupées par la fermeture de l'app** : une session restaurée en `EXECUTING_ACTIONS` ne rejoue jamais ses actions, qu'une reprise ferait deux fois (une création, un import). Un message, envoyé aussi à l'IA, dit que celles terminées avant ont eu lieu et les autres non ; un CHAT revient à `IDLE` par `INTERRUPTED`, une AUTOMATION se ferme en `INTERRUPTED`, que l'AutomationScheduler ne reprend pas. Un CHAT restauré au milieu d'un tour (`ROUND_PHASES` : appel IA, lectures, relances…) est interrompu (« Réponse de l'IA interrompue ») et attend l'utilisateur : un tour qui a fait tomber l'app la referait tomber à chaque démarrage (`settleRoundCutByAppClosing`) ; une AUTOMATION reprend.
 
 **Erreur imprévue dans un tour** : une exception qui sort de la boucle d'états ou d'un de ses travaux (appel IA, actions, relance) arrête le tour sans tuer l'app (`stopRoundOnError`) : un CHAT revient au repos, sa session ouverte, l'erreur dite dans ses messages hors prompt ; une AUTOMATION se termine en erreur.
 

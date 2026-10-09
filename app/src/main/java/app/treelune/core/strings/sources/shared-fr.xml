@@ -140,18 +140,18 @@
     <string name="ai_validation_title">Validation requise</string>
     <string name="ai_validation_status">Statut</string>
     <string name="ai_module_validation_title">Confirmation</string>
-    <string name="ai_module_cancelled">Module de communication annulé par l\'utilisateur</string>
+    <string name="ai_module_cancelled">Vous avez annulé la question de l\'IA</string>
     <string name="ai_module_response_prefix">Réponse :</string>
     <string name="ai_module_free_reply">Répondre par un message</string>
     <string name="ai_module_free_reply_hint">Écrivez votre réponse en bas : l\'envoyer remplace ce formulaire.</string>
     <string name="ai_module_missing">Il manque : %s</string>
     <string name="ai_response_refused">Réponse refusée : le message suivant dit pourquoi.</string>
-    <string name="ai_error_empty_answer_retried">Réponse sans texte (%1$s) : la demande est renvoyée, une fois.</string>
-    <string name="ai_error_empty_answer_again">Réponse sans texte une seconde fois (%1$s) : renvoyez votre message pour réessayer.</string>
+    <string name="ai_error_empty_answer_retried">L\'IA a répondu sans texte : la demande lui est renvoyée, une fois.</string>
+    <string name="ai_error_empty_answer_again">L\'IA a répondu sans texte une seconde fois : renvoyez votre message pour réessayer.</string>
     <string name="ai_module_add_note">Ajouter une précision</string>
     <string name="ai_module_note">Précision</string>
     <string name="ai_module_note_prefix">Précision de l\'utilisateur :</string>
-    <string name="ai_module_replaced_by_message">Module de communication remplacé par un message de l\'utilisateur</string>
+    <string name="ai_module_replaced_by_message">Vous avez répondu à la question de l\'IA par un message</string>
     <string name="ai_module_question_title">Question</string>
     <string name="ai_module_confirmed">Confirmé</string>
     <string name="ai_module_fields">Champs</string>
@@ -249,6 +249,21 @@
     <string name="automation_schedule">Planification</string>
 
     <!-- AI Errors - Command transformation -->
+    <string name="ai_command_not_run">Commande non exécutée</string>
+    <string name="ai_command_app_error">une erreur de l\'app l\'a arrêtée</string>
+    <string name="ai_schema_required_shown">L\'IA reçoit d\'abord le format des outils qu\'elle veut lire, puis refait sa demande.</string>
+    <string name="ai_schema_required_for_writes_shown">Les écritures de l\'IA n\'ont pas été faites : elle reçoit d\'abord le format des outils visés, puis les renverra.</string>
+    <string name="ai_schema_always_send_shown">L\'IA reçoit le format des outils toujours envoyés.</string>
+    <string name="ai_system_data_refused_by_user_shown">Données non envoyées à l\'IA : vous avez refusé ses %1$d caractères. Elle peut demander moins, ou vous demander ce qu\'il faut.</string>
+    <string name="ai_system_data_too_large_automation_shown">Données non envoyées à l\'IA : %1$d caractères, au-delà du seuil des automations (%2$d). Elle peut demander moins.</string>
+    <string name="ai_completion_confirmation_shown">L\'IA dit avoir terminé : l\'app lui demande de le confirmer.</string>
+    <string name="ai_automation_no_commands_shown">L\'IA a répondu sans rien lire ni faire : l\'app lui rappelle qu\'une automation doit agir, ou dire qu\'elle a fini.</string>
+    <string name="ai_failure_config_shown">Le fournisseur d\'IA refuse la demande telle qu\'elle est réglée (clé, modèle ou compte) : à revoir dans Réglages › Fournisseurs IA.</string>
+    <string name="ai_failure_refused_shown">Le fournisseur d\'IA refuse la demande pour l\'instant (trop de demandes, surcharge ou crédit épuisé) : réessayez plus tard.</string>
+    <string name="ai_failure_network_shown">Pas de réseau : la demande partira quand il reviendra.</string>
+    <string name="ai_failure_app_shown">L\'appel à l\'IA a échoué sur une erreur de l\'app.</string>
+    <string name="ai_provider_not_ready_shown">Aucun fournisseur d\'IA utilisable : à régler dans Réglages › Fournisseurs IA.</string>
+    <string name="ai_system_details">Détails</string>
     <string name="ai_format_error_shown">La réponse de l\'IA n\'avait pas la forme attendue : rien n\'a été fait, et le détail lui est renvoyé pour qu\'elle réponde à nouveau.</string>
     <string name="ai_command_error_shown">L\'IA a écrit une commande que l\'app ne comprend pas : rien n\'a été fait, et le détail lui est renvoyé pour qu\'elle la corrige.</string>
     <string name="ai_error_command_transformation">Commandes refusées, rien n\'a été exécuté : %1$s. Corrige-les et renvoie-les.</string>
@@ -358,12 +373,10 @@
     <!-- AI Errors - Network and System -->
     <string name="ai_error_network_unavailable">Réseau indisponible</string>
     <string name="ai_error_network_timeout_retries">Timeout réseau après %1$d tentatives: %2$s</string>
-    <string name="ai_error_network_call_failed">Échec de l\'appel IA</string>
     <string name="ai_error_response_lost">Requête envoyée, réponse perdue : son coût est inconnu</string>
     <string name="ai_error_session_timeout_automation">Durée maximale de session automation dépassée (%1$d min), arrêt forcé</string>
     <string name="ai_error_timeout">Délai dépassé</string>
     <string name="ai_error_limit_reached">Limite atteinte</string>
-    <string name="ai_error_system_generic">Erreur système</string>
     <string name="ai_error_missing_required_field">Champ obligatoire manquant: %1$s</string>
     <string name="ai_error_unknown">Erreur inconnue</string>
 
@@ -410,8 +423,8 @@
     <string name="ai_end_reason_suspended">Suspendu</string>
 
     <!-- AI Round Interruption -->
-    <string name="ai_round_interrupted">Round IA interrompu</string>
-    <string name="ai_round_failed">Round IA arrêté par une erreur de l\'app : %1$s</string>
+    <string name="ai_round_interrupted">Réponse de l\'IA interrompue</string>
+    <string name="ai_round_failed">L\'échange avec l\'IA s\'est arrêté sur une erreur de l\'app : la discussion reste ouverte, vous pouvez renvoyer votre message.</string>
     <string name="ai_actions_stopped">Actions arrêtées pendant leur exécution : celles terminées avant l\'arrêt ont eu lieu, celle en cours a été abandonnée, les suivantes n\'ont pas eu lieu. Vérifier ce qui existe avant de les relancer.</string>
     <string name="ai_actions_cut_by_app_closing">Actions coupées par la fermeture de l\'app pendant leur exécution : celles terminées avant ont eu lieu, celle en cours a été abandonnée, les suivantes n\'ont pas eu lieu. Vérifier ce qui existe avant de les relancer.</string>
     <string name="ai_call_cut_after_sending">La requête était déjà partie quand elle a été coupée : son coût est inconnu</string>
@@ -865,12 +878,14 @@
     <!-- AI SYSTEM MESSAGES - Messages système générés par CommandExecutor -->
     <string name="ai_system_no_commands">Aucune commande à exécuter</string>
     <string name="ai_system_query_no_data">Requête réussie mais aucune donnée retournée</string>
-    <string name="ai_system_queries_success">%1$d requête(s) de données ajoutée(s) au contexte</string>
-    <string name="ai_system_queries_all_failed">Échec de toutes les requêtes (%1$d)</string>
-    <string name="ai_system_queries_partial">%1$d requête(s) réussie(s), %2$d échouée(s)</string>
-    <string name="ai_system_actions_success">%1$d action(s) exécutée(s) avec succès</string>
-    <string name="ai_system_actions_all_failed">Échec de toutes les actions (%1$d)</string>
-    <string name="ai_system_actions_partial">%1$d action(s) réussie(s), %2$d échouée(s)</string>
+    <string name="ai_system_queries_success_one">1 lecture faite pour l\'IA</string>
+    <string name="ai_system_queries_success">%1$d lectures faites pour l\'IA</string>
+    <string name="ai_system_queries_all_failed">Aucune lecture n\'a abouti (%1$d en échec)</string>
+    <string name="ai_system_queries_partial">%1$d lectures faites pour l\'IA, %2$d en échec</string>
+    <string name="ai_system_actions_success_one">1 action faite</string>
+    <string name="ai_system_actions_success">%1$d actions faites</string>
+    <string name="ai_system_actions_all_failed">Aucune action n\'a abouti (%1$d en échec)</string>
+    <string name="ai_system_actions_partial">%1$d actions faites, %2$d en échec</string>
     <string name="ai_schema_required_summary">Les schémas de données suivants sont nécessaires pour formuler correctement la requête TOOL_DATA (%1$d schéma(s)) :\n%2$s\n\nLes schémas sont inclus ci-dessous. Merci de renouveler ta requête en en tenant compte.</string>
     <string name="ai_schema_required_for_writes_summary">Tes écritures n\'ont pas été exécutées : elles touchent des outils dont tu n\'as pas reçu le schéma de données dans cette session (%1$d schéma(s)) :\n%2$s\n\nLes schémas sont inclus ci-dessous. Lis-les, puis renvoie tes écritures.</string>
     <string name="ai_schema_always_send_summary">Schémas de données des outils que l\'utilisateur envoie toujours, dont les données sont au Level 2 (%1$d schéma(s)) :\n%2$s\n\nLes schémas sont inclus ci-dessous.</string>
@@ -1101,7 +1116,7 @@
     <string name="ai_limit_format_errors_reached">Limite d'erreurs de format atteinte</string>
     <string name="ai_limit_data_queries_reached">Limite d'itérations de requêtes de données atteinte</string>
     <string name="ai_limit_action_retries_reached">Limite de tentatives d'actions atteinte</string>
-    <string name="ai_limit_total_roundtrips_reached">Limite totale de rounds autonomes atteinte</string>
+    <string name="ai_limit_total_roundtrips_reached">L\'IA s\'arrête : elle a enchaîné sans vous autant d\'échanges que le permet Réglages › Limites IA. Envoyez un message pour qu\'elle continue.</string>
 
     <!-- AI AUTOMATION - Messages for autonomous executions -->
     <string name="ai_automation_continue_reminder">Continue jusqu'à ce que la tâche demandée soit complétée. Lorsque tu as terminé, utilise le flag \"completed\": true dans ta réponse.</string>

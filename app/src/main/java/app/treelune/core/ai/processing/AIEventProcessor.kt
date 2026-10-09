@@ -191,8 +191,8 @@ class AIEventProcessor(
                             pending.copy(
                                 systemMessage = systemMessage.copy(
                                     type = SystemMessageType.DATA_REFUSED,
-                                    summary = s.shared("ai_system_data_refused_by_user").format(waiting.dataChars),
-                                    formattedData = null
+                                    summary = s.shared("ai_system_data_refused_by_user_shown").format(waiting.dataChars),
+                                    formattedData = s.shared("ai_system_data_refused_by_user").format(waiting.dataChars)
                                 ),
                                 excludeFromPrompt = false
                             )
@@ -306,10 +306,15 @@ class AIEventProcessor(
                 timestamp = System.currentTimeMillis(),
                 sender = MessageSender.SYSTEM,
                 richContent = null,
-                textContent = s.shared("ai_round_failed").format(reason),
+                textContent = null,
                 aiMessage = null,
                 aiMessageJson = null,
-                systemMessage = null,
+                systemMessage = app.treelune.core.ai.data.SystemMessage(
+                    type = SystemMessageType.APP_ERROR,
+                    commandResults = emptyList(),
+                    summary = s.shared("ai_round_failed"),
+                    formattedData = reason
+                ),
                 executionMetadata = null,
                 excludeFromPrompt = true
             ))
@@ -643,8 +648,8 @@ class AIEventProcessor(
                     systemMessage = app.treelune.core.ai.data.SystemMessage(
                         type = SystemMessageType.PROVIDER_ERROR,
                         commandResults = emptyList(),
-                        summary = providerCheckResult.errorMessage ?: s.shared("ai_error_provider_not_found"),
-                        formattedData = null
+                        summary = s.shared("ai_provider_not_ready_shown"),
+                        formattedData = providerCheckResult.errorMessage ?: s.shared("ai_error_provider_not_found")
                     ),
                     executionMetadata = null,
                     excludeFromPrompt = true // Excluded from prompt (audit only)
@@ -785,8 +790,8 @@ class AIEventProcessor(
                         systemMessage = app.treelune.core.ai.data.SystemMessage(
                             type = SystemMessageType.EMPTY_ANSWER,
                             commandResults = emptyList(),
-                            summary = s.shared(if (again) "ai_error_empty_answer_again" else "ai_error_empty_answer_retried").format(errorMessage),
-                            formattedData = null
+                            summary = s.shared(if (again) "ai_error_empty_answer_again" else "ai_error_empty_answer_retried"),
+                            formattedData = errorMessage
                         ),
                         executionMetadata = null,
                         excludeFromPrompt = true, // The same request goes again, unchanged
@@ -814,8 +819,8 @@ class AIEventProcessor(
                         systemMessage = app.treelune.core.ai.data.SystemMessage(
                             type = SystemMessageType.PROVIDER_ERROR,
                             commandResults = emptyList(),
-                            summary = if (failure == AIFailure.LOST) s.shared("ai_error_response_lost") else errorMessage,
-                            formattedData = null
+                            summary = failureShown(failure),
+                            formattedData = errorMessage
                         ),
                         executionMetadata = null,
                         excludeFromPrompt = true, // Excluded from prompt (audit only)
@@ -838,8 +843,8 @@ class AIEventProcessor(
                         systemMessage = app.treelune.core.ai.data.SystemMessage(
                             type = SystemMessageType.NETWORK_ERROR,
                             commandResults = emptyList(),
-                            summary = errorMessage,
-                            formattedData = null
+                            summary = failureShown(failure),
+                            formattedData = errorMessage
                         ),
                         executionMetadata = null,
                         excludeFromPrompt = true // Excluded from prompt (audit only)
@@ -891,8 +896,9 @@ class AIEventProcessor(
                 systemMessage = app.treelune.core.ai.data.SystemMessage(
                     type = if (failure == AIFailure.NETWORK) SystemMessageType.NETWORK_ERROR else SystemMessageType.PROVIDER_ERROR,
                     commandResults = emptyList(),
-                    summary = "${s.shared("ai_error_network_call_failed")}: ${e.message}",
-                    formattedData = null
+                    // Thrown in our own handling around the call, unless it is an I/O error
+                    summary = if (failure == AIFailure.NETWORK || failure == AIFailure.LOST) failureShown(failure) else s.shared("ai_failure_app_shown"),
+                    formattedData = e.message ?: e.javaClass.simpleName
                 ),
                 executionMetadata = null,
                 excludeFromPrompt = true // Excluded from prompt (audit only)
@@ -1185,13 +1191,14 @@ class AIEventProcessor(
             val s = app.treelune.core.strings.Strings.`for`(context = context)
 
             // Determine guidance message based on reason
-            val guidanceText = when (reason) {
-                ContinuationReason.AUTOMATION_NO_COMMANDS -> {
-                    s.shared("ai_automation_no_commands_guidance")
-                }
-                ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED -> {
-                    s.shared("ai_completion_confirmation_required")
-                }
+            // What the AI is told, and the plain sentence the chat shows for it
+            val (type, shown, guidanceText) = when (reason) {
+                ContinuationReason.AUTOMATION_NO_COMMANDS -> Triple(
+                    SystemMessageType.AUTOMATION_NO_COMMANDS, s.shared("ai_automation_no_commands_shown"), s.shared("ai_automation_no_commands_guidance")
+                )
+                ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED -> Triple(
+                    SystemMessageType.COMPLETED_CONFIRMATION, s.shared("ai_completion_confirmation_shown"), s.shared("ai_completion_confirmation_required")
+                )
             }
 
             LogManager.aiSession("prepareContinuation: Creating guidance message for reason: $reason", "DEBUG")
@@ -1202,10 +1209,15 @@ class AIEventProcessor(
                 timestamp = System.currentTimeMillis(),
                 sender = MessageSender.SYSTEM,
                 richContent = null,
-                textContent = guidanceText,
+                textContent = null,
                 aiMessage = null,
                 aiMessageJson = null,
-                systemMessage = null,
+                systemMessage = app.treelune.core.ai.data.SystemMessage(
+                    type = type,
+                    commandResults = emptyList(),
+                    summary = shown,
+                    formattedData = guidanceText
+                ),
                 executionMetadata = null,
                 excludeFromPrompt = false // Included in AI prompt
             )
@@ -1617,6 +1629,17 @@ class AIEventProcessor(
         }
     }
 
+    /** What a failed call says to the user, by why it failed; the provider's own words go in the details. */
+    private fun failureShown(failure: AIFailure): String {
+        val s = app.treelune.core.strings.Strings.`for`(context = context)
+        return when (failure) {
+            AIFailure.NETWORK -> s.shared("ai_failure_network_shown")
+            AIFailure.LOST -> s.shared("ai_error_response_lost")
+            AIFailure.REFUSED, AIFailure.EMPTY -> s.shared("ai_failure_refused_shown")
+            AIFailure.CONFIG -> s.shared("ai_failure_config_shown")
+        }
+    }
+
     /** A message, sent to the AI too, that the actions of [state]'s session were cut, in the words of [key]. */
     private suspend fun storeActionsCutMessage(state: AIState, key: String) {
         val sessionId = state.sessionId ?: return
@@ -1719,7 +1742,7 @@ class AIEventProcessor(
             timestamp = System.currentTimeMillis(),
             sender = MessageSender.SYSTEM,
             richContent = null,
-            textContent = s.shared("ai_round_interrupted"), // "Round IA interrompu"
+            textContent = s.shared("ai_round_interrupted"),
             aiMessage = null,
             aiMessageJson = null,
             systemMessage = null,
@@ -1885,8 +1908,8 @@ class AIEventProcessor(
         messageRepository.storeMessage(sessionId, message.copy(
             systemMessage = systemMessage.copy(
                 type = SystemMessageType.DATA_REFUSED,
-                summary = s.shared("ai_system_data_too_large_automation").format(dataChars, maxDataChars),
-                formattedData = null
+                summary = s.shared("ai_system_data_too_large_automation_shown").format(dataChars, maxDataChars),
+                formattedData = s.shared("ai_system_data_too_large_automation").format(dataChars, maxDataChars)
             )
         ))
         return false

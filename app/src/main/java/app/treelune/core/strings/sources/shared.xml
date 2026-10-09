@@ -140,18 +140,18 @@
     <string name="ai_validation_title">Validation required</string>
     <string name="ai_validation_status">Status</string>
     <string name="ai_module_validation_title">Confirmation</string>
-    <string name="ai_module_cancelled">Communication module cancelled by the user</string>
+    <string name="ai_module_cancelled">You cancelled the AI\'s question</string>
     <string name="ai_module_response_prefix">Answer:</string>
     <string name="ai_module_free_reply">Reply with a message</string>
     <string name="ai_module_free_reply_hint">Write your reply below: sending it replaces this form.</string>
     <string name="ai_module_missing">Missing: %s</string>
     <string name="ai_response_refused">Response refused: the message below says why.</string>
-    <string name="ai_error_empty_answer_retried">Answer without text (%1$s): the request is sent again, once.</string>
-    <string name="ai_error_empty_answer_again">Answer without text again (%1$s): send your message again to retry.</string>
+    <string name="ai_error_empty_answer_retried">The AI answered without text: the request is sent to it again, once.</string>
+    <string name="ai_error_empty_answer_again">The AI answered without text a second time: send your message again to retry.</string>
     <string name="ai_module_add_note">Add a note</string>
     <string name="ai_module_note">Note</string>
     <string name="ai_module_note_prefix">Note from the user:</string>
-    <string name="ai_module_replaced_by_message">Communication module replaced by a message from the user</string>
+    <string name="ai_module_replaced_by_message">You answered the AI\'s question with a message</string>
     <string name="ai_module_question_title">Question</string>
     <string name="ai_module_confirmed">Confirmed</string>
     <string name="ai_module_fields">Fields</string>
@@ -249,6 +249,21 @@
     <string name="automation_schedule">Schedule</string>
 
     <!-- AI Errors - Command transformation -->
+    <string name="ai_command_not_run">Command not carried out</string>
+    <string name="ai_command_app_error">an error of the app stopped it</string>
+    <string name="ai_schema_required_shown">The AI first gets the format of the tools it wants to read, then asks again.</string>
+    <string name="ai_schema_required_for_writes_shown">The AI\'s writes were not made: it first gets the format of the tools they aim at, then will send them again.</string>
+    <string name="ai_schema_always_send_shown">The AI gets the format of the tools always sent.</string>
+    <string name="ai_system_data_refused_by_user_shown">Data not sent to the AI: you refused its %1$d characters. It can ask for less, or ask you what is needed.</string>
+    <string name="ai_system_data_too_large_automation_shown">Data not sent to the AI: %1$d characters, above the automations\' threshold (%2$d). It can ask for less.</string>
+    <string name="ai_completion_confirmation_shown">The AI says it is done: the app asks it to confirm.</string>
+    <string name="ai_automation_no_commands_shown">The AI answered without reading or doing anything: the app reminds it that an automation has to act, or say it is done.</string>
+    <string name="ai_failure_config_shown">The AI provider refuses the request as it is set up (key, model or account): see Settings › AI providers.</string>
+    <string name="ai_failure_refused_shown">The AI provider refuses the request for now (too many requests, overload or credit used up): try again later.</string>
+    <string name="ai_failure_network_shown">No network: the request will go out when it is back.</string>
+    <string name="ai_failure_app_shown">The call to the AI failed on an error of the app.</string>
+    <string name="ai_provider_not_ready_shown">No usable AI provider: set one in Settings › AI providers.</string>
+    <string name="ai_system_details">Details</string>
     <string name="ai_format_error_shown">The AI\'s answer was not in the expected form: nothing was done, and the details went back to it so that it answers again.</string>
     <string name="ai_command_error_shown">The AI wrote a command the app does not understand: nothing was done, and the details went back to it so that it corrects it.</string>
     <string name="ai_error_command_transformation">Commands refused, nothing was carried out: %1$s. Correct them and send them again.</string>
@@ -358,12 +373,10 @@
     <!-- AI Errors - Network and System -->
     <string name="ai_error_network_unavailable">Network unavailable</string>
     <string name="ai_error_network_timeout_retries">Network timeout after %1$d attempts: %2$s</string>
-    <string name="ai_error_network_call_failed">AI call failed</string>
     <string name="ai_error_response_lost">Request sent, response lost: its cost is unknown</string>
     <string name="ai_error_session_timeout_automation">Maximum automation session duration exceeded (%1$d min), forced stop</string>
     <string name="ai_error_timeout">Timed out</string>
     <string name="ai_error_limit_reached">Limit reached</string>
-    <string name="ai_error_system_generic">System error</string>
     <string name="ai_error_missing_required_field">Mandatory field missing: %1$s</string>
     <string name="ai_error_unknown">Unknown error</string>
 
@@ -410,8 +423,8 @@
     <string name="ai_end_reason_suspended">Suspended</string>
 
     <!-- AI Round Interruption -->
-    <string name="ai_round_interrupted">AI round interrupted</string>
-    <string name="ai_round_failed">AI round stopped by an error in the app: %1$s</string>
+    <string name="ai_round_interrupted">The AI\'s answer was interrupted</string>
+    <string name="ai_round_failed">The exchange with the AI stopped on an error of the app: the conversation stays open, you can send your message again.</string>
     <string name="ai_actions_stopped">Actions stopped while running: those finished before the stop took place, the one in progress was abandoned, the next ones did not run. Check what is there before running them again.</string>
     <string name="ai_actions_cut_by_app_closing">Actions cut by the app closing while they ran: those finished before took place, the one in progress was abandoned, the next ones did not run. Check what is there before running them again.</string>
     <string name="ai_call_cut_after_sending">The request had already gone out when it was cut: its cost is unknown</string>
@@ -865,12 +878,14 @@
     <!-- AI SYSTEM MESSAGES - System messages generated by CommandExecutor -->
     <string name="ai_system_no_commands">No command to run</string>
     <string name="ai_system_query_no_data">Request succeeded but returned no data</string>
-    <string name="ai_system_queries_success">%1$d data request(s) added to the context</string>
-    <string name="ai_system_queries_all_failed">Every request failed (%1$d)</string>
-    <string name="ai_system_queries_partial">%1$d request(s) succeeded, %2$d failed</string>
-    <string name="ai_system_actions_success">%1$d action(s) carried out successfully</string>
-    <string name="ai_system_actions_all_failed">Every action failed (%1$d)</string>
-    <string name="ai_system_actions_partial">%1$d action(s) succeeded, %2$d failed</string>
+    <string name="ai_system_queries_success_one">1 read done for the AI</string>
+    <string name="ai_system_queries_success">%1$d reads done for the AI</string>
+    <string name="ai_system_queries_all_failed">No read went through (%1$d failed)</string>
+    <string name="ai_system_queries_partial">%1$d reads done for the AI, %2$d failed</string>
+    <string name="ai_system_actions_success_one">1 action done</string>
+    <string name="ai_system_actions_success">%1$d actions done</string>
+    <string name="ai_system_actions_all_failed">No action went through (%1$d failed)</string>
+    <string name="ai_system_actions_partial">%1$d actions done, %2$d failed</string>
     <string name="ai_schema_required_summary">The following data schemas are needed to word the TOOL_DATA request correctly (%1$d schema(s)):\n%2$s\n\nThe schemas are included below. Please make your request again taking them into account.</string>
     <string name="ai_schema_required_for_writes_summary">Your writes were not carried out: they touch tools whose data schema you have not received in this session (%1$d schema(s)):\n%2$s\n\nThe schemas are included below. Read them, then send your writes again.</string>
     <string name="ai_schema_always_send_summary">Data schemas of the tools the user sends always, whose data is in Level 2 (%1$d schema(s)):\n%2$s\n\nThe schemas are included below.</string>
@@ -1101,7 +1116,7 @@
     <string name="ai_limit_format_errors_reached">Format error limit reached</string>
     <string name="ai_limit_data_queries_reached">Data request iteration limit reached</string>
     <string name="ai_limit_action_retries_reached">Action attempt limit reached</string>
-    <string name="ai_limit_total_roundtrips_reached">Total autonomous round limit reached</string>
+    <string name="ai_limit_total_roundtrips_reached">The AI stops: it went on without you for as many exchanges as Settings › AI limits allows. Send a message for it to go on.</string>
 
     <!-- AI AUTOMATION - Messages for autonomous executions -->
     <string name="ai_automation_continue_reminder">Carry on until the requested task is complete. When you are done, use the \"completed\": true flag in your answer.</string>

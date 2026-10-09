@@ -87,7 +87,7 @@ fun SystemMessage.toPromptText(): String = buildString {
                 append(" (${result.data.entries.joinToString(", ") { (k, v) -> "$k: $v" }})")
             }
             if (result.status == CommandStatus.FAILED && result.error != null) {
-                append(" → Erreur: ${result.error}")
+                append(" → ${result.status.name}: ${result.error}")
             }
             appendLine()
         }

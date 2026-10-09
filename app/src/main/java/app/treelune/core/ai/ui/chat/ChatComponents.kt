@@ -203,6 +203,9 @@ fun ChatMessageBubble(
                                     type = TextType.BODY
                                 )
 
+                                // The technical side, folded: what the AI was told, or the raw cause
+                                message.systemMessage.details?.let { details -> SystemDetails(message.id, details) }
+
                                 // Data above the size threshold waiting for the user's decision
                                 val dataWaiting = aiState.waitingContext as? app.treelune.core.ai.domain.WaitingContext.DataConfirmation
                                 if (dataWaiting != null && dataWaiting.messageId == message.id) {
@@ -524,6 +527,28 @@ fun SessionStatsDialog(
  * ([alwaysSend]), the message above already says what is asked and that it holds for the
  * session: the card only titles it and answers.
  */
+/**
+ * A system message's [details], folded under a "Details" line that a touch opens and closes; kept
+ * open per message across a recreation.
+ */
+@Composable
+private fun SystemDetails(messageId: String, details: String) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    var open by androidx.compose.runtime.saveable.rememberSaveable(messageId) { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
+        Row(
+            modifier = Modifier.clickable { open = !open },
+            horizontalArrangement = Arrangement.spacedBy(UI.Space.XS),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UI.Text(text = s.shared("ai_system_details"), type = TextType.CAPTION)
+            UI.Icon(if (open) "chevron-up" else "chevron-down", size = 16.dp)
+        }
+        if (open) UI.Text(text = details, type = TextType.CAPTION)
+    }
+}
+
 @Composable
 private fun DataConfirmationCard(
     dataChars: Int,

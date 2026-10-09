@@ -14,6 +14,14 @@ data class SystemMessage(
     val formattedData: String? = null         // Complete JSON results for prompt inclusion
 ) {
     /**
+     * What the chat folds under "Details", below the summary: the text written for the AI, or the
+     * technical cause of a failure. None where formattedData is data (entries read, schemas,
+     * results), which the command lines already say in words.
+     */
+    val details: String?
+        get() = formattedData?.takeIf { type !in DATA_TYPES }
+
+    /**
      * Serialize SystemMessage to JSON string
      */
     fun toJson(): String {
@@ -47,6 +55,14 @@ data class SystemMessage(
     }
 
     companion object {
+        /** The types whose formattedData is data for the AI, not a text to show. */
+        private val DATA_TYPES = setOf(
+            SystemMessageType.DATA_ADDED,
+            SystemMessageType.ACTIONS_EXECUTED,
+            SystemMessageType.DATA_AWAITING_CONFIRMATION,
+            SystemMessageType.SCHEMA_REQUIRED
+        )
+
         /**
          * Deserialize SystemMessage from JSON string
          */
@@ -110,7 +126,7 @@ enum class SystemMessageType {
     INTERRUPTED,             // User interrupted autonomous loop (stored for audit, FILTERED from prompt)
     COMMUNICATION_CANCELLED, // User did not respond to communication module (sent to AI prompt for context)
     VALIDATION_CANCELLED,    // User did not validate AI actions or explicitly refused (sent to AI prompt for context)
-    COMPLETED_CONFIRMATION,  // AI used completed flag, asking for confirmation (sent to AI prompt for double-check)
+    COMPLETED_CONFIRMATION,  // AI used completed flag, asking for confirmation: the request it is sent, in formattedData
     PROVIDER_ERROR,          // AI provider not configured or not found (stored for audit, FILTERED from prompt)
     SCHEMA_REQUIRED,         // Entries schemas a query or a write waits on, sent to the AI; the commands were not carried out
     DATA_AWAITING_CONFIRMATION, // Data above the CHAT size threshold, kept out of the prompt until the user sends it
@@ -119,7 +135,9 @@ enum class SystemMessageType {
     EMPTY_ANSWER,            // The provider answered with no text, the request asked again once (stored for audit and cost, FILTERED from prompt)
     ALWAYS_SEND_AWAITING_CONFIRMATION, // The tools sent always above their threshold, a CHAT waiting for the user's choice (out of the prompt)
     ALWAYS_SEND_ACCEPTED,    // That choice, sent: they go with every call of the session (out of the prompt; read by PromptManager.alwaysSendChoice)
-    ALWAYS_SEND_REFUSED      // That choice, not sent: the AI gets their list (out of the prompt; read by PromptManager.alwaysSendChoice)
+    ALWAYS_SEND_REFUSED,     // That choice, not sent: the AI gets their list (out of the prompt; read by PromptManager.alwaysSendChoice)
+    APP_ERROR,               // An error of the app stopped the round, its cause in formattedData (out of the prompt: the app failed, not the AI)
+    AUTOMATION_NO_COMMANDS   // An automation's AI answered with no command: the reminder it is sent, in formattedData
 }
 
 /**
