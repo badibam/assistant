@@ -137,6 +137,9 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             is IconCheck.Refused -> return OperationResult.error(iconCheck.message)
             is IconCheck.Kept -> iconCheck.configJson
         }
+        // A tool is born unprotected unless a person protects it (Protections)
+        app.treelune.core.coordinator.Protections.refusal(s.shared("tools_config_label_data_validation"), false,
+            JSONObject(storedConfigJson).optBoolean(app.treelune.core.tools.ToolConfigSettings.VALIDATE_DATA, false), s)?.let { return OperationResult.error(it) }
         checkConfig(toolType, storedConfigJson)?.let { return OperationResult.error(it) }
         ToolTypeManager.getToolType(toolType)?.refuseConfig(JSONObject(storedConfigJson), context)?.let { return OperationResult.error(it) }
 
@@ -219,6 +222,15 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             ToolTypeManager.getToolType(existingTool.tooltype)?.let { type ->
                 configJson = type.completeConfig(JSONObject(configJson), JSONObject(existingTool.config_json)).toString()
             }
+            // The data protection is a person's to change (Protections): a config written whole
+            // by anyone else without it keeps the tool's, one that changes it is refused
+            val protectedBefore = JSONObject(existingTool.config_json).optBoolean(app.treelune.core.tools.ToolConfigSettings.VALIDATE_DATA, false)
+            val sent = JSONObject(configJson)
+            if (!sent.has(app.treelune.core.tools.ToolConfigSettings.VALIDATE_DATA) && !app.treelune.core.coordinator.Protections.byAPerson()) {
+                configJson = sent.put(app.treelune.core.tools.ToolConfigSettings.VALIDATE_DATA, protectedBefore).toString()
+            }
+            app.treelune.core.coordinator.Protections.refusal(s.shared("tools_config_label_data_validation"), protectedBefore,
+                JSONObject(configJson).optBoolean(app.treelune.core.tools.ToolConfigSettings.VALIDATE_DATA, false), s)?.let { return OperationResult.error(it) }
             checkConfig(existingTool.tooltype, configJson)?.let { return OperationResult.error(it) }
             // A config sent without its display mode keeps the one the tool had
             configJson = withDisplayMode(configJson, JSONObject(existingTool.config_json).getString("display_mode"))

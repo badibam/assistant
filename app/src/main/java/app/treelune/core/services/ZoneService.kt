@@ -89,6 +89,9 @@ class ZoneService(private val context: Context) : ExecutableService {
         val group = Groups.held(params)
         Groups.refusal(group, zoneGroups(), s)?.let { return OperationResult.error(it) }
 
+        val validate = params.optBoolean("validate", false)
+        app.treelune.core.coordinator.Protections.refusal(s.shared("label_zone_validate"), false, validate, s)?.let { return OperationResult.error(it) }
+
         if (token.isCancelled) return OperationResult.cancelled()
 
         val placing = Zone(
@@ -101,7 +104,8 @@ class ZoneService(private val context: Context) : ExecutableService {
             grid_x = 0,
             grid_y = 0,
             tool_groups = toolGroupsJson,
-            group = group
+            group = group,
+            validate = validate
         )
         checkZone(placing)?.let { return OperationResult.error(it) }
 
@@ -171,6 +175,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             zone.group?.let { put("group", it) }
             put("display_mode", zone.display_mode)
             zone.tool_groups?.let { put("tool_groups", JsonUtils.toList(it)) }
+            put("validate", zone.validate)
         }
         val result = app.treelune.core.validation.SchemaValidator.validate(app.treelune.core.schemas.ZoneSettings.schema(context), settings, context)
         return if (result.isValid) null else result.errorMessage ?: s.shared("message_validation_error_simple")
@@ -289,6 +294,8 @@ class ZoneService(private val context: Context) : ExecutableService {
         iconColorRefusal(iconColor)?.let { return OperationResult.error(it) }
 
         val displayMode = if (params.has("display_mode")) params.givenText("display_mode") ?: existingZone.display_mode else existingZone.display_mode
+        val validate = if (params.has("validate")) params.optBoolean("validate") else existingZone.validate
+        app.treelune.core.coordinator.Protections.refusal(s.shared("label_zone_validate"), existingZone.validate, validate, s)?.let { return OperationResult.error(it) }
         val updatedZone = existingZone.copy(
             name = name,
             description = description,
@@ -297,6 +304,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             display_mode = displayMode,
             tool_groups = toolGroupsJson,
             group = group,
+            validate = validate,
             updated_at = System.currentTimeMillis()
         )
 
@@ -403,6 +411,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             "icon_name" to zone.icon_name,
             IconColor.KEY to zone.icon_color,
             "display_mode" to zone.display_mode,
+            "validate" to zone.validate,
             "created_at" to zone.created_at,
             "updated_at" to zone.updated_at
         )
@@ -438,6 +447,7 @@ class ZoneService(private val context: Context) : ExecutableService {
                 "icon_name" to zone.icon_name,
                 IconColor.KEY to zone.icon_color,
                 "display_mode" to zone.display_mode,
+                "validate" to zone.validate,
                 "created_at" to zone.created_at,
                 "updated_at" to zone.updated_at
             )

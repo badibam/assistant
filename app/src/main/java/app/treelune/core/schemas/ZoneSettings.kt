@@ -56,7 +56,12 @@ object ZoneSettings {
             SettingNode.ListOf("tool_groups", s.shared("label_tool_groups"),
                 SettingNode.Item.Value(FieldDefinition("tool_group", s.shared("label_tool_group"), s.shared("zone_schema_tool_groups"),
                     FieldType.TEXT, false, mapOf("length" to TextLength.SHORT.name))),
-                distinct = true)
+                distinct = true),
+            // Whether the AI asks before changing what the zone holds; a person alone changes it
+            SettingNode.Field(
+                FieldDefinition("validate", s.shared("label_zone_validate"), s.shared("zone_schema_validate"), FieldType.BOOLEAN, false, null),
+                required = true, default = false
+            )
         )
     }
 

@@ -89,6 +89,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog as WindowDialog
 import app.treelune.R
+import app.treelune.core.ui.horizontalPick
 import app.treelune.core.ai.data.MessageSender
 import app.treelune.core.icons.IconSource
 import app.treelune.core.icons.Icons
@@ -716,7 +717,8 @@ object CosyTheme : ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
-        iconColor: TagColor?
+        iconColor: TagColor?,
+        appMark: Boolean
     ) {
         val size = cosySize()
         val c = cosyColors
@@ -727,8 +729,10 @@ object CosyTheme : ThemeContract {
                     horizontalArrangement = Arrangement.spacedBy(size.dp(8f)),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // The app's mark in a round, the size of a coloured icon's
+                    if (appMark) app.treelune.core.ui.components.LauncherMark(size.dp(18f) * ITEM_ROUND, CircleShape)
                     // A coloured icon in its round, as on its tile; a neutral one in the pill's ink
-                    icon?.let { name ->
+                    else icon?.let { name ->
                         if (iconColor == null) NamedIcon(name, null, size.icon, c.onAccent.srgb)
                         else app.treelune.core.ui.UI.ItemIcon(name, iconColor, size.dp(18f))
                     }
@@ -1025,6 +1029,41 @@ object CosyTheme : ThemeContract {
      * a touch or a drag anywhere on it answers the stop under the finger. No answer yet shows the
      * well alone and "—".
      */
+    @Composable
+    override fun HueSlider(value: Int, shifts: IntRange, onValueChange: (Int) -> Unit) {
+        val size = cosySize()
+        val c = cosyColors
+        val mode = CurrentTheme.paletteMode
+        // The accent at a stop every HUE_STRIP_STEP degrees, blended between them
+        val colors = remember(mode, shifts) {
+            (shifts step HUE_STRIP_STEP).map { CosyPalettes.colors(mode, it).accent.srgb } + CosyPalettes.colors(mode, shifts.last).accent.srgb
+        }
+        val knob = size.dp(26f)
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().heightIn(min = size.touch)
+                .horizontalPick { onValueChange(app.treelune.core.ui.RangePick.valueAt(it, shifts)) },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            // The track, ringed in the dim ink: its colours may be the ground's
+            Box(
+                modifier = Modifier.fillMaxWidth().height(size.dp(18f)).clip(CircleShape)
+                    .background(androidx.compose.ui.graphics.Brush.horizontalGradient(colors))
+                    .border(size.dp(2f), c.dim.srgb, CircleShape)
+            )
+            // The knob of the other sliders, standing on the track
+            Box(
+                modifier = Modifier
+                    .offset(x = (maxWidth - knob) * app.treelune.core.ui.RangePick.fractionOf(value, shifts))
+                    .size(knob)
+                    .background(c.tile.srgb, CircleShape)
+                    .border(size.dp(4f), c.accentShadow.srgb, CircleShape)
+            )
+        }
+    }
+
+    /** Degrees between two colours the hue strip computes. */
+    private const val HUE_STRIP_STEP = 10
+
     @Composable
     override fun SliderField(
         label: String,

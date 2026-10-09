@@ -76,19 +76,22 @@ Une étape s'écrit en données, pas en code. Un contrôle de `./run test` véri
 
 ## Le Guide
 
-- Une page, ouverte par une icône fixe en haut de l'accueil (`book-open`). Elle se lit d'un seul défilement : le titre « Parcours » et ses chapitres numérotés, puis le titre « Référence » et les siens.
-- Chaque chapitre a la même ligne dans les deux parties : icône, titre, durée, état (« à faire », « 3/6 · reprendre », « fait »). Ouvert, il se lit en entier (toutes ses étapes, chemins depuis l'accueil), avec « Faire en interactif » s'il a des étapes à faire et « Recommencer » s'il est fini.
+- Une page, ouverte par une icône fixe en haut de l'accueil (`book-open`). Elle se lit d'un seul défilement, en trois parties par degré (`GuidePart`) : « Découverte » et « Prise en main », dont les chapitres sont numérotés et forment le parcours, puis « Approfondissement ».
+- Chaque chapitre a la même ligne dans les trois parties : icône, titre, durée, état (« à faire », « 3/6 · reprendre », « fait »). Ouvert, il se lit en entier (toutes ses étapes, chemins depuis l'accueil), avec « Faire en interactif » s'il a des étapes à faire et « Recommencer » s'il est fini.
 - Rien n'est verrouillé : tout chapitre s'ouvre à tout moment.
 - Tant qu'un tutoriel du parcours est proposé et pas fait, ou qu'un tutoriel est masqué en cours, l'icône du Guide porte le point de `WaitingMark`.
 
 ## Parcours
 
-1. **Premiers pas**, sans IA.
-2. **Brancher une IA** : choisir un fournisseur, coller sa clé, envoyer un premier message qui pointe vers son outil.
-3. **Construire avec l'IA** : lui faire créer un outil, valider ce qu'elle propose, la laisser relier deux outils (une variable, un Objectif).
-4. **Automatiser** : une automation planifiée (« chaque dimanche, le bilan de la semaine »), puis lire son exécution.
+Découverte : 1 et 2 ; Prise en main : 3 à 5.
 
-Le contenu des tutoriels 2 à 4 s'écrit à leur construction : il nomme des écrans que la pile n'a pas encore.
+1. **Premiers pas**, sans IA.
+2. **Brancher une IA** : choisir un fournisseur, coller sa clé, demander une vue d'ensemble sans rien joindre, puis désigner son outil par un pointeur en simple mention, chaque geste nommé (la cible, la zone, l'outil, Confirmer).
+3. **Configurer un outil**, sans IA : la configuration ouverte par un appui long, l'icône, sa couleur et le mode d'affichage, un champ supplémentaire rempli dans une entrée, puis ce que la validation et « Toujours envoyer » changent pour l'IA.
+4. **Construire avec l'IA** : lui faire créer un outil, valider ce qu'elle propose, la laisser relier deux outils (une variable, un Objectif).
+5. **Automatiser** : une automation planifiée (« chaque dimanche, le bilan de la semaine »), puis lire son exécution.
+
+Le contenu des tutoriels 2 à 5 s'écrit à leur construction : il nomme des écrans que la pile n'a pas encore.
 
 ### Premiers pas
 
@@ -96,10 +99,10 @@ Le contenu des tutoriels 2 à 4 s'écrit à leur construction : il nomme des éc
 2. **Faire** : ajoutez une sortie dans *Sorties* (`tool_data.create` sur `demo-course-runs`, d'origine utilisateur).
 3. **Aller, puis lire** : ouvrez *Km par semaine* — votre sortie y est, et l'objectif *Semaine d'entraînement* l'a comptée. Les outils se nourrissent entre eux.
 4. **Faire** : créez votre propre zone, hors démo : l'explication envoie à la section « Hors groupe », tout en bas de l'accueil, et à son +, le groupe Démo étant à Camille.
-5. **Faire** : ajoutez-y un outil ; n'importe quel type, l'explication suggère une Liste, où une entrée n'est qu'un nom à cocher (le Suivi et ses raccourcis sont vus à l'étape 2, dans la démo ; sans raccourci, sa saisie intimide).
+5. **Faire** : ajoutez-y un outil ; l'explication guide vers une Liste, où une entrée n'est qu'un nom à cocher, et dit que seul le nom est à remplir (le Suivi et ses raccourcis sont vus à l'étape 2, dans la démo ; sans raccourci, sa saisie intimide).
 6. **Faire** : ajoutez-y une première entrée, dans l'outil de l'étape 5 : un élément de la Liste.
 
-## Référence
+## Approfondissement
 
 Un chapitre par sujet, lu dans l'ordre qu'on veut, tutoriel facultatif :
 
@@ -116,8 +119,8 @@ Leur contenu s'écrit à leur construction.
 
 ## L'enchaînement
 
-- Tant que le parcours n'est pas fini, la fin de tout tutoriel (un chapitre de Référence fait en avance compris) ouvre un dialogue qui propose le tutoriel suivant du parcours : « Continuer : Brancher une IA » / « Plus tard ».
-- Le parcours fini, la fin de chaque tutoriel propose « Ouvrir le Guide », qui ouvre la page au titre Référence, ou « Plus tard ».
+- Tant que le parcours n'est pas fini, la fin de tout tutoriel (un chapitre d'Approfondissement fait en avance compris) ouvre un dialogue qui propose le tutoriel suivant du parcours : « Continuer : Brancher une IA » / « Plus tard ».
+- Le parcours fini, la fin de chaque tutoriel propose « Ouvrir le Guide », qui ouvre la page au titre Approfondissement, ou « Plus tard ».
 - « Plus tard » dit où est la suite : « dans le Guide, le livre en haut de l'accueil ».
 
 ## La démo
@@ -140,7 +143,7 @@ Dans les réglages de l'app : pour chaque chapitre, l'étape en cours ou « fait
 
 ## Ce qui reste ouvert
 
-- Le contenu des chapitres de Référence : des ébauches (titre et une ligne), à écrire ensemble dans une séance dédiée ; un chapitre sans étape s'affiche « À écrire ».
+- Le contenu des chapitres d'Approfondissement : des ébauches (titre et une ligne), à écrire ensemble dans une séance dédiée ; un chapitre sans étape s'affiche « À écrire ».
 - Ce qui marque « fait » un chapitre sans étape à faire (ouvert, ou lu jusqu'au bout).
 - Un message envoyé à l'IA ne passe pas par le dispatcher (`AIOrchestrator.sendMessage` le range lui-même) : l'étape « demandez-lui son avis » de Brancher une IA se lit, au lieu d'attendre l'envoi.
 - Le dialogue « la démo n'est pas installée » : le fermer sans choisir (retour, toucher à côté) saute les étapes de la démo, comme son bouton.

@@ -595,14 +595,15 @@ object UI {
     fun RunningMark() = CurrentTheme.current.RunningMark()
 
     /**
-     * A tile's icon with its two marks: half the height of the space it stands in, square.
+     * A tile's icon with its two marks, square, the same size in every tile of every mode, one
+     * column included: half of what an ICON tile holds, a row of the grid (LocalGridRow) less its
+     * frame. Sized by the space it stands in, it would grow with each header.
      */
     @Composable
     fun TileIcon(iconName: String?, iconColor: TagColor?, waiting: Boolean, running: Boolean) {
-        // Measured by the height it is given, never asked its intrinsic size: a tile's header and
-        // its icon always have a height of their own
-        BoxWithConstraints(modifier = Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
-            MarkedIcon(iconName, iconColor, waiting, running, maxHeight / 2)
+        val size = (app.treelune.core.ui.components.LocalGridRow.current - CurrentTheme.current.tileFrame(DisplayMode.ICON)) / 2
+        Box(modifier = Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+            MarkedIcon(iconName, iconColor, waiting, running, size)
         }
     }
 
@@ -690,7 +691,9 @@ object UI {
         onLeftClick: (() -> Unit)? = null,
         onRightClick: (() -> Unit)? = null,
         /** More buttons after the left one: the Guide's book on the home screen. */
-        afterLeft: (@Composable () -> Unit)? = null
+        afterLeft: (@Composable () -> Unit)? = null,
+        /** The app's mark beside the title, the home screen's (ThemeContract.PageHeader). */
+        appMark: Boolean = false
     ) {
         // The phone's back key does what the header's back button does. Only the screen on
         // display is composed, so its header is the one that answers. The sound of going back
@@ -713,7 +716,7 @@ object UI {
                 rightButton?.let { ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onRightClick ?: {}) }
             }
         }
-        CurrentTheme.current.PageHeader(title, subtitle, icon, iconColor)
+        CurrentTheme.current.PageHeader(title, subtitle, icon, iconColor, appMark)
     }
     
     /** The header of a tool's tile: its icon with its marks, and its name. */

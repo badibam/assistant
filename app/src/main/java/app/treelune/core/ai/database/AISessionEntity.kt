@@ -30,7 +30,10 @@ data class AISessionEntity(
     @PrimaryKey val id: String,
     val name: String,
     val type: SessionType,
-    @ColumnInfo(name = "require_validation") val requireValidation: Boolean = false,  // Session-level validation toggle
+    /** What this conversation adds to the protections (SessionValidation): the home screen and the zones, the zones' content, the tools' data. */
+    @ColumnInfo(name = "validate_app") val validateApp: Boolean = false,
+    @ColumnInfo(name = "validate_zones") val validateZones: Boolean = false,
+    @ColumnInfo(name = "validate_data") val validateData: Boolean = false,  // Session-level validation toggle
 
     // ==================== Event-Driven State (V2) ====================
 

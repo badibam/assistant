@@ -80,15 +80,19 @@ fun AppSettingsScreen(
     if (category == AppSettingCategories.UI && load == LoadState.LOADED) {
         val focus = androidx.compose.ui.platform.LocalFocusManager.current
         LaunchedEffect(settings) {
-            // Once the menu the choice was made in has closed, in the theme that drew it: Material's
-            // menu fades out over a few frames, and taken off the screen by the new theme while it
-            // fades, it crashes (its window gone, its position still updated)
-            kotlinx.coroutines.delay(MENU_CLOSED_MS)
-            // Nothing focused when the screens move to another theme's frame (MainActivity): a
+            val chosen = Appearance.from(settings) ?: return@LaunchedEffect
+            // Another theme moves the screens to its frame (MainActivity). First the menu the
+            // choice was made in closes, in the theme that drew it: Material's menu fades out over
+            // a few frames, and taken off the screen by the new theme while it fades, it crashes
+            // (its window gone, its position still updated). Then nothing is left focused: a
             // focus carried along points at a field the move left behind, and the next field
-            // touched crashes
-            focus.clearFocus(force = true)
-            Appearance.from(settings)?.let { CurrentTheme.apply(it) }
+            // touched crashes. The same theme moves nothing, and shows a slider's value as the
+            // finger moves, where a wait started again at each move would wait for it to stop.
+            if (chosen.theme != CurrentTheme.themeId) {
+                kotlinx.coroutines.delay(MENU_CLOSED_MS)
+                focus.clearFocus(force = true)
+            }
+            CurrentTheme.apply(chosen)
         }
         DisposableEffect(Unit) {
             onDispose { if (!saved) Appearance.from(stored)?.let { CurrentTheme.apply(it) } }
@@ -97,6 +101,13 @@ fun AppSettingsScreen(
 
     // The names the home screen's groups came with: a group renamed here is renamed in its zones
     val origins = remember(category) { app.treelune.core.fields.settings.ListOrigins() }
+    // The hue shift on a slider of the colours it gives (HueSlider)
+    val editors = remember(category) {
+        if (category != AppSettingCategories.UI) emptyMap()
+        else nodes.filterIsInstance<app.treelune.core.fields.settings.SettingNode.Field>()
+            .filter { it.definition.name == AppSettings.UI_HUE_SHIFT }
+            .associate { it.definition.name to HueShiftEditor(it) }
+    }
 
     fun save() {
         isSaving = true
@@ -136,7 +147,7 @@ fun AppSettingsScreen(
 
         UI.Card(type = CardType.DEFAULT) {
             Column(modifier = Modifier.fillMaxWidth().padding(UI.Space.L)) {
-                SettingsForm(nodes, settings, { settings = it }, context, origins = origins)
+                SettingsForm(nodes, settings, { settings = it }, context, editors, origins = origins)
             }
         }
 
@@ -145,6 +156,20 @@ fun AppSettingsScreen(
         UI.FormActions {
             UI.ActionButton(action = ButtonAction.SAVE, enabled = !isSaving && load == LoadState.LOADED, onClick = { save() })
             UI.ActionButton(action = ButtonAction.CANCEL, onClick = onBack)
+        }
+    }
+}
+
+/** The hue shift chosen on the theme's slider of the colours each shift gives (HueSlider). */
+private class HueShiftEditor(
+    private val node: app.treelune.core.fields.settings.SettingNode.Field
+) : app.treelune.core.fields.settings.SettingEditor {
+    @Composable
+    override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+        Column(verticalArrangement = Arrangement.spacedBy(UI.Space.XS)) {
+            UI.FieldLabel(node.definition.displayName, node.required)
+            val shift = ((value ?: node.default) as? Number)?.toInt() ?: AppSettings.HUE_SHIFT_RANGE.first
+            CurrentTheme.current.HueSlider(shift, AppSettings.HUE_SHIFT_RANGE) { onChange(it) }
         }
     }
 }

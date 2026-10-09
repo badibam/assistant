@@ -174,9 +174,14 @@
     <string name="validation_action_refuse">Refuser</string>
 
     <!-- Validation reasons -->
-    <string name="validation_reason_app_config">Configuration application</string>
-    <string name="validation_reason_tool_config">Outil %1$s</string>
-    <string name="validation_reason_session">Validation de session activée</string>
+    <string name="validation_reason_app">L\'accueil est protégé</string>
+    <string name="validation_reason_zone">La zone « %1$s » est protégée</string>
+    <string name="validation_reason_tool">Les données de « %1$s » sont protégées</string>
+    <string name="validation_reason_session">Cette conversation le demande</string>
+    <string name="validation_reason_unknown">Impossible de savoir si c\'est protégé : %1$s</string>
+    <string name="validation_reason_settings_unreadable">les réglages de validation ne se lisent pas</string>
+    <string name="validation_reason_no_target">l\'action ne nomme pas ce qu\'elle touche</string>
+    <string name="validation_reason_unreadable">%1$s ne se lit pas</string>
     <string name="validation_reason_ai_request">Demande de l\'IA</string>
 
     <!-- AI Response Parsing -->
@@ -460,7 +465,11 @@
     <string name="label_updated_at">Modifiée</string>
     <string name="label_actions">Actions</string>
     <string name="label_configuration">Configuration</string>
-    <string name="label_validation">Validation</string>
+    <string name="session_validation_title">Demander aussi mon accord pour</string>
+    <string name="session_validation_app">L\'accueil et les zones</string>
+    <string name="session_validation_zones">Le contenu des zones</string>
+    <string name="session_validation_data">Les données des outils</string>
+    <string name="session_validation_help">S\'ajoute aux protections déjà réglées.</string>
     <string name="label_tools">Outils</string>
     <string name="label_zone">Zone</string>
     <string name="label_tool">Outil</string>
@@ -694,7 +703,6 @@
     <string name="tools_config_label_description">Description</string>
     <string name="tools_config_label_display_mode">Mode d\'affichage</string>
     <string name="tools_config_label_icon">Icône</string>
-    <string name="tools_config_label_management">Gestion</string>
 
     <!-- Base schemas - Config -->
     <string name="tools_base_schema_config_custom_fields">Liste des champs personnalisables additionnels</string>
@@ -704,15 +712,11 @@
     <string name="tools_base_schema_custom_field_type">Type de champ</string>
     <string name="tools_base_schema_custom_field_always_visible">Toujours afficher le champ même s\'il est vide</string>
     <string name="tools_base_schema_custom_field_config">Configuration spécifique au type de champ</string>
-    <string name="tools_config_label_config_validation">Validation config par IA</string>
-    <string name="tools_config_label_data_validation">Validation données par IA</string>
+    <string name="tools_config_label_data_validation">Protéger les données de cet outil</string>
     <string name="tools_config_label_always_send">Toujours envoyer à l\'IA</string>
     <string name="tools_config_label_show_field_labels">Afficher le nom des champs</string>
-    <string name="tools_config_label_validate_config">Validation config</string>
     <string name="tools_config_label_validate_data">Validation données</string>
 
-    <string name="tools_config_option_manual">Manuel</string>
-    <string name="tools_config_option_ai">IA</string>
     
     <string name="tools_config_section_general_params">Paramètres généraux</string>
     
@@ -749,14 +753,12 @@
     <!-- Tools BASE SCHEMA CONFIG - Descriptions communes pour validation des configurations -->
     <string name="tools_base_schema_config_name">Nom de l\'outil, affiché dans sa zone</string>
     <string name="tools_base_schema_config_description">Description facultative de l\'usage de l\'outil</string>
-    <string name="tools_base_schema_config_management">Qui gère l\'outil : l\'utilisateur (manual) ou l\'IA (ai)</string>
     <string name="tools_base_schema_config_display_mode">Forme de l\'outil dans sa zone, de la plus petite (ICON) à la plus grande (FULL)</string>
     <string name="tools_base_schema_config_icon_name">Nom de l\'icône de l\'outil (un nom d\'icône Lucide)</string>
     <string name="tools_base_schema_config_icon_color">Couleur de l\'icône de l\'outil, parmi RED, ORANGE, YELLOW, GREEN, TEAL, BLUE, PURPLE, PINK ; null ou absente pour une icône neutre. Chaque thème la dessine à sa façon</string>
     <string name="tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
     <string name="tools_base_schema_config_show_field_labels">Si les champs de l\'utilisateur montrent leur nom à côté de leur valeur, partout où ils s\'affichent</string>
-    <string name="tools_base_schema_config_validate_config">Requiert validation utilisateur avant modification configuration</string>
-    <string name="tools_base_schema_config_validate_data">Requiert validation utilisateur avant modification données</string>
+    <string name="tools_base_schema_config_validate_data">L\'IA de la conversation et du connecteur demande votre accord avant d\'ajouter, modifier ou supprimer une entrée de cet outil. Réglable seulement dans l\'app. Une automation ne demande jamais.</string>
 
     <!-- Tools BASE SCHEMA DATA - Descriptions communes pour validation des données -->
     <string name="tools_base_schema_data_id">Identifiant de l\'entrée, posé par le système</string>
@@ -932,12 +934,9 @@
     <string name="settings_ai_always_send_help">Les outils marqués « toujours envoyer » partent avec chaque message à l\'IA. Au-delà de cette taille à eux tous, un chat te demande une fois par session s\'il faut les envoyer ; une automation, ou une IA extérieure à l\'app, n\'en reçoit que la liste et peut les lire au besoin.</string>
 
     <string name="settings_validation">Validation IA</string>
-    <string name="settings_validation_description">Configurer quand l\'IA doit demander validation</string>
-    <string name="app_config_validate_app_config_changes">Modifications des réglages de l\'app</string>
-    <string name="app_config_validate_zone_config_changes">Modifications des zones</string>
-    <string name="app_config_validate_variable_changes">Modifications des variables</string>
-    <string name="app_config_validate_tool_config_changes">Modifications des réglages des outils</string>
-    <string name="app_config_validate_tool_data_changes">Modifications des données des outils</string>
+    <string name="settings_validation_description">Ce que l\'IA doit vous demander avant de le modifier</string>
+    <string name="app_config_validate_app">Protéger l\'accueil</string>
+    <string name="app_config_validate_app_help">L\'IA de la conversation et du connecteur demande votre accord avant de créer, modifier ou supprimer une zone, ou de changer les groupes de l\'accueil. Une automation ne demande jamais.</string>
 
     <string name="settings_ui">Interface utilisateur</string>
     <string name="settings_ui_description">Configurer l\'apparence et le comportement de l\'interface</string>
@@ -1196,6 +1195,7 @@
     <string name="file_summary_preview">Fichier : %1$s (%2$d lignes), aperçu seulement</string>
     <string name="file_error_encoding">%1$s n\'est pas un texte lisible (UTF-8 attendu).</string>
     <string name="action_attach">Joindre un fichier</string>
+    <string name="action_pointer">Désigner une zone ou un outil</string>
     <string name="action_photo">Photo</string>
     <string name="action_gallery">Galerie</string>
     <string name="action_arrange">Disposer</string>
@@ -1707,6 +1707,8 @@
     <!-- Groups - Schemas descriptions -->
     <string name="tools_base_schema_config_group">Groupe d\'organisation de l\'outil</string>
     <string name="zone_schema_tool_groups">Liste des groupes d\'outils disponibles dans cette zone</string>
+    <string name="label_zone_validate">Protéger le contenu de cette zone</string>
+    <string name="zone_schema_validate">L\'IA de la conversation et du connecteur demande votre accord avant de créer, modifier ou supprimer un outil de cette zone, ses groupes d\'outils, ses automations ou ses variables. Réglable seulement dans l\'app. Une automation ne demande jamais.</string>
     <string name="zone_schema_display_mode">Comment la zone s\'affiche sur l\'accueil : ICON (son icône), MINIMAL (icône et nom), LINE (sa description à côté), CONDENSED (sa description dessous) ; il donne les cases que la zone occupe</string>
     <string name="zone_schema_icon_color">Couleur de l\'icône de la zone, parmi RED, ORANGE, YELLOW, GREEN, TEAL, BLUE, PURPLE, PINK ; null ou absente pour une icône neutre. Les outils de la zone ne la prennent pas</string>
     <string name="zone_schema_group">Groupe d\'organisation de la zone</string>
@@ -1771,6 +1773,7 @@
     <string name="service_error_icons_param_not_list">\'%1$s\' est une liste de chaînes</string>
     <string name="service_error_icons_unknown_category">Catégorie d\'icônes inconnue : \'%1$s\'. ICONS sans paramètre liste les catégories</string>
     <string name="service_error_icon_unknown">Icône inconnue : \'%1$s\'. La commande ICONS cherche les icônes par mot et par catégorie</string>
+    <string name="service_error_protection_user_only">« %1$s » ne se change que dans l\'app, par l\'utilisateur</string>
     <string name="service_error_icon_color_unknown">Couleur d\'icône inconnue : \'%1$s\'. Une parmi %2$s, ou null pour aucune</string>
     <string name="action_verbalize_icons_overview">Vue d\'ensemble des icônes</string>
     <string name="action_verbalize_icons_search">Recherche d\'icônes</string>

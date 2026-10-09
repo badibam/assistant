@@ -42,8 +42,8 @@ object Guide {
     /** A tutorial asked for while the demo it begins in is not installed: its dialog asks. */
     var demoMissingFor by mutableStateOf<GuideChapter?>(null)
 
-    /** The Guide's page opens at its reference once: after the journey, from a tutorial's end. */
-    var openAtReference by mutableStateOf(false)
+    /** The Guide's page opens at its last part once: after the journey, from a tutorial's end. */
+    var openAtDeeper by mutableStateOf(false)
 
     private lateinit var appContext: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

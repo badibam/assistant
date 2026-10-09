@@ -414,6 +414,7 @@ private fun HomeScreen(zones: ZonesState) {
                 title = s.shared("app_name"),
                 subtitle = null,
                 icon = null,
+                appMark = true,
                 leftButton = ButtonAction.SETTINGS,
                 rightButton = ButtonAction.CONFIGURE,
                 onLeftClick = { Navigator.push(Place.Settings) },

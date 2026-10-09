@@ -138,7 +138,7 @@ Pointless for:
 - Queries (`data_commands`)
 - Actions the user asked for explicitly, with every detail
 
-The app or a tool may ask for validation on its own: then the user is asked whatever you send.]]></string>
+The user may protect the home screen, a zone (`validate`: its tools, their configs, its variables) or a tool's data (`validate_data`), and a conversation may ask for more: the user is then asked whatever you send. In an automation nothing is asked. Protections are changed by the user alone: a change you send to them is refused.]]></string>
 
     <!-- B.4 CommunicationModules - explanation [DEGREE 1] -->
     <string name="ai_chunk_response_communication_modules_intro"><![CDATA[## Communication modules

@@ -101,7 +101,7 @@ fun AIScreen(
                             id = sessionData["id"] as String,
                             name = sessionData["name"] as String,
                             type = SessionType.valueOf(sessionData["type"] as String),
-                            requireValidation = sessionData["require_validation"] as? Boolean ?: false,
+                            validation = SessionValidation.fromMap(sessionData),
                             waitingStateJson = sessionData["waiting_state_json"] as? String,
                             automationId = sessionData["automation_id"] as? String,
                             scheduledExecutionTime = (sessionData["scheduled_execution_time"] as? Number)?.toLong(),
@@ -132,7 +132,6 @@ fun AIScreen(
                     id = sessionId,
                     name = "", // Name not needed for routing
                     type = aiState.sessionType!!,
-                    requireValidation = false,
                     waitingStateJson = null,
                     automationId = null,
                     scheduledExecutionTime = null,
@@ -1052,6 +1051,8 @@ private fun ChatHeader(
     var showStopConfirmation by rememberSaveable { mutableStateOf(false) }
     var showSettingsMenu by rememberSaveable { mutableStateOf(false) }
     var showSessionSettings by rememberSaveable { mutableStateOf(false) }
+    // What the session adds to the protections, as last saved from its settings
+    var validation by remember(session.id) { mutableStateOf(session.validation) }
 
     // Stop confirmation dialog
     if (showStopConfirmation) {
@@ -1101,22 +1102,19 @@ private fun ChatHeader(
         val coordinator = remember { app.treelune.core.coordinator.Coordinator(context) }
 
         app.treelune.core.ai.ui.chat.SessionSettingsDialog(
-            session = session,
+            validation = validation,
             onDismiss = { showSessionSettings = false },
-            onToggleValidation = { enabled ->
+            onValidationChange = { chosen ->
                 scope.launch {
                     val result = coordinator.processUserAction(
                         "ai_sessions.update_validation",
-                        mapOf(
-                            "session_id" to session.id,
-                            "require_validation" to enabled
-                        )
+                        mapOf("session_id" to session.id) + chosen.toMap()
                     )
-
                     if (result.status == CommandStatus.SUCCESS) {
-                        LogManager.aiUI("Session validation updated: $enabled", "INFO")
+                        validation = chosen
+                        LogManager.aiUI("Session validation updated: $chosen", "INFO")
                     } else {
-                        LogManager.aiUI("Failed to update validation: ${result.error}", "ERROR")
+                        UI.Toast(context, result.error ?: s.shared("ai_error_toggle_validation"), Duration.LONG)
                     }
                 }
             }

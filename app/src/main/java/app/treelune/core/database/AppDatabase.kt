@@ -103,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 68
+        const val VERSION = 69
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1724,6 +1724,95 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Validation by levels (docs/design/validation.md, ValidationAtV69): the app's settings keep
+         * one switch, a zone gains its own (on when one of its tools had its config validated), a
+         * tool loses validate_config and management, a session's switch becomes three boxes. SQLite
+         * before 3.35 cannot drop a column: ai_sessions is rebuilt.
+         */
+        private val MIGRATION_68_69 = object : Migration(68, 69) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val category = app.treelune.core.database.entities.AppSettingCategories.VALIDATION_CONFIG
+                database.query("SELECT settings FROM app_settings_categories WHERE category = ?", arrayOf<Any?>(category)).use { cursor ->
+                    if (!cursor.moveToFirst()) {
+                        LogManager.database("MIGRATION 68->69: no validation settings stored, the defaults are written on first read", "INFO")
+                    } else {
+                        // Settings that cannot be read stay as they are; reading them then fails with the reason
+                        try {
+                            val settings = app.treelune.core.versioning.ValidationAtV69.appSettings(category, org.json.JSONObject(cursor.getString(0)))
+                            database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), category))
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 68->69: validation settings left as they were: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+
+                database.execSQL("ALTER TABLE zones ADD COLUMN validate INTEGER NOT NULL DEFAULT 0")
+                val protectedZones = mutableSetOf<String>()
+                var rewritten = 0
+                database.query("SELECT id, zone_id, config_json FROM tool_instances").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        try {
+                            val config = org.json.JSONObject(cursor.getString(2))
+                            if (app.treelune.core.versioning.ValidationAtV69.protectsZone(config)) protectedZones.add(cursor.getString(1))
+                            database.execSQL("UPDATE tool_instances SET config_json = ? WHERE id = ?",
+                                arrayOf<Any?>(app.treelune.core.versioning.ValidationAtV69.toolConfig(config).toString(), id))
+                            rewritten++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 68->69: config of tool $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                protectedZones.forEach { database.execSQL("UPDATE zones SET validate = 1 WHERE id = ?", arrayOf<Any?>(it)) }
+
+                database.execSQL("""
+                    CREATE TABLE ai_sessions_new (
+                        id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        validate_app INTEGER NOT NULL,
+                        validate_zones INTEGER NOT NULL,
+                        validate_data INTEGER NOT NULL,
+                        phase TEXT NOT NULL,
+                        total_roundtrips INTEGER NOT NULL,
+                        last_event_time INTEGER NOT NULL,
+                        last_user_interaction_time INTEGER NOT NULL,
+                        automation_id TEXT,
+                        scheduled_execution_time INTEGER,
+                        provider_id TEXT NOT NULL,
+                        provider_session_id TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        last_activity INTEGER NOT NULL,
+                        is_active INTEGER NOT NULL,
+                        end_reason TEXT,
+                        app_state_snapshot TEXT,
+                        PRIMARY KEY(id)
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO ai_sessions_new
+                    SELECT id, name, type, require_validation, require_validation, require_validation, phase,
+                           total_roundtrips, last_event_time, last_user_interaction_time, automation_id,
+                           scheduled_execution_time, provider_id, provider_session_id, created_at,
+                           last_activity, is_active, end_reason, app_state_snapshot
+                    FROM ai_sessions
+                """)
+                // session_messages references ai_sessions and needs nothing: foreign keys are not
+                // enforced while a migration runs, and the name stays the same
+                database.execSQL("DROP TABLE ai_sessions")
+                database.execSQL("ALTER TABLE ai_sessions_new RENAME TO ai_sessions")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_is_active ON ai_sessions(is_active)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_type ON ai_sessions(type)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_last_activity ON ai_sessions(last_activity)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_automation_id ON ai_sessions(automation_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_phase ON ai_sessions(phase)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_end_reason ON ai_sessions(end_reason)")
+
+                LogManager.database("MIGRATION 68->69: validation by levels, $rewritten tool config(s) rewritten, ${protectedZones.size} zone(s) protected, session switches split", "INFO")
+            }
+        }
+
         /** The interface settings gain « One column », off: see UiOneColumnAtV67. */
         private val MIGRATION_66_67 = object : Migration(66, 67) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2527,7 +2616,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_64_65,
                     MIGRATION_65_66,
                     MIGRATION_66_67,
-                    MIGRATION_67_68
+                    MIGRATION_67_68,
+                    MIGRATION_68_69
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

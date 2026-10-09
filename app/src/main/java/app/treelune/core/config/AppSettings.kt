@@ -132,10 +132,10 @@ object AppSettings {
                 scale("automation_max_data_chars", text("app_config_ai_data_automation"), text("settings_ai_data_automation_help"), AI_DATA_AUTOMATION_RANGE),
                 scale("always_send_max_chars", text("app_config_ai_always_send"), text("settings_ai_always_send_help"), AI_DATA_CHAT_RANGE)
             )
+            // The app's level alone: a zone and a tool carry theirs in their own settings
             AppSettingCategories.VALIDATION_CONFIG -> listOf(
-                ValidationConfig.KEY_APP_CONFIG, ValidationConfig.KEY_ZONE_CONFIG, ValidationConfig.KEY_TOOL_CONFIG, ValidationConfig.KEY_TOOL_DATA,
-                ValidationConfig.KEY_VARIABLES
-            ).map { key -> field(key, text("app_config_$key"), null, FieldType.BOOLEAN, required = true) }
+                field(ValidationConfig.KEY_APP, text("app_config_validate_app"), text("app_config_validate_app_help"), FieldType.BOOLEAN, required = true)
+            )
             AppSettingCategories.MAIN_SCREEN -> listOf(
                 SettingNode.ListOf("zone_groups", text("label_zone_groups"),
                     SettingNode.Item.Value(FieldDefinition("zone_group", text("label_group"), text("message_zone_groups_description"),

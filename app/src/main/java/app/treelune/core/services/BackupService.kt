@@ -155,6 +155,7 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("icon_color", zone.icon_color)
                                 put("active", zone.active)
                                 put("display_mode", zone.display_mode)
+                                put("validate", zone.validate)
                                 put("grid_x", zone.grid_x)
                                 put("grid_y", zone.grid_y)
                                 put("created_at", zone.created_at)
@@ -215,7 +216,9 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("id", session.id)
                                 put("name", session.name)
                                 put("type", session.type)
-                                put("require_validation", session.requireValidation)
+                                put("validate_app", session.validateApp)
+                                put("validate_zones", session.validateZones)
+                                put("validate_data", session.validateData)
                                 put("phase", session.phase)
                                 put("total_roundtrips", session.totalRoundtrips)
                                 put("last_event_time", session.lastEventTime)
@@ -605,7 +608,9 @@ class BackupService(private val context: Context) : ExecutableService {
                         created_at = item.getLong("created_at"),
                         updated_at = item.getLong("updated_at"),
                         tool_groups = item.optString("tool_groups", null),
-                        group = item.optString("group", null)
+                        group = item.optString("group", null),
+                        // Given to a backup made before version 69 by ValidationAtV69
+                        validate = item.getBoolean("validate")
                     )
                 )
             }
@@ -679,7 +684,10 @@ class BackupService(private val context: Context) : ExecutableService {
                         id = item.getString("id"),
                         name = item.getString("name"),
                         type = SessionType.valueOf(item.getString("type")),
-                        requireValidation = item.getBoolean("require_validation"),
+                        // Given to a backup made before version 69 by ValidationAtV69
+                        validateApp = item.getBoolean("validate_app"),
+                        validateZones = item.getBoolean("validate_zones"),
+                        validateData = item.getBoolean("validate_data"),
                         phase = item.getString("phase"),
                         totalRoundtrips = item.getInt("total_roundtrips"),
                         lastEventTime = item.getLong("last_event_time"),
@@ -950,6 +958,9 @@ class BackupService(private val context: Context) : ExecutableService {
             }
             if (fromVersion < 65 && toVersion >= 65) {
                 app.treelune.core.versioning.QuestionnaireStateAtV65.backup(data)
+            }
+            if (fromVersion < 69 && toVersion >= 69) {
+                app.treelune.core.versioning.ValidationAtV69.backup(data)
             }
 
             // Transform app settings

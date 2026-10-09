@@ -81,7 +81,7 @@ data class AISessionEntity(
     val id: String,
     val name: String,
     val type: SessionType,
-    val requireValidation: Boolean,
+    val validateApp: Boolean, val validateZones: Boolean, val validateData: Boolean, // SessionValidation
     val phase: String, // Phase actuelle (serialized)
     val totalRoundtrips: Int,
     val lastEventTime: Long,
@@ -245,7 +245,7 @@ Les seuils de taille des données sont décrits avec l'attente de confirmation, 
 - **EnrichmentProcessor** : Génération commands depuis enrichments UI
 - **CommandTransformer** : Transformation DataCommand → ExecutableCommand
 - **CommandExecutor** : Point unique exécution + génération SystemMessage
-- **ValidationResolver** : Résolution hiérarchie validation (app > tool > session > AI request)
+- **ValidationResolver** : ce qui attend l'accord de l'utilisateur, par niveaux (app, zone, outil), session et demande de l'IA
 
 ### Command Processing Pipeline
 ```
@@ -436,7 +436,7 @@ Event NetworkErrorOccurred:
 ### Validation et Communication
 
 **Validation** :
-- `ValidationResolver` analyse hiérarchie (app > tool > session > AI request)
+- `ValidationResolver` décide par niveaux, session et demande de l'IA (« Validation des actions IA »)
 - Si requis : `WaitingContext.Validation` créé avec `ValidationContext` + `cancelMessageId`
 - Phase `WAITING_VALIDATION`
 - Fallback message SYSTEM créé AVANT suspension
@@ -681,7 +681,7 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
 7. Transition `CALLING_AI` → renvoyer à IA
 
 ### Validation des actions IA
-**Hiérarchie OR** : app > tool > session > AI request. Si UN niveau true → validation requise. `validationRequest` = Boolean dans AIMessage.
+**Niveaux** (`docs/design/validation.md`) : chacun garde ce qu'il contient directement, rien par défaut. L'app (`validation_config.validate_app`) : les zones, les groupes de l'accueil. Une zone (`zones.validate`) : ses outils, leurs configs comprises, ses groupes d'outils, ses variables. Un outil (`validate_data` de sa config) : ses entrées. La session étend un niveau à tous ses objets (`SessionValidation` : trois cases, qui ne font qu'ajouter) ; l'IA peut demander d'elle-même (`validation_request` à `true` ; `false` vaut l'absence). Une action est validée dès que l'un d'eux le demande ; ce que le résolveur ne peut pas lire pour décider est demandé aussi, raison à l'appui. Une automation ne demande rien. Les protections ne changent que par l'utilisateur ou l'app elle-même (`Protections`, d'après l'origine) : l'IA, le connecteur ou le planificateur qui les change est refusé, et une config d'outil qu'ils écrivent sans `validate_data` garde celle de l'outil.
 
 **Flow** : ValidationResolver analyse actions → génère ValidationContext (actions verbalisées + raisons + warnings config) → `WaitingContext.Validation` créé → UI affiche inline → user valide/refuse → `resumeWithValidation(validated)`.
 
