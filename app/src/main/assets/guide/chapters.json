@@ -3,7 +3,7 @@
   "chapters": [
     {
       "id": "first_steps",
-      "part": "journey",
+      "part": "discovery",
       "icon": "footprints",
       "minutes": 5,
       "steps": [
@@ -21,7 +21,7 @@
     },
     {
       "id": "connect_ai",
-      "part": "journey",
+      "part": "discovery",
       "icon": "bot",
       "minutes": 5,
       "steps": [
@@ -34,7 +34,7 @@
     },
     {
       "id": "build_with_ai",
-      "part": "journey",
+      "part": "getting_started",
       "icon": "hammer",
       "minutes": 10,
       "steps": [
@@ -49,7 +49,7 @@
     },
     {
       "id": "automate",
-      "part": "journey",
+      "part": "getting_started",
       "icon": "calendar-clock",
       "minutes": 10,
       "steps": [
@@ -61,12 +61,12 @@
         {"kind": "read", "target": "automation/{automation}/{zone}"}
       ]
     },
-    {"id": "organize", "part": "reference", "icon": "layout-grid", "minutes": 3, "steps": []},
-    {"id": "connect", "part": "reference", "icon": "link", "minutes": 5, "steps": []},
-    {"id": "talk_to_ai", "part": "reference", "icon": "message-circle", "minutes": 5, "steps": []},
-    {"id": "appearance", "part": "reference", "icon": "palette", "minutes": 2, "steps": []},
-    {"id": "your_data", "part": "reference", "icon": "database", "minutes": 3, "steps": []},
-    {"id": "external_access", "part": "reference", "icon": "cable", "minutes": 5, "steps": []},
-    {"id": "when_stuck", "part": "reference", "icon": "life-buoy", "minutes": 2, "steps": []}
+    {"id": "organize", "part": "deeper", "icon": "layout-grid", "minutes": 3, "steps": []},
+    {"id": "connect", "part": "deeper", "icon": "link", "minutes": 5, "steps": []},
+    {"id": "talk_to_ai", "part": "deeper", "icon": "message-circle", "minutes": 5, "steps": []},
+    {"id": "appearance", "part": "deeper", "icon": "palette", "minutes": 2, "steps": []},
+    {"id": "your_data", "part": "deeper", "icon": "database", "minutes": 3, "steps": []},
+    {"id": "external_access", "part": "deeper", "icon": "cable", "minutes": 5, "steps": []},
+    {"id": "when_stuck", "part": "deeper", "icon": "life-buoy", "minutes": 2, "steps": []}
   ]
 }

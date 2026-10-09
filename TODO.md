@@ -18,7 +18,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - L'export des entrées d'un outil, conçu dans `docs/design/export.md` : le dossier choisi dans les réglages, l'opération `exports.csv`, « Exporter… » sur l'écran d'un outil, l'action `EXPORT_DATA` de l'IA.
 - Le serveur MCP (`docs/design/mcp-server.md`) est codé dans l'app (`core/mcp`, réglages « Accès externe », tuile, migration 60) ; le relais (projet `relay`) est en ligne sur `https://relay.badibam.fr` depuis le 2026-10-05, et Claude s'y est branché comme connecteur depuis le téléphone. L'hébergement tient une requête 120 s : `RelayLoop.WAIT_SECONDS` = 20 reste en dessous. Reste la section « Accès externe » de `docs/design/device-checks.md`, puis élaguer la spec.
 - L'importeur propose en champ nouveau une colonne qui nomme un champ que `tool_data` n'écrit pas (`state.*`, `created_at`) : il doit demander au service ce qui s'écrit, et écarter le reste en le disant.
-- Les chapitres de Référence du Guide (`docs/design/user-journey.md`, « Référence ») : des ébauches, à écrire ensemble en séance dédiée — Organiser couvre aussi les groupes d'outils d'une zone ; puis élaguer la spec, ses garanties devenant des tests.
+- Les chapitres d'Approfondissement du Guide (`docs/design/user-journey.md`, « Approfondissement ») : des ébauches, à écrire ensemble en séance dédiée — Organiser couvre aussi les groupes d'outils d'une zone ; puis élaguer la spec, ses garanties devenant des tests.
 - Les captures d'écran du README (`fastlane/metadata/android/en-US/images/phoneScreenshots/`, leur place marquée dans `README.md` et `README.fr.md`) : à faire sur le téléphone, avec l'icône de l'app en tête.
 - L'outil Séance (`docs/design/sequence-tool.md`) est codé, rien n'a tourné sur un téléphone : passer sa section de `docs/design/device-checks.md`, puis élaguer la spec.
 - Le formulaire de config en pages (`docs/design/settings-pages.md`) est dans `develop`, essayé sur le téléphone le 2026-10-01. Reste à coder : les marques d'un problème sur la ligne d'une page et celles au-dessus ; la phrase d'une condition sur la ligne de sa page (deux côtés et un opérateur), comme celle d'un terme. Puis élaguer la spec.
@@ -40,7 +40,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Alléger les écrans de config en repliant xertains paramètres
 - Gérer la question de la validation notamment dans la config d'outil, mais aussi à tous les crans
 - Guide : un tuto sur la config commune des outils
-- Guide : il faut un niveau suivant : sections = découverte, prise en main, approfondissement (titres à améliorer si tu vois mieux)
 - Guide : demander direct un pointeur avec dates n'est pas approprié. Le 1er devrait être une simple mention (préciser ce qu'il fait faire/inutile de faire). Et mentionner usage + poussé des pointeurs (en re'voyant vers autre tuto pour aller +loin)
 - En mode 1 colonne, les icone des outils et zones en icone ou minimal s'affichent +petites que les aitres modes. En fqit en mode 2 colonnes, il y a aussi des diffs de taille d'icône ce n'est pas souhaitable.
 - En mode 1 colonne : les lignes en + de titre et entete devraient aussi passer sur 1 colonne

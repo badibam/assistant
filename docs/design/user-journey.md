@@ -76,12 +76,14 @@ Une étape s'écrit en données, pas en code. Un contrôle de `./run test` véri
 
 ## Le Guide
 
-- Une page, ouverte par une icône fixe en haut de l'accueil (`book-open`). Elle se lit d'un seul défilement : le titre « Parcours » et ses chapitres numérotés, puis le titre « Référence » et les siens.
-- Chaque chapitre a la même ligne dans les deux parties : icône, titre, durée, état (« à faire », « 3/6 · reprendre », « fait »). Ouvert, il se lit en entier (toutes ses étapes, chemins depuis l'accueil), avec « Faire en interactif » s'il a des étapes à faire et « Recommencer » s'il est fini.
+- Une page, ouverte par une icône fixe en haut de l'accueil (`book-open`). Elle se lit d'un seul défilement, en trois parties par degré (`GuidePart`) : « Découverte » et « Prise en main », dont les chapitres sont numérotés et forment le parcours, puis « Approfondissement ».
+- Chaque chapitre a la même ligne dans les trois parties : icône, titre, durée, état (« à faire », « 3/6 · reprendre », « fait »). Ouvert, il se lit en entier (toutes ses étapes, chemins depuis l'accueil), avec « Faire en interactif » s'il a des étapes à faire et « Recommencer » s'il est fini.
 - Rien n'est verrouillé : tout chapitre s'ouvre à tout moment.
 - Tant qu'un tutoriel du parcours est proposé et pas fait, ou qu'un tutoriel est masqué en cours, l'icône du Guide porte le point de `WaitingMark`.
 
 ## Parcours
+
+Découverte : 1 et 2 ; Prise en main : 3 et 4.
 
 1. **Premiers pas**, sans IA.
 2. **Brancher une IA** : choisir un fournisseur, coller sa clé, envoyer un premier message qui pointe vers son outil.
@@ -99,7 +101,7 @@ Le contenu des tutoriels 2 à 4 s'écrit à leur construction : il nomme des éc
 5. **Faire** : ajoutez-y un outil ; n'importe quel type, l'explication suggère une Liste, où une entrée n'est qu'un nom à cocher (le Suivi et ses raccourcis sont vus à l'étape 2, dans la démo ; sans raccourci, sa saisie intimide).
 6. **Faire** : ajoutez-y une première entrée, dans l'outil de l'étape 5 : un élément de la Liste.
 
-## Référence
+## Approfondissement
 
 Un chapitre par sujet, lu dans l'ordre qu'on veut, tutoriel facultatif :
 
@@ -116,8 +118,8 @@ Leur contenu s'écrit à leur construction.
 
 ## L'enchaînement
 
-- Tant que le parcours n'est pas fini, la fin de tout tutoriel (un chapitre de Référence fait en avance compris) ouvre un dialogue qui propose le tutoriel suivant du parcours : « Continuer : Brancher une IA » / « Plus tard ».
-- Le parcours fini, la fin de chaque tutoriel propose « Ouvrir le Guide », qui ouvre la page au titre Référence, ou « Plus tard ».
+- Tant que le parcours n'est pas fini, la fin de tout tutoriel (un chapitre d'Approfondissement fait en avance compris) ouvre un dialogue qui propose le tutoriel suivant du parcours : « Continuer : Brancher une IA » / « Plus tard ».
+- Le parcours fini, la fin de chaque tutoriel propose « Ouvrir le Guide », qui ouvre la page au titre Approfondissement, ou « Plus tard ».
 - « Plus tard » dit où est la suite : « dans le Guide, le livre en haut de l'accueil ».
 
 ## La démo
@@ -140,7 +142,7 @@ Dans les réglages de l'app : pour chaque chapitre, l'étape en cours ou « fait
 
 ## Ce qui reste ouvert
 
-- Le contenu des chapitres de Référence : des ébauches (titre et une ligne), à écrire ensemble dans une séance dédiée ; un chapitre sans étape s'affiche « À écrire ».
+- Le contenu des chapitres d'Approfondissement : des ébauches (titre et une ligne), à écrire ensemble dans une séance dédiée ; un chapitre sans étape s'affiche « À écrire ».
 - Ce qui marque « fait » un chapitre sans étape à faire (ouvert, ou lu jusqu'au bout).
 - Un message envoyé à l'IA ne passe pas par le dispatcher (`AIOrchestrator.sendMessage` le range lui-même) : l'étape « demandez-lui son avis » de Brancher une IA se lit, au lieu d'attendre l'envoi.
 - Le dialogue « la démo n'est pas installée » : le fermer sans choisir (retour, toucher à côté) saute les étapes de la démo, comme son bouton.

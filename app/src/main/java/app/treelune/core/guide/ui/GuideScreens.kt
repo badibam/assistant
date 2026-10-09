@@ -54,12 +54,12 @@ fun GuideScreen() {
     val s = remember { Strings.`for`(context = context) }
     val chapters = remember { GuideChapters.all(context) }
     val scroll = rememberScrollState()
-    var referenceAt by remember { mutableStateOf<Int?>(null) }
+    var deeperAt by remember { mutableStateOf<Int?>(null) }
     // Opened at the reference once, after the journey
-    LaunchedEffect(referenceAt) {
-        val at = referenceAt ?: return@LaunchedEffect
-        if (Guide.openAtReference) {
-            Guide.openAtReference = false
+    LaunchedEffect(deeperAt) {
+        val at = deeperAt ?: return@LaunchedEffect
+        if (Guide.openAtDeeper) {
+            Guide.openAtDeeper = false
             scroll.scrollTo(at)
         }
     }
@@ -69,9 +69,10 @@ fun GuideScreen() {
         verticalArrangement = Arrangement.spacedBy(UI.Space.M)
     ) {
         UI.PageHeader(title = s.shared("guide_title"), subtitle = s.shared("guide_description"), leftButton = ButtonAction.BACK, onLeftClick = { Navigator.pop() })
-        listOf(GuidePart.JOURNEY to "journey", GuidePart.REFERENCE to "reference").forEach { (part, key) ->
+        GuidePart.entries.forEach { part ->
+            val key = part.key
             Column(
-                modifier = Modifier.fillMaxWidth().let { m -> if (part == GuidePart.REFERENCE) m.onGloballyPositioned { referenceAt = it.positionInParent().y.toInt() } else m },
+                modifier = Modifier.fillMaxWidth().let { m -> if (part == GuidePart.DEEPER) m.onGloballyPositioned { deeperAt = it.positionInParent().y.toInt() } else m },
                 verticalArrangement = Arrangement.spacedBy(UI.Space.S)
             ) {
                 UI.Card(type = CardType.SECTION_HEADER) {
@@ -81,14 +82,14 @@ fun GuideScreen() {
                     }
                 }
                 chapters.filter { it.part == part }.forEachIndexed { i, chapter ->
-                    ChapterLine(chapter, number = if (part == GuidePart.JOURNEY) i + 1 else null)
+                    ChapterLine(chapter, number = if (part.ordered) i + 1 else null)
                 }
             }
         }
     }
 }
 
-/** A chapter's line: the same in both parts, numbered in the journey. */
+/** A chapter's line: the same in every part, numbered in the ordered ones. */
 @Composable
 private fun ChapterLine(chapter: GuideChapter, number: Int?) {
     val context = LocalContext.current
@@ -259,7 +260,7 @@ fun GuideEndDialog(chapter: GuideChapter, demoInstalled: Boolean) {
             close()
             if (next != null) Guide.begin(next, demoInstalled)
             else {
-                Guide.openAtReference = true
+                Guide.openAtDeeper = true
                 if (Navigator.top != Place.Guide) Navigator.push(Place.Guide)
             }
         },

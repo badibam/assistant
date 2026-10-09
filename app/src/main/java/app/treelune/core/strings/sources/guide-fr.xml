@@ -3,10 +3,12 @@
 <resources>
     <string name="guide_title">Guide</string>
     <string name="guide_description">Des tutoriels à faire dans l\'app elle-même, et des chapitres à lire au besoin.</string>
-    <string name="guide_part_journey">Parcours</string>
-    <string name="guide_part_journey_help">Dans l\'ordre : de la démo à votre première automation.</string>
-    <string name="guide_part_reference">Référence</string>
-    <string name="guide_part_reference_help">Dans l\'ordre que vous voulez, au besoin.</string>
+    <string name="guide_part_discovery">Découverte</string>
+    <string name="guide_part_discovery_help">Dans l\'ordre : la démo, votre premier outil, puis une IA à qui parler.</string>
+    <string name="guide_part_getting_started">Prise en main</string>
+    <string name="guide_part_getting_started_help">Dans l\'ordre : construire avec l\'IA, puis la faire travailler sur un planning.</string>
+    <string name="guide_part_deeper">Approfondissement</string>
+    <string name="guide_part_deeper_help">Dans l\'ordre que vous voulez, au besoin.</string>
     <string name="guide_minutes">%1$d min</string>
     <string name="guide_state_todo">À faire</string>
     <string name="guide_state_progress">%1$d/%2$d · reprendre</string>
@@ -56,7 +58,7 @@
     <string name="guide_welcome_where">Le Guide est le livre en haut de l\'accueil.</string>
     <string name="guide_end_title">%1$s : terminé</string>
     <string name="guide_end_continue">Continuer : %1$s</string>
-    <string name="guide_end_journey_done">Le parcours est terminé : la suite se fait dans l\'ordre que vous voulez.</string>
+    <string name="guide_end_journey_done">La prise en main est terminée : l\'approfondissement se fait dans l\'ordre que vous voulez.</string>
     <string name="guide_end_open">Ouvrir le Guide</string>
     <string name="guide_end_later">Plus tard</string>
     <string name="guide_end_where">La suite vous attend dans le Guide, le livre en haut de l\'accueil.</string>
@@ -105,7 +107,7 @@
     <string name="guide_build_with_ai_5_text">Réglages › Validation IA : l\'IA peut être tenue de montrer chaque changement et d\'attendre votre accord, pour l\'app, une zone, un outil ou une conversation. Puis Suivant.</string>
     <string name="guide_automate_title">Automatiser</string>
     <string name="guide_automate_intro">Une automation fait travailler l\'IA seule, sur un planning : un bilan chaque semaine, un rappel qui lit vos entrées.</string>
-    <string name="guide_automate_outro">Votre automation tourne selon son planning ; son historique garde chaque passage. La Référence du Guide tient la suite, dans l\'ordre que vous voulez.</string>
+    <string name="guide_automate_outro">Votre automation tourne selon son planning ; son historique garde chaque passage. L\'Approfondissement du Guide tient la suite, dans l\'ordre que vous voulez.</string>
     <string name="guide_automate_1_goal">Ce qu\'est une automation</string>
     <string name="guide_automate_1_text">Une automation, c\'est un message de départ à l\'IA, avec ses pièces jointes, envoyé selon un planning. L\'IA agit alors comme dans une conversation, seule, dans les limites que vous fixez.</string>
     <string name="guide_automate_2_goal">Créez une automation dans une zone</string>

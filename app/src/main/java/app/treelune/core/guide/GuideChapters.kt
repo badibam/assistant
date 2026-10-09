@@ -6,8 +6,17 @@ import app.treelune.core.strings.Strings
 import app.treelune.core.tools.ToolTypeManager
 import org.json.JSONObject
 
-/** The two parts of the Guide's page: the journey, in its order, then the reference. */
-enum class GuidePart { JOURNEY, REFERENCE }
+/**
+ * The three parts of the Guide's page, by how far one has gone: discovery, getting started, going
+ * further. The first two are the journey, their tutorials done in their order, numbered
+ * ([ordered]); the last is read in the order one likes. [key] names the part in chapters.json
+ * and in its strings (guide_part_<key>, _help).
+ */
+enum class GuidePart(val key: String, val ordered: Boolean) {
+    DISCOVERY("discovery", true),
+    GETTING_STARTED("getting_started", true),
+    DEEPER("deeper", false)
+}
 
 /**
  * What a step asks: to reach a place (GO), to do something the dispatcher sees pass (DO), or to
@@ -96,7 +105,7 @@ object GuideChapters {
         loaded ?: run {
             val declared = parse(context.assets.open(ASSET).bufferedReader(Charsets.UTF_8).use { it.readText() })
             val tools = ToolTypeManager.getAllToolTypes().keys.map { tooltype ->
-                GuideChapter("tool_$tooltype", GuidePart.REFERENCE, "wrench", 3, emptyList(), toolType = tooltype)
+                GuideChapter("tool_$tooltype", GuidePart.DEEPER, "wrench", 3, emptyList(), toolType = tooltype)
             }
             val at = declared.indexOfFirst { it.id == TOOLS_AFTER }
             require(at >= 0) { "The Guide has no chapter '$TOOLS_AFTER' for the tools' chapters to follow" }
@@ -107,8 +116,8 @@ object GuideChapters {
     fun byId(context: Context, id: String): GuideChapter =
         all(context).firstOrNull { it.id == id } ?: throw IllegalArgumentException("No Guide chapter '$id'")
 
-    /** The journey, in its order. */
-    fun journey(context: Context) = all(context).filter { it.part == GuidePart.JOURNEY }
+    /** The journey: the tutorials of the ordered parts, in their order. */
+    fun journey(context: Context) = all(context).filter { it.part.ordered }
 
     /** The chapters a file declares; fails on anything it does not read. */
     fun parse(json: String): List<GuideChapter> {

@@ -3,10 +3,12 @@
 <resources>
     <string name="guide_title">Guide</string>
     <string name="guide_description">Tutorials to do on the app itself, and chapters to read when you need them.</string>
-    <string name="guide_part_journey">Journey</string>
-    <string name="guide_part_journey_help">In this order: from the demo to your first automation.</string>
-    <string name="guide_part_reference">Reference</string>
-    <string name="guide_part_reference_help">In the order you like, when you need it.</string>
+    <string name="guide_part_discovery">Discovery</string>
+    <string name="guide_part_discovery_help">In this order: the demo, your first tool, then an AI to talk to.</string>
+    <string name="guide_part_getting_started">Getting started</string>
+    <string name="guide_part_getting_started_help">In this order: building with the AI, then letting it work on a schedule.</string>
+    <string name="guide_part_deeper">Going further</string>
+    <string name="guide_part_deeper_help">In the order you like, when you need it.</string>
     <string name="guide_minutes">%1$d min</string>
     <string name="guide_state_todo">To do</string>
     <string name="guide_state_progress">%1$d/%2$d · resume</string>
@@ -56,7 +58,7 @@
     <string name="guide_welcome_where">The Guide is the book at the top of the home screen.</string>
     <string name="guide_end_title">%1$s: done</string>
     <string name="guide_end_continue">Continue: %1$s</string>
-    <string name="guide_end_journey_done">The journey is over: the rest is yours to do in the order you like.</string>
+    <string name="guide_end_journey_done">You have got started: going further is yours to do in the order you like.</string>
     <string name="guide_end_open">Open the Guide</string>
     <string name="guide_end_later">Later</string>
     <string name="guide_end_where">What comes next waits in the Guide, the book at the top of the home screen.</string>
@@ -105,7 +107,7 @@
     <string name="guide_build_with_ai_5_text">Settings › AI validation: the AI can be made to show each change and wait for your approval, for the app, a zone, a tool or a conversation. Then Next.</string>
     <string name="guide_automate_title">Automate</string>
     <string name="guide_automate_intro">An automation has the AI work on its own, on a schedule: a weekly summary, a reminder that reads your entries.</string>
-    <string name="guide_automate_outro">Your automation runs on its schedule; its history keeps every run. The Guide\'s reference holds the rest, in the order you like.</string>
+    <string name="guide_automate_outro">Your automation runs on its schedule; its history keeps every run. The Guide\'s « Going further » holds the rest, in the order you like.</string>
     <string name="guide_automate_1_goal">What an automation is</string>
     <string name="guide_automate_1_text">An automation is a starting message to the AI, with its attachments, sent on a schedule. The AI then acts as in a conversation, alone, within the limits you set.</string>
     <string name="guide_automate_2_goal">Create an automation in a zone</string>
