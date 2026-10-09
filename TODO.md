@@ -32,6 +32,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Le rapport de bug (`docs/design/bug-report.md`) est codé, rien n'a tourné sur un téléphone : passer ses lignes de `docs/design/device-checks.md` (démarrage, Réglages), puis élaguer la spec.
 - Une vraie validation pour le connecteur MCP, à concevoir : aujourd'hui l'app ne demande rien à un client extérieur — ses écritures passent sans la validation que l'app exige de son IA (`docs/design/mcp-server.md`), ses lectures sans l'accord au-delà du seuil de données, seulement coupées à 15 000 caractères (`AppMcpBackend.call`) ; seules comptent les permissions réglées dans le client, par appel et non par taille. Piste déjà notée : un réglage par outil « écritures externes interdites / permises ». Les schémas aussi : sans session, rien n'oblige le client à lire le schéma d'un outil avant d'y écrire (la consigne seule, `ai_chunk_validation_strategy`) ; l'imposer demande de retenir, par connexion, les schémas envoyés.
 - Les outils toujours envoyés (`docs/design/always-send.md`) sont codés, rien n'a tourné sur un téléphone : passer leurs lignes de `docs/design/device-checks.md` (migration 64, Réglages), puis élaguer la spec.
+- Le réglage « Gestion » (`management`, Manuel ou IA) de la config commune des outils : aucun code ne le lit, il s'affiche dans chaque config d'outil. Le retirer de `ToolConfigSettings`, des configs stockées par une migration, et ses textes.
 
 ## Bugs du téléphone
 
@@ -39,7 +40,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - Utiliser secret android pour clés, comme le fait saylune
 - Alléger les écrans de config en repliant xertains paramètres
 - Gérer la question de la validation notamment dans la config d'outil, mais aussi à tous les crans
-- Guide : un tuto sur la config commune des outils
 - Params de ecran d'accueil groupes de zones etc : pas accessibles à l'ia ?
 - Le réglage « Gestion » (`management`, Manuel ou IA) de la config commune des outils n'est lu par aucun code : le retirer, migration des configs et schéma de l'IA compris.
 

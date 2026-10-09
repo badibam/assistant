@@ -34,6 +34,21 @@
       ]
     },
     {
+      "id": "configure_tool",
+      "part": "getting_started",
+      "icon": "settings",
+      "minutes": 5,
+      "steps": [
+        {"kind": "read"},
+        {"kind": "do",
+          "await": {"operation": "tools.update", "origin": "USER"},
+          "keep": {"tool": "tool_instance_id"}},
+        {"kind": "do",
+          "await": {"operation": "tool_data.create", "origin": "USER", "params": {"tool_instance_id": "{tool}"}}},
+        {"kind": "read"}
+      ]
+    },
+    {
       "id": "build_with_ai",
       "part": "getting_started",
       "icon": "hammer",

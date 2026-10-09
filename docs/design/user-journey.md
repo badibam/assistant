@@ -83,14 +83,15 @@ Une étape s'écrit en données, pas en code. Un contrôle de `./run test` véri
 
 ## Parcours
 
-Découverte : 1 et 2 ; Prise en main : 3 et 4.
+Découverte : 1 et 2 ; Prise en main : 3 à 5.
 
 1. **Premiers pas**, sans IA.
 2. **Brancher une IA** : choisir un fournisseur, coller sa clé, demander une vue d'ensemble sans rien joindre, puis désigner son outil par un pointeur en simple mention, chaque geste nommé (la cible, la zone, l'outil, Confirmer).
-3. **Construire avec l'IA** : lui faire créer un outil, valider ce qu'elle propose, la laisser relier deux outils (une variable, un Objectif).
-4. **Automatiser** : une automation planifiée (« chaque dimanche, le bilan de la semaine »), puis lire son exécution.
+3. **Configurer un outil**, sans IA : la configuration ouverte par un appui long, l'icône, sa couleur et le mode d'affichage, un champ supplémentaire rempli dans une entrée, puis ce que la validation et « Toujours envoyer » changent pour l'IA.
+4. **Construire avec l'IA** : lui faire créer un outil, valider ce qu'elle propose, la laisser relier deux outils (une variable, un Objectif).
+5. **Automatiser** : une automation planifiée (« chaque dimanche, le bilan de la semaine »), puis lire son exécution.
 
-Le contenu des tutoriels 2 à 4 s'écrit à leur construction : il nomme des écrans que la pile n'a pas encore.
+Le contenu des tutoriels 2 à 5 s'écrit à leur construction : il nomme des écrans que la pile n'a pas encore.
 
 ### Premiers pas
 

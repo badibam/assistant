@@ -23,7 +23,7 @@ class GuideTest {
     @Test
     fun theJourneyComesFirstInItsOrder() {
         val journey = chapters.takeWhile { it.part.ordered }
-        assertEquals(listOf("first_steps", "connect_ai", "build_with_ai", "automate"), journey.map { it.id })
+        assertEquals(listOf("first_steps", "connect_ai", "configure_tool", "build_with_ai", "automate"), journey.map { it.id })
         // The parts in their order, discovery before getting started, then going further
         assertEquals(GuidePart.entries, chapters.map { it.part }.distinct())
         assertTrue(chapters.drop(journey.size).all { it.part == GuidePart.DEEPER })
