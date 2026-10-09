@@ -674,6 +674,7 @@
 
     <!-- Custom Fields -->
     <string name="custom_fields_section_title">Extra fields</string>
+    <string name="custom_fields_list">Fields</string>
     <string name="custom_fields_add">Add a field</string>
     <string name="custom_fields_display_name">Name of the field</string>
     <string name="custom_fields_description">Description (optional)</string>

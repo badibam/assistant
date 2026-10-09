@@ -132,6 +132,7 @@ Vu le 2026-10-09 : l'inscription par la page de connexion, « Activer Funnel » 
 
 ## Outils et saisie
 
+- L'écran de config d'une Liste, d'un Suivi, d'un Journal : ses réglages propres dans un cadre au nom du type, sous « Paramètres généraux » ; « Afficher le nom des champs » dans le cadre « Champs supplémentaires », au-dessus de la liste « Champs ». Graphique, Objectif, Messages, Séance : leurs sections comme avant, sans cadre de plus.
 - Liste réglée en « Éléments courts dans la tuile », dans les deux thèmes : 8 éléments en étendu, 24 en carré, une ligne chacun ; chaque case se coche sans toucher sa voisine (la case d'une ligne fait environ la moitié de celle d'avant). Réglage retiré : la tuile revient à 4 éléments sur deux lignes.
 - Créer et modifier une entrée de chaque type : tracking de chaque sorte, note insérée à une position, journal, occurrence Messages, et une entrée avec champs personnalisés.
 - Une plage de champ personnalisé dont le début dépasse la fin est refusée à l'écran.
