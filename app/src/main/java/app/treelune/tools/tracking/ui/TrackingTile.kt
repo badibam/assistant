@@ -95,7 +95,11 @@ fun rememberTrackingTile(tool: ToolInstance): ToolTile {
                     when {
                         current != null -> {
                             UI.Text(current.name, TextType.BODY, maxLines = 1)
-                            Line { ElapsedText(current, actions.valueField?.config, s); QuickButton(ButtonAction.STOP, !actions.isSaving) { actions.stop(current) } }
+                            Line {
+                                // The time takes the free width, keeping the button at the end of a wide tile
+                                Box(modifier = Modifier.weight(1f)) { ElapsedText(current, actions.valueField?.config, s) }
+                                QuickButton(ButtonAction.STOP, !actions.isSaving) { actions.stop(current) }
+                            }
                         }
                         last != null -> {
                             val shown = listOfNotNull(last.name, last.value?.let { actions.valueField?.formatValue(it, context) }, last.unit)
