@@ -57,6 +57,7 @@ fun CreateZoneScreen(
                 zone.icon_color?.let { put(app.treelune.core.themes.IconColor.KEY, it) }
                 zone.tool_groups?.let { put("tool_groups", JSONArray(it)) }
                 put("display_mode", zone.display_mode)
+                put("validate", zone.validate)
             }
             (existingZone?.group ?: preSelectedGroup)?.let { put("group", it) }
         })
@@ -105,7 +106,7 @@ fun CreateZoneScreen(
             val result = if (existingZone != null) {
                 // Every setting is sent: an absent one is sent as null, which empties it
                 val params = mutableMapOf<String, Any?>("zone_id" to existingZone.id)
-                listOf("name", "description", "icon_name", app.treelune.core.themes.IconColor.KEY, "group", "tool_groups", "display_mode").forEach { params[it] = given[it] ?: JSONObject.NULL }
+                listOf("name", "description", "icon_name", app.treelune.core.themes.IconColor.KEY, "group", "tool_groups", "display_mode", "validate").forEach { params[it] = given[it] ?: JSONObject.NULL }
                 params["renames"] = mapOf("tool_groups" to origins.renames("tool_groups", settings.optJSONArray("tool_groups")))
                 coordinator.processUserAction("zones.update", params)
             } else {
