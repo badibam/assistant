@@ -52,6 +52,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En attente d'un déclencheur
 
+- Proposer à Tailscale le correctif de `tsnet.ListenFunnel` sous GOOS=android (la route `cert/` de `ipn/localapi`, exclue d'Android : le Funnel s'ouvre mais ne peut servir aucun certificat ; `docs/design/funnel-poc.md`) ; s'il est appliqué, retirer la correction de la copie de Tailscale dans le dépôt — quand cette copie existe.
 - Des écrans encore ouverts à l'intérieur d'un lieu, hors de la pile des lieux (`Place`, `docs/UI.md`) : la config d'un fournisseur d'IA, les pages d'un formulaire de config (`SettingsForm`), les écrans internes d'un outil (fiche, historique), l'historique des conversations — à passer en lieux quand un tutoriel, une notification ou un pointeur doit les viser.
 - Revenir à une zone la relit (ses outils, ses variables) : ce que l'écran garde par `remember` ne survit pas à son passage sous un autre lieu — si le rechargement se voit.
 - Un pointeur touché dans un message (l'étiquette d'une zone ou d'un outil, aujourd'hui un simple texte) ouvre sa cible, empilée au-dessus de la conversation pour que le retour y ramène ; de même pour une cible nommée par l'IA dans sa réponse — la pile des lieux sait l'ouvrir (`Navigator.open`, `docs/UI.md`) — quand on le voudra.
