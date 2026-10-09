@@ -39,6 +39,10 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 - Utiliser secret android pour clés, comme le fait saylune
 - Alléger les écrans de config en repliant xertains paramètres
+- Thème rétro, Réglages › Interface : la bande de la teinte est presque noire, là où le cosy montre ses couleurs.
+- La config de l'accueil (Réglages › Écran principal) : son titre est coupé (« Configuration de l'écran princi… ») et aligné à gauche, quand les autres pages le centrent.
+- Signaler un bug : « Ce qui s'est passé (facultatif) » s'affiche deux fois, en libellé au-dessus du champ et en texte d'attente dedans.
+- Le Guide : les chapitres de Prise en main propres à un outil ont tous l'icône clé à molette, pas celle de leur type d'outil.
 
 - Le contrôle des README (`scripts/make_readme.py --check`, dans `./run test`) compte les langues par les dossiers `res/values-xx`, que le build génère et que git ignore : sur une copie neuve du dépôt (un worktree), il échoue avant le premier build. Les compter par les sources de textes (`shared-xx.xml`).
 
