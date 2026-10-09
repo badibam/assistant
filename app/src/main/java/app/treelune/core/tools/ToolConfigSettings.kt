@@ -38,16 +38,14 @@ object ToolConfigSettings {
                 // A tag's name, or none for a neutral icon; checked with its names by the service
                 field(app.treelune.core.themes.IconColor.KEY, text("label_icon_color"), FieldType.CHOICE, text("tools_base_schema_config_icon_color"),
                     config = mapOf("options" to app.treelune.core.themes.IconColor.options(text))),
-                field("management", text("tools_config_label_management"), FieldType.CHOICE, text("tools_base_schema_config_management"),
-                    default = "manual",
-                    config = choice(listOf("manual", "ai"), mapOf("manual" to text("tools_config_option_manual"), "ai" to text("tools_config_option_ai")))),
                 field("display_mode", text("tools_config_label_display_mode"), FieldType.CHOICE, text("tools_base_schema_config_display_mode"),
                     default = toolType.getDefaultDisplayMode(),
                     config = choice(DISPLAY_MODES, DISPLAY_MODES.associateWith { text("tools_config_display_${it.lowercase()}") })),
                 field("group", text("label_group"), FieldType.TEXT, text("tools_base_schema_config_group"),
                     config = mapOf("length" to TextLength.SHORT.name)),
-                field("validate_config", text("tools_config_label_config_validation"), FieldType.BOOLEAN, text("tools_base_schema_config_validate_config"), default = false),
-                field("validate_data", text("tools_config_label_data_validation"), FieldType.BOOLEAN, text("tools_base_schema_config_validate_data"), default = false),
+                // Whether the AI asks before writing the tool's entries; a person alone changes it
+                // (Protections). Its config is guarded by its zone's protection
+                field(VALIDATE_DATA, text("tools_config_label_data_validation"), FieldType.BOOLEAN, text("tools_base_schema_config_validate_data"), default = false),
                 field("always_send", text("tools_config_label_always_send"), FieldType.BOOLEAN, text("tools_base_schema_config_always_send"), default = false)
             ))
         )
@@ -70,6 +68,9 @@ object ToolConfigSettings {
 
     /** The setting that says whether the user's fields show their names. */
     const val SHOW_FIELD_LABELS = "show_field_labels"
+
+    /** Whether the tool's data is protected: the AI asks before writing its entries (docs/design/validation.md). */
+    const val VALIDATE_DATA = "validate_data"
 
     /**
      * The whole config of a tool of [toolType]: the general settings, its type's, then the user's

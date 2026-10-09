@@ -174,9 +174,14 @@
     <string name="validation_action_refuse">Refuse</string>
 
     <!-- Validation reasons -->
-    <string name="validation_reason_app_config">Application configuration</string>
-    <string name="validation_reason_tool_config">Tool %1$s</string>
-    <string name="validation_reason_session">Session validation enabled</string>
+    <string name="validation_reason_app">The home screen is protected</string>
+    <string name="validation_reason_zone">The zone « %1$s » is protected</string>
+    <string name="validation_reason_tool">The data of « %1$s » is protected</string>
+    <string name="validation_reason_session">This conversation asks for it</string>
+    <string name="validation_reason_unknown">Cannot tell whether it is protected: %1$s</string>
+    <string name="validation_reason_settings_unreadable">the validation settings cannot be read</string>
+    <string name="validation_reason_no_target">the action names nothing it applies to</string>
+    <string name="validation_reason_unreadable">%1$s cannot be read</string>
     <string name="validation_reason_ai_request">Request from the AI</string>
 
     <!-- AI Response Parsing -->
@@ -460,7 +465,11 @@
     <string name="label_updated_at">Modified</string>
     <string name="label_actions">Actions</string>
     <string name="label_configuration">Configuration</string>
-    <string name="label_validation">Validation</string>
+    <string name="session_validation_title">Also ask for my approval on</string>
+    <string name="session_validation_app">The home screen and the zones</string>
+    <string name="session_validation_zones">The zones\' content</string>
+    <string name="session_validation_data">The tools\' data</string>
+    <string name="session_validation_help">Adds to the protections already set.</string>
     <string name="label_tools">Tools</string>
     <string name="label_zone">Zone</string>
     <string name="label_tool">Tool</string>
@@ -694,7 +703,6 @@
     <string name="tools_config_label_description">Description</string>
     <string name="tools_config_label_display_mode">Display mode</string>
     <string name="tools_config_label_icon">Icon</string>
-    <string name="tools_config_label_management">Management</string>
 
     <!-- Base schemas - Config -->
     <string name="tools_base_schema_config_custom_fields">List of the additional customisable fields</string>
@@ -704,15 +712,11 @@
     <string name="tools_base_schema_custom_field_type">Field type</string>
     <string name="tools_base_schema_custom_field_always_visible">Always show the field even when it is empty</string>
     <string name="tools_base_schema_custom_field_config">Configuration specific to the field type</string>
-    <string name="tools_config_label_config_validation">Config validation by the AI</string>
-    <string name="tools_config_label_data_validation">Data validation by the AI</string>
+    <string name="tools_config_label_data_validation">Protect this tool\'s data</string>
     <string name="tools_config_label_always_send">Always send to the AI</string>
     <string name="tools_config_label_show_field_labels">Show field names</string>
-    <string name="tools_config_label_validate_config">Config validation</string>
     <string name="tools_config_label_validate_data">Data validation</string>
 
-    <string name="tools_config_option_manual">Manual</string>
-    <string name="tools_config_option_ai">AI</string>
     
     <string name="tools_config_section_general_params">General settings</string>
     
@@ -749,14 +753,12 @@
     <!-- Tools BASE SCHEMA CONFIG - Shared descriptions for configuration validation -->
     <string name="tools_base_schema_config_name">Name of the tool, shown in its zone</string>
     <string name="tools_base_schema_config_description">Optional description of what the tool is for</string>
-    <string name="tools_base_schema_config_management">Who manages the tool: the user (manual) or the AI (ai)</string>
     <string name="tools_base_schema_config_display_mode">How the tool is drawn in its zone, from the smallest (ICON) to the largest (FULL)</string>
     <string name="tools_base_schema_config_icon_name">Name of the tool\'s icon (a Lucide icon name)</string>
     <string name="tools_base_schema_config_icon_color">Colour of the tool\'s icon, one of RED, ORANGE, YELLOW, GREEN, TEAL, BLUE, PURPLE, PINK; null or absent for a neutral icon. Each theme draws it its own way</string>
     <string name="tools_base_schema_config_always_send">Always send the data to the AI (Level 2)</string>
     <string name="tools_base_schema_config_show_field_labels">Whether the user\'s fields show their names beside their values, wherever they are shown</string>
-    <string name="tools_base_schema_config_validate_config">Requires user validation before a configuration change</string>
-    <string name="tools_base_schema_config_validate_data">Requires user validation before a data change</string>
+    <string name="tools_base_schema_config_validate_data">The AI of the conversation and of the connector asks for your approval before adding, changing or deleting an entry of this tool. Changed in the app alone. An automation never asks.</string>
 
     <!-- Tools BASE SCHEMA DATA - Shared descriptions for data validation -->
     <string name="tools_base_schema_data_id">Identifier of the entry, set by the system</string>
@@ -932,12 +934,9 @@
     <string name="settings_ai_always_send_help">Tools marked “always send” go with every message to the AI. Above this size together, a chat asks you once per session whether to send them; an automation, or an AI outside the app, gets only their list and can read them when it needs.</string>
 
     <string name="settings_validation">AI validation</string>
-    <string name="settings_validation_description">Configure when the AI must ask for validation</string>
-    <string name="app_config_validate_app_config_changes">Changes to the app settings</string>
-    <string name="app_config_validate_zone_config_changes">Changes to the zones</string>
-    <string name="app_config_validate_variable_changes">Changes to the variables</string>
-    <string name="app_config_validate_tool_config_changes">Changes to the tools\' settings</string>
-    <string name="app_config_validate_tool_data_changes">Changes to the tools\' data</string>
+    <string name="settings_validation_description">What the AI asks you before changing it</string>
+    <string name="app_config_validate_app">Protect the home screen</string>
+    <string name="app_config_validate_app_help">The AI of the conversation and of the connector asks for your approval before creating, changing or deleting a zone, or changing the home screen\'s groups. An automation never asks.</string>
 
     <string name="settings_ui">User interface</string>
     <string name="settings_ui_description">Configure the look and the behaviour of the interface</string>
@@ -1708,6 +1707,8 @@
     <!-- Groups - Schemas descriptions -->
     <string name="tools_base_schema_config_group">Organisation group of the tool</string>
     <string name="zone_schema_tool_groups">List of the tool groups available in this zone</string>
+    <string name="label_zone_validate">Protect this zone\'s content</string>
+    <string name="zone_schema_validate">The AI of the conversation and of the connector asks for your approval before creating, changing or deleting a tool of this zone, its tool groups, its automations or its variables. Changed in the app alone. An automation never asks.</string>
     <string name="zone_schema_display_mode">How the zone shows on the main screen: ICON (its icon), MINIMAL (icon and name), LINE (with its description beside), CONDENSED (its description below); it gives the cells the zone takes</string>
     <string name="zone_schema_icon_color">Colour of the zone\'s icon, one of RED, ORANGE, YELLOW, GREEN, TEAL, BLUE, PURPLE, PINK; null or absent for a neutral icon. A zone\'s tools do not take it</string>
     <string name="zone_schema_group">Organisation group of the zone</string>
@@ -1772,6 +1773,7 @@
     <string name="service_error_icons_param_not_list">\'%1$s\' is a list of strings</string>
     <string name="service_error_icons_unknown_category">Unknown icon category: \'%1$s\'. ICONS without parameters lists the categories</string>
     <string name="service_error_icon_unknown">Unknown icon: \'%1$s\'. The ICONS command searches the icons by word and category</string>
+    <string name="service_error_protection_user_only">« %1$s » can only be changed in the app, by the user</string>
     <string name="service_error_icon_color_unknown">Unknown icon colour: \'%1$s\'. One of %2$s, or null for none</string>
     <string name="action_verbalize_icons_overview">Overview of the icons</string>
     <string name="action_verbalize_icons_search">Search of the icons</string>

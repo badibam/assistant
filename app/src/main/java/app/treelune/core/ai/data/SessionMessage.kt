@@ -72,7 +72,7 @@ data class AISession(
     val id: String,
     val name: String,
     val type: SessionType,         // CHAT, AUTOMATION, SEED
-    val requireValidation: Boolean = false,      // Session-level validation toggle (user controlled)
+    val validation: SessionValidation = SessionValidation(),
     val waitingStateJson: String? = null,        // Persisted waiting state for app closure (null = no waiting)
     val automationId: String? = null,            // null for CHAT/SEED, automation ID for AUTOMATION
     val scheduledExecutionTime: Long? = null,    // For AUTOMATION: scheduled trigger time (not actual exec time)
@@ -86,6 +86,26 @@ data class AISession(
     val lastNetworkErrorTime: Long? = null,             // Last network error timestamp (for inactivity calculation)
     val endReason: SessionEndReason? = null             // Why session ended (for audit)
 )
+
+/**
+ * What a conversation adds to the protections it runs under (docs/design/validation.md): each level
+ * extended to all its objects for this session alone -- the home screen and the zones ([app]),
+ * the content of every zone ([zones]), the data of every tool ([data]). It never lessens them.
+ */
+data class SessionValidation(val app: Boolean = false, val zones: Boolean = false, val data: Boolean = false) {
+
+    /** The three, under the keys a session is read and written with. */
+    fun toMap(): Map<String, Boolean> = mapOf(KEY_APP to app, KEY_ZONES to zones, KEY_DATA to data)
+
+    companion object {
+        const val KEY_APP = "validate_app"
+        const val KEY_ZONES = "validate_zones"
+        const val KEY_DATA = "validate_data"
+
+        /** The three from a session as the service hands it back; one missing throws. */
+        fun fromMap(map: Map<*, *>) = SessionValidation(map[KEY_APP] as Boolean, map[KEY_ZONES] as Boolean, map[KEY_DATA] as Boolean)
+    }
+}
 
 /** A part of what a user message says to the model: some text, or an image where the user put it. */
 sealed class PromptPart {

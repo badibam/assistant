@@ -35,5 +35,12 @@ data class Zone(
      * Allows organizing zones into groups on MainScreen
      * Example: "Santé", "Productivité", null (ungrouped)
      */
-    val group: String? = null
+    val group: String? = null,
+
+    /**
+     * Whether the zone's content is protected (docs/design/validation.md): the AI asks before it
+     * creates, changes or deletes a tool of it, its tool groups, its automations or its variables.
+     * Changed by a person alone (Protections).
+     */
+    val validate: Boolean = false
 )

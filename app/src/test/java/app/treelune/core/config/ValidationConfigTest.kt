@@ -19,6 +19,6 @@ class ValidationConfigTest {
     /** A missing flag is an error: it used to be read as "no validation" without a word. */
     @Test(expected = JSONException::class)
     fun aMissingFlagIsRefused() {
-        ValidationConfig.fromSettingsJson(JSONObject().put(ValidationConfig.KEY_APP_CONFIG, true))
+        ValidationConfig.fromSettingsJson(JSONObject().put("validate_app_config_changes", true))
     }
 }

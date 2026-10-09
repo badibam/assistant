@@ -97,10 +97,8 @@ object BaseSchemas {
         return when(fieldName) {
             "name" -> s.shared("tools_config_label_name")
             "description" -> s.shared("tools_config_label_description")
-            "management" -> s.shared("tools_config_label_management")
             "display_mode" -> s.shared("tools_config_label_display_mode")
             "icon_name" -> s.shared("tools_config_label_icon")
-            "validate_config" -> s.shared("tools_config_label_validate_config")
             "validate_data" -> s.shared("tools_config_label_validate_data")
             else -> null
         }

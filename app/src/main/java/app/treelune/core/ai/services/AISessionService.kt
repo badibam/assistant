@@ -191,7 +191,9 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to sessionEntity.id,
                     "name" to sessionEntity.name,
                     "type" to sessionEntity.type.name, // Convert enum to string
-                    "require_validation" to sessionEntity.requireValidation,
+                    SessionValidation.KEY_APP to sessionEntity.validateApp,
+                    SessionValidation.KEY_ZONES to sessionEntity.validateZones,
+                    SessionValidation.KEY_DATA to sessionEntity.validateData,
                     "automation_id" to sessionEntity.automationId,
                     "scheduled_execution_time" to sessionEntity.scheduledExecutionTime,
                     "provider_id" to sessionEntity.providerId,
@@ -482,7 +484,9 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to activeSessionEntity.id,
                     "name" to activeSessionEntity.name,
                     "type" to activeSessionEntity.type.name, // Convert enum to string
-                    "require_validation" to activeSessionEntity.requireValidation,
+                    SessionValidation.KEY_APP to activeSessionEntity.validateApp,
+                    SessionValidation.KEY_ZONES to activeSessionEntity.validateZones,
+                    SessionValidation.KEY_DATA to activeSessionEntity.validateData,
                     "provider_id" to activeSessionEntity.providerId,
                     "provider_session_id" to activeSessionEntity.providerSessionId,
                     "created_at" to activeSessionEntity.createdAt,
@@ -812,16 +816,21 @@ class AISessionService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Toggle validation requirement for a session
+     * What the session [session_id] adds to the protections: the three given (SessionValidation),
+     * written whole.
      */
     private suspend fun toggleValidation(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
-        val requireValidation = params.optBoolean("require_validation", false)
+        val validation = try {
+            SessionValidation(params.getBoolean(SessionValidation.KEY_APP), params.getBoolean(SessionValidation.KEY_ZONES), params.getBoolean(SessionValidation.KEY_DATA))
+        } catch (e: org.json.JSONException) {
+            return OperationResult.error(s.shared("ai_error_toggle_validation"))
+        }
 
-        LogManager.aiSession("Toggling validation for session $sessionId: $requireValidation", "DEBUG")
+        LogManager.aiSession("Validation of session $sessionId: $validation", "DEBUG")
 
         try {
             val database = AppDatabase.getDatabase(context)
@@ -834,16 +843,11 @@ class AISessionService(private val context: Context) : ExecutableService {
                 return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
             }
 
-            // Update requireValidation field
-            val updatedSession = session.copy(requireValidation = requireValidation)
-            dao.updateSession(updatedSession)
+            dao.updateSession(session.copy(validateApp = validation.app, validateZones = validation.zones, validateData = validation.data))
 
-            LogManager.aiSession("Successfully toggled validation for session $sessionId: $requireValidation", "INFO")
+            LogManager.aiSession("Validation of session $sessionId now $validation", "INFO")
 
-            return OperationResult.success(mapOf(
-                "session_id" to sessionId,
-                "require_validation" to requireValidation
-            ))
+            return OperationResult.success(mapOf("session_id" to sessionId) + validation.toMap())
         } catch (e: Exception) {
             LogManager.aiSession("Failed to toggle validation for session $sessionId: ${e.message}", "ERROR", e)
             return OperationResult.error(s.shared("ai_error_toggle_validation"))

@@ -84,42 +84,21 @@ data class DateTimeConfig(
 }
 
 /**
- * AI action validation configuration
- * Hierarchy: app > zone > tool > session > AI request (OR logic)
+ * The app's level of the AI's validation (docs/design/validation.md): whether the AI of the
+ * conversation and of the connector asks before it creates, changes or deletes a zone, or changes
+ * the home screen's groups. A zone guards what it holds and a tool its data, each by its own
+ * setting; nothing is validated by default.
  */
 data class ValidationConfig(
-    val validateAppConfigChanges: Boolean = false,      // App config changes
-    val validateZoneConfigChanges: Boolean = false,     // Zone config changes
-    val validateToolConfigChanges: Boolean = false,     // Tool config changes
-    val validateToolDataChanges: Boolean = false,       // Tool data changes
-    val validateVariableChanges: Boolean = false        // Variables created, changed, deleted
+    val validateApp: Boolean = false
 ) {
     /** The validation_config settings as stored in the database */
-    fun toSettingsJson(): String = org.json.JSONObject().apply {
-        put(KEY_APP_CONFIG, validateAppConfigChanges)
-        put(KEY_ZONE_CONFIG, validateZoneConfigChanges)
-        put(KEY_TOOL_CONFIG, validateToolConfigChanges)
-        put(KEY_TOOL_DATA, validateToolDataChanges)
-        put(KEY_VARIABLES, validateVariableChanges)
-    }.toString()
+    fun toSettingsJson(): String = org.json.JSONObject().put(KEY_APP, validateApp).toString()
 
     companion object {
-        const val KEY_APP_CONFIG = "validate_app_config_changes"
-        const val KEY_ZONE_CONFIG = "validate_zone_config_changes"
-        const val KEY_TOOL_CONFIG = "validate_tool_config_changes"
-        const val KEY_TOOL_DATA = "validate_tool_data_changes"
-        const val KEY_VARIABLES = "validate_variable_changes"
+        const val KEY_APP = "validate_app"
 
-        /**
-         * Read the stored validation_config settings. Every key is required: a missing
-         * one throws rather than silently meaning "no validation".
-         */
-        fun fromSettingsJson(settings: org.json.JSONObject) = ValidationConfig(
-            validateAppConfigChanges = settings.getBoolean(KEY_APP_CONFIG),
-            validateZoneConfigChanges = settings.getBoolean(KEY_ZONE_CONFIG),
-            validateToolConfigChanges = settings.getBoolean(KEY_TOOL_CONFIG),
-            validateToolDataChanges = settings.getBoolean(KEY_TOOL_DATA),
-            validateVariableChanges = settings.getBoolean(KEY_VARIABLES)
-        )
+        /** Read the stored validation_config settings; a missing key throws rather than silently meaning "no validation". */
+        fun fromSettingsJson(settings: org.json.JSONObject) = ValidationConfig(validateApp = settings.getBoolean(KEY_APP))
     }
 }

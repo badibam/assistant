@@ -31,7 +31,7 @@ data class ValidationContext(
  *
  * @param actionId ID of the DataCommand this describes
  * @param description Human-readable action description (substantive form)
- * @param requiresWarning true if validated by CONFIG (app/zone/tool) - shows orange warning icon
+ * @param requiresWarning true when a protection or the session asks for it (not the AI alone): shows the warning icon
  * @param validationReason Reason for validation (null if action doesn't require validation by itself)
  * @param entries The entries the action writes, by their fields; none for other actions
  * @param entriesError Why the entries could not be shown, when a value the AI gave does not read
@@ -44,21 +44,3 @@ data class VerbalizedAction(
     val entries: List<ProposedEntry> = emptyList(),
     val entriesError: String? = null
 )
-
-/**
- * Triggers that can require validation in the hierarchy
- *
- * Used internally by ValidationResolver to track which config level
- * triggered validation for an action. This determines the validation
- * reason displayed to the user.
- *
- * Hierarchy (highest to lowest priority):
- * 1. APP_CONFIG - Application-level config
- * 2. TOOL_CONFIG - Tool instance-level config
- *
- * Session-level and AI-level validation don't use triggers (handled separately)
- */
-enum class ValidationTrigger {
-    APP_CONFIG,      // Validation triggered by app configuration
-    TOOL_CONFIG      // Validation triggered by tool instance configuration
-}

@@ -417,9 +417,9 @@ fun SettingsMenuDialog(
  */
 @Composable
 fun SessionSettingsDialog(
-    session: AISession,
+    validation: SessionValidation,
     onDismiss: () -> Unit,
-    onToggleValidation: (Boolean) -> Unit
+    onValidationChange: (SessionValidation) -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -457,11 +457,14 @@ fun SessionSettingsDialog(
                     )
                 }
 
-                UI.Switch(
-                    checked = session.requireValidation,
-                    onCheckedChange = onToggleValidation,
-                    label = s.shared("label_validation")
-                )
+                // What this conversation adds to the protections: each box a level, for every object of it
+                Column(verticalArrangement = Arrangement.spacedBy(UI.Space.S)) {
+                    UI.Text(text = s.shared("session_validation_title"), type = TextType.HEADING)
+                    UI.Checkbox(checked = validation.app, onCheckedChange = { onValidationChange(validation.copy(app = it)) }, label = s.shared("session_validation_app"))
+                    UI.Checkbox(checked = validation.zones, onCheckedChange = { onValidationChange(validation.copy(zones = it)) }, label = s.shared("session_validation_zones"))
+                    UI.Checkbox(checked = validation.data, onCheckedChange = { onValidationChange(validation.copy(data = it)) }, label = s.shared("session_validation_data"))
+                    UI.Text(text = s.shared("session_validation_help"), type = TextType.CAPTION)
+                }
             }
         }
     }
