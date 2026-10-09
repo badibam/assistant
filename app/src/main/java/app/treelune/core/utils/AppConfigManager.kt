@@ -47,7 +47,7 @@ object AppConfigManager {
                 cachedAILimits = service.getAILimits()
                 cachedUISounds = service.getUISounds()
                 // The look is applied rather than cached: CurrentTheme holds it for every screen
-                app.treelune.core.themes.CurrentTheme.apply(service.getUIAppearance())
+                app.treelune.core.themes.CurrentTheme.apply(service.getUIAppearance(), app.treelune.core.themes.CurrentTheme.Reason.STORED)
             }
             isInitialized = true
             LogManager.service("AppConfigManager initialized: dayStartHour=$cachedDayStartHour, weekStartDay=$cachedWeekStartDay, dateTimeConfig=$cachedDateTimeConfig, aiLimits=$cachedAILimits")

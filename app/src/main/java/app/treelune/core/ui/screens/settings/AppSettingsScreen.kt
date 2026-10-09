@@ -99,10 +99,10 @@ fun AppSettingsScreen(
                 kotlinx.coroutines.delay(MENU_CLOSED_MS)
                 focus.clearFocus(force = true)
             }
-            CurrentTheme.apply(chosen)
+            CurrentTheme.apply(chosen, CurrentTheme.Reason.PREVIEW)
         }
         DisposableEffect(Unit) {
-            onDispose { if (!saved) Appearance.from(stored)?.let { CurrentTheme.apply(it) } }
+            onDispose { if (!saved) Appearance.from(stored)?.let { CurrentTheme.apply(it, CurrentTheme.Reason.LEFT_UNSAVED) } }
         }
     }
 

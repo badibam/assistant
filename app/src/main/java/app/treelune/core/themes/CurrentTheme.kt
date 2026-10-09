@@ -56,12 +56,28 @@ object CurrentTheme {
     val isDark: Boolean
         get() = paletteMode == PaletteMode.DARK
 
+    /** Why a look is applied, written to the log with it. */
+    enum class Reason {
+        /** Read from the database: at startup, and after the settings are saved. */
+        STORED,
+        /** Chosen on the interface settings, not saved yet. */
+        PREVIEW,
+        /** The interface settings left unsaved: the stored look back. */
+        LEFT_UNSAVED
+    }
+
     /**
      * Shows the app in [appearance]. A theme that does not exist is a bug: the settings' schema
      * offers only those ThemeScanner knows.
+     *
+     * Logged, so which call put a theme on the screen can be read afterwards; a preview only when
+     * it changes the theme, not at each move of the hue slider.
      */
-    fun apply(appearance: Appearance) {
+    fun apply(appearance: Appearance, reason: Reason) {
         val theme = ThemeScanner.getTheme(appearance.theme) ?: error("No theme '${appearance.theme}'")
+        if (reason != Reason.PREVIEW || appearance.theme != themeId) {
+            app.treelune.core.utils.LogManager.ui("Theme applied ($reason): $appearance, was $themeId")
+        }
         current = theme
         themeId = appearance.theme
         hueShift = appearance.hueShift
