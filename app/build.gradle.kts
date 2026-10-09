@@ -1,3 +1,8 @@
+import javax.inject.Inject
+import java.io.File
+import java.util.Properties
+import org.gradle.process.ExecOperations
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -11,6 +16,8 @@ android {
     // Pinned rather than left to the AGP default: the F-Droid build server must resolve the
     // same toolchain, or the APKs cannot be compared.
     buildToolsVersion = "37.0.0"
+    // Pinned for the same reason: it compiles the Tailscale node's library (buildGoLibrary)
+    ndkVersion = "30.0.16248370"
 
     defaultConfig {
         applicationId = "app.treelune"
@@ -99,6 +106,11 @@ kotlin {
 
 // Name the release APK after the version: the release command attaches it by that name
 androidComponents {
+    // The Tailscale node's library, built for each variant's native libraries only: type-checking
+    // the Kotlin (./run compile) never waits for Go
+    onVariants { variant ->
+        variant.sources.jniLibs?.addGeneratedSourceDirectory(buildGoLibrary, GoLibraryTask::outputDir)
+    }
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->
             (output as com.android.build.api.variant.impl.VariantOutputImpl)
@@ -341,4 +353,73 @@ tasks.withType<Test>().configureEach {
     inputs.dir("src/main/assets/demo")
     inputs.dir("src/main/res/drawable")
     inputs.file("src/main/java/app/treelune/core/strings/sources/ai_prompt_chunks.xml")
+}
+
+/**
+ * Compiles the app's Tailscale node (src/main/go, docs/design/funnel-access.md) into
+ * libtreelune_funnel.so for arm64, with the NDK. It builds from the module's vendor/ alone, the
+ * network off, so that the build is the same offline and on F-Droid's server; and reproducibly:
+ * no paths, no VCS stamp, no build id, no symbols. Elsewhere than arm64 the app has no library,
+ * and offers the relay only.
+ */
+abstract class GoLibraryTask : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val module: DirectoryProperty
+
+    /** The go command, or "" when neither local.properties nor the PATH has one. */
+    @get:Input
+    abstract val goBinary: Property<String>
+
+    @get:Internal
+    abstract val ndkDirectory: DirectoryProperty
+
+    @get:Input
+    abstract val minSdk: Property<Int>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @get:Inject
+    abstract val exec: ExecOperations
+
+    @TaskAction
+    fun build() {
+        val go = goBinary.get().ifEmpty {
+            throw GradleException("Go not found: set go.dir in local.properties, or put go on the PATH")
+        }
+        val clang = ndkDirectory.get().asFile.resolve("toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${minSdk.get()}-clang")
+        if (!clang.isFile) throw GradleException("NDK clang not found: $clang -- install the NDK version pinned in build.gradle.kts")
+        val out = outputDir.get().dir("arm64-v8a").asFile
+        out.deleteRecursively()
+        out.mkdirs()
+        exec.exec {
+            workingDir = module.get().asFile
+            executable = go
+            args("build", "-buildmode=c-shared", "-trimpath", "-buildvcs=false", "-ldflags=-s -w -buildid=",
+                "-o", out.resolve("libtreelune_funnel.so").absolutePath, ".")
+            environment(mapOf(
+                "GOFLAGS" to "-mod=vendor", "GOPROXY" to "off", "GOTOOLCHAIN" to "local",
+                "CGO_ENABLED" to "1", "GOOS" to "android", "GOARCH" to "arm64", "CC" to clang.absolutePath
+            ))
+        }
+        // The C header cgo writes beside the library is not for the APK
+        out.resolve("libtreelune_funnel.h").delete()
+    }
+}
+
+val buildGoLibrary = tasks.register<GoLibraryTask>("buildGoLibrary") {
+    description = "Compile the Tailscale node's Go library for arm64"
+    group = "build"
+    module.set(layout.projectDirectory.dir("src/main/go"))
+    goBinary.set(providers.provider {
+        val props = rootProject.file("local.properties")
+        val dir: String? = if (props.isFile) Properties().apply { props.inputStream().use { load(it) } }.getProperty("go.dir") else null
+        val candidates: List<File> = if (dir != null) listOf(File(dir, "bin/go"))
+            else System.getenv("PATH").orEmpty().split(File.pathSeparator).map { File(it, "go") }
+        candidates.firstOrNull { it.isFile }?.absolutePath ?: ""
+    })
+    ndkDirectory.set(androidComponents.sdkComponents.ndkDirectory)
+    minSdk.set(android.defaultConfig.minSdk ?: 26)
+    outputDir.set(layout.buildDirectory.dir("go/jniLibs"))
 }

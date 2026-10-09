@@ -79,6 +79,10 @@ GUIDE_CHECK = ROOT / "scripts" / "check_guide.py"
 # hides its last line under it, which only a phone shows.
 CHAT_SPACE_CHECK = ROOT / "scripts" / "check_chat_space.py"
 
+# And on the Tailscale node's dependencies: the committed copy carries a fix to Tailscale that a
+# copy refreshed by hand loses in silence, and only a phone would show the Funnel failing.
+GO_VENDOR_CHECK = ROOT / "scripts" / "vendor_go.py"
+
 
 def gradle(*args):
     """Delegate to the wrapper, never to a system-wide gradle."""
@@ -380,6 +384,15 @@ def chat_space_check():
     return process.returncode
 
 
+def go_vendor_check():
+    """Report a copy of the Go dependencies that lacks the fix the Tailscale node needs on Android.
+
+    Returns the script's exit code, 0 when the committed copy carries it. Needs no Go.
+    """
+    process = subprocess.run([sys.executable, str(GO_VENDOR_CHECK), "--check"], cwd=ROOT)
+    return process.returncode
+
+
 def task_test():
     """Run the unit tests and say how many ran, after checking the naming rule.
 
@@ -389,7 +402,7 @@ def task_test():
     each case here is a check that would otherwise mean installing the build on a phone
     and reproducing the situation by hand.
 
-    The key-case, prompt, locale, timezone, string-key, font-copy, spacing, README, Guide and chat-room checks come first and cost a fraction of a second. They
+    The key-case, prompt, locale, timezone, string-key, font-copy, spacing, README, Guide, chat-room and Go-vendor checks come first and cost a fraction of a second. They
     are not tests -- they read the sources rather than running them -- but they answer the
     same question: is this tree fit to commit.
     """
@@ -403,6 +416,7 @@ def task_test():
     readme = readme_check()
     guide = guide_check()
     chat_space = chat_space_check()
+    go_vendor = go_vendor_check()
     # Noted before the run, so that results left by the run before cannot be read as this
     # one's. A filesystem timestamp can lag by a second, hence the margin.
     started = time.time() - 1
@@ -413,7 +427,7 @@ def task_test():
     # gradle skipped the task because nothing had changed. Otherwise there is no answer.
     if tally is None or (not tally[3] and code != 0):
         print("no results from this run -- it did not get as far as the tests")
-        return code or key_case or prompt or locales or timezones or string_keys or font_copy or spacing or readme or guide or chat_space or 1
+        return code or key_case or prompt or locales or timezones or string_keys or font_copy or spacing or readme or guide or chat_space or go_vendor or 1
 
     tests, failures, errors, fresh = tally
     bad = failures + errors
@@ -423,10 +437,10 @@ def task_test():
         print(f"report: {TEST_REPORT}")
     # The checks print first, and a green test count below them reads as a verdict. Say
     # again, last, that the tree is not fit to commit.
-    failed_checks = sum(1 for c in (key_case, prompt, locales, timezones, string_keys, font_copy, spacing, readme, guide, chat_space) if c)
+    failed_checks = sum(1 for c in (key_case, prompt, locales, timezones, string_keys, font_copy, spacing, readme, guide, chat_space, go_vendor) if c)
     if failed_checks:
         print(f"{failed_checks} source check(s) failed -- see above")
-    return code or key_case or prompt or locales or timezones or string_keys or font_copy or spacing or readme or guide or chat_space
+    return code or key_case or prompt or locales or timezones or string_keys or font_copy or spacing or readme or guide or chat_space or go_vendor
 
 
 def task_strings():
