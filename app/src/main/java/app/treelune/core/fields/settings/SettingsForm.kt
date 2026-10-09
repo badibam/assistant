@@ -171,7 +171,7 @@ private fun List<SettingNode>.isPage(): Boolean = any { node ->
  * The nodes stored in the object these nodes describe, as the form shows them over [config]: a
  * section's, and the case of a variant that [config] chooses.
  */
-private fun List<SettingNode>.shown(config: JSONObject): List<SettingNode> = flatMap { node ->
+internal fun List<SettingNode>.shown(config: JSONObject): List<SettingNode> = flatMap { node ->
     when (node) {
         is SettingNode.Section -> node.nodes.shown(config)
         is SettingNode.Variant -> {
@@ -354,6 +354,8 @@ private fun PageLine(
                 summary()
                 phrases.forEach { UI.Text(it, TextType.CAPTION, maxLines = 2) }
                 if (counts.isNotEmpty()) UI.Text(counts.joinToString(" ${Strings.`for`(context = context).shared("list_item_summary_separator")} "), TextType.CAPTION, maxLines = 2)
+                // A problem on the page or one under it, followed down line by line to its setting
+                if (SettingProblems.any(nodes, config)) UI.Text(Strings.`for`(context = context).shared("settings_page_problem"), TextType.ERROR)
             }
             UI.Icon("chevron-right", size = 20.dp)
         }
@@ -372,6 +374,11 @@ private fun brickPhrases(nodes: List<SettingNode>, config: JSONObject, context: 
         when (node) {
             is SettingNode.Term -> config.optJSONObject(node.name)?.let { node.label to it }
             is SettingNode.Selection -> config.optJSONObject(node.name)?.let { node.label to JSONObject().put("selection", it) }
+            // Put on the entry, its left is the value entered there, named by the setting declaring it
+            is SettingNode.Condition -> config.optJSONObject(node.name)?.let { condition ->
+                node.label to JSONObject().put("condition", condition)
+                    .put("entered", node.enteredField?.takeIf { config.optJSONObject(it) != null }?.let { nodes.labelOf(it) } ?: "")
+            }
             else -> null
         }
     }
@@ -412,6 +419,22 @@ private suspend fun brickPhrase(brick: JSONObject, context: Context): String {
         )
     }
     return when {
+        // Its two sides around its operator, "kcal > 2100"; a left the entry gives is not written
+        brick.has("condition") -> {
+            val condition = brick.getJSONObject("condition")
+            suspend fun side(side: Any?): String? = when (side) {
+                is JSONObject -> brickPhrase(side, context)
+                is JSONArray -> (0 until side.length()).map { brickPhrase(side.getJSONObject(it), context) }
+                    .joinToString(" ${s.shared("settings_phrase_between")} ")
+                else -> null
+            }
+            val op = app.treelune.core.fields.FilterOperator.of(condition.optString(app.treelune.core.conditions.Conditions.OP))
+                ?.let { app.treelune.core.ui.selectors.PointerDescription.operator(it, s) }
+            listOfNotNull(side(condition.opt(app.treelune.core.conditions.Conditions.LEFT)) ?: brick.optString("entered").takeIf { it.isNotEmpty() }, op,
+                side(condition.opt(app.treelune.core.conditions.Conditions.RIGHT))).joinToString(" ")
+        }
+        // A field of the entry or the row, by its path
+        brick.has("field") -> brick.optString("field")
         brick.has("constant") -> JsonUtils.toValue(brick.opt("constant").takeIf { it != JSONObject.NULL })?.toString() ?: ""
         brick.has("variable") -> brick.optString("variable").takeIf { it.isNotEmpty() }
             ?.let { name(app.treelune.core.selection.ReferenceKind.VARIABLE, it) } ?: ""

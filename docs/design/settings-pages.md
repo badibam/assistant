@@ -14,7 +14,7 @@ Conçu le 2026-10-01. Aujourd'hui, `SettingsForm` dessine l'arbre des réglages 
 ## La ligne de résumé
 
 - **Le résumé déclaré, complété par le formulaire** : pour un élément de liste, les réglages que nomme `summary` ; pour un groupe, son titre ; puis, de lui-même, la phrase de chaque sélecteur qu'il contient, et le nombre d'éléments de chaque liste. Une colonne : « kcal », puis « Valeur : Repas › Kcal · Somme · Filtres : 2 ».
-- **Chaque sélecteur de brique donne sa phrase** : un terme et une sélection d'entrées le font ; une condition, pas encore.
+- **Chaque sélecteur de brique donne sa phrase** : un terme, une sélection d'entrées, une condition (ses deux côtés autour de son opérateur, « kcal > 2100 » ; mise sur l'entrée, son côté gauche est nommé par le réglage qui déclare la valeur saisie).
 - Deux lignes au plus, coupées sur « … ».
 
 ## Le brouillon et l'enregistrement
@@ -25,7 +25,7 @@ Conçu le 2026-10-01. Aujourd'hui, `SettingsForm` dessine l'arbre des réglages 
 
 ## Les problèmes enfouis
 
-- **Ce que le formulaire juge seul marque la ligne** de la page où il est, et chaque ligne au-dessus jusqu'à la racine : un réglage obligatoire vide, une valeur hors de ses bornes, une liste sous son nombre minimal d'éléments. On suit la marque jusqu'au réglage.
+- **Ce que le formulaire juge seul marque la ligne** de la page où il est, et chaque ligne au-dessus jusqu'à la racine : un réglage obligatoire vide, une valeur hors de ses bornes, une liste sous son nombre minimal d'éléments, une condition ou un terme à moitié écrit (`SettingProblems`, « À compléter ou corriger »). On suit la marque jusqu'au réglage.
 - **Un refus à l'enregistrement reste un message**, comme aujourd'hui : les refus du service (`ChartCheck` et les autres) sont des phrases sans chemin. Les faire désigner leur réglage, et ouvrir sa page, est un chantier à part, s'il manque.
 
 ## Hors de cette spec

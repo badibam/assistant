@@ -173,6 +173,8 @@ Vu le 2026-10-09 : l'inscription par la page de connexion, « Activer Funnel » 
 
 ## Réglages et affichage
 
+- Config en pages (Séance, Objectif, Graphique) : sur une sous-page, ni Enregistrer ni Annuler, la flèche de retour seule ; de retour à la page principale, les boutons reviennent et le brouillon est intact.
+- Un Objectif dont le critère a une condition sans opérateur, ou une étape de Séance sans nom : sa ligne dit « À compléter ou corriger », et chaque ligne au-dessus jusqu'à la page principale ; le réglage rempli, les marques disparaissent. La ligne d'un critère montre sa condition en phrase (« Valeur saisie > 5 »).
 - Écran Réglages (bouton de gauche de l'accueil, icône curseurs), dans les deux thèmes : quatre sections App, IA, Données, Système ; chaque tuile ouvre son écran, sa description sous le titre, et le retour ramène aux Réglages, puis à l'accueil.
 - Outils toujours envoyés (`always-send.md`) : marquer un outil notes « toujours envoyer », ouvrir une discussion : l'IA cite ses notes sans les lire ; `app_context` du connecteur les montre. Abaisser le seuil sous leur taille : au message suivant, la carte « Outils toujours envoyés », sa phrase sur la session ; « Refuser », puis un autre message : pas de nouvelle carte, l'IA sait qu'ils ne sont pas envoyés et peut les lire ; une nouvelle discussion redemande ; « Envoyer » : ils partent jusqu'à la fin de la session.
 - Réglages › Système › Signaler un bug, sans plantage enregistré : le champ « Ce qui s'est passé », dont le texte apparaît aussitôt en tête du rapport ; le rapport sans section plantage, ses identifiants en `#1`, ses textes cités en `«text»` ; « Envoyer » vers une messagerie, le texte arrivé entier.
