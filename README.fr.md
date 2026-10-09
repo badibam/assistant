@@ -72,9 +72,9 @@ Au premier lancement, une **démo** vous attend : douze semaines de la vie de Ca
 ## Vos données
 
 - Tout est enregistré sur votre téléphone. Aucun compte, aucune télémétrie, aucune publicité.
-- Rien ne part vers une IA sans que vous l'ayez demandé : quand vous lui écrivez, ou quand une automation que vous avez programmée tourne. Ce qui part alors va au seul fournisseur que vous avez choisi, avec votre clé.
+- Rien ne part vers une IA sans que vous l'ayez demandé : quand vous lui écrivez, ou quand une automation que vous avez programmée tourne. Ce qui part alors va au seul fournisseur que vous avez choisi, avec votre clé, gardée chiffrée sur le téléphone.
 - Pour afficher le coût des échanges, l'app télécharge une liste publique des prix des modèles (LiteLLM, sur GitHub). Elle n'envoie rien.
-- Le connecteur, s'il est activé, passe par un relais HTTPS dont vous donnez l'adresse.
+- Le connecteur, s'il est activé, passe par un relais HTTPS dont vous donnez l'adresse, ou par Tailscale Funnel avec votre propre compte Tailscale.
 - Vous sauvegardez et restaurez tout en un fichier, vous importez un tableau CSV dans un outil.
 
 ## État du projet
@@ -82,7 +82,7 @@ Au premier lancement, une **démo** vous attend : douze semaines de la vie de Ca
 En développement actif : l'app sert tous les jours, mais tout peut encore changer, la forme des données comprise — gardez des sauvegardes.
 
 <!-- status -->
-- Version 0.5.0
+- Version 0.6.0
 - Android 8.0 ou plus récent
 - Langues : anglais, français
 <!-- /status -->

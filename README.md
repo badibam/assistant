@@ -72,9 +72,9 @@ On first launch, a **demo** is waiting: twelve weeks in the life of Camille, who
 ## Your data
 
 - Everything is stored on your phone. No account, no telemetry, no ads.
-- Nothing goes to an AI unless you asked for it: when you write to it, or when an automation you scheduled runs. What goes then is sent only to the provider you chose, with your key.
+- Nothing goes to an AI unless you asked for it: when you write to it, or when an automation you scheduled runs. What goes then is sent only to the provider you chose, with your key, which is stored encrypted on the phone.
 - To show what exchanges cost, the app downloads a public list of model prices (LiteLLM, on GitHub). It sends nothing.
-- The connector, when enabled, goes through an HTTPS relay whose address you give.
+- The connector, when enabled, goes through an HTTPS relay whose address you give, or through Tailscale Funnel with your own Tailscale account.
 - You back up and restore everything as one file, and import a CSV table into a tool.
 
 ## Project status
@@ -82,7 +82,7 @@ On first launch, a **demo** is waiting: twelve weeks in the life of Camille, who
 In active development: the app is used every day, but anything may still change, the shape of the data included — keep backups.
 
 <!-- status -->
-- Version 0.5.0
+- Version 0.6.0
 - Android 8.0 or later
 - Languages: English, French
 <!-- /status -->
