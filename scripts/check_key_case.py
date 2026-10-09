@@ -30,7 +30,7 @@ BASELINE = Path(__file__).resolve().parent / "key_case_baseline.txt"
 # camelCase strings are history, not keys anything reads.
 EXCLUDED = {"core/versioning/KeyCaseRenames.kt"}
 
-# JSON Schema, Vega-Lite and MCP keywords. Not ours to rename, so not violations.
+# JSON Schema, Vega-Lite, MCP and Tailscale keywords. Not ours to rename, so not violations.
 FOREIGN = {
     "additionalProperties", "allOf", "anyOf", "contentEncoding", "contentMediaType",
     "exclusiveMaximum", "exclusiveMinimum", "maxItems", "maxLength", "maxProperties",
@@ -40,6 +40,8 @@ FOREIGN = {
     "strokeDash", "strokeWidth",
     # MCP's, which the app's MCP server speaks to its clients (core/mcp)
     "protocolVersion", "serverInfo", "inputSchema", "readOnlyHint", "isError",
+    # Tailscale's, in the access policy block the external access screen gives to copy
+    "nodeAttrs",
 }
 
 # A string literal holding a single identifier with an inner capital: "toolInstanceId".
