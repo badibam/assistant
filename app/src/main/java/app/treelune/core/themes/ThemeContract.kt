@@ -368,7 +368,13 @@ interface ThemeContract {
         subtitle: String?,
         icon: String?,
         /** The icon's colour, for a zone's or a tool's page; null for a neutral icon. */
-        iconColor: TagColor?
+        iconColor: TagColor?,
+        /**
+         * The app's mark in place of [icon], the home screen's: its launcher icon drawn the
+         * theme's way, in the launcher's colours whatever the palette (LauncherMark, or the
+         * theme's own drawing of it).
+         */
+        appMark: Boolean
     )
     
     // =====================================

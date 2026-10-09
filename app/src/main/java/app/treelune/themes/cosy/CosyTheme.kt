@@ -716,7 +716,8 @@ object CosyTheme : ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
-        iconColor: TagColor?
+        iconColor: TagColor?,
+        appMark: Boolean
     ) {
         val size = cosySize()
         val c = cosyColors
@@ -727,8 +728,10 @@ object CosyTheme : ThemeContract {
                     horizontalArrangement = Arrangement.spacedBy(size.dp(8f)),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // The app's mark in a round, the size of a coloured icon's
+                    if (appMark) app.treelune.core.ui.components.LauncherMark(size.dp(18f) * ITEM_ROUND, CircleShape)
                     // A coloured icon in its round, as on its tile; a neutral one in the pill's ink
-                    icon?.let { name ->
+                    else icon?.let { name ->
                         if (iconColor == null) NamedIcon(name, null, size.icon, c.onAccent.srgb)
                         else app.treelune.core.ui.UI.ItemIcon(name, iconColor, size.dp(18f))
                     }

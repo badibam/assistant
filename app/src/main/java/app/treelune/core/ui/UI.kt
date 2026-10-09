@@ -691,7 +691,9 @@ object UI {
         onLeftClick: (() -> Unit)? = null,
         onRightClick: (() -> Unit)? = null,
         /** More buttons after the left one: the Guide's book on the home screen. */
-        afterLeft: (@Composable () -> Unit)? = null
+        afterLeft: (@Composable () -> Unit)? = null,
+        /** The app's mark beside the title, the home screen's (ThemeContract.PageHeader). */
+        appMark: Boolean = false
     ) {
         // The phone's back key does what the header's back button does. Only the screen on
         // display is composed, so its header is the one that answers. The sound of going back
@@ -714,7 +716,7 @@ object UI {
                 rightButton?.let { ActionButton(action = it, display = ButtonDisplay.ICON, onClick = onRightClick ?: {}) }
             }
         }
-        CurrentTheme.current.PageHeader(title, subtitle, icon, iconColor)
+        CurrentTheme.current.PageHeader(title, subtitle, icon, iconColor, appMark)
     }
     
     /** The header of a tool's tile: its icon with its marks, and its name. */

@@ -1557,7 +1557,8 @@ object DefaultTheme : ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
-        iconColor: app.treelune.core.themes.TagColor?
+        iconColor: app.treelune.core.themes.TagColor?,
+        appMark: Boolean
     ) {
         // The title centered across the width
         Column(
@@ -1569,8 +1570,10 @@ object DefaultTheme : ThemeContract {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // The app's mark, the size and shape of an icon's badge
+                if (appMark) app.treelune.core.ui.components.LauncherMark(24.dp * ITEM_BADGE_SCALE, RoundedCornerShape(24.dp * 0.4f))
                 // A zone's or a tool's icon, on its badge like on its tile
-                icon?.let { iconName ->
+                else icon?.let { iconName ->
                     val context = LocalContext.current
                     app.treelune.core.icons.Icons.drawable(context, iconName)?.let { iconResource ->
                         ItemIcon(iconResource, 24.dp, iconColor)

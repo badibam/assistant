@@ -726,7 +726,8 @@ object RetroTheme : ThemeContract {
         title: String,
         subtitle: String?,
         icon: String?,
-        iconColor: app.treelune.core.themes.TagColor?
+        iconColor: app.treelune.core.themes.TagColor?,
+        appMark: Boolean
     ) {
         val grid = retroGrid()
         // Across the width
@@ -734,7 +735,9 @@ object RetroTheme : ThemeContract {
             // The page's icon and title a size up, as a heading is (HEADING)
             val up = retroGridUp()
             Row(horizontalArrangement = Arrangement.spacedBy(grid.cells(1)), verticalAlignment = Alignment.CenterVertically) {
-                icon?.let { NamedIcon(it, null, up, iconColor?.takeIf { color -> color != TagColor.GREY }?.let { color -> retroColors.icon(color, retroSurface).srgb }) }
+                // The app's mark in its own pixels and colours (app-mark.txt), in an icon's box
+                if (appMark) Image(painter = painterResource(app.treelune.R.drawable.app_mark_retro), contentDescription = null, modifier = Modifier.size(up.dp(RetroGrid.ICON)))
+                else icon?.let { NamedIcon(it, null, up, iconColor?.takeIf { color -> color != TagColor.GREY }?.let { color -> retroColors.icon(color, retroSurface).srgb }) }
                 // One line: the header keeps its height
                 Line(title, up.text, LocalRetroInk.current ?: retroSurface.strong.srgb, align = TextAlign.Center, maxLines = 1)
             }
