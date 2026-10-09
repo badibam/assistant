@@ -34,7 +34,7 @@
     <string name="guide_band_expand">Show the explanation</string>
     <string name="guide_band_collapse">Hide the explanation</string>
     <string name="guide_path_back_to">come back to %1$s</string>
-    <string name="guide_path_then">, then </string>
+    <string name="guide_path_then">, then\u0020</string>
     <string name="guide_path_zone">open the zone %1$s</string>
     <string name="guide_path_zone_config">touch the gear at the top right</string>
     <string name="guide_path_zone_new">scroll down to « Ungrouped » and touch its +</string>

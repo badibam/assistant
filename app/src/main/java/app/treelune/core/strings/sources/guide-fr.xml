@@ -34,7 +34,7 @@
     <string name="guide_band_expand">Afficher l\'explication</string>
     <string name="guide_band_collapse">Masquer l\'explication</string>
     <string name="guide_path_back_to">revenez à %1$s</string>
-    <string name="guide_path_then">, puis </string>
+    <string name="guide_path_then">, puis\u0020</string>
     <string name="guide_path_zone">ouvrez la zone %1$s</string>
     <string name="guide_path_zone_config">touchez l\'engrenage en haut à droite</string>
     <string name="guide_path_zone_new">descendez jusqu\'à « Hors groupe » et touchez son +</string>
