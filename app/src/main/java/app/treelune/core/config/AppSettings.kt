@@ -59,6 +59,11 @@ object AppSettings {
     const val GUIDE_CURRENT = "current"
     const val GUIDE_CHAPTERS = "chapters"
 
+    /** How an outside AI reaches the app: through its own Tailscale node, or through a relay (docs/design/funnel-access.md). */
+    const val ACCESS_MODE = "access_mode"
+    const val ACCESS_MODE_TAILSCALE = "TAILSCALE"
+    const val ACCESS_MODE_RELAY = "RELAY"
+
     /** The relay's public address, under which an outside AI reaches the app (https). */
     const val RELAY_URL = "relay_url"
 
@@ -138,6 +143,10 @@ object AppSettings {
                     required = true, distinct = true)
             )
             AppSettingCategories.EXTERNAL_ACCESS -> listOf(
+                choice(ACCESS_MODE, text("settings_external_access_mode"), text("settings_external_access_mode_help"),
+                    listOf(ACCESS_MODE_TAILSCALE, ACCESS_MODE_RELAY),
+                    labels = mapOf(ACCESS_MODE_TAILSCALE to text("settings_external_access_mode_tailscale"),
+                        ACCESS_MODE_RELAY to text("settings_external_access_mode_relay")), required = true),
                 field(RELAY_URL, text("settings_external_access_relay_url"), text("settings_external_access_relay_url_help"),
                     FieldType.TEXT, config = mapOf("length" to TextLength.MEDIUM.name), address = true),
                 // MEDIUM: the relay's secret runs past SHORT's 60 characters, 64 in hexadecimal

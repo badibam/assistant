@@ -1855,7 +1855,11 @@
 
     <!-- External access (MCP): settings, the access, the phone's approval -->
     <string name="settings_external_access">External access</string>
-    <string name="settings_external_access_description">Let an outside AI read and write in the app, through a relay</string>
+    <string name="settings_external_access_description">Let an outside AI read and write in the app, through Tailscale or a relay</string>
+    <string name="settings_external_access_mode">Way in</string>
+    <string name="settings_external_access_mode_help">Tailscale: the app publishes its own address, with a free Tailscale account. Relay: through a relay you host.</string>
+    <string name="settings_external_access_mode_tailscale">Tailscale</string>
+    <string name="settings_external_access_mode_relay">Relay</string>
     <string name="settings_external_access_relay_url">Relay address</string>
     <string name="settings_external_access_relay_url_help">The relay\'s public address, https://… The address to give the outside AI is this one followed by /mcp.</string>
     <string name="settings_external_access_relay_secret">Relay secret</string>

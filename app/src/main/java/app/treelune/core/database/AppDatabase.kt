@@ -103,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 67
+        const val VERSION = 68
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1745,6 +1745,27 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** The external access settings gain the access mode: see ExternalAccessModeAtV68. */
+        private val MIGRATION_67_68 = object : Migration(67, 68) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val category = app.treelune.core.database.entities.AppSettingCategories.EXTERNAL_ACCESS
+                database.query("SELECT settings FROM app_settings_categories WHERE category = ?", arrayOf<Any?>(category)).use { cursor ->
+                    if (!cursor.moveToFirst()) {
+                        LogManager.database("MIGRATION 67->68: no external access settings stored, the defaults are written on first read", "INFO")
+                        return
+                    }
+                    // Settings that cannot be read stay as they are; reading them then fails with the reason
+                    try {
+                        val settings = app.treelune.core.versioning.ExternalAccessModeAtV68.rewrite(category, org.json.JSONObject(cursor.getString(0)))
+                        database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), category))
+                        LogManager.database("MIGRATION 67->68: external access mode set to ${settings.optString(app.treelune.core.config.AppSettings.ACCESS_MODE)}", "INFO")
+                    } catch (e: Exception) {
+                        LogManager.database("MIGRATION 67->68: external access settings left as they were: ${e.message}", "ERROR", e)
+                    }
+                }
+            }
+        }
+
         /**
          * An MCP token names the refresh token its pair was handed out for, until the pair is used
          * (StoredToken.replaces): a new column, empty, every token held replacing nothing.
@@ -2505,7 +2526,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_63_64,
                     MIGRATION_64_65,
                     MIGRATION_65_66,
-                    MIGRATION_66_67
+                    MIGRATION_66_67,
+                    MIGRATION_67_68
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
