@@ -103,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 71
+        const val VERSION = 72
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1724,6 +1724,41 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * The secret settings sealed (SecretsAtV72): every AI provider's API key, the relay's secret.
+         * A config that cannot be read stays as it is; reading it then fails with the reason.
+         */
+        private val MIGRATION_71_72 = object : Migration(71, 72) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val box = app.treelune.core.secrets.SecretBox.of()
+                var sealed = 0
+                database.query("SELECT provider_id, config_json FROM ai_provider_configs").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        try {
+                            val config = app.treelune.core.versioning.SecretsAtV72.providerConfig(org.json.JSONObject(cursor.getString(1)), box)
+                            database.execSQL("UPDATE ai_provider_configs SET config_json = ? WHERE provider_id = ?", arrayOf<Any?>(config.toString(), id))
+                            sealed++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 71->72: config of provider $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                val category = app.treelune.core.database.entities.AppSettingCategories.EXTERNAL_ACCESS
+                database.query("SELECT settings FROM app_settings_categories WHERE category = ?", arrayOf<Any?>(category)).use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        try {
+                            val settings = app.treelune.core.versioning.SecretsAtV72.appSettings(category, org.json.JSONObject(cursor.getString(0)), box)
+                            database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), category))
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 71->72: external access settings left as they were: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 71->72: the secrets of $sealed provider config(s) and of the external access sealed", "INFO")
+            }
+        }
+
         /** A connector client's access mask (docs/design/validation.md): a new column, an empty list, every client reaching everything as before. */
         private val MIGRATION_70_71 = object : Migration(70, 71) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -2635,7 +2670,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_67_68,
                     MIGRATION_68_69,
                     MIGRATION_69_70,
-                    MIGRATION_70_71
+                    MIGRATION_70_71,
+                    MIGRATION_71_72
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

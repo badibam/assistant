@@ -91,6 +91,12 @@ object McpAccess {
         return url to secret
     }
 
+    /** Whether the relay's secret is stored, sealed on another phone (a restored backup). */
+    private suspend fun relaySecretUnreadable(context: Context): Boolean {
+        val result = Coordinator(context).processUserAction("app_config.get", mapOf("category" to AppSettingCategories.EXTERNAL_ACCESS))
+        return (result.data?.get(app.treelune.core.secrets.SecretSettings.UNREADABLE) as? List<*>).orEmpty().contains(AppSettings.RELAY_SECRET)
+    }
+
     /** Opens the access: the service starts, and runs the loop. */
     fun open(context: Context) {
         if (_state.value is State.Open || _state.value is State.Preparing) return
@@ -131,7 +137,7 @@ object McpAccess {
                 address to FunnelTransport()
             } else {
                 val (base, secret) = relay(context) ?: run {
-                    _state.value = State.Failed(s.shared("external_access_no_relay"))
+                    _state.value = State.Failed(s.shared(if (relaySecretUnreadable(context)) "external_access_secret_unreadable" else "external_access_no_relay"))
                     return
                 }
                 base to OkHttpRelayTransport(base, secret)
