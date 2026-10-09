@@ -1359,7 +1359,7 @@
     <string name="variable_term_name">Name</string>
     <string name="variable_term_kind">Kind of term</string>
     <string name="variable_term_reading">Reading of entries</string>
-    <string name="variable_term_constant">Number</string>
+    <string name="variable_term_constant">Fixed value</string>
     <string name="variable_term_variable">Other variable</string>
     <string name="variable_reading_what">What is read</string>
     <string name="variable_reading_count">The entries, counted</string>
