@@ -588,7 +588,7 @@ private fun SeedMode(
                     "name" to currentAutomation.name,
                     "provider_id" to currentAutomation.providerId,
                     "seed_session_id" to currentAutomation.seedSessionId
-                ),
+                ) + listOfNotNull(currentAutomation.group?.let { "group" to it }),
                 onDismiss = { showEditAutomation = false },
                 onSuccess = { _ ->
                     showEditAutomation = false
@@ -604,24 +604,7 @@ private fun SeedMode(
                             @Suppress("UNCHECKED_CAST")
                             val automationMap = result.data?.get("automation") as? Map<String, Any>
                             if (automationMap != null) {
-                                val scheduleJson = automationMap["schedule"] as? String
-                                automation = Automation(
-                                    id = automationMap["id"] as String,
-                                    name = automationMap["name"] as String,
-                                    zoneId = automationMap["zone_id"] as String,
-                                    seedSessionId = automationMap["seed_session_id"] as String,
-                                    schedule = scheduleJson?.let {
-                                        kotlinx.serialization.json.Json.decodeFromString(it)
-                                    },
-                                    triggerIds = (automationMap["trigger_ids"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-                                    dismissOlderInstances = automationMap["dismiss_older_instances"] as? Boolean ?: false,
-                                    providerId = automationMap["provider_id"] as String,
-                                    isEnabled = automationMap["is_enabled"] as? Boolean ?: true,
-                                    createdAt = (automationMap["created_at"] as? Number)?.toLong() ?: 0L,
-                                    updatedAt = (automationMap["updated_at"] as? Number)?.toLong() ?: 0L,
-                                    lastExecutionId = automationMap["last_execution_id"] as? String,
-                                    executionHistory = (automationMap["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-                                )
+                                automation = Automation.fromResult(automationMap)
                                 UI.Toast(context, s.shared("automation_updated_success"), Duration.SHORT)
                             }
                         }
