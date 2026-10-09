@@ -284,8 +284,8 @@ object CosyTheme : ThemeContract {
             TextType.HEADING -> size.heading to (override ?: c.ink.srgb)
             TextType.BODY -> size.body to (override ?: c.ink.srgb)
             TextType.STRONG -> size.strong to (override ?: c.strong.srgb)
-            TextType.CAPTION -> size.caption to c.dim.srgb
-            TextType.LABEL -> size.label to c.dim.srgb
+            TextType.CAPTION -> size.caption to (override ?: c.dim.srgb)
+            TextType.LABEL -> size.label to (override ?: c.dim.srgb)
             TextType.ERROR -> size.body to c.error.srgb
             TextType.WARNING -> size.body to c.warning.srgb
         }

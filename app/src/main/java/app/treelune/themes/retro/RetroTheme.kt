@@ -310,7 +310,7 @@ object RetroTheme : ThemeContract {
             TextType.HEADING -> retroGridUp().text to (override ?: s.strong.srgb)
             TextType.TITLE, TextType.SUBTITLE, TextType.STRONG -> grid.text to (override ?: s.strong.srgb)
             TextType.BODY -> grid.text to (override ?: s.ink.srgb)
-            TextType.CAPTION, TextType.LABEL -> grid.thin to s.dim.srgb
+            TextType.CAPTION, TextType.LABEL -> grid.thin to (override ?: s.dim.srgb)
             TextType.ERROR -> grid.text to s.error.srgb
             TextType.WARNING -> grid.text to s.warning.srgb
         }
