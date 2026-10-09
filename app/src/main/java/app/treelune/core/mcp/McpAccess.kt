@@ -161,7 +161,8 @@ object McpAccess {
 
     /**
      * The key that signs the context tokens (ContextTokens): drawn once, kept in the app's own
-     * files, never in the database, so neither a backup nor anyone reading one carries it.
+     * files, never in the database, so neither a backup nor anyone reading one carries it; out of
+     * Android's own backup too (res/xml/backup_rules.xml, data_extraction_rules.xml).
      */
     @Synchronized
     fun contextKey(context: Context): ByteArray {
