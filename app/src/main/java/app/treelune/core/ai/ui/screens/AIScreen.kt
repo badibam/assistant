@@ -397,6 +397,8 @@ private fun SeedMode(
     // (AutomationSettings.catchUpNodes): edited while a schedule is set, sent with it
     var catchUp by remember { mutableStateOf(org.json.JSONObject()) }
     var triggersCount by remember { mutableStateOf(0) }
+    // What the automation's AI may reach (AccessMask), sent with the rest when it is saved
+    var access by remember { mutableStateOf(app.treelune.core.access.AccessMask()) }
     var userMessageId by remember { mutableStateOf<String?>(null) } // ID of the USER message in SEED session
 
     // Track if session needs reload after refresh
@@ -430,6 +432,7 @@ private fun SeedMode(
                         ?.let { app.treelune.core.utils.JsonUtils.toJSONObject(app.treelune.core.utils.JsonUtils.toMap(it)) }
                         ?: org.json.JSONObject()
                     triggersCount = automation?.triggerIds?.size ?: 0
+                    access = automation?.access ?: app.treelune.core.access.AccessMask()
 
                     LogManager.aiUI("SeedMode loaded automation: ${automation?.id}", "DEBUG")
                 }
@@ -767,6 +770,8 @@ private fun SeedMode(
                     onCatchUpChange = { catchUp = it },
                     triggersCount = triggersCount,
                     onConfigureTriggers = { showTriggersEditor = true },
+                    access = access,
+                    onAccessChange = { access = it },
                     onRefresh = {
                         scope.launch {
                             try {
@@ -835,6 +840,7 @@ private fun SeedMode(
                                     org.json.JSONObject(kotlinx.serialization.json.Json.encodeToString(app.treelune.core.utils.ScheduleConfig.serializer(), it))
                                 } ?: org.json.JSONObject.NULL
                                 updateParams["catch_up"] = if (scheduleConfig != null) catchUp else org.json.JSONObject.NULL
+                                updateParams["access"] = access.toJson()
 
                                 val result = coordinator.processUserAction("automations.update", updateParams)
                                 if (result.status == CommandStatus.SUCCESS) {

@@ -37,6 +37,8 @@ fun AutomationEditorFooter(
     onCatchUpChange: (org.json.JSONObject) -> Unit,
     triggersCount: Int,
     onConfigureTriggers: () -> Unit,
+    access: app.treelune.core.access.AccessMask,
+    onAccessChange: (app.treelune.core.access.AccessMask) -> Unit,
     onRefresh: () -> Unit,  // Refresh message from composer (update DB + reload preview)
     onSave: () -> Unit,  // Save automation (calls onRefresh first, then saves automation config)
     onCancel: () -> Unit
@@ -120,6 +122,9 @@ fun AutomationEditorFooter(
                 }
             }
         }
+
+        // What its AI may reach, everything while nothing is listed
+        AutomationAccessCard(access, onAccessChange)
 
         // Form actions
         Row(

@@ -1776,6 +1776,13 @@
     <string name="service_error_icon_unknown">Icône inconnue : \'%1$s\'. La commande ICONS cherche les icônes par mot et par catégorie</string>
     <string name="automation_unknown">Une automation qui n\'existe plus</string>
     <string name="automation_access_title">Accès de cette automation</string>
+    <string name="automation_access_help">Vide : elle peut tout faire. Sinon, elle ne touche qu\'à ce qui est listé.</string>
+    <string name="automation_access_add">Ajouter une zone ou un outil</string>
+    <string name="automation_access_level">Accès</string>
+    <string name="automation_access_level_read">Lecture</string>
+    <string name="automation_access_level_use">Utilisation</string>
+    <string name="automation_access_level_full">Complète</string>
+    <string name="automation_access_levels">Lecture : lire. Utilisation : écrire ses entrées ; dans une zone, créer et changer ses outils et variables. Complète : et ses propres réglages.</string>
     <string name="automation_access_unreadable">L\'accès ne se lit pas : %1$s</string>
     <string name="access_level_read">lecture</string>
     <string name="access_level_use">utilisation</string>

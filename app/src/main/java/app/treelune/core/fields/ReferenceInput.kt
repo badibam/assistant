@@ -34,7 +34,7 @@ import androidx.compose.runtime.saveable.Saver
 
 /** The name of [reference] as it is now, loaded once shown: null while loading. */
 @Composable
-private fun rememberReferenceName(reference: Reference?, context: Context): String? {
+internal fun rememberReferenceName(reference: Reference?, context: Context): String? {
     val s = remember { Strings.`for`(context = context) }
     var shown by remember(reference) { mutableStateOf<String?>(null) }
     LaunchedEffect(reference) {
@@ -123,7 +123,7 @@ private suspend fun startPath(target: ReferenceTarget, context: Context): ThingP
  * (ThingBrowser), and chosen once the place reached is of a kind the field takes.
  */
 @Composable
-private fun ReferencePicker(target: ReferenceTarget, onDismiss: () -> Unit, onPick: (Reference) -> Unit) {
+internal fun ReferencePicker(target: ReferenceTarget, onDismiss: () -> Unit, onPick: (Reference) -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     // null until the place it opens on is known

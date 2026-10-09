@@ -1776,6 +1776,13 @@
     <string name="service_error_icon_unknown">Unknown icon: \'%1$s\'. The ICONS command searches the icons by word and category</string>
     <string name="automation_unknown">An automation that no longer exists</string>
     <string name="automation_access_title">Access of this automation</string>
+    <string name="automation_access_help">Empty: it may do anything. Otherwise it reaches only what is listed.</string>
+    <string name="automation_access_add">Add a zone or a tool</string>
+    <string name="automation_access_level">Access</string>
+    <string name="automation_access_level_read">Read</string>
+    <string name="automation_access_level_use">Use</string>
+    <string name="automation_access_level_full">Full</string>
+    <string name="automation_access_levels">Read: read. Use: write its entries; in a zone, create and change its tools and variables. Full: its own settings too.</string>
     <string name="automation_access_unreadable">The access does not read: %1$s</string>
     <string name="access_level_read">read</string>
     <string name="access_level_use">use</string>
