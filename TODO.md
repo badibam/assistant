@@ -37,7 +37,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Bugs du téléphone
 
-- Alléger les écrans de config en repliant xertains paramètres
 - Thème rétro, Réglages › Interface : la bande de la teinte est presque noire, là où le cosy montre ses couleurs.
 - La config de l'accueil (Réglages › Écran principal) : son titre est coupé (« Configuration de l'écran princi… ») et aligné à gauche, quand les autres pages le centrent.
 - Signaler un bug : « Ce qui s'est passé (facultatif) » s'affiche deux fois, en libellé au-dessus du champ et en texte d'attente dedans.

@@ -57,13 +57,14 @@ object ToolConfigSettings {
      */
     private fun extraFieldsNodes(toolType: ToolTypeContract, context: Context): List<SettingNode> {
         val text: (String) -> String = Strings.`for`(context = context)::shared
-        return listOf(
+        // One frame: the switch says how the fields of the list below it show
+        return listOf(SettingNode.Section(text("custom_fields_section_title"), listOf(
             field(SHOW_FIELD_LABELS, text("tools_config_label_show_field_labels"), FieldType.BOOLEAN,
                 text("tools_base_schema_config_show_field_labels"), default = toolType.getDefaultShowFieldLabels()),
-            SettingNode.ListOf("extra_fields", text("custom_fields_section_title"),
+            SettingNode.ListOf("extra_fields", text("custom_fields_list"),
                 SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true,
                 summary = listOf("display_name", "type"))
-        )
+        )))
     }
 
     /** The setting that says whether the user's fields show their names. */
@@ -81,9 +82,21 @@ object ToolConfigSettings {
         // Built once per tool type and language: it depends on nothing else, and a tile reads
         // its name and icon through it on every drawing (a chart's takes some 150 ms to build)
         declarations.getOrPut(toolType to context.resources.configuration.locales[0]) {
-            generalNodes(toolType, context) + toolType.getConfigSettings(context) +
+            generalNodes(toolType, context) + typeNodes(toolType, context) +
                 (if (toolType.keepsEntries()) extraFieldsNodes(toolType, context) else emptyList())
         }
+
+    /**
+     * The settings [toolType] declares, each in a frame like the rest of the screen: those it puts
+     * in no section of its own go together in one, titled with the type's name, first; its own
+     * sections stay as they are, a frame inside a frame saying nothing more.
+     */
+    private fun typeNodes(toolType: ToolTypeContract, context: Context): List<SettingNode> {
+        val declared = toolType.getConfigSettings(context)
+        val loose = declared.filter { it !is SettingNode.Section }
+        val framed = if (loose.isEmpty()) emptyList() else listOf(SettingNode.Section(toolType.getDisplayName(context), loose))
+        return framed + declared.filterIsInstance<SettingNode.Section>()
+    }
 
     private val declarations = java.util.concurrent.ConcurrentHashMap<Pair<ToolTypeContract, java.util.Locale>, List<SettingNode>>()
 
