@@ -79,6 +79,10 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="A guided session the user started: step timers and their sounds while the screen is off" />
         </service>
+        <!-- The buttons of an outside AI's approval request (McpApprovals) -->
+        <receiver
+            android:name=".core.mcp.McpApprovalReceiver"
+            android:exported="false" />
         <service
             android:name=".core.mcp.McpAccessService"
             android:exported="false"

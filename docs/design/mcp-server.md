@@ -56,7 +56,7 @@ L'app est son propre serveur OAuth (description, enregistrement dynamique du cli
 ## Ce qui s'écrit
 
 - Une source nouvelle (`Source.EXTERNAL`) pour le client externe. Le nom que le client déclare ira avec chaque écriture le jour où l'historique (`undo-history.md`) existera pour la garder et l'annuler ; d'ici là, il n'a nulle part où aller.
-- Pas de validation par l'app : elle se donne dans le client, outil par outil, là où est la personne.
+- Une écriture qu'une protection garde attend l'accord de l'utilisateur, demandé par une notification à deux boutons (`McpApprovals`, 90 s au plus ; `docs/design/validation.md`) ; le client peut demander aussi, outil par outil.
 
 ## Le catalogue des commandes, préalable
 

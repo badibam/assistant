@@ -1926,6 +1926,12 @@
     <string name="external_access_notification_last">Last call %1$s</string>
     <string name="external_access_channel">External access</string>
     <string name="external_access_tile">External access</string>
+    <string name="external_access_approval_title">%1$s asks for your approval</string>
+    <string name="external_access_approval_line">%1$s (%2$s)</string>
+    <string name="external_access_approval_allow">Allow</string>
+    <string name="external_access_approval_refuse">Refuse</string>
+    <string name="external_access_approval_refused">The user refused this action in the app: nothing was done.</string>
+    <string name="external_access_approval_no_answer">The user did not answer in the app within %1$d s: nothing was done. Ask again when they can.</string>
     <string name="external_access_request_title">Request for access</string>
     <string name="external_access_request_text">%1$s asks for access. Type the code its page shows.</string>
     <string name="external_access_request_declared">Declared by the client: its name, %1$s; the answer goes to %2$s. Nothing proves either.</string>

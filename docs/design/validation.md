@@ -73,4 +73,4 @@ Une automation fait ce que tu lui as écrit : elle ne demande rien. Elle est gar
 
 ## Ordre de réalisation
 
-Faits : les trois niveaux, les cases de session, `validation_request` (migration 69) ; `UPDATE_APP_CONFIG` et `APP_CONFIG` pour `main_screen` (`AppSettings.OPEN_TO_AI`). Le masque des automations aussi : stocké (migration 70), vérifié par le coordinateur, dit à l'IA, réglé dans l'éditeur d'automation (une carte, ajouté en lecture ; pas dans la fenêtre de création). Reste le connecteur : la validation par notification, puis le masque par client.
+Faits : les trois niveaux, les cases de session, `validation_request` (migration 69) ; `UPDATE_APP_CONFIG` et `APP_CONFIG` pour `main_screen` (`AppSettings.OPEN_TO_AI`). Le masque des automations aussi : stocké (migration 70), vérifié par le coordinateur, dit à l'IA, réglé dans l'éditeur d'automation (une carte, ajouté en lecture ; pas dans la fenêtre de création). La validation du connecteur aussi, par notification (`McpApprovals`). Reste son masque par client.

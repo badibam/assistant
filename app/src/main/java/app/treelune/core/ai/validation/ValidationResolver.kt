@@ -47,23 +47,13 @@ class ValidationResolver(private val context: Context) {
     ): ValidationResult {
         LogManager.aiService("ValidationResolver: shouldValidate for ${actions.size} actions, session=$sessionId, aiRequested=$aiRequestedValidation")
 
-        // The levels' settings; unreadable, every action is asked with the reason
-        val levels = try {
-            Levels(appConfigService.getValidationConfig(), loadSessionValidation(sessionId))
+        val session = try {
+            loadSessionValidation(sessionId)
         } catch (e: Exception) {
-            LogManager.aiService("ValidationResolver: settings unreadable: ${e.message}", "ERROR", e)
+            LogManager.aiService("ValidationResolver: session $sessionId unreadable: ${e.message}", "ERROR", e)
             null
         }
-
-        val reasons = actions.map { action ->
-            if (levels == null) s.shared("validation_reason_unknown").format(s.shared("validation_reason_settings_unreadable"))
-            else try {
-                reason(action, levels)
-            } catch (e: Exception) {
-                LogManager.aiService("ValidationResolver: cannot tell whether ${action.id} is protected: ${e.message}", "WARN", e)
-                s.shared("validation_reason_unknown").format(e.message ?: "")
-            }
-        }
+        val reasons = reasons(actions, session)
 
         if (!aiRequestedValidation && reasons.all { it == null }) return ValidationResult.NoValidation
 
@@ -74,6 +64,29 @@ class ValidationResolver(private val context: Context) {
                 verbalizedActions = actions.mapIndexed { i, action -> verbalize(action, reasons[i], aiRequestedValidation) }
             )
         )
+    }
+
+    /**
+     * Why each of [actions] waits for approval, null for one nothing asks: the protections, and
+     * what [session] adds to them -- none for an AI outside the app, which has no session. Settings
+     * that cannot be read, the session's included (null), make every action asked, saying so.
+     */
+    suspend fun reasons(actions: List<DataCommand>, session: SessionValidation?): List<String?> {
+        val levels = try {
+            Levels(appConfigService.getValidationConfig(), session ?: error(s.shared("validation_reason_settings_unreadable")))
+        } catch (e: Exception) {
+            LogManager.aiService("ValidationResolver: settings unreadable: ${e.message}", "ERROR", e)
+            null
+        }
+        return actions.map { action ->
+            if (levels == null) s.shared("validation_reason_unknown").format(s.shared("validation_reason_settings_unreadable"))
+            else try {
+                reason(action, levels)
+            } catch (e: Exception) {
+                LogManager.aiService("ValidationResolver: cannot tell whether ${action.id} is protected: ${e.message}", "WARN", e)
+                s.shared("validation_reason_unknown").format(e.message ?: "")
+            }
+        }
     }
 
     /** What the app and the session ask for. */

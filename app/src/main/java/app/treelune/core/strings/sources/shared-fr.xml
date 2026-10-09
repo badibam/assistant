@@ -1926,6 +1926,12 @@
     <string name="external_access_notification_last">Dernier appel %1$s</string>
     <string name="external_access_channel">Accès externe</string>
     <string name="external_access_tile">Accès externe</string>
+    <string name="external_access_approval_title">%1$s demande votre accord</string>
+    <string name="external_access_approval_line">%1$s (%2$s)</string>
+    <string name="external_access_approval_allow">Accepter</string>
+    <string name="external_access_approval_refuse">Refuser</string>
+    <string name="external_access_approval_refused">L\'utilisateur a refusé cette action dans l\'app : rien n\'a été fait.</string>
+    <string name="external_access_approval_no_answer">L\'utilisateur n\'a pas répondu dans l\'app en %1$d s : rien n\'a été fait. Redemandez quand il le pourra.</string>
     <string name="external_access_request_title">Demande d\'accès</string>
     <string name="external_access_request_text">%1$s demande l\'accès. Tapez le code que sa page affiche.</string>
     <string name="external_access_request_declared">Déclaré par le client : son nom, %1$s ; la réponse part vers %2$s. Rien ne prouve ni l\'un ni l\'autre.</string>

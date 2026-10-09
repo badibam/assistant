@@ -174,13 +174,12 @@ class McpHttp(
 
     private suspend fun mcp(request: HttpRequest): HttpResponse {
         val bearer = request.header("Authorization")?.takeIf { it.startsWith("Bearer ", ignoreCase = true) }?.substring(7)?.trim()
-        if (oauth.clientOf(bearer) == null) {
-            return HttpResponse(401, mapOf("WWW-Authenticate" to "Bearer resource_metadata=\"$base/.well-known/oauth-protected-resource\""))
-        }
+        val client = oauth.clientOf(bearer)
+            ?: return HttpResponse(401, mapOf("WWW-Authenticate" to "Bearer resource_metadata=\"$base/.well-known/oauth-protected-resource\""))
         // No stream: every answer goes whole, as JSON
         if (request.method != "POST") return HttpResponse(405, mapOf("Allow" to "POST"))
         onCall()
-        val answer = mcp.handle(request.text()) ?: return HttpResponse(202)
+        val answer = mcp.handle(request.text(), McpCaller(client.id, client.name)) ?: return HttpResponse(202)
         return HttpResponse(200, mapOf("Content-Type" to "application/json"), answer.toByteArray())
     }
 

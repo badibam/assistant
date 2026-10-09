@@ -14,6 +14,9 @@ data class McpToolResult(val text: String, val isError: Boolean)
  * What the server needs from the app, kept apart so the protocol is tested without Android.
  * Every text it returns goes to the model.
  */
+/** The client a message comes from, as it was authorized: what an approval names and an access holds. */
+data class McpCaller(val id: String, val name: String)
+
 interface McpBackend {
     /** The app's commands as tools (AICommands), without the context token. */
     suspend fun tools(): List<McpTool>
@@ -21,8 +24,8 @@ interface McpBackend {
     /** What the app is and holds now: its notions, the always-sent data (L2) and its state (L3). */
     suspend fun appContext(): String
 
-    /** Runs the tool [name] with [arguments], the context token already taken out. */
-    suspend fun call(name: String, arguments: JSONObject): McpToolResult
+    /** Runs the tool [name] with [arguments] for [caller], the context token already taken out. */
+    suspend fun call(name: String, arguments: JSONObject, caller: McpCaller): McpToolResult
 
     /** The current date and time line, in the app's timezone, which opens every tool's answer. */
     fun dateLine(): String
@@ -49,7 +52,7 @@ class McpServer(
      * The answer to the JSON-RPC message [body], or null when it asks none (a notification, or a
      * response from the client). One message at a time: a batch is refused.
      */
-    suspend fun handle(body: String): String? {
+    suspend fun handle(body: String, caller: McpCaller): String? {
         val message = try {
             JSONObject(body)
         } catch (e: JSONException) {
@@ -66,7 +69,7 @@ class McpServer(
             "initialize" -> result(id, initialize(params))
             "ping" -> result(id, JSONObject())
             "tools/list" -> result(id, JSONObject().put("tools", toolsList()))
-            "tools/call" -> callTool(id, params)
+            "tools/call" -> callTool(id, params, caller)
             else -> error(id, METHOD_NOT_FOUND, "Method not found: $method")
         }.toString()
     }
@@ -99,7 +102,7 @@ class McpServer(
         .put("inputSchema", schema)
         .put("annotations", JSONObject().put("readOnlyHint", readOnly))
 
-    private suspend fun callTool(id: Any, params: JSONObject): JSONObject {
+    private suspend fun callTool(id: Any, params: JSONObject, caller: McpCaller): JSONObject {
         val name = params.optString("name")
         val arguments = params.optJSONObject("arguments") ?: JSONObject()
 
@@ -115,7 +118,7 @@ class McpServer(
             return result(id, toolResult(McpToolResult(backend.text("ai_mcp_context_token_missing"), isError = true)))
         }
         val commandArguments = JSONObject(arguments.toString()).apply { remove(CONTEXT_TOKEN) }
-        return result(id, toolResult(backend.call(name, commandArguments)))
+        return result(id, toolResult(backend.call(name, commandArguments, caller)))
     }
 
     private fun toolResult(result: McpToolResult) = JSONObject()

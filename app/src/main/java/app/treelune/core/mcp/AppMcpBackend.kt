@@ -25,10 +25,10 @@ import java.util.UUID
 /**
  * The app behind its MCP server: each command of AICommands is a tool named by its type in lower
  * case, described by its text and typed by its declaration, and runs the way the built-in AI's
- * does — AICommandProcessor, then CommandExecutor — as Source.EXTERNAL, with no session: no
- * validation is asked in the app (the client asks before each call it is told to), and no schema
- * is held back until sent. Its answer is the text the built-in AI would read, held to the chat's
- * data threshold.
+ * does — AICommandProcessor, then CommandExecutor — as Source.EXTERNAL, with no session: no schema
+ * is held back until sent. A write the protections guard (docs/design/validation.md) waits for the
+ * user's approval, asked by a notification (McpApprovals); the client may ask before its calls too.
+ * Its answer is the text the built-in AI would read, held to the chat's data threshold.
  */
 class AppMcpBackend(private val context: Context) : McpBackend {
 
@@ -50,10 +50,25 @@ class AppMcpBackend(private val context: Context) : McpBackend {
         PromptManager.buildAppStateContent(context)
     ).joinToString("\n\n")
 
-    override suspend fun call(name: String, arguments: JSONObject): McpToolResult {
+    override suspend fun call(name: String, arguments: JSONObject, caller: McpCaller): McpToolResult {
         val command = AICommands.find(name.uppercase())
             ?: return McpToolResult(s.shared("ai_error_command_unknown_type").format(name), isError = true)
         val dataCommand = DataCommand(id = "mcp_${UUID.randomUUID()}", type = command.type, params = JsonUtils.toMap(arguments))
+
+        // A protected write waits for the user, who answers from a notification; an outside AI has
+        // no session to add to the protections
+        if (command.kind == CommandKind.ACTION) {
+            app.treelune.core.ai.validation.ValidationResolver(context).reasons(listOf(dataCommand), app.treelune.core.ai.data.SessionValidation()).single()?.let { reason ->
+                val line = s.shared("external_access_approval_line").format(
+                    app.treelune.core.ai.validation.ActionVerbalizerHelper.verbalizeAction(dataCommand, context), reason)
+                when (McpApprovals.ask(context, caller.name, listOf(line))) {
+                    McpApprovals.Answer.ALLOWED -> Unit
+                    McpApprovals.Answer.REFUSED -> return McpToolResult(s.shared("external_access_approval_refused"), isError = true)
+                    McpApprovals.Answer.NO_ANSWER -> return McpToolResult(
+                        s.shared("external_access_approval_no_answer").format(McpApprovals.TIMEOUT_MS / 1000), isError = true)
+                }
+            }
+        }
 
         val processor = AICommandProcessor(context)
         val transformation = when (command.kind) {

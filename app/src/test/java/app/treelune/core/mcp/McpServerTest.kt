@@ -16,13 +16,15 @@ class McpServerTest {
 
     private val calls = mutableListOf<Pair<String, JSONObject>>()
 
+    private val CALLER = McpCaller("client", "Claude")
+
     private val backend = object : McpBackend {
         override suspend fun tools() = listOf(
             McpTool("tool_data", "Reads entries.", JSONObject("""{"type":"object","properties":{"id":{"type":"string"}},"required":["id"],"additionalProperties":false}"""), readOnly = true),
             McpTool("delete_zone", "Deletes a zone.", JSONObject("""{"type":"object","properties":{"zone_id":{"type":"string"}},"additionalProperties":false}"""), readOnly = false)
         )
         override suspend fun appContext() = "THE APP"
-        override suspend fun call(name: String, arguments: JSONObject): McpToolResult {
+        override suspend fun call(name: String, arguments: JSONObject, caller: McpCaller): McpToolResult {
             calls += name to arguments
             return McpToolResult("done $name", isError = false)
         }
@@ -36,7 +38,7 @@ class McpServerTest {
     private val server = McpServer(backend, tokens, "1.0")
 
     private fun ask(method: String, params: String = "{}", id: Int = 1): JSONObject =
-        JSONObject(runBlocking { server.handle("""{"jsonrpc":"2.0","id":$id,"method":"$method","params":$params}""") }!!)
+        JSONObject(runBlocking { server.handle("""{"jsonrpc":"2.0","id":$id,"method":"$method","params":$params}""", CALLER) }!!)
 
     private fun call(tool: String, arguments: String): JSONObject = ask("tools/call", """{"name":"$tool","arguments":$arguments}""").getJSONObject("result")
 
@@ -56,7 +58,7 @@ class McpServerTest {
 
     @Test
     fun aNotificationIsNotAnswered() {
-        assertNull(runBlocking { server.handle("""{"jsonrpc":"2.0","method":"notifications/initialized"}""") })
+        assertNull(runBlocking { server.handle("""{"jsonrpc":"2.0","method":"notifications/initialized"}""", CALLER) })
     }
 
     @Test

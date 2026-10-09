@@ -50,7 +50,7 @@ class McpHttpTest {
     private val backend = object : McpBackend {
         override suspend fun tools() = emptyList<McpTool>()
         override suspend fun appContext() = "APP"
-        override suspend fun call(name: String, arguments: JSONObject) = McpToolResult("", false)
+        override suspend fun call(name: String, arguments: JSONObject, caller: McpCaller) = McpToolResult("", false)
         override fun dateLine() = "NOW"
         override fun text(key: String) = if (key == "ai_mcp_context_token_line") "%1\$s" else key
     }
