@@ -92,9 +92,9 @@ class ValidationResolver(private val context: Context) {
             "CREATE_ZONE", "DELETE_ZONE", "UPDATE_APP_CONFIG" -> appReason(levels)
             "UPDATE_ZONE" -> {
                 val zoneId = params["zone_id"] as? String ?: error(s.shared("validation_reason_no_target"))
-                val ownSettings = params.keys.any { it != "zone_id" && it != "tool_groups" }
-                (if (ownSettings) appReason(levels) else null)
-                    ?: (if (params.containsKey("tool_groups")) zoneReason(zoneId, levels) else null)
+                val content = setOf("zone_id", "tool_groups", "renames")
+                (if (params.keys.any { it !in content }) appReason(levels) else null)
+                    ?: (if (params.containsKey("tool_groups") || params.containsKey("renames")) zoneReason(zoneId, levels) else null)
             }
 
             // A zone's level: its tools, their configs, its variables
