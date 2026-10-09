@@ -280,9 +280,15 @@ fun UI.RichComposer(
                             } else "",
                             takeFocus = block.id == focusBlockId,
                             onFocusTaken = { focusBlockId = null },
-                            onActivate = { activeBlockId = block.id },
+                            // A focused field leaving the screen hands its text over once more as it
+                            // loses the focus, after its block is gone (the blocks rebuilt from the
+                            // parent's message, or deleted): that text has no block to go to, and
+                            // the block is no longer one to make active
+                            onActivate = { if (blocks.any { it.id == block.id }) activeBlockId = block.id },
                             onTextChange = { newText ->
-                                update(ComposerBlocks.replace(blocks, block.id, MessageSegment.Text(newText)))
+                                if (blocks.any { it.id == block.id }) {
+                                    update(ComposerBlocks.replace(blocks, block.id, MessageSegment.Text(newText)))
+                                }
                             }
                         )
                         is MessageSegment.Image -> ImageBlockContent(imageId = segment.imageId, readsImages = readsImages)
