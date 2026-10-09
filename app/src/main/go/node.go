@@ -61,6 +61,7 @@ var (
 	srv       *tsnet.Server
 	listening bool   // ListenFunnel is running: logging in, or opening the Funnel
 	address   string // https://<node>.<tailnet>.ts.net once the Funnel listens
+	published bool   // the address found in the public DNS
 	lastErr   error  // what ListenFunnel answered when it failed
 
 	queue   = make(chan *pending, 16)
@@ -121,16 +122,17 @@ func listen(s *tsnet.Server) {
 		lastErr = errors.New("the node has no certificate domain")
 		return
 	}
-	address = "https://" + domains[0]
+	address, published = "https://"+domains[0], false
 	sayLocked("funnel listening at %s", address)
 	go http.Serve(ln, http.HandlerFunc(serve))
+	go watchPublication(s, domains[0])
 }
 
 // state reports where the node is, as JSON: {"state", "url"?, "address"?, "message"?, "log"}.
 // "log" carries the messages since the last call, for the app's log.
 func state() string {
 	mu.Lock()
-	s, addr, err := srv, address, lastErr
+	s, addr, err, pub := srv, address, lastErr, published
 	lines := userLines
 	userLines = nil
 	mu.Unlock()
@@ -140,7 +142,7 @@ func state() string {
 	case s == nil:
 		out["state"] = "stopped"
 	case addr != "":
-		out["state"], out["address"] = "ready", addr
+		out["state"], out["address"], out["published"] = "ready", addr, pub
 	case err != nil:
 		msg := err.Error()
 		switch {
@@ -180,7 +182,7 @@ func authURL(s *tsnet.Server) string {
 func stop() {
 	mu.Lock()
 	s := srv
-	srv, address, lastErr, listening = nil, "", nil, false
+	srv, address, lastErr, listening, published = nil, "", nil, false, false
 	mu.Unlock()
 	if s != nil {
 		s.Close()
@@ -284,6 +286,60 @@ func serve(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no answer from the app", http.StatusServiceUnavailable)
 	case <-r.Context().Done():
 	}
+}
+
+// The address exists for clients only once Tailscale has published it in the public DNS: a few
+// seconds to a few minutes after the node's first Funnel. Asked of ts.net's own name servers,
+// never of a shared resolver: a "no such name" there is kept five minutes (the zone's negative
+// TTL), and would delay the address for everyone who asks it meanwhile, the client included.
+const publicationPoll = 10 * time.Second
+
+func watchPublication(s *tsnet.Server, host string) {
+	began := time.Now()
+	for {
+		ok := isPublished(host)
+		mu.Lock()
+		if s != srv {
+			mu.Unlock()
+			return
+		}
+		if ok {
+			published = true
+			sayLocked("address published in the public DNS after %s", time.Since(began).Round(time.Second))
+			mu.Unlock()
+			return
+		}
+		mu.Unlock()
+		time.Sleep(publicationPoll)
+	}
+}
+
+// isPublished asks ts.net's authoritative name servers whether host has an address.
+func isPublished(host string) bool {
+	servers, err := net.LookupNS("ts.net")
+	if err != nil {
+		technical.printf("publication: ts.net name servers: %v", err)
+		return false
+	}
+	for _, ns := range servers {
+		server := net.JoinHostPort(strings.TrimSuffix(ns.Host, "."), "53")
+		r := &net.Resolver{PreferGo: true, Dial: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			d := net.Dialer{Timeout: 3 * time.Second}
+			return d.DialContext(ctx, "udp", server)
+		}}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		addrs, err := r.LookupHost(ctx, host)
+		cancel()
+		if err == nil && len(addrs) > 0 {
+			return true
+		}
+		// One server answering "no such name" is enough: they serve the same zone
+		var dnsErr *net.DNSError
+		if errors.As(err, &dnsErr) && dnsErr.IsNotFound {
+			return false
+		}
+	}
+	return false
 }
 
 // next is the oldest request still waiting, as the relay's JSON, or "" after waitSeconds.

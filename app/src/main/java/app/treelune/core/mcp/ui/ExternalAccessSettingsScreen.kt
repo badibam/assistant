@@ -47,6 +47,7 @@ fun ExternalAccessSettingsScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val store = remember { RoomOAuthStore(AppDatabase.getDatabase(context)) }
     val state by McpAccess.state.collectAsState()
+    val published by McpAccess.published.collectAsState()
     var clients by remember { mutableStateOf<List<OAuthClient>>(emptyList()) }
     var relay by remember { mutableStateOf<String?>(null) }
     var revoking by remember { mutableStateOf<OAuthClient?>(null) }
@@ -101,8 +102,16 @@ fun ExternalAccessSettingsScreen(onBack: () -> Unit) {
                     is McpAccess.State.Open -> {
                         UI.Text(current.lastCallAt?.let { s.shared("external_access_state_open_last").format(DateUtils.formatFullDateTime(it)) }
                             ?: s.shared("external_access_state_open"), TextType.BODY)
-                        if (mode == AppSettings.ACCESS_MODE_TAILSCALE && current.lastCallAt == null && !TailscaleNode.hasCertificate(context, current.address)) {
-                            UI.Text(s.shared("external_access_first_call"), TextType.CAPTION)
+                        when (published) {
+                            false -> UI.Text(s.shared("external_access_publishing"), TextType.CAPTION)
+                            true -> {
+                                UI.Text(s.shared("external_access_published"), TextType.CAPTION)
+                                if (current.lastCallAt == null && !TailscaleNode.hasCertificate(context, current.address)) {
+                                    UI.Text(s.shared("external_access_first_call"), TextType.CAPTION)
+                                }
+                            }
+                            // The relay's address: there as soon as the relay is
+                            null -> {}
                         }
                     }
                     is McpAccess.State.Failed -> UI.Text(s.shared("external_access_state_failed").format(current.message), TextType.BODY)
