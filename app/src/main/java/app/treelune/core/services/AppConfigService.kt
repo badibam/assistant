@@ -166,12 +166,14 @@ class AppConfigService(private val context: Context) : ExecutableService {
                     LogManager.service("Unknown category: $category", "WARN")
                     return OperationResult.error(s.shared("service_error_unknown_category").format(category))
                 }
+                closedRefusal(category)?.let { return OperationResult.error(it) }
                 OperationResult.success(mapOf("settings" to JsonUtils.toMap(readSettings(category))))
             }
             "set" -> {
                 val category = params.optString("category")
                 val settings = params.optJSONObject("settings")
                     ?: return OperationResult.error(s.shared("ai_error_param_config_required"))
+                closedRefusal(category)?.let { return OperationResult.error(it) }
                 setSettings(category, settings, Groups.renames(params, "zone_groups"))?.let { return OperationResult.error(it) }
                 OperationResult.success(mapOf("category" to category))
             }
@@ -189,6 +191,14 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     /**
+     * Why [category] is closed to the caller, null when it is open: a person and the app reach
+     * every category, the AI and an AI outside the app those of AppSettings.OPEN_TO_AI alone.
+     */
+    private suspend fun closedRefusal(category: String): String? =
+        if (category in AppSettings.OPEN_TO_AI || app.treelune.core.coordinator.Protections.byAPerson()) null
+        else s.shared("service_error_category_closed").format(category, AppSettings.OPEN_TO_AI.joinToString(", "))
+
+    /**
      * Verbalize AppConfig operation
      * Format: substantive form (e.g., "Modification de la configuration de l'application")
      * Usage: (a) UI validation display, (b) SystemMessage feedback
@@ -200,10 +210,8 @@ class AppConfigService(private val context: Context) : ExecutableService {
                 // get is a read operation, not typically verbalized for validation
                 s.shared("action_verbalize_unknown")
             }
-            else -> {
-                // Any write operation to app config
-                s.shared("action_verbalize_update_app_config")
-            }
+            // A write names the settings it changes
+            else -> s.shared("action_verbalize_update_app_config").format(AppSettings.title(params.optString("category"), context))
         }
     }
 

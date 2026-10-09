@@ -343,7 +343,7 @@
     <string name="action_verbalize_start_duration">Use of the tool \"%1$s\" (zone \"%2$s\"): stopwatch started</string>
     <string name="action_verbalize_stop_duration">Use of the tool \"%1$s\" (zone \"%2$s\"): stopwatch stopped</string>
     <string name="action_verbalize_delete_data">Use of the tool \"%1$s\" (zone \"%2$s\"): %3$d entry/entries deleted</string>
-    <string name="action_verbalize_update_app_config">Modification of the application configuration</string>
+    <string name="action_verbalize_update_app_config">Change of the settings: %1$s</string>
     <string name="action_verbalize_schema_get">Retrieval of the schema \"%1$s\"</string>
     <string name="action_verbalize_schema_list">Retrieval of the list of schemas</string>
     <string name="action_verbalize_unknown">Unknown action</string>
@@ -854,6 +854,7 @@
     <string name="service_error_no_data_found">No data found for the %1$s operation</string>
     <string name="service_error_no_results_found">No result found for the %1$s operation</string>
     <string name="service_error_invalid_phase">Invalid phase: %1$s</string>
+    <string name="service_error_category_closed">The category %1$s is not open to the AI; it reads and changes: %2$s</string>
     <string name="service_error_unknown_category">Unknown category: %1$s</string>
     <string name="service_error_schema_target_missing">A schema is asked for by a tooltype, a tool_instance_id or an id</string>
     <string name="service_error_schema_not_found">No schema for %1$s</string>

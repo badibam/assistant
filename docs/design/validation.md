@@ -6,7 +6,6 @@ Conçu le 2026-10-09, depuis une note du téléphone (« gérer la question de l
 
 - La validation ne joue que dans la conversation : une automation écrit sans jamais rien demander (`AIStateMachine`, « Execute directly without validation »), une IA extérieure par le connecteur MCP non plus.
 - Les interrupteurs de l'app valent pour toute l'app (« valider toutes les données ») : un levier que personne n'active, sans quoi chaque écriture demanderait un accord.
-- « Valider les changements de config de l'app » ne sert jamais : aucune action de l'IA n'atteint les réglages de l'app (`UPDATE_APP_CONFIG` est attendu par `ValidationResolver`, inconnu d'`AICommandProcessor`).
 - Les libellés disent « par IA » sans dire ce qu'ils couvrent, ni qu'une automation y échappe.
 
 ## Deux notions
@@ -64,7 +63,6 @@ Une automation fait ce que tu lui as écrit : elle ne demande rien. Elle est gar
 - Outil : `validate_config` sort de la config commune, `validate_data` reste et devient l'interrupteur de l'outil.
 - Session : `requireValidation` → trois booléens (migration : vrai → les trois).
 - Automation et client MCP : un masque, liste de `{kind, id, level}`, vide par défaut.
-- `UPDATE_APP_CONFIG` : l'action que l'IA n'a pas encore, limitée à une liste de catégories ouvertes (d'abord `main_screen`, jamais une catégorie à secret ni l'apparence), avec sa commande de lecture `APP_CONFIG`.
 
 ## Les textes de l'interface (brouillon, à relire ensemble)
 
@@ -75,11 +73,7 @@ Une automation fait ce que tu lui as écrit : elle ne demande rien. Elle est gar
 
 ## Ordre de réalisation
 
-1. Le modèle à trois niveaux dans `ValidationResolver`, les migrations, les interrupteurs et leurs textes ; les trois cases de session ; la correction de `validation_request`.
-2. `UPDATE_APP_CONFIG` et `APP_CONFIG` pour `main_screen` (la question du téléphone sur les groupes de l'accueil).
-3. Le masque d'accès des automations.
-4. Le connecteur : la validation par notification, puis le masque par client.
+Faits : les trois niveaux, les cases de session, `validation_request` (migration 69) ; `UPDATE_APP_CONFIG` et `APP_CONFIG` pour `main_screen` (`AppSettings.OPEN_TO_AI`). Restent :
 
-## Ouvert
-
-- Le retrait du réglage « Gestion » des outils (`TODO.md`) touche la même config commune : à faire dans la même migration que `validate_config`.
+1. Le masque d'accès des automations.
+2. Le connecteur : la validation par notification, puis le masque par client.

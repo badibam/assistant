@@ -343,7 +343,7 @@
     <string name="action_verbalize_start_duration">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : chronomètre démarré</string>
     <string name="action_verbalize_stop_duration">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : chronomètre arrêté</string>
     <string name="action_verbalize_delete_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : suppression de %3$d entrée(s)</string>
-    <string name="action_verbalize_update_app_config">Modification de la configuration de l\'application</string>
+    <string name="action_verbalize_update_app_config">Modification des réglages : %1$s</string>
     <string name="action_verbalize_schema_get">Récupération du schéma \"%1$s\"</string>
     <string name="action_verbalize_schema_list">Récupération de la liste des schémas</string>
     <string name="action_verbalize_unknown">Action inconnue</string>
@@ -854,6 +854,7 @@
     <string name="service_error_no_data_found">Aucune donnée trouvée pour l'opération %1$s</string>
     <string name="service_error_no_results_found">Aucun résultat trouvé pour l'opération %1$s</string>
     <string name="service_error_invalid_phase">Phase invalide: %1$s</string>
+    <string name="service_error_category_closed">La catégorie %1$s n\'est pas ouverte à l\'IA ; elle lit et change : %2$s</string>
     <string name="service_error_unknown_category">Catégorie inconnue: %1$s</string>
     <string name="service_error_schema_target_missing">Un schéma se demande par un tooltype, un tool_instance_id ou un id</string>
     <string name="service_error_schema_not_found">Aucun schéma pour %1$s</string>

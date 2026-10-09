@@ -248,6 +248,7 @@ class AICommandProcessor(private val context: Context) {
 
             // An import of a joined file, following the AI's declaration: the file read by the service itself
             "IMPORT_DATA" -> importCommand(command)
+            "UPDATE_APP_CONFIG" -> appConfigCommand(command)
 
             else -> {
                 LogManager.aiService("Unknown action command type: ${command.type}", "WARN")
@@ -343,6 +344,7 @@ class AICommandProcessor(private val context: Context) {
             )
 
             "IMPORT_DATA" -> importCommand(command)
+            "UPDATE_APP_CONFIG" -> appConfigCommand(command)
 
             else -> {
                 LogManager.aiService("Unknown action command type for verbalization: ${command.type}", "WARN")
@@ -350,6 +352,17 @@ class AICommandProcessor(private val context: Context) {
             }
         }
     }
+
+    /**
+     * UPDATE_APP_CONFIG as the settings service takes it: the category, its settings written
+     * whole, the renames of its lists; the service holds the category to those open to the AI.
+     */
+    private fun appConfigCommand(command: DataCommand) = ExecutableCommand(
+        resource = "app_config",
+        operation = "set",
+        params = command.params.filterKeys { it in setOf("category", "settings", "renames") },
+        isActionCommand = true
+    )
 
     /** IMPORT_DATA as the imports service takes it: the file, the tool, the declaration as written. */
     private fun importCommand(command: DataCommand) = ExecutableCommand(

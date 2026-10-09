@@ -104,6 +104,7 @@ object AICommands {
         query("CURRENT_DATETIME"),
         query("SCHEMA", p("tooltype", "string"), p("tool_instance_id", "string"), p("id", "string")),
         query("ICONS", p("categories", "array"), p("query", "array")),
+        query("APP_CONFIG", p("category", "string", true)),
 
         action("CREATE_DATA", p("tool_instance_id", "string", true), p("entries", "array", true), writesEntries = true),
         action("UPDATE_DATA", p("tool_instance_id", "string", true), p("entries", "array", true), writesEntries = true),
@@ -130,7 +131,8 @@ object AICommands {
         action("UPDATE_VARIABLE",
             p("variable_id", "string", true), p("name", "string"), p("definition", "object"), p("group", "string"), p("zone_id", "string")),
         action("DELETE_VARIABLE", p("variable_id", "string", true)),
-        action("IMPORT_DATA", p("file", "string", true), p("tool_instance_id", "string", true), p("columns", "array", true))
+        action("IMPORT_DATA", p("file", "string", true), p("tool_instance_id", "string", true), p("columns", "array", true)),
+        action("UPDATE_APP_CONFIG", p("category", "string", true), p("settings", "object", true), p("renames", "object"))
     )
 
     private val byType = ALL.associateBy { it.type }

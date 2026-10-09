@@ -372,6 +372,13 @@ Searches the icons a zone or a tool can take.
 - With parameters: at most `max_results` `icons` (`name`, `tags`), best first; `total`; `truncated`; and `count_by_category`, which says where to narrow a search too wide to list.
 
 Both parameters together: an icon must match both.]]></string>
+    <string name="ai_command_app_config"><![CDATA[### APP_CONFIG
+
+Reads the settings of a category of the app open to you.
+
+**Parameters**:
+
+- `category` (string, **required**): `main_screen`, the home screen's zone groups, `{"zone_groups": ["name", …]}` in their order on the home screen]]></string>
 
 
     <!-- C.2 Action commands: what they share; each command's own text is ai_command_*, assembled in the order of AICommands [DEGREE 1] -->
@@ -587,6 +594,15 @@ Imports a joined file into a tool, following a complete declaration: the new fie
 - `columns` (array, **required**): one declaration per column of the file, in their order, as IMPORT_PLAN returns them (without `example`, `ambiguous` and `unreadable_lines`), each ambiguity settled
 
 A new table for a file: CREATE_TOOL first, then IMPORT_PLAN and IMPORT_DATA at the next turn, with the id it returned.]]></string>
+    <string name="ai_command_update_app_config"><![CDATA[### UPDATE_APP_CONFIG
+
+Changes the settings of a category open to you, written **whole**: read them first with APP_CONFIG.
+
+**Parameters**:
+
+- `category` (string, **required**): `main_screen`
+- `settings` (object, **required**): the whole category; for `main_screen`, `{"zone_groups": [...]}`, the list that replaces the old one, in its order. A group still held by a zone cannot be removed
+- `renames` (object, optional): the groups renamed in `zone_groups`, `{"zone_groups": {"former name": "new name"}}`: the zones holding a former name take the new one]]></string>
 
 
     <!-- C.3 Response format [DEGREE 2] -->

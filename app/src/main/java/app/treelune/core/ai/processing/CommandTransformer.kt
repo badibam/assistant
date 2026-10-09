@@ -82,6 +82,12 @@ object CommandTransformer {
                     "READING" -> transformReadingCommand(command, s, reference)
                     "FILE" -> transformFileCommand(command)
                     "IMPORT_PLAN" -> transformImportPlanCommand(command)
+                    // The settings of a category the service opens to the AI (AppSettings.OPEN_TO_AI)
+                    "APP_CONFIG" -> ExecutableCommand(
+                        resource = "app_config",
+                        operation = "get",
+                        params = command.params.filterKeys { it == "category" }.mapValues { it.value!! }
+                    )
                     else -> {
                         val error = s.shared("ai_error_command_unknown_type").format(command.type)
                         LogManager.aiPrompt("Unknown command type: ${command.type}", "WARN")

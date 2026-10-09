@@ -53,6 +53,13 @@ object AppSettings {
         AppSettingCategories.GUIDE
     )
 
+    /**
+     * The categories the AI reads and writes (APP_CONFIG, UPDATE_APP_CONFIG; docs/design/validation.md),
+     * the app's level of validation guarding the writes: the home screen's groups alone. Never one
+     * holding a secret, nor the look, which is the user's to see.
+     */
+    val OPEN_TO_AI = listOf(AppSettingCategories.MAIN_SCREEN)
+
     /** The Guide's progress (GuideProgress): the first-launch screen seen, the band hidden, the tutorial in progress, each chapter's step. */
     const val GUIDE_WELCOME_SEEN = "welcome_seen"
     const val GUIDE_BAND_HIDDEN = "band_hidden"
