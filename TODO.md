@@ -38,7 +38,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## Bugs du téléphone
 
 - Utiliser secret android pour clés, comme le fait saylune
-- Alléger les écrans de config en repliant xertains paramètres
 
 - Le contrôle des README (`scripts/make_readme.py --check`, dans `./run test`) compte les langues par les dossiers `res/values-xx`, que le build génère et que git ignore : sur une copie neuve du dépôt (un worktree), il échoue avant le premier build. Les compter par les sources de textes (`shared-xx.xml`).
 
