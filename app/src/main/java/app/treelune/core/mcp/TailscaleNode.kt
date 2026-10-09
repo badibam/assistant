@@ -84,6 +84,12 @@ object TailscaleNode {
         FunnelNative.logout(dir(context).absolutePath, HOSTNAME).ifEmpty { null }
     }
 
+    /**
+     * Whether the node's address is in the public DNS yet: until then no client finds it. Null
+     * when the node is not up.
+     */
+    fun published(): Boolean? = (read() as? NodeState.Ready)?.published
+
     /** Whether the node already holds its certificate for [address]: without it, the first call waits for one. */
     fun hasCertificate(context: Context, address: String): Boolean {
         val host = address.removePrefix("https://")
@@ -92,7 +98,7 @@ object TailscaleNode {
 
     private sealed interface NodeState {
         data class Waiting(val step: Step) : NodeState
-        data class Ready(val address: String) : NodeState
+        data class Ready(val address: String, val published: Boolean) : NodeState
         data class Failed(val message: String) : NodeState
     }
 
@@ -103,7 +109,7 @@ object TailscaleNode {
             for (i in 0 until lines.length()) LogManager.service("External access: ${lines.getString(i)}", "INFO")
         }
         return when (val state = json.getString("state")) {
-            "ready" -> NodeState.Ready(json.getString("address"))
+            "ready" -> NodeState.Ready(json.getString("address"), json.optBoolean("published"))
             "needs_login" -> NodeState.Waiting(Step.NeedsLogin(json.getString("url")))
             "https_missing" -> NodeState.Waiting(Step.HttpsMissing)
             "funnel_missing" -> NodeState.Waiting(Step.FunnelMissing)

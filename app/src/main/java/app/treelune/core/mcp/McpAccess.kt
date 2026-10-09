@@ -17,7 +17,10 @@ import app.treelune.core.notifications.NotificationChannels
 import app.treelune.core.notifications.NotificationService
 import app.treelune.core.strings.Strings
 import app.treelune.core.utils.LogManager
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 import java.security.SecureRandom
@@ -45,6 +48,13 @@ object McpAccess {
 
     private val _state = MutableStateFlow<State>(State.Closed)
     val state: StateFlow<State> = _state
+
+    private val _published = MutableStateFlow<Boolean?>(null)
+    /**
+     * Whether the Tailscale node's address is in the public DNS yet, while the access is open
+     * through it; null otherwise. A client finds the address only once it is.
+     */
+    val published: StateFlow<Boolean?> = _published
 
     private val _request = MutableStateFlow<PendingAuthorization?>(null)
     /** The request for access waiting for its code on this phone, if one is. */
@@ -117,6 +127,7 @@ object McpAccess {
                     _state.value = State.Closed
                     return
                 }
+                _published.value = false
                 address to FunnelTransport()
             } else {
                 val (base, secret) = relay(context) ?: run {
@@ -125,8 +136,19 @@ object McpAccess {
                 }
                 base to OkHttpRelayTransport(base, secret)
             }
-            serve(context, s, base, transport, onActivity)
+            coroutineScope {
+                // Until Tailscale has published the address, no client can reach it: the screen says so
+                val watch = if (tailscale) launch {
+                    while (_published.value != true) {
+                        _published.value = TailscaleNode.published() ?: false
+                        delay(PUBLICATION_POLL_MS)
+                    }
+                } else null
+                serve(context, s, base, transport, onActivity)
+                watch?.cancel()
+            }
         } finally {
+            _published.value = null
             if (tailscale && FunnelNative.available) TailscaleNode.close(context)
             if (_state.value is State.Open || _state.value is State.Preparing) _state.value = State.Closed
         }
@@ -205,4 +227,7 @@ object McpAccess {
     }
 
     private const val REQUEST_NOTIFICATION_ID = 0x4d43 // "MC"
+
+    /** How often the screen's "address published" is read from the node, which asks the DNS itself every 10 s */
+    private const val PUBLICATION_POLL_MS = 2_000L
 }

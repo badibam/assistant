@@ -1887,6 +1887,8 @@
     <string name="external_access_policy_copied">Block copied</string>
     <string name="external_access_open_policy">Open the access policy</string>
     <string name="external_access_retry">Try again</string>
+    <string name="external_access_publishing">The address is being published by Tailscale, a few minutes the first time. Add it in the client only once it is ready: tried too early, the client may not find it for five more minutes.</string>
+    <string name="external_access_published">Address ready: add it in the client.</string>
     <string name="external_access_first_call">The first call waits for the certificate, about forty seconds.</string>
     <string name="external_access_tailscale_logout">Disconnect from Tailscale</string>
     <string name="external_access_tailscale_logout_confirm">Take the app out of your Tailscale account? Its address will stop working, and the next opening will ask you to connect again.</string>
