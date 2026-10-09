@@ -489,7 +489,7 @@ private fun SeedMode(
             modifier = Modifier.fillMaxSize()
         ) {
             SeedHeader(
-                session = session,
+                title = session.name,
                 onClose = onClose,
                 onConfigureAutomation = { },
                 onDeleteAutomation = { }
@@ -513,7 +513,7 @@ private fun SeedMode(
             modifier = Modifier.fillMaxSize()
         ) {
             SeedHeader(
-                session = session,
+                title = session.name,
                 onClose = onClose,
                 onConfigureAutomation = { },
                 onDeleteAutomation = { }
@@ -670,7 +670,7 @@ private fun SeedMode(
     ) {
         // Header
         SeedHeader(
-            session = session,
+            title = automation!!.name,
             onClose = onClose,
             onConfigureAutomation = {
                 showEditAutomation = true
@@ -1161,11 +1161,12 @@ private fun ChatHeader(
 }
 
 /**
- * Seed header - Automation name with edit/delete/close buttons
+ * Seed header - Automation name with edit/delete/close buttons. [title] is the automation's name
+ * once it is read, which a rename changes; the seed session keeps the name it was created with.
  */
 @Composable
 private fun SeedHeader(
-    session: AISession,
+    title: String,
     onClose: () -> Unit,
     onConfigureAutomation: () -> Unit,
     onDeleteAutomation: () -> Unit
@@ -1174,7 +1175,7 @@ private fun SeedHeader(
         // Title
         Box(modifier = Modifier.weight(1f)) {
             UI.Text(
-                text = session.name,
+                text = title,
                 type = TextType.TITLE
             )
         }
