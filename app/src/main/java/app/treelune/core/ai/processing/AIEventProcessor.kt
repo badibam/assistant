@@ -1008,8 +1008,8 @@ class AIEventProcessor(
                         systemMessage = app.treelune.core.ai.data.SystemMessage(
                             type = SystemMessageType.FORMAT_ERROR,
                             commandResults = emptyList(),
-                            summary = s.shared("ai_error_format_errors").format(formatErrors.joinToString("; ")),
-                            formattedData = null
+                            summary = s.shared("ai_format_error_shown"),
+                            formattedData = s.shared("ai_error_format_errors").format(formatErrors.joinToString("; "))
                         ),
                         executionMetadata = null,
                         excludeFromPrompt = false // Sent to AI prompt for correction
@@ -1092,8 +1092,8 @@ class AIEventProcessor(
                     systemMessage = app.treelune.core.ai.data.SystemMessage(
                         type = SystemMessageType.FORMAT_ERROR,
                         commandResults = emptyList(),
-                        summary = formatErrorSummary,
-                        formattedData = null
+                        summary = s.shared("ai_format_error_shown"),
+                        formattedData = formatErrorSummary
                     ),
                     executionMetadata = null,
                     excludeFromPrompt = false // Sent to AI prompt for correction
@@ -1120,8 +1120,8 @@ class AIEventProcessor(
                     systemMessage = app.treelune.core.ai.data.SystemMessage(
                         type = SystemMessageType.FORMAT_ERROR,
                         commandResults = emptyList(),
-                        summary = app.treelune.core.strings.Strings.`for`(context = context).shared("ai_error_parsing_technical").format(e.message ?: e.javaClass.simpleName),
-                        formattedData = null
+                        summary = app.treelune.core.strings.Strings.`for`(context = context).shared("ai_format_error_shown"),
+                        formattedData = app.treelune.core.strings.Strings.`for`(context = context).shared("ai_error_parsing_technical").format(e.message ?: e.javaClass.simpleName)
                     ),
                     executionMetadata = null,
                     excludeFromPrompt = false
@@ -1337,6 +1337,7 @@ class AIEventProcessor(
                 LogManager.aiSession("executeDataQueries: ${transformationResult.errors.size} command(s) failed transformation", "WARN")
 
                 // Create FORMAT_ERROR message with detailed errors for AI to see and fix
+                val s = app.treelune.core.strings.Strings.`for`(context = context)
                 val errorDetails = transformationResult.errors.joinToString("; ")
                 val formatErrorMessage = SessionMessage(
                     id = java.util.UUID.randomUUID().toString(),
@@ -1349,8 +1350,8 @@ class AIEventProcessor(
                     systemMessage = app.treelune.core.ai.data.SystemMessage(
                         type = SystemMessageType.FORMAT_ERROR,
                         commandResults = emptyList(),
-                        summary = "Erreurs transformation dataCommands : $errorDetails",
-                        formattedData = null
+                        summary = s.shared("ai_command_error_shown"),
+                        formattedData = s.shared("ai_error_command_transformation").format(errorDetails)
                     ),
                     executionMetadata = null,
                     excludeFromPrompt = false // Sent to AI prompt for correction
@@ -1465,6 +1466,7 @@ class AIEventProcessor(
                         LogManager.aiSession("executeActions: ${transformationResult.errors.size} command(s) failed transformation", "WARN")
 
                         // Create FORMAT_ERROR message with detailed errors for AI to see and fix
+                        val s = app.treelune.core.strings.Strings.`for`(context = context)
                         val errorDetails = transformationResult.errors.joinToString("; ")
                         val formatErrorMessage = SessionMessage(
                             id = java.util.UUID.randomUUID().toString(),
@@ -1477,8 +1479,8 @@ class AIEventProcessor(
                             systemMessage = app.treelune.core.ai.data.SystemMessage(
                                 type = SystemMessageType.FORMAT_ERROR,
                                 commandResults = emptyList(),
-                                summary = "Erreurs transformation actionCommands : $errorDetails",
-                                formattedData = null
+                                summary = s.shared("ai_command_error_shown"),
+                                formattedData = s.shared("ai_error_command_transformation").format(errorDetails)
                             ),
                             executionMetadata = null,
                             excludeFromPrompt = false // Sent to AI prompt for correction

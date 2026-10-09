@@ -249,6 +249,9 @@
     <string name="automation_schedule">Schedule</string>
 
     <!-- AI Errors - Command transformation -->
+    <string name="ai_format_error_shown">The AI\'s answer was not in the expected form: nothing was done, and the details went back to it so that it answers again.</string>
+    <string name="ai_command_error_shown">The AI wrote a command the app does not understand: nothing was done, and the details went back to it so that it corrects it.</string>
+    <string name="ai_error_command_transformation">Commands refused, nothing was carried out: %1$s. Correct them and send them again.</string>
     <string name="ai_error_command_prefix">Command[%1$d] (%2$s): %3$s</string>
     <string name="ai_error_command_unknown_type">Unknown command type: %1$s</string>
     <string name="ai_error_command_invalid_params">Invalid or missing parameters</string>

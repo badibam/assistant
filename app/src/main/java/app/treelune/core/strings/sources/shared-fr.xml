@@ -249,6 +249,9 @@
     <string name="automation_schedule">Planification</string>
 
     <!-- AI Errors - Command transformation -->
+    <string name="ai_format_error_shown">La réponse de l\'IA n\'avait pas la forme attendue : rien n\'a été fait, et le détail lui est renvoyé pour qu\'elle réponde à nouveau.</string>
+    <string name="ai_command_error_shown">L\'IA a écrit une commande que l\'app ne comprend pas : rien n\'a été fait, et le détail lui est renvoyé pour qu\'elle la corrige.</string>
+    <string name="ai_error_command_transformation">Commandes refusées, rien n\'a été exécuté : %1$s. Corrige-les et renvoie-les.</string>
     <string name="ai_error_command_prefix">Commande[%1$d] (%2$s) : %3$s</string>
     <string name="ai_error_command_unknown_type">Type de commande inconnu : %1$s</string>
     <string name="ai_error_command_invalid_params">Paramètres invalides ou manquants</string>
